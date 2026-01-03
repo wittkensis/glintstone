@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import LogoDingir from '../../assets/logo-dingir-mono.svg?react'
 
 type NavItem = {
   label: string
@@ -52,20 +53,10 @@ export function Header({
             {/* Logo */}
             <a
               href="/"
-              className="flex items-center gap-2 font-semibold text-[rgb(var(--text))] no-underline"
+              className="flex items-center gap-3 font-semibold text-[rgb(var(--text))] no-underline"
               aria-label="Glintstone home"
             >
-              <svg
-                className="w-7 h-7 text-[rgb(var(--accent))]"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M9 3v18"/>
-                <path d="M3 9h6"/>
-              </svg>
+              <LogoDingir className="w-8 h-8 text-[rgb(var(--accent))]" aria-hidden="true" />
               <span>Glintstone</span>
             </a>
 

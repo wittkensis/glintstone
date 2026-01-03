@@ -1,0 +1,36 @@
+<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dingir (𒀭) - Monochrome variant for dark backgrounds -->
+  <defs>
+    <!-- Gold gradient for monochrome -->
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f6d365;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#d4af37;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#b8941f;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.2"/>
+
+  <!-- 8-pointed star formation -->
+  <!-- Central cross (4 main points) -->
+  <path d="M 64 20 L 68 58 L 60 58 Z" fill="currentColor"/>
+  <path d="M 64 108 L 68 70 L 60 70 Z" fill="currentColor"/>
+  <path d="M 20 64 L 58 68 L 58 60 Z" fill="currentColor"/>
+  <path d="M 108 64 L 70 68 L 70 60 Z" fill="currentColor"/>
+
+  <!-- Diagonal points (4 secondary points) -->
+  <path d="M 36 36 L 56 54 L 50 58 L 32 40 Z" fill="currentColor"/>
+  <path d="M 92 36 L 74 54 L 70 50 L 96 32 Z" fill="currentColor"/>
+  <path d="M 36 92 L 54 74 L 58 78 L 32 96 Z" fill="currentColor"/>
+  <path d="M 92 92 L 74 74 L 78 70 L 96 96 Z" fill="currentColor"/>
+
+  <!-- Central accent -->
+  <circle cx="64" cy="64" r="8" fill="url(#goldGradient)"/>
+
+  <!-- Inner connecting lines -->
+  <path d="M 64 56 L 64 48" stroke="url(#goldGradient)" stroke-width="2" opacity="0.6"/>
+  <path d="M 64 72 L 64 80" stroke="url(#goldGradient)" stroke-width="2" opacity="0.6"/>
+  <path d="M 56 64 L 48 64" stroke="url(#goldGradient)" stroke-width="2" opacity="0.6"/>
+  <path d="M 72 64 L 80 64" stroke="url(#goldGradient)" stroke-width="2" opacity="0.6"/>
+</svg>
