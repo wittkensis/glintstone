@@ -1,0 +1,652 @@
+[
+  {
+    "id": "task-001",
+    "type": "sign_match",
+    "tabletId": "tablet-001",
+    "signImage": "/images/signs/sign-001.png",
+    "options": [
+      {"id": "opt-001-a", "label": "KUR", "image": "/images/signs/sign-034.png"},
+      {"id": "opt-001-b", "label": "GAL", "image": "/images/signs/sign-015.png"},
+      {"id": "opt-001-c", "label": "UR", "image": "/images/signs/sign-001.png"},
+      {"id": "opt-001-d", "label": "GI", "image": "/images/signs/sign-042.png"}
+    ],
+    "correctAnswer": "opt-001-c"
+  },
+  {
+    "id": "task-002",
+    "type": "sign_match",
+    "tabletId": "tablet-001",
+    "signImage": "/images/signs/sign-002.png",
+    "options": [
+      {"id": "opt-002-a", "label": "PA", "image": "/images/signs/sign-002.png"},
+      {"id": "opt-002-b", "label": "TA", "image": "/images/signs/sign-018.png"},
+      {"id": "opt-002-c", "label": "DA", "image": "/images/signs/sign-025.png"},
+      {"id": "opt-002-d", "label": "BA", "image": "/images/signs/sign-009.png"}
+    ],
+    "correctAnswer": "opt-002-a"
+  },
+  {
+    "id": "task-003",
+    "type": "sign_match",
+    "tabletId": "tablet-002",
+    "signImage": "/images/signs/sign-003.png",
+    "options": [
+      {"id": "opt-003-a", "label": "AN", "image": "/images/signs/sign-003.png"},
+      {"id": "opt-003-b", "label": "EN", "image": "/images/signs/sign-017.png"},
+      {"id": "opt-003-c", "label": "IN", "image": "/images/signs/sign-031.png"},
+      {"id": "opt-003-d", "label": "UN", "image": "/images/signs/sign-044.png"}
+    ],
+    "correctAnswer": "opt-003-a"
+  },
+  {
+    "id": "task-004",
+    "type": "sign_match",
+    "tabletId": "tablet-002",
+    "signImage": "/images/signs/sign-004.png",
+    "options": [
+      {"id": "opt-004-a", "label": "EG", "image": "/images/signs/sign-038.png"},
+      {"id": "opt-004-b", "label": "AG", "image": "/images/signs/sign-004.png"},
+      {"id": "opt-004-c", "label": "IG", "image": "/images/signs/sign-039.png"},
+      {"id": "opt-004-d", "label": "UG", "image": "/images/signs/sign-048.png"}
+    ],
+    "correctAnswer": "opt-004-b"
+  },
+  {
+    "id": "task-005",
+    "type": "sign_match",
+    "tabletId": "tablet-003",
+    "signImage": "/images/signs/sign-005.png",
+    "options": [
+      {"id": "opt-005-a", "label": "ZU", "image": "/images/signs/sign-047.png"},
+      {"id": "opt-005-b", "label": "SAG", "image": "/images/signs/sign-005.png"},
+      {"id": "opt-005-c", "label": "SAL", "image": "/images/signs/sign-035.png"},
+      {"id": "opt-005-d", "label": "SAR", "image": "/images/signs/sign-036.png"}
+    ],
+    "correctAnswer": "opt-005-b"
+  },
+  {
+    "id": "task-006",
+    "type": "sign_match",
+    "tabletId": "tablet-003",
+    "signImage": "/images/signs/sign-006.png",
+    "options": [
+      {"id": "opt-006-a", "label": "TUG", "image": "/images/signs/sign-049.png"},
+      {"id": "opt-006-b", "label": "KU", "image": "/images/signs/sign-046.png"},
+      {"id": "opt-006-c", "label": "NUN", "image": "/images/signs/sign-006.png"},
+      {"id": "opt-006-d", "label": "KUN", "image": "/images/signs/sign-041.png"}
+    ],
+    "correctAnswer": "opt-006-c"
+  },
+  {
+    "id": "task-007",
+    "type": "sign_match",
+    "tabletId": "tablet-004",
+    "signImage": "/images/signs/sign-007.png",
+    "options": [
+      {"id": "opt-007-a", "label": "DU", "image": "/images/signs/sign-007.png"},
+      {"id": "opt-007-b", "label": "TU", "image": "/images/signs/sign-050.png"},
+      {"id": "opt-007-c", "label": "GU", "image": "/images/signs/sign-020.png"},
+      {"id": "opt-007-d", "label": "BU", "image": "/images/signs/sign-012.png"}
+    ],
+    "correctAnswer": "opt-007-a"
+  },
+  {
+    "id": "task-008",
+    "type": "sign_match",
+    "tabletId": "tablet-004",
+    "signImage": "/images/signs/sign-008.png",
+    "options": [
+      {"id": "opt-008-a", "label": "LU", "image": "/images/signs/sign-008.png"},
+      {"id": "opt-008-b", "label": "SU", "image": "/images/signs/sign-037.png"},
+      {"id": "opt-008-c", "label": "MU", "image": "/images/signs/sign-030.png"},
+      {"id": "opt-008-d", "label": "NU", "image": "/images/signs/sign-032.png"}
+    ],
+    "correctAnswer": "opt-008-a"
+  },
+  {
+    "id": "task-009",
+    "type": "sign_match",
+    "tabletId": "tablet-005",
+    "signImage": "/images/signs/sign-009.png",
+    "options": [
+      {"id": "opt-009-a", "label": "RI", "image": "/images/signs/sign-033.png"},
+      {"id": "opt-009-b", "label": "LA", "image": "/images/signs/sign-026.png"},
+      {"id": "opt-009-c", "label": "BA", "image": "/images/signs/sign-009.png"},
+      {"id": "opt-009-d", "label": "NA", "image": "/images/signs/sign-029.png"}
+    ],
+    "correctAnswer": "opt-009-c"
+  },
+  {
+    "id": "task-010",
+    "type": "sign_match",
+    "tabletId": "tablet-005",
+    "signImage": "/images/signs/sign-010.png",
+    "options": [
+      {"id": "opt-010-a", "label": "GAN", "image": "/images/signs/sign-010.png"},
+      {"id": "opt-010-b", "label": "KAN", "image": "/images/signs/sign-043.png"},
+      {"id": "opt-010-c", "label": "TAN", "image": "/images/signs/sign-019.png"},
+      {"id": "opt-010-d", "label": "PAN", "image": "/images/signs/sign-011.png"}
+    ],
+    "correctAnswer": "opt-010-a"
+  },
+  {
+    "id": "task-011",
+    "type": "sign_match",
+    "tabletId": "tablet-006",
+    "signImage": "/images/signs/sign-011.png",
+    "options": [
+      {"id": "opt-011-a", "label": "NU", "image": "/images/signs/sign-032.png"},
+      {"id": "opt-011-b", "label": "PAN", "image": "/images/signs/sign-011.png"},
+      {"id": "opt-011-c", "label": "TAN", "image": "/images/signs/sign-019.png"},
+      {"id": "opt-011-d", "label": "BAN", "image": "/images/signs/sign-013.png"}
+    ],
+    "correctAnswer": "opt-011-b"
+  },
+  {
+    "id": "task-012",
+    "type": "sign_match",
+    "tabletId": "tablet-006",
+    "signImage": "/images/signs/sign-012.png",
+    "options": [
+      {"id": "opt-012-a", "label": "MU", "image": "/images/signs/sign-030.png"},
+      {"id": "opt-012-b", "label": "BU", "image": "/images/signs/sign-012.png"},
+      {"id": "opt-012-c", "label": "GU", "image": "/images/signs/sign-020.png"},
+      {"id": "opt-012-d", "label": "TU", "image": "/images/signs/sign-050.png"}
+    ],
+    "correctAnswer": "opt-012-b"
+  },
+  {
+    "id": "task-013",
+    "type": "sign_match",
+    "tabletId": "tablet-007",
+    "signImage": "/images/signs/sign-013.png",
+    "options": [
+      {"id": "opt-013-a", "label": "HI", "image": "/images/signs/sign-023.png"},
+      {"id": "opt-013-b", "label": "BAN", "image": "/images/signs/sign-013.png"},
+      {"id": "opt-013-c", "label": "KI", "image": "/images/signs/sign-024.png"},
+      {"id": "opt-013-d", "label": "NI", "image": "/images/signs/sign-028.png"}
+    ],
+    "correctAnswer": "opt-013-b"
+  },
+  {
+    "id": "task-014",
+    "type": "sign_match",
+    "tabletId": "tablet-007",
+    "signImage": "/images/signs/sign-014.png",
+    "options": [
+      {"id": "opt-014-a", "label": "HA", "image": "/images/signs/sign-022.png"},
+      {"id": "opt-014-b", "label": "KA", "image": "/images/signs/sign-014.png"},
+      {"id": "opt-014-c", "label": "MA", "image": "/images/signs/sign-027.png"},
+      {"id": "opt-014-d", "label": "SA", "image": "/images/signs/sign-016.png"}
+    ],
+    "correctAnswer": "opt-014-b"
+  },
+  {
+    "id": "task-015",
+    "type": "sign_match",
+    "tabletId": "tablet-008",
+    "signImage": "/images/signs/sign-015.png",
+    "options": [
+      {"id": "opt-015-a", "label": "LI", "image": "/images/signs/sign-021.png"},
+      {"id": "opt-015-b", "label": "GI", "image": "/images/signs/sign-042.png"},
+      {"id": "opt-015-c", "label": "GAL", "image": "/images/signs/sign-015.png"},
+      {"id": "opt-015-d", "label": "TI", "image": "/images/signs/sign-045.png"}
+    ],
+    "correctAnswer": "opt-015-c"
+  },
+  {
+    "id": "task-016",
+    "type": "sign_match",
+    "tabletId": "tablet-008",
+    "signImage": "/images/signs/sign-016.png",
+    "options": [
+      {"id": "opt-016-a", "label": "SU", "image": "/images/signs/sign-037.png"},
+      {"id": "opt-016-b", "label": "SA", "image": "/images/signs/sign-016.png"},
+      {"id": "opt-016-c", "label": "SI", "image": "/images/signs/sign-040.png"},
+      {"id": "opt-016-d", "label": "SE", "image": "/images/signs/sign-014.png"}
+    ],
+    "correctAnswer": "opt-016-b"
+  },
+  {
+    "id": "task-017",
+    "type": "sign_match",
+    "tabletId": "tablet-009",
+    "signImage": "/images/signs/sign-017.png",
+    "options": [
+      {"id": "opt-017-a", "label": "AN", "image": "/images/signs/sign-003.png"},
+      {"id": "opt-017-b", "label": "EN", "image": "/images/signs/sign-017.png"},
+      {"id": "opt-017-c", "label": "IN", "image": "/images/signs/sign-031.png"},
+      {"id": "opt-017-d", "label": "ON", "image": "/images/signs/sign-010.png"}
+    ],
+    "correctAnswer": "opt-017-b"
+  },
+  {
+    "id": "task-018",
+    "type": "sign_match",
+    "tabletId": "tablet-009",
+    "signImage": "/images/signs/sign-018.png",
+    "options": [
+      {"id": "opt-018-a", "label": "PA", "image": "/images/signs/sign-002.png"},
+      {"id": "opt-018-b", "label": "TA", "image": "/images/signs/sign-018.png"},
+      {"id": "opt-018-c", "label": "DA", "image": "/images/signs/sign-025.png"},
+      {"id": "opt-018-d", "label": "BA", "image": "/images/signs/sign-009.png"}
+    ],
+    "correctAnswer": "opt-018-b"
+  },
+  {
+    "id": "task-019",
+    "type": "sign_match",
+    "tabletId": "tablet-010",
+    "signImage": "/images/signs/sign-019.png",
+    "options": [
+      {"id": "opt-019-a", "label": "GAN", "image": "/images/signs/sign-010.png"},
+      {"id": "opt-019-b", "label": "KAN", "image": "/images/signs/sign-043.png"},
+      {"id": "opt-019-c", "label": "TAN", "image": "/images/signs/sign-019.png"},
+      {"id": "opt-019-d", "label": "PAN", "image": "/images/signs/sign-011.png"}
+    ],
+    "correctAnswer": "opt-019-c"
+  },
+  {
+    "id": "task-020",
+    "type": "sign_match",
+    "tabletId": "tablet-010",
+    "signImage": "/images/signs/sign-020.png",
+    "options": [
+      {"id": "opt-020-a", "label": "DU", "image": "/images/signs/sign-007.png"},
+      {"id": "opt-020-b", "label": "TU", "image": "/images/signs/sign-050.png"},
+      {"id": "opt-020-c", "label": "GU", "image": "/images/signs/sign-020.png"},
+      {"id": "opt-020-d", "label": "BU", "image": "/images/signs/sign-012.png"}
+    ],
+    "correctAnswer": "opt-020-c"
+  },
+  {
+    "id": "task-021",
+    "type": "sign_match",
+    "tabletId": "tablet-001",
+    "signImage": "/images/signs/sign-021.png",
+    "options": [
+      {"id": "opt-021-a", "label": "LI", "image": "/images/signs/sign-021.png"},
+      {"id": "opt-021-b", "label": "GI", "image": "/images/signs/sign-042.png"},
+      {"id": "opt-021-c", "label": "GAL", "image": "/images/signs/sign-015.png"},
+      {"id": "opt-021-d", "label": "TI", "image": "/images/signs/sign-045.png"}
+    ],
+    "correctAnswer": "opt-021-a"
+  },
+  {
+    "id": "task-022",
+    "type": "sign_match",
+    "tabletId": "tablet-002",
+    "signImage": "/images/signs/sign-022.png",
+    "options": [
+      {"id": "opt-022-a", "label": "HA", "image": "/images/signs/sign-022.png"},
+      {"id": "opt-022-b", "label": "KA", "image": "/images/signs/sign-014.png"},
+      {"id": "opt-022-c", "label": "MA", "image": "/images/signs/sign-027.png"},
+      {"id": "opt-022-d", "label": "SA", "image": "/images/signs/sign-016.png"}
+    ],
+    "correctAnswer": "opt-022-a"
+  },
+  {
+    "id": "task-023",
+    "type": "sign_match",
+    "tabletId": "tablet-003",
+    "signImage": "/images/signs/sign-023.png",
+    "options": [
+      {"id": "opt-023-a", "label": "HI", "image": "/images/signs/sign-023.png"},
+      {"id": "opt-023-b", "label": "KI", "image": "/images/signs/sign-024.png"},
+      {"id": "opt-023-c", "label": "NI", "image": "/images/signs/sign-028.png"},
+      {"id": "opt-023-d", "label": "LI", "image": "/images/signs/sign-021.png"}
+    ],
+    "correctAnswer": "opt-023-a"
+  },
+  {
+    "id": "task-024",
+    "type": "sign_match",
+    "tabletId": "tablet-004",
+    "signImage": "/images/signs/sign-024.png",
+    "options": [
+      {"id": "opt-024-a", "label": "AN", "image": "/images/signs/sign-003.png"},
+      {"id": "opt-024-b", "label": "KI", "image": "/images/signs/sign-024.png"},
+      {"id": "opt-024-c", "label": "MI", "image": "/images/signs/sign-026.png"},
+      {"id": "opt-024-d", "label": "DIM", "image": "/images/signs/sign-006.png"}
+    ],
+    "correctAnswer": "opt-024-b"
+  },
+  {
+    "id": "task-025",
+    "type": "sign_match",
+    "tabletId": "tablet-005",
+    "signImage": "/images/signs/sign-025.png",
+    "options": [
+      {"id": "opt-025-a", "label": "PA", "image": "/images/signs/sign-002.png"},
+      {"id": "opt-025-b", "label": "TA", "image": "/images/signs/sign-018.png"},
+      {"id": "opt-025-c", "label": "DA", "image": "/images/signs/sign-025.png"},
+      {"id": "opt-025-d", "label": "BA", "image": "/images/signs/sign-009.png"}
+    ],
+    "correctAnswer": "opt-025-c"
+  },
+  {
+    "id": "task-026",
+    "type": "sign_match",
+    "tabletId": "tablet-006",
+    "signImage": "/images/signs/sign-026.png",
+    "options": [
+      {"id": "opt-026-a", "label": "GA", "image": "/images/signs/sign-008.png"},
+      {"id": "opt-026-b", "label": "LA", "image": "/images/signs/sign-026.png"},
+      {"id": "opt-026-c", "label": "RA", "image": "/images/signs/sign-012.png"},
+      {"id": "opt-026-d", "label": "MA", "image": "/images/signs/sign-027.png"}
+    ],
+    "correctAnswer": "opt-026-b"
+  },
+  {
+    "id": "task-027",
+    "type": "sign_match",
+    "tabletId": "tablet-007",
+    "signImage": "/images/signs/sign-027.png",
+    "options": [
+      {"id": "opt-027-a", "label": "GA", "image": "/images/signs/sign-008.png"},
+      {"id": "opt-027-b", "label": "LA", "image": "/images/signs/sign-026.png"},
+      {"id": "opt-027-c", "label": "MA", "image": "/images/signs/sign-027.png"},
+      {"id": "opt-027-d", "label": "PA", "image": "/images/signs/sign-002.png"}
+    ],
+    "correctAnswer": "opt-027-c"
+  },
+  {
+    "id": "task-028",
+    "type": "sign_match",
+    "tabletId": "tablet-008",
+    "signImage": "/images/signs/sign-028.png",
+    "options": [
+      {"id": "opt-028-a", "label": "MI", "image": "/images/signs/sign-026.png"},
+      {"id": "opt-028-b", "label": "NI", "image": "/images/signs/sign-028.png"},
+      {"id": "opt-028-c", "label": "RI", "image": "/images/signs/sign-033.png"},
+      {"id": "opt-028-d", "label": "SI", "image": "/images/signs/sign-040.png"}
+    ],
+    "correctAnswer": "opt-028-b"
+  },
+  {
+    "id": "task-029",
+    "type": "sign_match",
+    "tabletId": "tablet-009",
+    "signImage": "/images/signs/sign-029.png",
+    "options": [
+      {"id": "opt-029-a", "label": "LA", "image": "/images/signs/sign-026.png"},
+      {"id": "opt-029-b", "label": "NA", "image": "/images/signs/sign-029.png"},
+      {"id": "opt-029-c", "label": "RA", "image": "/images/signs/sign-012.png"},
+      {"id": "opt-029-d", "label": "DA", "image": "/images/signs/sign-025.png"}
+    ],
+    "correctAnswer": "opt-029-b"
+  },
+  {
+    "id": "task-030",
+    "type": "sign_match",
+    "tabletId": "tablet-010",
+    "signImage": "/images/signs/sign-030.png",
+    "options": [
+      {"id": "opt-030-a", "label": "MU", "image": "/images/signs/sign-030.png"},
+      {"id": "opt-030-b", "label": "BU", "image": "/images/signs/sign-012.png"},
+      {"id": "opt-030-c", "label": "GU", "image": "/images/signs/sign-020.png"},
+      {"id": "opt-030-d", "label": "TU", "image": "/images/signs/sign-050.png"}
+    ],
+    "correctAnswer": "opt-030-a"
+  },
+  {
+    "id": "task-031",
+    "type": "sign_match",
+    "tabletId": "tablet-001",
+    "signImage": "/images/signs/sign-031.png",
+    "options": [
+      {"id": "opt-031-a", "label": "AN", "image": "/images/signs/sign-003.png"},
+      {"id": "opt-031-b", "label": "EN", "image": "/images/signs/sign-017.png"},
+      {"id": "opt-031-c", "label": "IN", "image": "/images/signs/sign-031.png"},
+      {"id": "opt-031-d", "label": "UN", "image": "/images/signs/sign-044.png"}
+    ],
+    "correctAnswer": "opt-031-c"
+  },
+  {
+    "id": "task-032",
+    "type": "sign_match",
+    "tabletId": "tablet-002",
+    "signImage": "/images/signs/sign-032.png",
+    "options": [
+      {"id": "opt-032-a", "label": "MU", "image": "/images/signs/sign-030.png"},
+      {"id": "opt-032-b", "label": "NU", "image": "/images/signs/sign-032.png"},
+      {"id": "opt-032-c", "label": "GU", "image": "/images/signs/sign-020.png"},
+      {"id": "opt-032-d", "label": "TU", "image": "/images/signs/sign-050.png"}
+    ],
+    "correctAnswer": "opt-032-b"
+  },
+  {
+    "id": "task-033",
+    "type": "sign_match",
+    "tabletId": "tablet-003",
+    "signImage": "/images/signs/sign-033.png",
+    "options": [
+      {"id": "opt-033-a", "label": "RI", "image": "/images/signs/sign-033.png"},
+      {"id": "opt-033-b", "label": "LA", "image": "/images/signs/sign-026.png"},
+      {"id": "opt-033-c", "label": "NA", "image": "/images/signs/sign-029.png"},
+      {"id": "opt-033-d", "label": "DA", "image": "/images/signs/sign-025.png"}
+    ],
+    "correctAnswer": "opt-033-a"
+  },
+  {
+    "id": "task-034",
+    "type": "sign_match",
+    "tabletId": "tablet-004",
+    "signImage": "/images/signs/sign-034.png",
+    "options": [
+      {"id": "opt-034-a", "label": "KUR", "image": "/images/signs/sign-034.png"},
+      {"id": "opt-034-b", "label": "GAL", "image": "/images/signs/sign-015.png"},
+      {"id": "opt-034-c", "label": "UR", "image": "/images/signs/sign-001.png"},
+      {"id": "opt-034-d", "label": "GI", "image": "/images/signs/sign-042.png"}
+    ],
+    "correctAnswer": "opt-034-a"
+  },
+  {
+    "id": "task-035",
+    "type": "sign_match",
+    "tabletId": "tablet-005",
+    "signImage": "/images/signs/sign-035.png",
+    "options": [
+      {"id": "opt-035-a", "label": "ZU", "image": "/images/signs/sign-047.png"},
+      {"id": "opt-035-b", "label": "SAG", "image": "/images/signs/sign-005.png"},
+      {"id": "opt-035-c", "label": "SAL", "image": "/images/signs/sign-035.png"},
+      {"id": "opt-035-d", "label": "SAR", "image": "/images/signs/sign-036.png"}
+    ],
+    "correctAnswer": "opt-035-c"
+  },
+  {
+    "id": "task-036",
+    "type": "sign_match",
+    "tabletId": "tablet-006",
+    "signImage": "/images/signs/sign-036.png",
+    "options": [
+      {"id": "opt-036-a", "label": "ZU", "image": "/images/signs/sign-047.png"},
+      {"id": "opt-036-b", "label": "SAG", "image": "/images/signs/sign-005.png"},
+      {"id": "opt-036-c", "label": "SAL", "image": "/images/signs/sign-035.png"},
+      {"id": "opt-036-d", "label": "SAR", "image": "/images/signs/sign-036.png"}
+    ],
+    "correctAnswer": "opt-036-d"
+  },
+  {
+    "id": "task-037",
+    "type": "sign_match",
+    "tabletId": "tablet-007",
+    "signImage": "/images/signs/sign-037.png",
+    "options": [
+      {"id": "opt-037-a", "label": "SU", "image": "/images/signs/sign-037.png"},
+      {"id": "opt-037-b", "label": "SA", "image": "/images/signs/sign-016.png"},
+      {"id": "opt-037-c", "label": "SI", "image": "/images/signs/sign-040.png"},
+      {"id": "opt-037-d", "label": "SE", "image": "/images/signs/sign-014.png"}
+    ],
+    "correctAnswer": "opt-037-a"
+  },
+  {
+    "id": "task-038",
+    "type": "sign_match",
+    "tabletId": "tablet-008",
+    "signImage": "/images/signs/sign-038.png",
+    "options": [
+      {"id": "opt-038-a", "label": "EG", "image": "/images/signs/sign-038.png"},
+      {"id": "opt-038-b", "label": "AG", "image": "/images/signs/sign-004.png"},
+      {"id": "opt-038-c", "label": "IG", "image": "/images/signs/sign-039.png"},
+      {"id": "opt-038-d", "label": "UG", "image": "/images/signs/sign-048.png"}
+    ],
+    "correctAnswer": "opt-038-a"
+  },
+  {
+    "id": "task-039",
+    "type": "sign_match",
+    "tabletId": "tablet-009",
+    "signImage": "/images/signs/sign-039.png",
+    "options": [
+      {"id": "opt-039-a", "label": "EG", "image": "/images/signs/sign-038.png"},
+      {"id": "opt-039-b", "label": "IG", "image": "/images/signs/sign-039.png"},
+      {"id": "opt-039-c", "label": "AG", "image": "/images/signs/sign-004.png"},
+      {"id": "opt-039-d", "label": "UG", "image": "/images/signs/sign-048.png"}
+    ],
+    "correctAnswer": "opt-039-b"
+  },
+  {
+    "id": "task-040",
+    "type": "sign_match",
+    "tabletId": "tablet-010",
+    "signImage": "/images/signs/sign-040.png",
+    "options": [
+      {"id": "opt-040-a", "label": "SA", "image": "/images/signs/sign-016.png"},
+      {"id": "opt-040-b", "label": "SI", "image": "/images/signs/sign-040.png"},
+      {"id": "opt-040-c", "label": "SU", "image": "/images/signs/sign-037.png"},
+      {"id": "opt-040-d", "label": "SE", "image": "/images/signs/sign-014.png"}
+    ],
+    "correctAnswer": "opt-040-b"
+  },
+  {
+    "id": "task-041",
+    "type": "sign_match",
+    "tabletId": "tablet-001",
+    "signImage": "/images/signs/sign-041.png",
+    "options": [
+      {"id": "opt-041-a", "label": "TUG", "image": "/images/signs/sign-049.png"},
+      {"id": "opt-041-b", "label": "KU", "image": "/images/signs/sign-046.png"},
+      {"id": "opt-041-c", "label": "NUN", "image": "/images/signs/sign-006.png"},
+      {"id": "opt-041-d", "label": "KUN", "image": "/images/signs/sign-041.png"}
+    ],
+    "correctAnswer": "opt-041-d"
+  },
+  {
+    "id": "task-042",
+    "type": "sign_match",
+    "tabletId": "tablet-002",
+    "signImage": "/images/signs/sign-042.png",
+    "options": [
+      {"id": "opt-042-a", "label": "KUR", "image": "/images/signs/sign-034.png"},
+      {"id": "opt-042-b", "label": "GAL", "image": "/images/signs/sign-015.png"},
+      {"id": "opt-042-c", "label": "UR", "image": "/images/signs/sign-001.png"},
+      {"id": "opt-042-d", "label": "GI", "image": "/images/signs/sign-042.png"}
+    ],
+    "correctAnswer": "opt-042-d"
+  },
+  {
+    "id": "task-043",
+    "type": "sign_match",
+    "tabletId": "tablet-003",
+    "signImage": "/images/signs/sign-043.png",
+    "options": [
+      {"id": "opt-043-a", "label": "GAN", "image": "/images/signs/sign-010.png"},
+      {"id": "opt-043-b", "label": "KAN", "image": "/images/signs/sign-043.png"},
+      {"id": "opt-043-c", "label": "TAN", "image": "/images/signs/sign-019.png"},
+      {"id": "opt-043-d", "label": "PAN", "image": "/images/signs/sign-011.png"}
+    ],
+    "correctAnswer": "opt-043-b"
+  },
+  {
+    "id": "task-044",
+    "type": "sign_match",
+    "tabletId": "tablet-004",
+    "signImage": "/images/signs/sign-044.png",
+    "options": [
+      {"id": "opt-044-a", "label": "AN", "image": "/images/signs/sign-003.png"},
+      {"id": "opt-044-b", "label": "EN", "image": "/images/signs/sign-017.png"},
+      {"id": "opt-044-c", "label": "IN", "image": "/images/signs/sign-031.png"},
+      {"id": "opt-044-d", "label": "UN", "image": "/images/signs/sign-044.png"}
+    ],
+    "correctAnswer": "opt-044-d"
+  },
+  {
+    "id": "task-045",
+    "type": "sign_match",
+    "tabletId": "tablet-005",
+    "signImage": "/images/signs/sign-045.png",
+    "options": [
+      {"id": "opt-045-a", "label": "LI", "image": "/images/signs/sign-021.png"},
+      {"id": "opt-045-b", "label": "GI", "image": "/images/signs/sign-042.png"},
+      {"id": "opt-045-c", "label": "GAL", "image": "/images/signs/sign-015.png"},
+      {"id": "opt-045-d", "label": "TI", "image": "/images/signs/sign-045.png"}
+    ],
+    "correctAnswer": "opt-045-d"
+  },
+  {
+    "id": "task-046",
+    "type": "sign_match",
+    "tabletId": "tablet-006",
+    "signImage": "/images/signs/sign-046.png",
+    "options": [
+      {"id": "opt-046-a", "label": "TUG", "image": "/images/signs/sign-049.png"},
+      {"id": "opt-046-b", "label": "KU", "image": "/images/signs/sign-046.png"},
+      {"id": "opt-046-c", "label": "NUN", "image": "/images/signs/sign-006.png"},
+      {"id": "opt-046-d", "label": "KUN", "image": "/images/signs/sign-041.png"}
+    ],
+    "correctAnswer": "opt-046-b"
+  },
+  {
+    "id": "task-047",
+    "type": "sign_match",
+    "tabletId": "tablet-007",
+    "signImage": "/images/signs/sign-047.png",
+    "options": [
+      {"id": "opt-047-a", "label": "ZU", "image": "/images/signs/sign-047.png"},
+      {"id": "opt-047-b", "label": "SAG", "image": "/images/signs/sign-005.png"},
+      {"id": "opt-047-c", "label": "SAL", "image": "/images/signs/sign-035.png"},
+      {"id": "opt-047-d", "label": "SAR", "image": "/images/signs/sign-036.png"}
+    ],
+    "correctAnswer": "opt-047-a"
+  },
+  {
+    "id": "task-048",
+    "type": "sign_match",
+    "tabletId": "tablet-008",
+    "signImage": "/images/signs/sign-048.png",
+    "options": [
+      {"id": "opt-048-a", "label": "EG", "image": "/images/signs/sign-038.png"},
+      {"id": "opt-048-b", "label": "AG", "image": "/images/signs/sign-004.png"},
+      {"id": "opt-048-c", "label": "IG", "image": "/images/signs/sign-039.png"},
+      {"id": "opt-048-d", "label": "UG", "image": "/images/signs/sign-048.png"}
+    ],
+    "correctAnswer": "opt-048-d"
+  },
+  {
+    "id": "task-049",
+    "type": "sign_match",
+    "tabletId": "tablet-009",
+    "signImage": "/images/signs/sign-049.png",
+    "options": [
+      {"id": "opt-049-a", "label": "TUG", "image": "/images/signs/sign-049.png"},
+      {"id": "opt-049-b", "label": "KU", "image": "/images/signs/sign-046.png"},
+      {"id": "opt-049-c", "label": "NUN", "image": "/images/signs/sign-006.png"},
+      {"id": "opt-049-d", "label": "KUN", "image": "/images/signs/sign-041.png"}
+    ],
+    "correctAnswer": "opt-049-a"
+  },
+  {
+    "id": "task-050",
+    "type": "sign_match",
+    "tabletId": "tablet-010",
+    "signImage": "/images/signs/sign-050.png",
+    "options": [
+      {"id": "opt-050-a", "label": "DU", "image": "/images/signs/sign-007.png"},
+      {"id": "opt-050-b", "label": "TU", "image": "/images/signs/sign-050.png"},
+      {"id": "opt-050-c", "label": "GU", "image": "/images/signs/sign-020.png"},
+      {"id": "opt-050-d", "label": "BU", "image": "/images/signs/sign-012.png"}
+    ],
+    "correctAnswer": "opt-050-b"
+  }
+]

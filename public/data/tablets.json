@@ -1,0 +1,122 @@
+[
+  {
+    "id": "tablet-001",
+    "cdli_id": "P005377",
+    "museum_number": "VAT 5018",
+    "period": "Ur III",
+    "genre": "Administrative",
+    "images": {
+      "obverse": "/images/tablets/tablet-001-obverse.jpg",
+      "reverse": "/images/tablets/tablet-001-reverse.jpg"
+    },
+    "transcription_status": "untranscribed"
+  },
+  {
+    "id": "tablet-002",
+    "cdli_id": "P010012",
+    "museum_number": "CBS 8248",
+    "period": "Old Babylonian",
+    "genre": "Legal Document",
+    "images": {
+      "obverse": "/images/tablets/tablet-002-obverse.jpg",
+      "reverse": "/images/tablets/tablet-002-reverse.jpg"
+    },
+    "transcription_status": "in_progress"
+  },
+  {
+    "id": "tablet-003",
+    "cdli_id": "P001251",
+    "museum_number": "BM 76494",
+    "period": "Neo-Assyrian",
+    "genre": "Royal Inscription",
+    "images": {
+      "obverse": "/images/tablets/tablet-003-obverse.jpg",
+      "reverse": "/images/tablets/tablet-003-reverse.jpg"
+    },
+    "transcription_status": "verified"
+  },
+  {
+    "id": "tablet-004",
+    "cdli_id": "P002878",
+    "museum_number": "UET 3/1 50",
+    "period": "Ur III",
+    "genre": "Administrative",
+    "images": {
+      "obverse": "/images/tablets/tablet-004-obverse.jpg",
+      "reverse": "/images/tablets/tablet-004-reverse.jpg"
+    },
+    "transcription_status": "untranscribed"
+  },
+  {
+    "id": "tablet-005",
+    "cdli_id": "P003512",
+    "museum_number": "YBC 4645",
+    "period": "Old Babylonian",
+    "genre": "Literary Work",
+    "images": {
+      "obverse": "/images/tablets/tablet-005-obverse.jpg",
+      "reverse": "/images/tablets/tablet-005-reverse.jpg"
+    },
+    "transcription_status": "verified"
+  },
+  {
+    "id": "tablet-006",
+    "cdli_id": "P008725",
+    "museum_number": "A 7638",
+    "period": "Neo-Babylonian",
+    "genre": "Temple Economy",
+    "images": {
+      "obverse": "/images/tablets/tablet-006-obverse.jpg",
+      "reverse": "/images/tablets/tablet-006-reverse.jpg"
+    },
+    "transcription_status": "in_progress"
+  },
+  {
+    "id": "tablet-007",
+    "cdli_id": "P004156",
+    "museum_number": "M 08566",
+    "period": "Akkadian Empire",
+    "genre": "Administrative",
+    "images": {
+      "obverse": "/images/tablets/tablet-007-obverse.jpg",
+      "reverse": "/images/tablets/tablet-007-reverse.jpg"
+    },
+    "transcription_status": "verified"
+  },
+  {
+    "id": "tablet-008",
+    "cdli_id": "P006789",
+    "museum_number": "IM 29467",
+    "period": "Old Babylonian",
+    "genre": "Personal Correspondence",
+    "images": {
+      "obverse": "/images/tablets/tablet-008-obverse.jpg",
+      "reverse": "/images/tablets/tablet-008-reverse.jpg"
+    },
+    "transcription_status": "untranscribed"
+  },
+  {
+    "id": "tablet-009",
+    "cdli_id": "P001834",
+    "museum_number": "Ash 1923-422",
+    "period": "Neo-Assyrian",
+    "genre": "Correspondence",
+    "images": {
+      "obverse": "/images/tablets/tablet-009-obverse.jpg",
+      "reverse": "/images/tablets/tablet-009-reverse.jpg"
+    },
+    "transcription_status": "in_progress"
+  },
+  {
+    "id": "tablet-010",
+    "cdli_id": "P003945",
+    "museum_number": "MS 1924/203",
+    "period": "Ur III",
+    "genre": "Votive Inscription",
+    "images": {
+      "obverse": "/images/tablets/tablet-010-obverse.jpg",
+      "reverse": "/images/tablets/tablet-010-reverse.jpg"
+    },
+    "transcription_status": "verified"
+  }
+]
