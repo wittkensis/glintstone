@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glintstone Brand Identity Proposals - V2 (Refined)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0A0E13;
+            color: #E8EAED;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1A1108 0%, #0D1B2A 100%);
+            color: white;
+            padding: 60px 40px;
+            margin-bottom: 60px;
+            border-radius: 12px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(212, 168, 67, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 209, 102, 0.02) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .comparison-nav {
+            position: sticky;
+            top: 20px;
+            background: #151A22;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            margin-bottom: 40px;
+            z-index: 100;
+            border: 1px solid rgba(212, 168, 67, 0.1);
+        }
+
+        .comparison-nav h3 {
+            margin-bottom: 16px;
+            font-size: 18px;
+            color: #D4A843;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            padding: 10px 20px;
+            background: rgba(212, 168, 67, 0.1);
+            text-decoration: none;
+            color: #D4A843;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 1px solid rgba(212, 168, 67, 0.2);
+        }
+
+        .nav-links a:hover {
+            background: rgba(212, 168, 67, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .proposal {
+            background: #151A22;
+            border-radius: 16px;
+            padding: 50px;
+            margin-bottom: 60px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .proposal-header {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 3px solid rgba(212, 168, 67, 0.2);
+        }
+
+        .proposal-name {
+            font-family: Georgia, serif;
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .proposal-tagline {
+            font-size: 20px;
+            color: #A8B0B8;
+            margin-bottom: 20px;
+        }
+
+        .proposal-badges {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-family: Georgia, serif;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #D4A843;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .color-swatch {
+            text-align: center;
+        }
+
+        .color-box {
+            height: 100px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: flex-end;
+            padding: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .color-name {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #E8EAED;
+        }
+
+        .color-hex {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #A8B0B8;
+        }
+
+        .typography-demo {
+            padding: 30px;
+            background: rgba(212, 168, 67, 0.05);
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(212, 168, 67, 0.1);
+        }
+
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .component-demo {
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .component-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #A8B0B8;
+            margin-bottom: 16px;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .pros, .cons {
+            padding: 30px;
+            border-radius: 12px;
+        }
+
+        .pros {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10b981;
+        }
+
+        .cons {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+        }
+
+        .pros h4, .cons h4 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #E8EAED;
+        }
+
+        .pros ul, .cons ul {
+            list-style: none;
+        }
+
+        .pros li, .cons li {
+            padding-left: 24px;
+            margin-bottom: 12px;
+            position: relative;
+            color: #D1D5D9;
+        }
+
+        .pros li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: 700;
+        }
+
+        .cons li:before {
+            content: "×";
+            position: absolute;
+            left: 0;
+            color: #ef4444;
+            font-weight: 700;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .card {
+            padding: 24px;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .input {
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 16px;
+            width: 100%;
+            font-family: inherit;
+        }
+
+        /* Texture patterns */
+        .clay-texture {
+            background-image:
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+        }
+
+        .subtle-noise {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><filter id="noise"><feTurbulence baseFrequency="0.9" numOctaves="4" /></filter><rect width="300" height="300" filter="url(%23noise)" opacity="0.05"/></svg>');
+        }
+
+        @media (max-width: 768px) {
+            .pros-cons {
+                grid-template-columns: 1fr;
+            }
+
+            .component-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .proposal {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Glintstone Brand Identity: Refined Direction</h1>
+            <p class="subtitle">Three new proposals combining warmth with edge, optimized for dark mode with tactile, textured interfaces. Each balances Mesopotamian authenticity with contemporary sophistication.</p>
+        </header>
+
+        <div class="comparison-nav">
+            <h3>Jump to Proposal:</h3>
+            <div class="nav-links">
+                <a href="#ember">1. Ember in the Archive</a>
+                <a href="#midnight">2. Midnight Clay</a>
+                <a href="#fired">3. Fired Under Stars</a>
+            </div>
+        </div>
+
+        <!-- PROPOSAL 1: EMBER IN THE ARCHIVE -->
+        <div class="proposal" id="ember">
+            <div class="proposal-header">
+                <div class="proposal-name" style="color: #E89B5C;">1. Ember in the Archive</div>
+                <div class="proposal-tagline">"Warm light cutting through darkness, revealing ancient truths"</div>
+                <div class="proposal-badges">
+                    <span class="badge" style="background: linear-gradient(135deg, #C4845A 0%, #8B5E3C 100%); color: white;">Warm Edge</span>
+                    <span class="badge" style="background: rgba(232, 155, 92, 0.2); color: #E89B5C; border: 1px solid #E89B5C;">Dark-First Design</span>
+                    <span class="badge" style="background: rgba(255, 209, 102, 0.2); color: #FFD166; border: 1px solid #FFD166;">Tactile & Textured</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Concept</h3>
+                <p style="color: #D1D5D9; font-size: 16px; line-height: 1.7; margin-bottom: 20px;">
+                    This direction merges the warmth of terracotta and firelight with the sophistication of a dark, modern interface. Think of holding a clay tablet in a dimly lit archive, where amber lamplight catches its surface texture. The UI feels substantial and tactile - buttons are embossed like impressed cuneiform, surfaces have subtle grain, and the color palette glows like coals in darkness.
+                </p>
+                <p style="color: #A8B0B8; font-size: 15px; line-height: 1.7;">
+                    <strong style="color: #E89B5C;">Best For:</strong> Users who want scholarly warmth without sacrificing contemporary edge. The dark background reduces eye strain during long work sessions while the warm accents maintain emotional connection to the physical artifacts.
+                </p>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Color Palette</h3>
+                <div class="color-palette">
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #0F0E0C; color: #E89B5C;">#0F0E0C</div>
+                        <div class="color-name">Archive Black</div>
+                        <div class="color-hex">Base Background</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #1A1612; color: #E89B5C;">#1A1612</div>
+                        <div class="color-name">Deep Clay</div>
+                        <div class="color-hex">Elevated Surfaces</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #E89B5C; color: #0F0E0C;">#E89B5C</div>
+                        <div class="color-name">Ember Glow</div>
+                        <div class="color-hex">Primary Accent</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #C4845A; color: white;">#C4845A</div>
+                        <div class="color-name">Fired Terracotta</div>
+                        <div class="color-hex">Buttons & Actions</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #FFD166; color: #0F0E0C;">#FFD166</div>
+                        <div class="color-name">Flame Gold</div>
+                        <div class="color-hex">Highlights & Stars</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #2D2621; color: #E89B5C;">#2D2621</div>
+                        <div class="color-name">Charcoal Brown</div>
+                        <div class="color-hex">Secondary Surfaces</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #E8D5C4; color: #0F0E0C;">#E8D5C4</div>
+                        <div class="color-name">Parchment</div>
+                        <div class="color-hex">Primary Text</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #998979; color: white;">#998979</div>
+                        <div class="color-name">Stone Dust</div>
+                        <div class="color-hex">Secondary Text</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #7FA37A; color: white;">#7FA37A</div>
+                        <div class="color-name">Ancient Copper</div>
+                        <div class="color-hex">Success States</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #D4763B; color: white;">#D4763B</div>
+                        <div class="color-name">Warning Flame</div>
+                        <div class="color-hex">Alerts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Typography</h3>
+                <div class="typography-demo" style="background: #1A1612;">
+                    <div style="font-family: Georgia, serif; font-size: 40px; font-weight: 700; color: #E89B5C; margin-bottom: 20px;">
+                        Eczar for Display Headers
+                    </div>
+                    <div style="font-family: Georgia, serif; font-size: 24px; font-weight: 600; color: #C4845A; margin-bottom: 20px;">
+                        Source Serif for Section Titles
+                    </div>
+                    <div style="font-family: -apple-system, sans-serif; font-size: 16px; color: #E8D5C4; line-height: 1.7; margin-bottom: 16px;">
+                        Inter for body text maintains excellent readability on dark backgrounds. The neutral character doesn't compete with the expressive serif headers, while still providing warmth through careful weight selection (450-500 for body).
+                    </div>
+                    <div style="font-family: 'Courier New', monospace; font-size: 15px; color: #998979; line-height: 1.6;">
+                        JetBrains Mono for transliteration: šar-ru-ki-in LUGAL KUR aš-šur<br>
+                        Clear character distinction essential for cuneiform accuracy.
+                    </div>
+                </div>
+                <p style="color: #A8B0B8; font-size: 14px; margin-top: 12px;">
+                    <strong>Key Decision:</strong> Eczar brings sharp, angular serifs that echo cuneiform wedges. Used at display sizes only. Source Serif 4 provides warmth without italic styling for all other headings.
+                </p>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Component Examples with Tactile Texture</h3>
+                <div class="component-grid">
+                    <div class="component-demo" style="background: #1A1612;">
+                        <div class="component-label">Primary Button (Clay Tablet Feel)</div>
+                        <button class="btn clay-texture" style="
+                            background: linear-gradient(145deg, #C4845A 0%, #A86D48 100%);
+                            color: #0F0E0C;
+                            box-shadow:
+                                inset 1px 1px 2px rgba(232, 155, 92, 0.4),
+                                inset -1px -1px 2px rgba(0, 0, 0, 0.3),
+                                0 4px 12px rgba(0, 0, 0, 0.5);
+                            font-weight: 700;
+                            border: 1px solid rgba(232, 155, 92, 0.2);
+                        ">
+                            Begin Transcription
+                        </button>
+                        <p style="color: #998979; font-size: 13px; margin-top: 12px;">
+                            Embossed with clay texture pattern. Shadows create impression depth.
+                        </p>
+                    </div>
+
+                    <div class="component-demo" style="background: #1A1612;">
+                        <div class="component-label">Secondary Button (Inscribed)</div>
+                        <button class="btn" style="
+                            background: transparent;
+                            border: 2px solid #C4845A;
+                            color: #E89B5C;
+                            box-shadow:
+                                inset 0 0 12px rgba(196, 132, 90, 0.1),
+                                0 0 20px rgba(196, 132, 90, 0.1);
+                        ">
+                            View Archive
+                        </button>
+                        <p style="color: #998979; font-size: 13px; margin-top: 12px;">
+                            Glowing border suggests candlelight on tablet edges.
+                        </p>
+                    </div>
+
+                    <div class="component-demo" style="background: #1A1612;">
+                        <div class="component-label">Card with Surface Texture</div>
+                        <div class="card subtle-noise" style="
+                            background: linear-gradient(135deg, #2D2621 0%, #1A1612 100%);
+                            border: 1px solid rgba(232, 155, 92, 0.15);
+                            box-shadow:
+                                0 8px 32px rgba(0, 0, 0, 0.6),
+                                inset 0 1px 0 rgba(232, 155, 92, 0.1);
+                        ">
+                            <div style="color: #E89B5C; font-weight: 700; font-size: 16px; margin-bottom: 8px; font-family: Georgia, serif;">
+                                Tablet #BM-45321
+                            </div>
+                            <div style="color: #E8D5C4; font-size: 14px; margin-bottom: 12px;">
+                                Neo-Assyrian Royal Inscription
+                            </div>
+                            <div style="display: flex; gap: 12px; margin-top: 16px;">
+                                <span style="padding: 4px 12px; background: rgba(127, 163, 122, 0.2); color: #7FA37A; border-radius: 12px; font-size: 12px; border: 1px solid rgba(127, 163, 122, 0.3);">
+                                    Verified
+                                </span>
+                                <span style="padding: 4px 12px; background: rgba(255, 209, 102, 0.2); color: #FFD166; border-radius: 12px; font-size: 12px; border: 1px solid rgba(255, 209, 102, 0.3);">
+                                    85% Confidence
+                                </span>
+                            </div>
+                        </div>
+                        <p style="color: #998979; font-size: 13px; margin-top: 12px;">
+                            Subtle noise texture simulates clay surface. Gradient adds dimensionality.
+                        </p>
+                    </div>
+
+                    <div class="component-demo" style="background: #1A1612;">
+                        <div class="component-label">Input Field (Impressed Surface)</div>
+                        <input type="text" class="input clay-texture" placeholder="Search tablets..." style="
+                            background: linear-gradient(165deg, #0F0E0C 0%, #1A1612 100%);
+                            border: 2px solid rgba(196, 132, 90, 0.3);
+                            color: #E8D5C4;
+                            box-shadow:
+                                inset 2px 2px 4px rgba(0, 0, 0, 0.6),
+                                inset -1px -1px 2px rgba(232, 155, 92, 0.05);
+                        ">
+                        <p style="color: #998979; font-size: 13px; margin-top: 12px;">
+                            Inset shadow creates "impressed into clay" feel. Focus adds warm glow.
+                        </p>
+                    </div>
+
+                    <div class="component-demo" style="background: #1A1612;">
+                        <div class="component-label">Navigation Element</div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <a href="#" style="
+                                display: block;
+                                padding: 12px 16px;
+                                background: rgba(196, 132, 90, 0.15);
+                                border-left: 3px solid #E89B5C;
+                                color: #E8D5C4;
+                                text-decoration: none;
+                                border-radius: 4px;
+                                font-weight: 600;
+                                box-shadow: inset 0 0 12px rgba(232, 155, 92, 0.1);
+                            ">
+                                Dashboard
+                            </a>
+                            <a href="#" style="
+                                display: block;
+                                padding: 12px 16px;
+                                color: #998979;
+                                text-decoration: none;
+                                border-radius: 4px;
+                            ">
+                                My Contributions
+                            </a>
+                            <a href="#" style="
+                                display: block;
+                                padding: 12px 16px;
+                                color: #998979;
+                                text-decoration: none;
+                                border-radius: 4px;
+                            ">
+                                Archive
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="component-demo" style="background: #1A1612;">
+                        <div class="component-label">Progress Indicator</div>
+                        <div style="margin-bottom: 8px; color: #E8D5C4; font-size: 14px; display: flex; justify-content: space-between;">
+                            <span>Transcription Progress</span>
+                            <span style="color: #E89B5C; font-weight: 600;">73%</span>
+                        </div>
+                        <div style="
+                            height: 12px;
+                            background: #0F0E0C;
+                            border-radius: 6px;
+                            overflow: hidden;
+                            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+                            border: 1px solid rgba(196, 132, 90, 0.2);
+                        ">
+                            <div style="
+                                height: 100%;
+                                width: 73%;
+                                background: linear-gradient(90deg, #C4845A 0%, #E89B5C 50%, #FFD166 100%);
+                                box-shadow: 0 0 12px rgba(232, 155, 92, 0.5);
+                                border-radius: 6px;
+                            "></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Texture & Surface Treatment</h3>
+                <div style="background: #1A1612; padding: 30px; border-radius: 12px; border: 1px solid rgba(232, 155, 92, 0.15);">
+                    <p style="color: #E8D5C4; margin-bottom: 20px; line-height: 1.7;">
+                        <strong style="color: #E89B5C;">Texture Strategy:</strong> All interactive elements incorporate subtle texture patterns inspired by clay surfaces. This creates tactile feedback even in a digital space.
+                    </p>
+                    <ul style="color: #D1D5D9; line-height: 1.8; list-style: none; padding-left: 0;">
+                        <li style="margin-bottom: 12px; padding-left: 28px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #E89B5C; font-weight: 700;">▸</span>
+                            <strong>Buttons:</strong> Cross-hatch pattern mimics tablet surface, embossed shadows suggest physical depth
+                        </li>
+                        <li style="margin-bottom: 12px; padding-left: 28px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #E89B5C; font-weight: 700;">▸</span>
+                            <strong>Cards:</strong> Subtle noise texture at 3-5% opacity creates organic feel without distraction
+                        </li>
+                        <li style="margin-bottom: 12px; padding-left: 28px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #E89B5C; font-weight: 700;">▸</span>
+                            <strong>Inputs:</strong> Inset shadows create "impressed" feeling, as if typing into wet clay
+                        </li>
+                        <li style="margin-bottom: 12px; padding-left: 28px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #E89B5C; font-weight: 700;">▸</span>
+                            <strong>Backgrounds:</strong> Gentle gradients suggest uneven clay firing, adding warmth and depth
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h4>Strengths</h4>
+                    <ul>
+                        <li>Perfect balance of warmth and contemporary edge</li>
+                        <li>Dark mode reduces eye strain during extended sessions</li>
+                        <li>Tactile textures create emotional connection to artifacts</li>
+                        <li>Ember/flame metaphor creates sense of discovery</li>
+                        <li>Strong differentiation from generic dark interfaces</li>
+                        <li>Warm accents prevent "cold tech" feel</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h4>Challenges</h4>
+                    <ul>
+                        <li>Textures must be subtle to avoid visual noise</li>
+                        <li>Requires careful contrast testing for accessibility</li>
+                        <li>May need light mode alternative for some contexts</li>
+                        <li>Implementation complexity higher due to texture details</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROPOSAL 2: MIDNIGHT CLAY -->
+        <div class="proposal" id="midnight">
+            <div class="proposal-header">
+                <div class="proposal-name" style="color: #A8896F;">2. Midnight Clay</div>
+                <div class="proposal-tagline">"Where earth meets cosmos - tablets inscribed under starlight"</div>
+                <div class="proposal-badges">
+                    <span class="badge" style="background: linear-gradient(135deg, #2A231D 0%, #161310 100%); color: #A8896F;">Grounded Cosmic</span>
+                    <span class="badge" style="background: rgba(168, 137, 111, 0.2); color: #A8896F; border: 1px solid #A8896F;">Cool-Warm Fusion</span>
+                    <span class="badge" style="background: rgba(124, 154, 198, 0.2); color: #7C9AC6; border: 1px solid #7C9AC6;">Sophisticated Dark</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Concept</h3>
+                <p style="color: #D1D5D9; font-size: 16px; line-height: 1.7; margin-bottom: 20px;">
+                    This direction cools down the warmth slightly, introducing a sophisticated balance between earthen clay tones and twilight blues. Imagine studying tablets in the cooling evening, when the sun has set but the clay still retains warmth from the day. The palette is more restrained and elegant, with texture used even more sparingly for a refined feel.
+                </p>
+                <p style="color: #A8B0B8; font-size: 15px; line-height: 1.7;">
+                    <strong style="color: #A8896F;">Best For:</strong> Academic users and professionals who appreciate warmth but prefer restraint. The cooler tones add credibility while maintaining material authenticity. Perfect for integration contexts where sophistication is paramount.
+                </p>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Color Palette</h3>
+                <div class="color-palette">
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #0E0D0B; color: #A8896F;">#0E0D0B</div>
+                        <div class="color-name">Deep Night</div>
+                        <div class="color-hex">Base Background</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #1A1814; color: #A8896F;">#1A1814</div>
+                        <div class="color-name">Stone Shadow</div>
+                        <div class="color-hex">Elevated Surfaces</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #A8896F; color: #0E0D0B;">#A8896F</div>
+                        <div class="color-name">Aged Clay</div>
+                        <div class="color-hex">Primary Accent</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #7C9AC6; color: #0E0D0B;">#7C9AC6</div>
+                        <div class="color-name">Twilight Lapis</div>
+                        <div class="color-hex">Cool Accent</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #C9A876; color: #0E0D0B;">#C9A876</div>
+                        <div class="color-name">Desert Sand</div>
+                        <div class="color-hex">Highlights</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #2A231D; color: #A8896F;">#2A231D</div>
+                        <div class="color-name">Tablet Surface</div>
+                        <div class="color-hex">Secondary Surfaces</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #E5DDD3; color: #0E0D0B;">#E5DDD3</div>
+                        <div class="color-name">Limestone</div>
+                        <div class="color-hex">Primary Text</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #9A9388; color: white;">#9A9388</div>
+                        <div class="color-name">Weathered Stone</div>
+                        <div class="color-hex">Secondary Text</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #6B9B8F; color: white;">#6B9B8F</div>
+                        <div class="color-name">Bronze Patina</div>
+                        <div class="color-hex">Success</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #B8866F; color: white;">#B8866F</div>
+                        <div class="color-name">Sunset Warning</div>
+                        <div class="color-hex">Alerts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Typography</h3>
+                <div class="typography-demo" style="background: #1A1814;">
+                    <div style="font-family: Georgia, serif; font-size: 40px; font-weight: 700; color: #A8896F; margin-bottom: 20px;">
+                        Spectral for Elegant Headers
+                    </div>
+                    <div style="font-family: Georgia, serif; font-size: 24px; font-weight: 600; color: #7C9AC6; margin-bottom: 20px;">
+                        Source Serif for Subheadings
+                    </div>
+                    <div style="font-family: -apple-system, sans-serif; font-size: 16px; color: #E5DDD3; line-height: 1.7; margin-bottom: 16px;">
+                        Inter at 450 weight provides exceptional readability without heaviness. The slightly lighter weight than traditional body text creates elegance appropriate for extended reading sessions in scholarly contexts.
+                    </div>
+                    <div style="font-family: 'Courier New', monospace; font-size: 15px; color: #9A9388; line-height: 1.6;">
+                        IBM Plex Mono for transliteration: dingir-an-ki | heaven-earth
+                    </div>
+                </div>
+                <p style="color: #A8B0B8; font-size: 14px; margin-top: 12px;">
+                    <strong>Key Decision:</strong> Spectral is more refined than Eczar, with elegant proportions ideal for sophisticated academic presentation. No italics anywhere - weight and color create hierarchy.
+                </p>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Component Examples</h3>
+                <div class="component-grid">
+                    <div class="component-demo" style="background: #1A1814;">
+                        <div class="component-label">Primary Button</div>
+                        <button class="btn clay-texture" style="
+                            background: linear-gradient(145deg, #A8896F 0%, #8F7257 100%);
+                            color: #0E0D0B;
+                            box-shadow:
+                                inset 1px 1px 2px rgba(201, 168, 118, 0.3),
+                                inset -1px -1px 2px rgba(0, 0, 0, 0.4),
+                                0 4px 16px rgba(0, 0, 0, 0.6);
+                            font-weight: 700;
+                            border: 1px solid rgba(168, 137, 111, 0.3);
+                        ">
+                            Begin Analysis
+                        </button>
+                    </div>
+
+                    <div class="component-demo" style="background: #1A1814;">
+                        <div class="component-label">Secondary Button (Lapis Accent)</div>
+                        <button class="btn" style="
+                            background: transparent;
+                            border: 2px solid #7C9AC6;
+                            color: #7C9AC6;
+                            box-shadow:
+                                inset 0 0 12px rgba(124, 154, 198, 0.08),
+                                0 0 16px rgba(124, 154, 198, 0.15);
+                        ">
+                            View References
+                        </button>
+                    </div>
+
+                    <div class="component-demo" style="background: #1A1814;">
+                        <div class="component-label">Refined Card</div>
+                        <div class="card" style="
+                            background: linear-gradient(135deg, #2A231D 0%, #1A1814 100%);
+                            border: 1px solid rgba(168, 137, 111, 0.2);
+                            box-shadow:
+                                0 8px 32px rgba(0, 0, 0, 0.7),
+                                inset 0 1px 0 rgba(168, 137, 111, 0.08);
+                        ">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                                <div style="color: #A8896F; font-weight: 700; font-size: 16px; font-family: Georgia, serif;">
+                                    Tablet #BM-45321
+                                </div>
+                                <div style="padding: 4px 10px; background: rgba(124, 154, 198, 0.15); color: #7C9AC6; border-radius: 4px; font-size: 11px; font-weight: 600; border: 1px solid rgba(124, 154, 198, 0.25);">
+                                    VERIFIED
+                                </div>
+                            </div>
+                            <div style="color: #E5DDD3; font-size: 14px; margin-bottom: 8px;">
+                                Neo-Assyrian Administrative Document
+                            </div>
+                            <div style="color: #9A9388; font-size: 13px;">
+                                Nimrud | 8th century BCE
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="component-demo" style="background: #1A1814;">
+                        <div class="component-label">Input Field</div>
+                        <input type="text" class="input" placeholder="Search archive..." style="
+                            background: #0E0D0B;
+                            border: 1px solid rgba(168, 137, 111, 0.25);
+                            color: #E5DDD3;
+                            box-shadow:
+                                inset 2px 2px 4px rgba(0, 0, 0, 0.5);
+                        ">
+                    </div>
+
+                    <div class="component-demo" style="background: #1A1814;">
+                        <div class="component-label">Metric Display</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div style="
+                                padding: 16px;
+                                background: rgba(168, 137, 111, 0.08);
+                                border-radius: 8px;
+                                border: 1px solid rgba(168, 137, 111, 0.15);
+                            ">
+                                <div style="color: #9A9388; font-size: 12px; margin-bottom: 4px;">Contributions</div>
+                                <div style="color: #A8896F; font-size: 28px; font-weight: 700; font-family: Georgia, serif;">147</div>
+                            </div>
+                            <div style="
+                                padding: 16px;
+                                background: rgba(124, 154, 198, 0.08);
+                                border-radius: 8px;
+                                border: 1px solid rgba(124, 154, 198, 0.15);
+                            ">
+                                <div style="color: #9A9388; font-size: 12px; margin-bottom: 4px;">Accuracy</div>
+                                <div style="color: #7C9AC6; font-size: 28px; font-weight: 700; font-family: Georgia, serif;">94%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="component-demo" style="background: #1A1814;">
+                        <div class="component-label">Toggle Switch</div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="
+                                width: 48px;
+                                height: 26px;
+                                background: #A8896F;
+                                border-radius: 13px;
+                                position: relative;
+                                box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+                            ">
+                                <div style="
+                                    width: 20px;
+                                    height: 20px;
+                                    background: #E5DDD3;
+                                    border-radius: 50%;
+                                    position: absolute;
+                                    right: 3px;
+                                    top: 3px;
+                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+                                "></div>
+                            </div>
+                            <span style="color: #E5DDD3; font-size: 14px;">Show transliteration</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h4>Strengths</h4>
+                    <ul>
+                        <li>Most sophisticated and refined of the three options</li>
+                        <li>Cool-warm balance appeals to broader audience</li>
+                        <li>Excellent for professional/academic contexts</li>
+                        <li>Lapis blue accent honors historical authenticity</li>
+                        <li>Restrained texture approach reduces visual complexity</li>
+                        <li>Easier accessibility compliance with higher contrasts</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h4>Challenges</h4>
+                    <ul>
+                        <li>May feel slightly less warm than requested</li>
+                        <li>Blue accent could dilute "warmth with edge" direction</li>
+                        <li>Less emotionally immediate than "Ember"</li>
+                        <li>Risk of feeling too conservative</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROPOSAL 3: FIRED UNDER STARS -->
+        <div class="proposal" id="fired">
+            <div class="proposal-header">
+                <div class="proposal-name" style="color: #D4A564;">3. Fired Under Stars</div>
+                <div class="proposal-tagline">"Kilns glowing beneath cosmic darkness"</div>
+                <div class="proposal-badges">
+                    <span class="badge" style="background: linear-gradient(135deg, #D4A564 0%, #8B5E3C 100%); color: #0A0A0C;">Dramatic & Warm</span>
+                    <span class="badge" style="background: rgba(212, 165, 100, 0.2); color: #D4A564; border: 1px solid #D4A564;">Maximum Contrast</span>
+                    <span class="badge" style="background: rgba(255, 209, 102, 0.2); color: #FFD166; border: 1px solid #FFD166;">Bold Textures</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Concept</h3>
+                <p style="color: #D1D5D9; font-size: 16px; line-height: 1.7; margin-bottom: 20px;">
+                    The most dramatic direction - this takes the "warmth with edge" directive to its maximum. Against an almost-black background, warm golds and terracottas glow like fire. This is for users who want maximum visual impact, where the interface feels alive with heat and light. Textures are most prominent here, with clay grain visible on many surfaces.
+                </p>
+                <p style="color: #A8B0B8; font-size: 15px; line-height: 1.7;">
+                    <strong style="color: #D4A564;">Best For:</strong> Marketing contexts, hero sections, and users drawn to bold, memorable interfaces. The high contrast and warmth create immediate emotional impact while maintaining dark mode benefits. Most "Stargazer edge" with maximum "Illuminated warmth."
+                </p>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Color Palette</h3>
+                <div class="color-palette">
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #0A0A0C; color: #D4A564;">#0A0A0C</div>
+                        <div class="color-name">Cosmic Black</div>
+                        <div class="color-hex">Base Background</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #161310; color: #D4A564;">#161310</div>
+                        <div class="color-name">Kiln Shadow</div>
+                        <div class="color-hex">Elevated Surfaces</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #D4A564; color: #0A0A0C;">#D4A564</div>
+                        <div class="color-name">Kiln Gold</div>
+                        <div class="color-hex">Primary Accent</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #B8734C; color: white;">#B8734C</div>
+                        <div class="color-name">Hot Clay</div>
+                        <div class="color-hex">Buttons & Heat</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #FFD580; color: #0A0A0C;">#FFD580</div>
+                        <div class="color-name">Star Bright</div>
+                        <div class="color-hex">Highlights & Glow</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #8B5E3C; color: white;">#8B5E3C</div>
+                        <div class="color-name">Fired Earth</div>
+                        <div class="color-hex">Secondary Actions</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #F5E9DC; color: #0A0A0C;">#F5E9DC</div>
+                        <div class="color-name">Bright Parchment</div>
+                        <div class="color-hex">Primary Text</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #A89887; color: white;">#A89887</div>
+                        <div class="color-name">Ash</div>
+                        <div class="color-hex">Secondary Text</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #8FA876; color: white;">#8FA876</div>
+                        <div class="color-name">Fertile Valley</div>
+                        <div class="color-hex">Success</div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-box" style="background: #D86839; color: white;">#D86839</div>
+                        <div class="color-name">Fire Warning</div>
+                        <div class="color-hex">Alerts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Typography</h3>
+                <div class="typography-demo" style="background: #161310;">
+                    <div style="font-family: Georgia, serif; font-size: 40px; font-weight: 700; color: #D4A564; margin-bottom: 20px; text-shadow: 0 0 20px rgba(212, 165, 100, 0.3);">
+                        Bitter for Bold Headers
+                    </div>
+                    <div style="font-family: Georgia, serif; font-size: 24px; font-weight: 600; color: #B8734C; margin-bottom: 20px;">
+                        Source Serif for Hierarchy
+                    </div>
+                    <div style="font-family: -apple-system, sans-serif; font-size: 16px; color: #F5E9DC; line-height: 1.7; margin-bottom: 16px;">
+                        Inter at 500 weight provides robust readability against the dramatic background. The slightly heavier weight ensures text remains crisp and clear even when surrounded by glowing accent colors and textured surfaces.
+                    </div>
+                    <div style="font-family: 'Courier New', monospace; font-size: 15px; color: #A89887; line-height: 1.6;">
+                        JetBrains Mono: AN.GAL | great heaven | dingir gal
+                    </div>
+                </div>
+                <p style="color: #A8B0B8; font-size: 14px; margin-top: 12px;">
+                    <strong>Key Decision:</strong> Bitter brings strong, confident serifs with excellent contrast. The name itself evokes fired clay. Subtle text-shadow on display sizes adds "glow" effect.
+                </p>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Component Examples (Maximum Texture)</h3>
+                <div class="component-grid">
+                    <div class="component-demo" style="background: #161310;">
+                        <div class="component-label">Primary Button (Kiln-Fired)</div>
+                        <button class="btn clay-texture" style="
+                            background: linear-gradient(145deg, #D4A564 0%, #B8734C 100%);
+                            color: #0A0A0C;
+                            box-shadow:
+                                inset 2px 2px 4px rgba(255, 213, 128, 0.4),
+                                inset -2px -2px 4px rgba(139, 94, 60, 0.4),
+                                0 0 20px rgba(212, 165, 100, 0.4),
+                                0 6px 20px rgba(0, 0, 0, 0.6);
+                            font-weight: 700;
+                            border: 1px solid rgba(255, 213, 128, 0.3);
+                            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+                        ">
+                            Begin Journey
+                        </button>
+                        <p style="color: #A89887; font-size: 13px; margin-top: 12px;">
+                            Pronounced texture and glow effect. Feels hot to the touch.
+                        </p>
+                    </div>
+
+                    <div class="component-demo" style="background: #161310;">
+                        <div class="component-label">Ghost Button (Constellation)</div>
+                        <button class="btn" style="
+                            background: transparent;
+                            border: 2px solid #D4A564;
+                            color: #D4A564;
+                            box-shadow:
+                                inset 0 0 20px rgba(212, 165, 100, 0.1),
+                                0 0 30px rgba(212, 165, 100, 0.2),
+                                0 0 10px rgba(255, 213, 128, 0.3);
+                            text-shadow: 0 0 10px rgba(212, 165, 100, 0.5);
+                        ">
+                            Explore Archive
+                        </button>
+                        <p style="color: #A89887; font-size: 13px; margin-top: 12px;">
+                            Maximum glow effect creates starlight quality.
+                        </p>
+                    </div>
+
+                    <div class="component-demo" style="background: #161310;">
+                        <div class="component-label">Hero Card</div>
+                        <div class="card clay-texture subtle-noise" style="
+                            background:
+                                linear-gradient(135deg, rgba(212, 165, 100, 0.15) 0%, rgba(139, 94, 60, 0.1) 100%),
+                                linear-gradient(180deg, #161310 0%, #0A0A0C 100%);
+                            border: 2px solid rgba(212, 165, 100, 0.3);
+                            box-shadow:
+                                0 12px 48px rgba(0, 0, 0, 0.8),
+                                inset 0 2px 0 rgba(255, 213, 128, 0.1),
+                                0 0 40px rgba(212, 165, 100, 0.15);
+                        ">
+                            <div style="color: #FFD580; font-weight: 700; font-size: 18px; margin-bottom: 12px; font-family: Georgia, serif; text-shadow: 0 0 10px rgba(255, 213, 128, 0.4);">
+                                Tablet of Sargon II
+                            </div>
+                            <div style="color: #F5E9DC; font-size: 15px; margin-bottom: 16px; line-height: 1.6;">
+                                Royal inscription recording the conquest of Babylon. One of the most significant Neo-Assyrian historical documents.
+                            </div>
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                <span style="padding: 6px 14px; background: rgba(143, 168, 118, 0.25); color: #8FA876; border-radius: 14px; font-size: 12px; font-weight: 600; border: 1px solid rgba(143, 168, 118, 0.4); box-shadow: 0 0 10px rgba(143, 168, 118, 0.2);">
+                                    Fully Transcribed
+                                </span>
+                                <span style="padding: 6px 14px; background: rgba(212, 165, 100, 0.25); color: #D4A564; border-radius: 14px; font-size: 12px; font-weight: 600; border: 1px solid rgba(212, 165, 100, 0.4); box-shadow: 0 0 10px rgba(212, 165, 100, 0.2);">
+                                    721 BCE
+                                </span>
+                            </div>
+                        </div>
+                        <p style="color: #A89887; font-size: 13px; margin-top: 12px;">
+                            Layered textures, prominent glow, maximum visual impact.
+                        </p>
+                    </div>
+
+                    <div class="component-demo" style="background: #161310;">
+                        <div class="component-label">Search Input</div>
+                        <div style="position: relative;">
+                            <input type="text" class="input clay-texture" placeholder="Search 5,000 years of history..." style="
+                                background: linear-gradient(165deg, #0A0A0C 0%, #161310 100%);
+                                border: 2px solid rgba(212, 165, 100, 0.4);
+                                color: #F5E9DC;
+                                box-shadow:
+                                    inset 3px 3px 6px rgba(0, 0, 0, 0.7),
+                                    inset -1px -1px 3px rgba(212, 165, 100, 0.05),
+                                    0 0 20px rgba(212, 165, 100, 0.1);
+                            ">
+                            <div style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #D4A564; font-size: 18px;">⌕</div>
+                        </div>
+                        <p style="color: #A89887; font-size: 13px; margin-top: 12px;">
+                            Deep inset with warm border glow suggests depth.
+                        </p>
+                    </div>
+
+                    <div class="component-demo" style="background: #161310;">
+                        <div class="component-label">Glowing Navigation</div>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <a href="#" style="
+                                display: block;
+                                padding: 14px 18px;
+                                background: linear-gradient(90deg, rgba(212, 165, 100, 0.25) 0%, rgba(212, 165, 100, 0.05) 100%);
+                                border-left: 4px solid #D4A564;
+                                color: #F5E9DC;
+                                text-decoration: none;
+                                border-radius: 6px;
+                                font-weight: 600;
+                                box-shadow:
+                                    inset 0 0 20px rgba(212, 165, 100, 0.15),
+                                    0 0 15px rgba(212, 165, 100, 0.2);
+                            ">
+                                Dashboard
+                            </a>
+                            <a href="#" style="
+                                display: block;
+                                padding: 14px 18px;
+                                color: #A89887;
+                                text-decoration: none;
+                                border-radius: 6px;
+                                border-left: 4px solid transparent;
+                            ">
+                                My Tablets
+                            </a>
+                            <a href="#" style="
+                                display: block;
+                                padding: 14px 18px;
+                                color: #A89887;
+                                text-decoration: none;
+                                border-radius: 6px;
+                                border-left: 4px solid transparent;
+                            ">
+                                Archive
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="component-demo" style="background: #161310;">
+                        <div class="component-label">Achievement Badge</div>
+                        <div style="
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 12px;
+                            padding: 16px 24px;
+                            background: linear-gradient(135deg, rgba(212, 165, 100, 0.2) 0%, rgba(139, 94, 60, 0.15) 100%);
+                            border: 2px solid rgba(212, 165, 100, 0.4);
+                            border-radius: 12px;
+                            box-shadow:
+                                0 0 30px rgba(212, 165, 100, 0.3),
+                                inset 0 1px 0 rgba(255, 213, 128, 0.2);
+                        ">
+                            <div style="
+                                width: 48px;
+                                height: 48px;
+                                background: linear-gradient(135deg, #D4A564 0%, #FFD580 100%);
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 24px;
+                                box-shadow:
+                                    0 0 20px rgba(212, 165, 100, 0.6),
+                                    inset 0 2px 4px rgba(255, 255, 255, 0.3);
+                            ">★</div>
+                            <div>
+                                <div style="color: #F5E9DC; font-weight: 700; margin-bottom: 2px;">Master Scribe</div>
+                                <div style="color: #A89887; font-size: 13px;">100 tablets transcribed</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Dramatic Lighting & Effects</h3>
+                <div style="background: #161310; padding: 30px; border-radius: 12px; border: 2px solid rgba(212, 165, 100, 0.3); box-shadow: 0 0 30px rgba(212, 165, 100, 0.15);">
+                    <p style="color: #F5E9DC; margin-bottom: 20px; line-height: 1.7;">
+                        <strong style="color: #D4A564;">Effect Philosophy:</strong> This direction maximizes the "edge" through dramatic lighting effects while maintaining warmth through color. Every element glows as if lit from within.
+                    </p>
+                    <ul style="color: #D1D5D9; line-height: 1.8; list-style: none; padding-left: 0;">
+                        <li style="margin-bottom: 12px; padding-left: 28px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #D4A564; font-weight: 700;">▸</span>
+                            <strong>Box Shadows:</strong> Multiple layers create depth - inner highlights, outer glows, ambient light
+                        </li>
+                        <li style="margin-bottom: 12px; padding-left: 28px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #D4A564; font-weight: 700;">▸</span>
+                            <strong>Text Shadows:</strong> Subtle glows on headings suggest luminescence, especially on gold text
+                        </li>
+                        <li style="margin-bottom: 12px; padding-left: 28px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #D4A564; font-weight: 700;">▸</span>
+                            <strong>Gradients:</strong> Always directional, suggesting light source (usually warm to warmer)
+                        </li>
+                        <li style="margin-bottom: 12px; padding-left: 28px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #D4A564; font-weight: 700;">▸</span>
+                            <strong>Borders:</strong> Often glowing, creating "heated edge" effect like metal fresh from forge
+                        </li>
+                        <li style="margin-bottom: 12px; padding-left: 28px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #D4A564; font-weight: 700;">▸</span>
+                            <strong>Textures:</strong> Most visible here - clay grain, noise, and subtle patterns on all surfaces
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h4>Strengths</h4>
+                    <ul>
+                        <li>Maximum emotional impact and memorability</li>
+                        <li>Perfect balance of warmth (colors) and edge (darkness)</li>
+                        <li>Dramatic lighting creates sense of discovery and revelation</li>
+                        <li>Textures most prominent, creating strongest tactile feel</li>
+                        <li>Excellent for hero sections and marketing</li>
+                        <li>Glow effects suggest both fire and starlight</li>
+                        <li>Most distinctive and ownable visual identity</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h4>Challenges</h4>
+                    <ul>
+                        <li>May be too dramatic for extended work sessions</li>
+                        <li>Glow effects require careful implementation</li>
+                        <li>Could overwhelm in dense UI contexts</li>
+                        <li>Highest implementation complexity</li>
+                        <li>May need more restrained variant for app interior</li>
+                        <li>Accessibility requires careful contrast management</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPARISON SECTION -->
+        <div class="proposal" style="background: linear-gradient(135deg, #1A1612 0%, #0E0D0B 100%); border: 2px solid rgba(212, 168, 67, 0.3);">
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h2 style="font-family: Georgia, serif; font-size: 36px; color: #D4A843; margin-bottom: 16px;">
+                    Comparative Analysis
+                </h2>
+                <p style="color: #A8B0B8; font-size: 16px; max-width: 800px; margin: 0 auto;">
+                    All three proposals successfully merge warmth with edge in dark mode. Choose based on context, audience preference, and desired emotional intensity.
+                </p>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; color: #E8EAED;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid rgba(212, 168, 67, 0.3);">
+                            <th style="padding: 16px; text-align: left; color: #D4A843; font-family: Georgia, serif;">Criteria</th>
+                            <th style="padding: 16px; text-align: left; color: #E89B5C;">Ember in Archive</th>
+                            <th style="padding: 16px; text-align: left; color: #A8896F;">Midnight Clay</th>
+                            <th style="padding: 16px; text-align: left; color: #D4A564;">Fired Under Stars</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                            <td style="padding: 16px; font-weight: 600;">Warmth Level</td>
+                            <td style="padding: 16px; color: #D1D5D9;">High</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Medium-High</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Maximum</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                            <td style="padding: 16px; font-weight: 600;">Edge/Drama</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Medium</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Medium-High</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Maximum</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                            <td style="padding: 16px; font-weight: 600;">Texture Prominence</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Moderate</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Subtle</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Bold</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                            <td style="padding: 16px; font-weight: 600;">Best Context</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Extended work sessions</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Professional/academic</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Marketing/hero</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                            <td style="padding: 16px; font-weight: 600;">Accessibility</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Good</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Excellent</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Requires care</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                            <td style="padding: 16px; font-weight: 600;">Implementation</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Moderate</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Moderate</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Complex</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 16px; font-weight: 600;">Audience Fit</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Balanced</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Academic-leaning</td>
+                            <td style="padding: 16px; color: #D1D5D9;">Hobbyist-leaning</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 40px; padding: 30px; background: rgba(212, 165, 100, 0.1); border-radius: 12px; border: 1px solid rgba(212, 165, 100, 0.2);">
+                <h3 style="font-family: Georgia, serif; color: #D4A843; font-size: 24px; margin-bottom: 16px;">
+                    Recommendation
+                </h3>
+                <p style="color: #E8EAED; line-height: 1.7; margin-bottom: 16px;">
+                    <strong style="color: #D4A564;">Primary Direction: Ember in the Archive</strong> - This option best achieves the brief's goals with practical implementation. The warmth is present but controlled, the edge comes from the dark background, and the tactile textures create connection without overwhelming.
+                </p>
+                <p style="color: #D1D5D9; line-height: 1.7; margin-bottom: 16px;">
+                    <strong style="color: #A8896F;">Secondary Direction: Midnight Clay</strong> - Use this for professional/academic contexts where sophistication and credibility are paramount. The cooler tones and restrained approach work well for integration demos and formal presentations.
+                </p>
+                <p style="color: #D1D5D9; line-height: 1.7;">
+                    <strong style="color: #FFD580;">Marketing Direction: Fired Under Stars</strong> - Deploy this for hero sections, landing pages, and moments where maximum impact is needed. Scale back the drama for interior application screens while maintaining the color palette.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
