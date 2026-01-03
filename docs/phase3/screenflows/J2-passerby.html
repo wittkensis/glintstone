@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J2: Passerby First Contribution - Glintstone Wireframes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .page-header {
+            background: white;
+            border-bottom: 1px solid #ddd;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .page-header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .back-link {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .back-link:hover {
+            color: #333;
+        }
+
+        .page-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .page-meta {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .journey-header {
+            margin-bottom: 40px;
+        }
+
+        .journey-badge {
+            display: inline-block;
+            background: #c00;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .journey-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 8px;
+        }
+
+        .journey-description {
+            font-size: 1rem;
+            color: #666;
+            max-width: 600px;
+        }
+
+        .journey-stats {
+            display: flex;
+            gap: 32px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .screen-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .screen-nav-btn {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .screen-nav-btn:hover {
+            border-color: #999;
+        }
+
+        .screen-nav-btn.active {
+            background: #333;
+            color: white;
+            border-color: #333;
+        }
+
+        .screen-section {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+
+        .screen-header {
+            background: #fafafa;
+            border-bottom: 1px solid #ddd;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .screen-number {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .screen-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #222;
+            margin-top: 4px;
+        }
+
+        .screen-goal {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .screen-meta {
+            text-align: right;
+        }
+
+        .screen-id {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #888;
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+
+        .wireframe-container {
+            padding: 32px;
+            background: #fafafa;
+            display: flex;
+            justify-content: center;
+        }
+
+        .wireframe {
+            background: white;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 500px;
+            min-height: 500px;
+        }
+
+        .wireframe.wide {
+            max-width: 700px;
+        }
+
+        /* Wireframe components */
+        .wf-progress-bar {
+            background: #e8e8e8;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .wf-progress-track {
+            flex: 1;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            margin: 0 16px;
+            overflow: hidden;
+        }
+
+        .wf-progress-fill {
+            height: 100%;
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .wf-section {
+            padding: 40px 32px;
+            text-align: center;
+        }
+
+        .wf-logo-small {
+            background: #ccc;
+            width: 80px;
+            height: 24px;
+            border-radius: 3px;
+            margin: 0 auto 24px;
+        }
+
+        .wf-headline {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 16px;
+        }
+
+        .wf-subhead {
+            font-size: 0.875rem;
+            color: #888;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .wf-button {
+            background: #999;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .wf-button.primary {
+            background: #555;
+        }
+
+        .wf-button.large {
+            padding: 12px 24px;
+            font-size: 0.875rem;
+        }
+
+        .wf-button.secondary {
+            background: #eee;
+            color: #555;
+        }
+
+        .wf-button.ghost {
+            background: transparent;
+            color: #888;
+            border: 1px solid #ddd;
+        }
+
+        .wf-auto-hint {
+            font-size: 0.7rem;
+            color: #aaa;
+            margin-top: 16px;
+        }
+
+        .wf-skip-link {
+            font-size: 0.75rem;
+            color: #888;
+            text-decoration: underline;
+            margin-bottom: 20px;
+            display: block;
+            text-align: left;
+            padding: 12px 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .wf-tutorial-area {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .wf-example-task {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .wf-sign-highlight {
+            background: #e0e0e0;
+            width: 80px;
+            height: 60px;
+            border-radius: 4px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            font-size: 0.7rem;
+            border: 2px dashed #bbb;
+        }
+
+        .wf-sign-highlight.pulsing {
+            border-color: #666;
+            background: #d0d0d0;
+        }
+
+        .wf-options-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .wf-option {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 50px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .wf-bullet-list {
+            text-align: left;
+            font-size: 0.8rem;
+            color: #666;
+            list-style: none;
+            margin: 16px 0;
+        }
+
+        .wf-bullet-list li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .wf-bullet-list li::before {
+            content: "-";
+            position: absolute;
+            left: 0;
+            color: #888;
+        }
+
+        .wf-task-prompt {
+            font-size: 0.875rem;
+            color: #444;
+            margin-bottom: 16px;
+        }
+
+        .wf-tablet-viewer {
+            background: linear-gradient(135deg, #d0d0d0 0%, #b0b0b0 100%);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .wf-tablet-image {
+            background: #a0a0a0;
+            width: 180px;
+            height: 140px;
+            border-radius: 4px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .wf-highlight-region {
+            position: absolute;
+            background: rgba(255, 200, 0, 0.3);
+            border: 2px solid #f90;
+            border-radius: 3px;
+            width: 40px;
+            height: 30px;
+            top: 40px;
+            left: 50px;
+        }
+
+        .wf-sign-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .wf-sign-card {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px 8px;
+            text-align: center;
+        }
+
+        .wf-sign-card.selected {
+            background: #e0e0e0;
+            border-color: #888;
+        }
+
+        .wf-sign-image {
+            background: #d0d0d0;
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            margin: 0 auto 8px;
+        }
+
+        .wf-sign-name {
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #555;
+        }
+
+        .wf-sign-meaning {
+            font-size: 0.625rem;
+            color: #888;
+        }
+
+        .wf-task-footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-top: 1px solid #ddd;
+            background: #fafafa;
+        }
+
+        .wf-reward-card {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .wf-reward-icon {
+            background: #888;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        .wf-reward-icon.success {
+            background: #4caf50;
+        }
+
+        .wf-reward-icon.info {
+            background: #2196f3;
+        }
+
+        .wf-reward-icon.star {
+            background: #ff9800;
+        }
+
+        .wf-reward-icon.trophy {
+            background: #9c27b0;
+        }
+
+        .wf-reward-icon.flag {
+            background: #607d8b;
+        }
+
+        .wf-reward-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 8px;
+        }
+
+        .wf-reward-message {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .wf-stat-row {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .wf-stat-card {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px 24px;
+            text-align: center;
+        }
+
+        .wf-stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #555;
+        }
+
+        .wf-stat-label {
+            font-size: 0.7rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .wf-tablet-list {
+            margin: 20px 0;
+        }
+
+        .wf-tablet-item {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            text-align: left;
+        }
+
+        .wf-tablet-thumb {
+            background: #d0d0d0;
+            width: 48px;
+            height: 40px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .wf-tablet-info {
+            flex: 1;
+        }
+
+        .wf-tablet-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .wf-tablet-desc {
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .wf-achievement-card {
+            background: linear-gradient(135deg, #f5f5f5 0%, #ececec 100%);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .wf-achievement-icon {
+            background: #9c27b0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .wf-achievement-text {
+            text-align: left;
+        }
+
+        .wf-achievement-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .wf-achievement-desc {
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .wf-cta-section {
+            background: #f9f9f9;
+            padding: 24px;
+            text-align: center;
+            border-top: 1px solid #ddd;
+        }
+
+        .wf-cta-prompt {
+            font-size: 0.875rem;
+            color: #555;
+            margin-bottom: 16px;
+        }
+
+        .wf-cta-divider {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin: 16px 0;
+        }
+
+        .wf-button-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .wf-error-state {
+            background: #ffebee;
+            border: 1px solid #ef9a9a;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .wf-error-icon {
+            background: #ef5350;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        /* Component panels */
+        .component-panel {
+            padding: 24px;
+            border-top: 1px solid #ddd;
+        }
+
+        .component-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 16px;
+        }
+
+        .component-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .component-table th {
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            padding: 8px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .component-table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            color: #555;
+        }
+
+        .component-table code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+
+        .interaction-panel {
+            padding: 24px;
+            background: #fffde7;
+            border-top: 1px solid #ddd;
+        }
+
+        .interaction-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .interaction-item {
+            display: flex;
+            gap: 12px;
+            font-size: 0.8rem;
+            align-items: baseline;
+        }
+
+        .interaction-element {
+            font-weight: 600;
+            color: #555;
+            min-width: 120px;
+        }
+
+        .interaction-action {
+            color: #888;
+            min-width: 80px;
+        }
+
+        .interaction-result {
+            color: #666;
+        }
+
+        .accessibility-panel {
+            padding: 24px;
+            background: #e8f5e9;
+            border-top: 1px solid #ddd;
+        }
+
+        .accessibility-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .accessibility-item {
+            font-size: 0.8rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .accessibility-check {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .state-variants {
+            padding: 24px;
+            background: #e3f2fd;
+            border-top: 1px solid #ddd;
+        }
+
+        .state-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .state-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .state-name {
+            font-weight: 600;
+            color: #1976d2;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+        .state-desc {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .wf-sign-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .wf-stat-row {
+                flex-direction: column;
+            }
+            .journey-stats {
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header-inner">
+            <a href="index.html" class="back-link">
+                <span>&larr;</span> All Journeys
+            </a>
+            <div class="page-title">J2: Passerby First Contribution</div>
+            <div class="page-meta">7 screens</div>
+        </div>
+    </header>
+
+    <div class="container">
+        <section class="journey-header">
+            <div class="journey-badge">P0 - Most Critical Journey</div>
+            <h1 class="journey-title">J2: Passerby First Contribution</h1>
+            <p class="journey-description">
+                Zero-friction contribution flow for anonymous users. The goal is to complete first contribution in under 60 seconds from entry.
+            </p>
+            <div class="journey-stats">
+                <div class="stat">
+                    <div class="stat-value">&lt;25s</div>
+                    <div class="stat-label">Time to First Task</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&lt;60s</div>
+                    <div class="stat-label">First Task Complete</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&gt;5</div>
+                    <div class="stat-label">Tasks per Session</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&gt;70%</div>
+                    <div class="stat-label">Session Completion</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&gt;30/hr</div>
+                    <div class="stat-label">Contributions Rate</div>
+                </div>
+            </div>
+        </section>
+
+        <nav class="screen-nav">
+            <button class="screen-nav-btn active" onclick="scrollToScreen('screen-1')">1. Welcome</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-2')">2. Tutorial</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-3')">3. Task Card</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-4')">4. Reward</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-5')">5. Uncertainty</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-6')">6. Summary</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-7')">7. Error States</button>
+        </nav>
+
+        <!-- Screen 1: Welcome -->
+        <section id="screen-1" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 1 of 7</div>
+                    <h2 class="screen-title">Welcome Screen</h2>
+                    <p class="screen-goal">User Goal: Feel welcomed and oriented without delay</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J2-S1-welcome</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-section">
+                        <div class="wf-logo-small"></div>
+                        <div class="wf-headline">Welcome to Glintstone</div>
+                        <div class="wf-subhead">
+                            You're about to help decode ancient history.<br>
+                            No experience needed. Let's begin.
+                        </div>
+                        <div class="wf-button primary large">Continue</div>
+                        <div class="wf-auto-hint">(Auto-continues in 3 seconds)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="state-variants">
+                <div class="component-title">State Variants</div>
+                <div class="state-grid">
+                    <div class="state-card">
+                        <div class="state-name">New User</div>
+                        <div class="state-desc">Standard welcome message with 3-second auto-advance</div>
+                    </div>
+                    <div class="state-card">
+                        <div class="state-name">Return User</div>
+                        <div class="state-desc">"Welcome back! Last time you completed 12 tasks." Shows "Continue where you left off" and "Start fresh" options</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Components Used</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Source</th>
+                            <th>Configuration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Stack</td>
+                            <td><code>layout.md</code></td>
+                            <td>space="xl", centered</td>
+                        </tr>
+                        <tr>
+                            <td>Button</td>
+                            <td><code>forms.md</code></td>
+                            <td>variant="primary", size="lg"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Continue button</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J2-S2-tutorial</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Auto-advance</span>
+                        <span class="interaction-action">3 seconds</span>
+                        <span class="interaction-result">Navigate to J2-S2-tutorial</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Click anywhere</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J2-S2-tutorial</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Focus on Continue button</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Screen reader announces welcome message</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Auto-advance can be interrupted</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 2: Tutorial -->
+        <section id="screen-2" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 2 of 7</div>
+                    <h2 class="screen-title">Mini Tutorial</h2>
+                    <p class="screen-goal">User Goal: Understand what to do without reading</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J2-S2-tutorial</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-skip-link">Skip tutorial</div>
+                    <div class="wf-section" style="padding-top: 20px;">
+                        <div class="wf-headline" style="font-size: 1.25rem;">YOUR FIRST TASK</div>
+                        <div class="wf-tutorial-area">
+                            <div class="wf-example-task">
+                                <div class="wf-sign-highlight pulsing">[Sign]</div>
+                                <div class="wf-options-row">
+                                    <div class="wf-option">A</div>
+                                    <div class="wf-option">B</div>
+                                    <div class="wf-option">C</div>
+                                    <div class="wf-option">D</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="wf-subhead" style="text-align: left; max-width: 280px; margin: 0 auto 16px;">
+                            See this ancient symbol? Just pick which reference sign it matches. That's it!
+                        </div>
+                        <ul class="wf-bullet-list" style="max-width: 280px; margin: 0 auto 20px;">
+                            <li>Your choices help train our AI</li>
+                            <li>Experts review everything</li>
+                            <li>There's no wrong answer</li>
+                        </ul>
+                        <div class="wf-button primary large">Got it, let's start!</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Components Used</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Source</th>
+                            <th>Configuration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>SignMatchTask</td>
+                            <td><code>task.md</code></td>
+                            <td>(example, disabled)</td>
+                        </tr>
+                        <tr>
+                            <td>Stack</td>
+                            <td><code>layout.md</code></td>
+                            <td>space="lg"</td>
+                        </tr>
+                        <tr>
+                            <td>Button</td>
+                            <td><code>forms.md</code></td>
+                            <td>variant="primary", size="lg"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Skip tutorial</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J2-S3-task</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Got it button</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J2-S3-task</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Example options</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Visual feedback only (not functional)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Skip link is first focusable element</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> "No wrong answer" messaging reduces anxiety</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Tutorial is entirely skippable</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Screen reader describes the example task</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 3: Task Card -->
+        <section id="screen-3" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 3 of 7</div>
+                    <h2 class="screen-title">Task Card (Main Loop)</h2>
+                    <p class="screen-goal">User Goal: Complete a contribution task</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J2-S3-task</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-progress-bar">
+                        <span>Task 3 of 10</span>
+                        <div class="wf-progress-track">
+                            <div class="wf-progress-fill" style="width: 30%;"></div>
+                        </div>
+                        <span>2:45</span>
+                    </div>
+                    <div class="wf-section" style="padding: 24px;">
+                        <div class="wf-task-prompt">Which sign matches the highlighted area?</div>
+                        <div class="wf-tablet-viewer">
+                            <div class="wf-tablet-image">
+                                <div class="wf-highlight-region"></div>
+                            </div>
+                            <div style="font-size: 0.625rem; color: #888; margin-top: 8px;">[TabletViewer: compact]</div>
+                        </div>
+                        <div class="wf-sign-grid">
+                            <div class="wf-sign-card">
+                                <div class="wf-sign-image"></div>
+                                <div class="wf-sign-name">AN</div>
+                                <div class="wf-sign-meaning">god</div>
+                            </div>
+                            <div class="wf-sign-card">
+                                <div class="wf-sign-image"></div>
+                                <div class="wf-sign-name">EN</div>
+                                <div class="wf-sign-meaning">lord</div>
+                            </div>
+                            <div class="wf-sign-card">
+                                <div class="wf-sign-image"></div>
+                                <div class="wf-sign-name">LU</div>
+                                <div class="wf-sign-meaning">man</div>
+                            </div>
+                            <div class="wf-sign-card">
+                                <div class="wf-sign-image"></div>
+                                <div class="wf-sign-name">UD</div>
+                                <div class="wf-sign-meaning">sun</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wf-task-footer">
+                        <div class="wf-button secondary">I'm not sure</div>
+                        <div class="wf-button ghost">Skip &rarr;</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="state-variants">
+                <div class="component-title">Task Types (Release 1)</div>
+                <div class="state-grid">
+                    <div class="state-card">
+                        <div class="state-name">Sign Match (Primary)</div>
+                        <div class="state-desc">4 sign options in 2x2 grid. One "correct" (AI highest confidence). Visual matching task.</div>
+                    </div>
+                    <div class="state-card">
+                        <div class="state-name">Binary Validation</div>
+                        <div class="state-desc">"Does this AI suggestion look correct?" with Yes/No buttons.</div>
+                    </div>
+                    <div class="state-card">
+                        <div class="state-name">Count Task</div>
+                        <div class="state-desc">"How many lines of text?" with numeric options (1, 2, 3, 4+).</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Components Used</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Source</th>
+                            <th>Configuration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>TaskCard</td>
+                            <td><code>task.md</code></td>
+                            <td>variant="fullscreen"</td>
+                        </tr>
+                        <tr>
+                            <td>ProgressBar</td>
+                            <td><code>progress.md</code></td>
+                            <td>variant="linear"</td>
+                        </tr>
+                        <tr>
+                            <td>TabletViewer</td>
+                            <td><code>tablet.md</code></td>
+                            <td>variant="compact", single region</td>
+                        </tr>
+                        <tr>
+                            <td>SignCard</td>
+                            <td><code>tablet.md</code></td>
+                            <td>variant="option", 4 cards</td>
+                        </tr>
+                        <tr>
+                            <td>SignMatchTask</td>
+                            <td><code>task.md</code></td>
+                            <td>default</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Sign option</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Select, animate, trigger J2-S4-reward</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">I'm not sure</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Record uncertainty, trigger J2-S5-unsure</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Skip</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Silent skip, load next task</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Task prompt has aria-live="polite"</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Options are radio group semantics</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Tab navigates between options</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Enter/Space selects</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Focus visible at all times</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Touch targets 72px minimum</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 4: Reward Feedback -->
+        <section id="screen-4" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 4 of 7</div>
+                    <h2 class="screen-title">Reward Feedback</h2>
+                    <p class="screen-goal">User Goal: Feel rewarded for contribution</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J2-S4-reward</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container" style="flex-direction: column; gap: 24px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; width: 100%;">
+                    <!-- Standard Success -->
+                    <div class="wireframe" style="min-height: auto;">
+                        <div class="wf-progress-bar">
+                            <span>Task 3 of 10</span>
+                            <div class="wf-progress-track">
+                                <div class="wf-progress-fill" style="width: 35%;"></div>
+                            </div>
+                        </div>
+                        <div class="wf-reward-card">
+                            <div class="wf-reward-icon success">&#10003;</div>
+                            <div class="wf-reward-title">Great job!</div>
+                            <div class="wf-reward-message">Your answer matched 7 other contributors.</div>
+                            <div class="wf-button primary">Continue &rarr;</div>
+                        </div>
+                        <div style="text-align: center; font-size: 0.7rem; color: #888; padding: 8px;">Standard Success</div>
+                    </div>
+
+                    <!-- Fun Fact -->
+                    <div class="wireframe" style="min-height: auto;">
+                        <div class="wf-progress-bar">
+                            <span>Task 5 of 10</span>
+                            <div class="wf-progress-track">
+                                <div class="wf-progress-fill" style="width: 50%;"></div>
+                            </div>
+                        </div>
+                        <div class="wf-reward-card">
+                            <div class="wf-reward-icon info">&#128161;</div>
+                            <div class="wf-reward-title">Nice! Did you know?</div>
+                            <div class="wf-reward-message">This tablet is a 4,000-year-old letter from Babylon. It might be a merchant writing to his business partner!</div>
+                            <div class="wf-button primary">Continue &rarr;</div>
+                        </div>
+                        <div style="text-align: center; font-size: 0.7rem; color: #888; padding: 8px;">Fun Fact (~15% of tasks)</div>
+                    </div>
+
+                    <!-- Sign Learning -->
+                    <div class="wireframe" style="min-height: auto;">
+                        <div class="wf-progress-bar">
+                            <span>Task 7 of 10</span>
+                            <div class="wf-progress-track">
+                                <div class="wf-progress-fill" style="width: 70%;"></div>
+                            </div>
+                        </div>
+                        <div class="wf-reward-card">
+                            <div class="wf-reward-icon star">&#9733;</div>
+                            <div class="wf-reward-title">You matched the experts!</div>
+                            <div class="wf-reward-message">This sign is "AN" (also read "dingir"). It means "god" or "sky" in Sumerian.</div>
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <div class="wf-button secondary">Learn more</div>
+                                <div class="wf-button primary">Continue &rarr;</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; font-size: 0.7rem; color: #888; padding: 8px;">Sign Learning (~10% of tasks)</div>
+                    </div>
+
+                    <!-- Milestone -->
+                    <div class="wireframe" style="min-height: auto;">
+                        <div class="wf-progress-bar">
+                            <span>Task 10 of 10</span>
+                            <div class="wf-progress-track">
+                                <div class="wf-progress-fill" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                        <div class="wf-reward-card">
+                            <div class="wf-reward-icon trophy">&#127942;</div>
+                            <div class="wf-reward-title">10 Tasks Complete!</div>
+                            <div class="wf-reward-message">You've helped with 3 tablets. These ancient records are one step closer to being read.</div>
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <div class="wf-button secondary">See your impact</div>
+                                <div class="wf-button primary">Continue &rarr;</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; font-size: 0.7rem; color: #888; padding: 8px;">Milestone (Task 5, 10, 25, 50)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Animation Specifications</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Icon Type</th>
+                            <th>Animation</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Checkmark</td>
+                            <td>Draw stroke</td>
+                            <td>400ms</td>
+                        </tr>
+                        <tr>
+                            <td>Star</td>
+                            <td>Scale + sparkle</td>
+                            <td>500ms</td>
+                        </tr>
+                        <tr>
+                            <td>Trophy</td>
+                            <td>Bounce + shine</td>
+                            <td>600ms</td>
+                        </tr>
+                        <tr>
+                            <td>Lightbulb</td>
+                            <td>Glow pulse</td>
+                            <td>400ms</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Continue</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Load next task (J2-S3)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Learn more</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Open ContextPanel with sign info</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">See your impact</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J2-S6-summary</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Auto-dismiss</span>
+                        <span class="interaction-action">2.5 seconds</span>
+                        <span class="interaction-result">Load next task (hover pauses)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> role="status" with aria-live="polite"</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Focus moves to Continue button</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Animation respects prefers-reduced-motion</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Message announced to screen readers</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 5: Uncertainty Feedback -->
+        <section id="screen-5" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 5 of 7</div>
+                    <h2 class="screen-title">Uncertainty Feedback</h2>
+                    <p class="screen-goal">User Goal: Feel validated for honest uncertainty</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J2-S5-unsure</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe" style="min-height: auto;">
+                    <div class="wf-reward-card" style="margin: 40px 20px;">
+                        <div class="wf-reward-icon flag">&#9873;</div>
+                        <div class="wf-reward-title">Uncertainty is helpful!</div>
+                        <div class="wf-reward-message">When you mark something as unclear, you help us identify signs that need expert attention. This is real, valuable data.</div>
+                        <div class="wf-button primary">Continue &rarr;</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Key Messaging</div>
+                <ul style="font-size: 0.875rem; color: #555; padding-left: 20px; margin-top: 8px;">
+                    <li style="margin-bottom: 8px;">"Uncertainty is helpful!" (positive framing)</li>
+                    <li style="margin-bottom: 8px;">Explains WHY it's valuable</li>
+                    <li style="margin-bottom: 8px;">Never feels like failure</li>
+                    <li style="margin-bottom: 8px;">Counts toward session progress</li>
+                </ul>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Behavior</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Same timing</span>
+                        <span class="interaction-action">-</span>
+                        <span class="interaction-result">As standard reward (2.5s auto-dismiss)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Task counts</span>
+                        <span class="interaction-action">-</span>
+                        <span class="interaction-result">As contribution</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Progress bar</span>
+                        <span class="interaction-action">-</span>
+                        <span class="interaction-result">Advances normally</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 6: Session Summary -->
+        <section id="screen-6" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 6 of 7</div>
+                    <h2 class="screen-title">Session Summary</h2>
+                    <p class="screen-goal">User Goal: See concrete impact and decide next steps</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J2-S6-summary</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe wide">
+                    <div class="wf-section" style="padding-bottom: 0;">
+                        <div style="font-size: 2rem; margin-bottom: 8px;">&#127881;</div>
+                        <div class="wf-headline">Session Complete!</div>
+                        <div class="wf-stat-row">
+                            <div class="wf-stat-card">
+                                <div class="wf-stat-number">15</div>
+                                <div class="wf-stat-label">tasks completed</div>
+                            </div>
+                            <div class="wf-stat-card">
+                                <div class="wf-stat-number">3</div>
+                                <div class="wf-stat-label">tablets helped</div>
+                            </div>
+                            <div class="wf-stat-card">
+                                <div class="wf-stat-number">87%</div>
+                                <div class="wf-stat-label">accuracy</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="padding: 0 24px;">
+                        <div style="font-size: 0.875rem; font-weight: 600; color: #444; margin-bottom: 12px; text-align: left;">You helped with:</div>
+                        <div class="wf-tablet-list">
+                            <div class="wf-tablet-item">
+                                <div class="wf-tablet-thumb"></div>
+                                <div class="wf-tablet-info">
+                                    <div class="wf-tablet-name">YBC 4644 - Old Babylonian letter</div>
+                                    <div class="wf-tablet-desc">Identified 5 signs</div>
+                                </div>
+                            </div>
+                            <div class="wf-tablet-item">
+                                <div class="wf-tablet-thumb"></div>
+                                <div class="wf-tablet-info">
+                                    <div class="wf-tablet-name">P123456 - Ur III receipt</div>
+                                    <div class="wf-tablet-desc">Marked 3 damage areas</div>
+                                </div>
+                            </div>
+                            <div class="wf-tablet-item">
+                                <div class="wf-tablet-thumb"></div>
+                                <div class="wf-tablet-info">
+                                    <div class="wf-tablet-name">CBS 10467 - Administrative record</div>
+                                    <div class="wf-tablet-desc">Verified 7 transcriptions</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="wf-achievement-card">
+                            <div class="wf-achievement-icon"></div>
+                            <div class="wf-achievement-text">
+                                <div class="wf-achievement-title">First Session!</div>
+                                <div class="wf-achievement-desc">You've completed your first contribution session</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wf-cta-section">
+                        <div class="wf-cta-prompt">Want to track your progress?</div>
+                        <div class="wf-button primary large">Create free account</div>
+                        <div class="wf-cta-divider">or</div>
+                        <div class="wf-button-row">
+                            <div class="wf-button secondary">Do more tasks</div>
+                            <div class="wf-button secondary">Explore tablets</div>
+                            <div class="wf-button secondary">Learn cuneiform</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Statistics Displayed</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Stat</th>
+                            <th>Description</th>
+                            <th>Source</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Tasks completed</td>
+                            <td>Count of submissions</td>
+                            <td>Session state</td>
+                        </tr>
+                        <tr>
+                            <td>Tablets helped</td>
+                            <td>Unique tablets</td>
+                            <td>Session state</td>
+                        </tr>
+                        <tr>
+                            <td>Accuracy</td>
+                            <td>Agreement with others</td>
+                            <td>Calculated</td>
+                        </tr>
+                        <tr>
+                            <td>Time spent</td>
+                            <td>Session duration</td>
+                            <td>Optional, non-judgmental</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Create account</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">(Future: auth flow)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Do more tasks</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Reset counter, return to J2-S3</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Explore tablets</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to archive/explore</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Learn cuneiform</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J3-S1</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Tablet thumbnail</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to tablet detail</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Focus moves to summary on display</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Stats have proper labels</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> All actions keyboard accessible</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Celebration animation optional</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 7: Error States -->
+        <section id="screen-7" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 7 of 7</div>
+                    <h2 class="screen-title">Error States</h2>
+                    <p class="screen-goal">Handle edge cases gracefully</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J2-error-states</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container" style="flex-direction: column; gap: 24px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; width: 100%;">
+                    <!-- Task Load Failure -->
+                    <div class="wireframe" style="min-height: auto;">
+                        <div class="wf-error-state">
+                            <div class="wf-error-icon">!</div>
+                            <div class="wf-reward-title">Couldn't load the next task.</div>
+                            <div style="display: flex; gap: 8px; justify-content: center; margin-top: 16px;">
+                                <div class="wf-button secondary">Try again</div>
+                                <div class="wf-button primary">Skip to next</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; font-size: 0.7rem; color: #888; padding: 8px;">Task Load Failure</div>
+                    </div>
+
+                    <!-- All Tasks Exhausted -->
+                    <div class="wireframe" style="min-height: auto;">
+                        <div class="wf-reward-card" style="margin: 20px;">
+                            <div class="wf-reward-icon success">&#127881;</div>
+                            <div class="wf-reward-title">You've done them all!</div>
+                            <div class="wf-reward-message">Amazing dedication. We're preparing more tasks - check back soon for new contributions.</div>
+                            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                                <div class="wf-button secondary">View your contributions</div>
+                                <div class="wf-button primary">Explore tablets</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; font-size: 0.7rem; color: #888; padding: 8px;">All Tasks Exhausted</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Error Handling</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Error Type</th>
+                            <th>Recovery Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Task Load Failure</td>
+                            <td>Try again or skip to next task</td>
+                        </tr>
+                        <tr>
+                            <td>Image Load Failure</td>
+                            <td>Show placeholder, allow skip, retry in background</td>
+                        </tr>
+                        <tr>
+                            <td>All Tasks Exhausted</td>
+                            <td>Celebrate achievement, suggest exploration</td>
+                        </tr>
+                        <tr>
+                            <td>Network Error</td>
+                            <td>Save progress locally, retry when connection restored</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function scrollToScreen(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+            document.querySelectorAll('.screen-nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        const screens = document.querySelectorAll('.screen-section');
+        const navButtons = document.querySelectorAll('.screen-nav-btn');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            screens.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navButtons.forEach((btn, index) => {
+                btn.classList.remove('active');
+                if (current === `screen-${index + 1}`) {
+                    btn.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

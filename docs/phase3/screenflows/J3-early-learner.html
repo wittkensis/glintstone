@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J3: Early Learner Curriculum - Glintstone Wireframes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .page-header {
+            background: white;
+            border-bottom: 1px solid #ddd;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .page-header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .back-link {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .back-link:hover {
+            color: #333;
+        }
+
+        .page-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .page-meta {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .journey-header {
+            margin-bottom: 40px;
+        }
+
+        .journey-badge {
+            display: inline-block;
+            background: #f90;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .journey-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 8px;
+        }
+
+        .journey-description {
+            font-size: 1rem;
+            color: #666;
+            max-width: 600px;
+        }
+
+        .journey-stats {
+            display: flex;
+            gap: 32px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .screen-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .screen-nav-btn {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .screen-nav-btn:hover {
+            border-color: #999;
+        }
+
+        .screen-nav-btn.active {
+            background: #333;
+            color: white;
+            border-color: #333;
+        }
+
+        .screen-section {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+
+        .screen-header {
+            background: #fafafa;
+            border-bottom: 1px solid #ddd;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .screen-number {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .screen-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #222;
+            margin-top: 4px;
+        }
+
+        .screen-goal {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .screen-meta {
+            text-align: right;
+        }
+
+        .screen-id {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #888;
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+
+        .wireframe-container {
+            padding: 32px;
+            background: #fafafa;
+            display: flex;
+            justify-content: center;
+        }
+
+        .wireframe {
+            background: white;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 600px;
+            min-height: 500px;
+        }
+
+        .wireframe.wide {
+            max-width: 800px;
+        }
+
+        /* Wireframe components */
+        .wf-header {
+            background: #e8e8e8;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .wf-logo {
+            background: #bbb;
+            width: 100px;
+            height: 24px;
+            border-radius: 3px;
+        }
+
+        .wf-nav {
+            display: flex;
+            gap: 16px;
+        }
+
+        .wf-nav-item {
+            background: #d0d0d0;
+            width: 60px;
+            height: 16px;
+            border-radius: 2px;
+        }
+
+        .wf-breadcrumb {
+            padding: 12px 20px;
+            font-size: 0.75rem;
+            color: #888;
+            border-bottom: 1px solid #eee;
+        }
+
+        .wf-progress-bar {
+            background: #f5f5f5;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .wf-progress-track {
+            flex: 1;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            margin: 0 16px;
+            overflow: hidden;
+        }
+
+        .wf-progress-fill {
+            height: 100%;
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .wf-section {
+            padding: 32px 24px;
+        }
+
+        .wf-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .wf-headline {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #444;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .wf-subhead {
+            font-size: 0.875rem;
+            color: #888;
+            text-align: center;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .wf-button {
+            background: #999;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .wf-button.primary {
+            background: #555;
+        }
+
+        .wf-button.large {
+            padding: 12px 24px;
+            font-size: 0.875rem;
+        }
+
+        .wf-button.secondary {
+            background: #eee;
+            color: #555;
+        }
+
+        .wf-pathway {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .wf-module {
+            padding: 16px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .wf-module:last-child {
+            border-bottom: none;
+        }
+
+        .wf-module-number {
+            background: #555;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .wf-module-number.locked {
+            background: #ccc;
+        }
+
+        .wf-module-content {
+            flex: 1;
+        }
+
+        .wf-module-title {
+            font-weight: 600;
+            color: #444;
+            font-size: 0.875rem;
+        }
+
+        .wf-module-desc {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .wf-module-meta {
+            font-size: 0.7rem;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .wf-module-status {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 3px;
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+
+        .wf-module-status.coming {
+            background: #f5f5f5;
+            color: #999;
+        }
+
+        .wf-connector {
+            width: 2px;
+            height: 16px;
+            background: #ddd;
+            margin-left: 13px;
+        }
+
+        .wf-lesson-image {
+            background: linear-gradient(135deg, #d0d0d0 0%, #b0b0b0 100%);
+            width: 100%;
+            max-width: 300px;
+            height: 180px;
+            border-radius: 8px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            font-size: 0.75rem;
+        }
+
+        .wf-lesson-content {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .wf-lesson-text {
+            font-size: 0.875rem;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .wf-wedge-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .wf-wedge-card {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .wf-wedge-symbol {
+            font-size: 1.5rem;
+            color: #555;
+            margin-bottom: 4px;
+        }
+
+        .wf-wedge-name {
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .wf-practice-area {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 24px;
+        }
+
+        .wf-practice-prompt {
+            font-size: 0.875rem;
+            color: #444;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .wf-practice-image {
+            background: #e0e0e0;
+            width: 120px;
+            height: 100px;
+            border-radius: 6px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .wf-option-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .wf-option {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #555;
+        }
+
+        .wf-option.correct {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .wf-comparison {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .wf-comparison-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .wf-comparison-label {
+            font-size: 0.75rem;
+            color: #888;
+            width: 80px;
+        }
+
+        .wf-comparison-content {
+            font-size: 0.875rem;
+            color: #555;
+        }
+
+        .wf-sign-display {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .wf-sign-image-large {
+            background: #e0e0e0;
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .wf-sign-info {
+            flex: 1;
+        }
+
+        .wf-sign-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .wf-sign-reading {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .wf-sign-meaning {
+            font-size: 0.875rem;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        .wf-tablet-practice {
+            background: linear-gradient(135deg, #d0d0d0 0%, #b0b0b0 100%);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+
+        .wf-tablet-signs {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .wf-tablet-sign {
+            background: rgba(255,255,255,0.3);
+            width: 60px;
+            height: 50px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #666;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .wf-tablet-sign.target {
+            border-color: #ff9800;
+            background: rgba(255, 152, 0, 0.2);
+        }
+
+        .wf-hint {
+            font-size: 0.75rem;
+            color: #888;
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        .wf-show-me {
+            font-size: 0.75rem;
+            color: #666;
+            text-decoration: underline;
+            text-align: center;
+            display: block;
+            margin-top: 8px;
+        }
+
+        .wf-success-feedback {
+            background: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .wf-success-icon {
+            color: #4caf50;
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .wf-success-title {
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 8px;
+        }
+
+        .wf-success-message {
+            font-size: 0.875rem;
+            color: #555;
+        }
+
+        .wf-complete-section {
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .wf-complete-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .wf-checklist {
+            text-align: left;
+            max-width: 320px;
+            margin: 0 auto 24px;
+        }
+
+        .wf-checklist-item {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            font-size: 0.875rem;
+            color: #555;
+        }
+
+        .wf-checklist-check {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .wf-launch-date {
+            font-size: 0.875rem;
+            color: #888;
+            margin-top: 16px;
+        }
+
+        .wf-email-signup {
+            display: flex;
+            gap: 8px;
+            max-width: 360px;
+            margin: 20px auto;
+        }
+
+        .wf-input {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px 14px;
+            flex: 1;
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        .wf-divider {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin: 20px 0;
+        }
+
+        .wf-button-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .wf-confirmation {
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .wf-confirmation-icon {
+            color: #4caf50;
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .wf-confirmation-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 8px;
+        }
+
+        .wf-confirmation-message {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 24px;
+        }
+
+        /* Component panels */
+        .component-panel {
+            padding: 24px;
+            border-top: 1px solid #ddd;
+        }
+
+        .component-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 16px;
+        }
+
+        .component-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .component-table th {
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            padding: 8px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .component-table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            color: #555;
+        }
+
+        .component-table code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+
+        .interaction-panel {
+            padding: 24px;
+            background: #fffde7;
+            border-top: 1px solid #ddd;
+        }
+
+        .interaction-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .interaction-item {
+            display: flex;
+            gap: 12px;
+            font-size: 0.8rem;
+            align-items: baseline;
+        }
+
+        .interaction-element {
+            font-weight: 600;
+            color: #555;
+            min-width: 120px;
+        }
+
+        .interaction-action {
+            color: #888;
+            min-width: 80px;
+        }
+
+        .interaction-result {
+            color: #666;
+        }
+
+        .accessibility-panel {
+            padding: 24px;
+            background: #e8f5e9;
+            border-top: 1px solid #ddd;
+        }
+
+        .accessibility-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .accessibility-item {
+            font-size: 0.8rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .accessibility-check {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .wf-wedge-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .wf-option-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .wf-sign-display {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .journey-stats {
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header-inner">
+            <a href="index.html" class="back-link">
+                <span>&larr;</span> All Journeys
+            </a>
+            <div class="page-title">J3: Early Learner Curriculum</div>
+            <div class="page-meta">7 screens</div>
+        </div>
+    </header>
+
+    <div class="container">
+        <section class="journey-header">
+            <div class="journey-badge">P1 - Should Have</div>
+            <h1 class="journey-title">J3: Early Learner Curriculum Preview</h1>
+            <p class="journey-description">
+                Preview of the learning pathway for motivated users. Shows what learning cuneiform involves and captures interest for the full curriculum launch.
+            </p>
+            <div class="journey-stats">
+                <div class="stat">
+                    <div class="stat-value">&gt;50%</div>
+                    <div class="stat-label">Preview Interaction</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&gt;20%</div>
+                    <div class="stat-label">Email Signup</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&gt;80%</div>
+                    <div class="stat-label">Scope Clarity</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">5 min</div>
+                    <div class="stat-label">Preview Duration</div>
+                </div>
+            </div>
+        </section>
+
+        <nav class="screen-nav">
+            <button class="screen-nav-btn active" onclick="scrollToScreen('screen-1')">1. Landing</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-2')">2. Module Intro</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-3')">3. Wedges</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-4')">4. Signs</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-5')">5. First Sign</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-6')">6. Complete</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-7')">7. Confirmation</button>
+        </nav>
+
+        <!-- Screen 1: Curriculum Landing -->
+        <section id="screen-1" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 1 of 7</div>
+                    <h2 class="screen-title">Curriculum Landing</h2>
+                    <p class="screen-goal">User Goal: Understand the learning pathway and commitment</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J3-S1-landing</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe wide">
+                    <div class="wf-header">
+                        <div class="wf-logo"></div>
+                        <div class="wf-nav">
+                            <div class="wf-nav-item"></div>
+                            <div class="wf-nav-item"></div>
+                        </div>
+                    </div>
+                    <div class="wf-section">
+                        <div class="wf-headline">LEARN TO READ CUNEIFORM</div>
+                        <div class="wf-subhead">
+                            Master humanity's oldest writing system.<br>
+                            From first signs to full translations.
+                        </div>
+
+                        <div class="wf-section-title" style="margin-top: 32px;">LEARNING PATHWAY</div>
+                        <div class="wf-pathway">
+                            <div class="wf-module">
+                                <div class="wf-module-number">1</div>
+                                <div class="wf-module-content">
+                                    <div class="wf-module-title">FOUNDATIONS</div>
+                                    <div class="wf-module-desc">What is cuneiform?</div>
+                                    <div class="wf-module-meta">Time: 2-3 hours | 5 lessons</div>
+                                </div>
+                                <div class="wf-module-status">Preview available</div>
+                            </div>
+                            <div class="wf-connector"></div>
+                            <div class="wf-module">
+                                <div class="wf-module-number locked">2</div>
+                                <div class="wf-module-content">
+                                    <div class="wf-module-title">BASIC SIGNS</div>
+                                    <div class="wf-module-desc">25 essential signs</div>
+                                    <div class="wf-module-meta">Time: 5-10 hours</div>
+                                </div>
+                                <div class="wf-module-status coming">Coming soon</div>
+                            </div>
+                            <div class="wf-connector"></div>
+                            <div class="wf-module">
+                                <div class="wf-module-number locked">3</div>
+                                <div class="wf-module-content">
+                                    <div class="wf-module-title">READING WORDS</div>
+                                    <div class="wf-module-desc">Vocabulary building</div>
+                                    <div class="wf-module-meta">Time: 5-10 hours</div>
+                                </div>
+                                <div class="wf-module-status coming">Coming soon</div>
+                            </div>
+                            <div class="wf-connector"></div>
+                            <div class="wf-module">
+                                <div class="wf-module-number locked">4</div>
+                                <div class="wf-module-content">
+                                    <div class="wf-module-title">READING LINES</div>
+                                    <div class="wf-module-desc">Complete sentences</div>
+                                    <div class="wf-module-meta">Time: 10-20 hours</div>
+                                </div>
+                                <div class="wf-module-status coming">Coming soon</div>
+                            </div>
+                            <div class="wf-connector"></div>
+                            <div class="wf-module">
+                                <div class="wf-module-number locked">5</div>
+                                <div class="wf-module-content">
+                                    <div class="wf-module-title">TRANSLATION</div>
+                                    <div class="wf-module-desc">From text to meaning</div>
+                                    <div class="wf-module-meta">Time: 10-20 hours</div>
+                                </div>
+                                <div class="wf-module-status coming">Coming soon</div>
+                            </div>
+                        </div>
+
+                        <p style="font-size: 0.75rem; color: #888; text-align: center; margin: 20px 0;">
+                            Total: 30-60 hours to basic reading competency
+                        </p>
+
+                        <div style="text-align: center;">
+                            <div class="wf-button primary large">Preview Module 1: Foundations</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Module Status Badges</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Display</th>
+                            <th>Interaction</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Unlocked</td>
+                            <td>"Preview available" (clickable)</td>
+                            <td>Opens module</td>
+                        </tr>
+                        <tr>
+                            <td>Coming soon</td>
+                            <td>"Coming soon" (muted)</td>
+                            <td>No interaction</td>
+                        </tr>
+                        <tr>
+                            <td>Locked</td>
+                            <td>"Complete previous" (muted)</td>
+                            <td>Tooltip explains</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Module 1</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J3-S2</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">"Preview Module 1"</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J3-S2</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Other modules</span>
+                        <span class="interaction-action">None</span>
+                        <span class="interaction-result">Visual only (coming soon)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Pathway is semantic list</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Module status announced</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Time estimates help planning</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Focus on primary CTA</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 2: Module Preview Intro -->
+        <section id="screen-2" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 2 of 7</div>
+                    <h2 class="screen-title">Module Preview Intro</h2>
+                    <p class="screen-goal">User Goal: Start learning immediately</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J3-S2-module-intro</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-breadcrumb">&larr; Back to Curriculum</div>
+                    <div class="wf-progress-bar">
+                        <span>MODULE 1: FOUNDATIONS</span>
+                    </div>
+                    <div class="wf-progress-bar" style="background: white;">
+                        <span>What is Cuneiform?</span>
+                        <span style="color: #aaa;">Lesson 1 of 5</span>
+                    </div>
+                    <div class="wf-progress-track" style="margin: 0 20px;">
+                        <div class="wf-progress-fill" style="width: 20%;"></div>
+                    </div>
+                    <div class="wf-section">
+                        <div class="wf-lesson-image">
+                            [Close-up of cuneiform<br>wedges on clay tablet]
+                        </div>
+                        <div class="wf-lesson-content">
+                            <div class="wf-lesson-text">
+                                <strong>Cuneiform</strong> is the world's oldest known writing system, invented in ancient Mesopotamia around 3400 BCE.
+                            </div>
+                            <div class="wf-lesson-text">
+                                The name comes from Latin "cuneus" meaning "wedge" - because every mark is made by pressing a wedge-shaped reed into soft clay.
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 24px;">
+                            <div class="wf-button primary large">Continue &rarr;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Lesson Content Pattern</div>
+                <p style="font-size: 0.875rem; color: #666; margin-top: 8px;">Each lesson screen follows this pattern:</p>
+                <ol style="font-size: 0.875rem; color: #555; padding-left: 20px; margin-top: 12px;">
+                    <li style="margin-bottom: 8px;">Module/lesson header with progress</li>
+                    <li style="margin-bottom: 8px;">Visual content (image or illustration)</li>
+                    <li style="margin-bottom: 8px;">Educational text (max 100 words)</li>
+                    <li style="margin-bottom: 8px;">Continue button</li>
+                </ol>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Back link</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Return to J3-S1</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Continue</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J3-S3</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 3: The Wedges -->
+        <section id="screen-3" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 3 of 7</div>
+                    <h2 class="screen-title">The Wedges (Interactive)</h2>
+                    <p class="screen-goal">User Goal: Understand basic wedge shapes through interaction</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J3-S3-wedges</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-breadcrumb">&larr; Back to Curriculum</div>
+                    <div class="wf-progress-bar" style="background: white;">
+                        <span>Lesson 2 of 5</span>
+                        <div class="wf-progress-track">
+                            <div class="wf-progress-fill" style="width: 40%;"></div>
+                        </div>
+                    </div>
+                    <div class="wf-section">
+                        <div class="wf-section-title">THE WEDGES</div>
+                        <div class="wf-subhead" style="text-align: left;">Cuneiform has four basic wedge types:</div>
+
+                        <div class="wf-wedge-grid">
+                            <div class="wf-wedge-card">
+                                <div class="wf-wedge-symbol">|</div>
+                                <div class="wf-wedge-name">Vertical</div>
+                            </div>
+                            <div class="wf-wedge-card">
+                                <div class="wf-wedge-symbol">-</div>
+                                <div class="wf-wedge-name">Horizontal</div>
+                            </div>
+                            <div class="wf-wedge-card">
+                                <div class="wf-wedge-symbol">/</div>
+                                <div class="wf-wedge-name">Diagonal</div>
+                            </div>
+                            <div class="wf-wedge-card">
+                                <div class="wf-wedge-symbol">\</div>
+                                <div class="wf-wedge-name">Diagonal</div>
+                            </div>
+                        </div>
+
+                        <div class="wf-practice-area">
+                            <div class="wf-practice-prompt">PRACTICE: Which direction does this wedge point?</div>
+                            <div class="wf-practice-image">[Large wedge image]</div>
+                            <div class="wf-option-grid">
+                                <div class="wf-option">Left</div>
+                                <div class="wf-option">Right</div>
+                                <div class="wf-option">Up</div>
+                                <div class="wf-option">Down</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Feedback Pattern</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                    <div style="background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 6px; padding: 16px;">
+                        <div style="font-weight: 600; color: #2e7d32; margin-bottom: 8px;">Correct</div>
+                        <div style="font-size: 0.8rem; color: #555;">[Check] Correct!</div>
+                        <div style="font-size: 0.8rem; color: #888; margin-top: 8px;">[Continue &rarr;]</div>
+                    </div>
+                    <div style="background: #fff3e0; border: 1px solid #ffe0b2; border-radius: 6px; padding: 16px;">
+                        <div style="font-weight: 600; color: #e65100; margin-bottom: 8px;">Incorrect</div>
+                        <div style="font-size: 0.8rem; color: #555;">That's a horizontal wedge.</div>
+                        <div style="font-size: 0.8rem; color: #888; margin-top: 8px;">[Try again]</div>
+                    </div>
+                </div>
+                <p style="font-size: 0.8rem; color: #888; margin-top: 12px;">No penalty - user can retry.</p>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Direction button</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Show feedback, then continue</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Correct answer</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">"Correct!" + Continue enabled</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Wrong answer</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">"Try again" (no penalty)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 4: Signs, Not Letters -->
+        <section id="screen-4" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 4 of 7</div>
+                    <h2 class="screen-title">Signs, Not Letters</h2>
+                    <p class="screen-goal">User Goal: Understand cuneiform is logographic, not alphabetic</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J3-S4-signs</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-breadcrumb">&larr; Back to Curriculum</div>
+                    <div class="wf-progress-bar" style="background: white;">
+                        <span>Lesson 3 of 5</span>
+                        <div class="wf-progress-track">
+                            <div class="wf-progress-fill" style="width: 60%;"></div>
+                        </div>
+                    </div>
+                    <div class="wf-section">
+                        <div class="wf-section-title">SIGNS, NOT LETTERS</div>
+                        <div class="wf-subhead" style="text-align: left;">Unlike our alphabet, cuneiform signs can represent:</div>
+
+                        <div class="wf-comparison">
+                            <div class="wf-comparison-row">
+                                <div class="wf-comparison-label">Alphabet:</div>
+                                <div class="wf-comparison-content"><strong>A</strong> = one sound, always "ah"</div>
+                            </div>
+                            <div class="wf-comparison-row">
+                                <div class="wf-comparison-label">Cuneiform:</div>
+                                <div class="wf-comparison-content"><strong>AN</strong> = a word "god" OR a sound "an"</div>
+                            </div>
+                        </div>
+
+                        <div class="wf-lesson-content">
+                            <div class="wf-lesson-text">
+                                This means the same sign can be read differently depending on context - just like how "read" in English can be present tense (reed) or past tense (red).
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 24px;">
+                            <div class="wf-button primary large">Continue &rarr;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Content Notes</div>
+                <p style="font-size: 0.875rem; color: #666; margin-top: 8px;">
+                    Educational content only - no interaction on this screen. Uses familiar English analogy to explain logographic concept.
+                </p>
+            </div>
+        </section>
+
+        <!-- Screen 5: Your First Sign -->
+        <section id="screen-5" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 5 of 7</div>
+                    <h2 class="screen-title">Your First Sign: AN (Interactive)</h2>
+                    <p class="screen-goal">User Goal: Learn to recognize the AN sign</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J3-S5-first-sign</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-breadcrumb">&larr; Back to Curriculum</div>
+                    <div class="wf-progress-bar" style="background: white;">
+                        <span>Lesson 4 of 5</span>
+                        <div class="wf-progress-track">
+                            <div class="wf-progress-fill" style="width: 80%;"></div>
+                        </div>
+                    </div>
+                    <div class="wf-section">
+                        <div class="wf-section-title">YOUR FIRST SIGN: AN</div>
+
+                        <div class="wf-sign-display">
+                            <div class="wf-sign-image-large">[AN sign]</div>
+                            <div class="wf-sign-info">
+                                <div class="wf-sign-name">AN</div>
+                                <div class="wf-sign-reading">(also read "dingir")</div>
+                                <div class="wf-sign-meaning">Meaning: god, sky, heaven</div>
+                            </div>
+                        </div>
+
+                        <div class="wf-lesson-content">
+                            <div class="wf-lesson-text">
+                                This sign appears before the names of gods. When you see it, you know a divine name is coming next.
+                            </div>
+                            <div class="wf-lesson-text">
+                                <strong>Memory tip:</strong> It looks like a star - and it literally means "sky"!
+                            </div>
+                        </div>
+
+                        <div class="wf-practice-area">
+                            <div class="wf-practice-prompt">PRACTICE: Tap the AN sign in this tablet section</div>
+                            <div class="wf-tablet-practice">
+                                <div class="wf-tablet-signs">
+                                    <div class="wf-tablet-sign">[?]</div>
+                                    <div class="wf-tablet-sign target">[AN]</div>
+                                    <div class="wf-tablet-sign">[?]</div>
+                                </div>
+                            </div>
+                            <div class="wf-hint">Hint: It looks like a star with 8 points</div>
+                            <a href="#" class="wf-show-me">Show me &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Success Feedback</div>
+                <div class="wf-success-feedback" style="margin-top: 12px; text-align: left;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="wf-success-icon">&#10003;</div>
+                        <div>
+                            <div class="wf-success-title">You found it!</div>
+                            <div class="wf-success-message">That's AN - the sign for "god" or "sky". You'll see this sign very often in cuneiform texts.</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 16px;">
+                        <div class="wf-button primary">Continue &rarr;</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Correct region (AN)</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Success animation, reveal label</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Wrong region</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">"That's [sign name] - try again"</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">"Show me"</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Highlight correct region</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 6: Preview Complete -->
+        <section id="screen-6" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 6 of 7</div>
+                    <h2 class="screen-title">Preview Complete</h2>
+                    <p class="screen-goal">User Goal: Understand full curriculum and express interest</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J3-S6-complete</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-complete-section">
+                        <div class="wf-complete-icon">&#10003;</div>
+                        <div class="wf-headline">Preview Complete!</div>
+                        <div class="wf-subhead">You just learned your first cuneiform sign.</div>
+
+                        <div style="background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 24px 0; text-align: left;">
+                            <div style="font-weight: 600; color: #444; margin-bottom: 12px;">In the full curriculum, you'll learn:</div>
+                            <div class="wf-checklist">
+                                <div class="wf-checklist-item">
+                                    <span class="wf-checklist-check">&#10003;</span>
+                                    <span>100+ essential cuneiform signs</span>
+                                </div>
+                                <div class="wf-checklist-item">
+                                    <span class="wf-checklist-check">&#10003;</span>
+                                    <span>Number systems and counting</span>
+                                </div>
+                                <div class="wf-checklist-item">
+                                    <span class="wf-checklist-check">&#10003;</span>
+                                    <span>Basic Sumerian and Akkadian vocabulary</span>
+                                </div>
+                                <div class="wf-checklist-item">
+                                    <span class="wf-checklist-check">&#10003;</span>
+                                    <span>How to read complete lines of text</span>
+                                </div>
+                                <div class="wf-checklist-item">
+                                    <span class="wf-checklist-check">&#10003;</span>
+                                    <span>Translation techniques with AI assistance</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="wf-launch-date">Full curriculum launching Spring 2026</div>
+
+                        <div style="margin-top: 24px;">
+                            <div style="font-size: 0.875rem; color: #555; margin-bottom: 12px;">Get notified when it launches:</div>
+                            <div class="wf-email-signup">
+                                <div class="wf-input">your@email.com</div>
+                                <div class="wf-button primary">Notify me</div>
+                            </div>
+                        </div>
+
+                        <div class="wf-divider">or continue exploring:</div>
+
+                        <div class="wf-button-row">
+                            <div class="wf-button secondary">Continue contributing</div>
+                            <div class="wf-button secondary">Explore tablet archive</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">"Notify me"</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Submit email, show J3-S7</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Continue contributing</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J2</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Explore archive</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to explore page</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 7: Signup Confirmation -->
+        <section id="screen-7" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 7 of 7</div>
+                    <h2 class="screen-title">Signup Confirmation</h2>
+                    <p class="screen-goal">User Goal: Confirmation of signup</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J3-S7-confirmation</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe" style="min-height: auto;">
+                    <div class="wf-confirmation">
+                        <div class="wf-confirmation-icon">&#10003;</div>
+                        <div class="wf-confirmation-title">You're on the list!</div>
+                        <div class="wf-confirmation-message">
+                            We'll notify you at email@example.com when the curriculum launches.
+                        </div>
+
+                        <div style="margin-top: 24px;">
+                            <div style="font-size: 0.875rem; color: #666; margin-bottom: 16px;">In the meantime:</div>
+                            <div class="wf-button-row">
+                                <div class="wf-button secondary">Continue contributing</div>
+                                <div class="wf-button secondary">Explore tablet archive</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Email Handling (Release 1)</div>
+                <p style="font-size: 0.875rem; color: #666; margin-top: 8px;">For the demo/POC:</p>
+                <ul style="font-size: 0.875rem; color: #555; padding-left: 20px; margin-top: 8px;">
+                    <li style="margin-bottom: 4px;">Store email in localStorage</li>
+                    <li style="margin-bottom: 4px;">Show confirmation immediately</li>
+                    <li style="margin-bottom: 4px;">No actual email sent</li>
+                </ul>
+                <p style="font-size: 0.8rem; color: #888; margin-top: 12px;">Future implementation will connect to email service.</p>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Return Behavior</div>
+                <p style="font-size: 0.875rem; color: #666;">
+                    If user returns after completing preview:
+                </p>
+                <ul style="font-size: 0.875rem; color: #555; padding-left: 20px; margin-top: 8px;">
+                    <li style="margin-bottom: 4px;">Show "Continue where you left off" or replay option</li>
+                    <li style="margin-bottom: 4px;">Skip to completion screen if already done</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function scrollToScreen(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+            document.querySelectorAll('.screen-nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        const screens = document.querySelectorAll('.screen-section');
+        const navButtons = document.querySelectorAll('.screen-nav-btn');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            screens.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navButtons.forEach((btn, index) => {
+                btn.classList.remove('active');
+                if (current === `screen-${index + 1}`) {
+                    btn.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

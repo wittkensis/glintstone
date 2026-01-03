@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glintstone Screenflows - Journey Overview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #e0e0e0;
+            color: #555;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+
+        .journeys-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+
+        .journey-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 24px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .journey-card:hover {
+            border-color: #999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .journey-id {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .journey-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 8px;
+        }
+
+        .journey-user {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .journey-description {
+            font-size: 0.875rem;
+            color: #555;
+            margin-bottom: 16px;
+            flex-grow: 1;
+        }
+
+        .journey-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 0.75rem;
+            color: #888;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+            margin-top: auto;
+        }
+
+        .priority-p0 {
+            border-left: 4px solid #c00;
+        }
+
+        .priority-p1 {
+            border-left: 4px solid #f90;
+        }
+
+        .flow-diagram {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 32px;
+            margin-bottom: 40px;
+        }
+
+        .flow-diagram h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 24px;
+        }
+
+        .flow-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .flow-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .flow-node {
+            background: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            padding: 12px 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .flow-node.entry {
+            background: #e8f5e9;
+            border-color: #81c784;
+        }
+
+        .flow-node.j1 { background: #e3f2fd; border-color: #64b5f6; }
+        .flow-node.j2 { background: #fff3e0; border-color: #ffb74d; }
+        .flow-node.j3 { background: #f3e5f5; border-color: #ba68c8; }
+        .flow-node.j4 { background: #e8eaf6; border-color: #7986cb; }
+
+        .flow-arrow {
+            color: #999;
+            font-size: 1.5rem;
+        }
+
+        .metrics-section {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 32px;
+            margin-bottom: 40px;
+        }
+
+        .metrics-section h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 20px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .metric-card {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .metric-target {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-dot.p0 { background: #c00; }
+        .legend-dot.p1 { background: #f90; }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+            font-size: 0.875rem;
+            border-top: 1px solid #ddd;
+        }
+
+        .annotation {
+            background: #fffde7;
+            border: 1px dashed #fbc02d;
+            border-radius: 4px;
+            padding: 16px;
+            margin-top: 20px;
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        .annotation strong {
+            color: #f57f17;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="badge">Phase 3 - UX Design</div>
+            <h1>Glintstone User Journeys</h1>
+            <p class="subtitle">Interactive wireframe documentation for all primary user flows. Click a journey card to view detailed screen-by-screen wireframes.</p>
+        </header>
+
+        <section class="flow-diagram">
+            <h2>Journey Flow Overview</h2>
+            <div class="flow-visual">
+                <div class="flow-row">
+                    <div class="flow-node entry">Entry Point</div>
+                    <span class="flow-arrow">&#8594;</span>
+                    <div class="flow-node j1">J1: Marketing</div>
+                    <span class="flow-arrow">&#8594;</span>
+                    <div class="flow-node j2">J2: Passerby</div>
+                </div>
+                <div class="flow-row" style="margin-left: 280px;">
+                    <span class="flow-arrow">&#8595;</span>
+                </div>
+                <div class="flow-row" style="margin-left: 180px;">
+                    <div class="flow-node j3">J3: Early Learner</div>
+                    <span class="flow-arrow">&#8592;</span>
+                    <span style="color: #999; font-size: 0.875rem;">or</span>
+                    <span class="flow-arrow">&#8594;</span>
+                    <div class="flow-node j4">J4: Expert Review</div>
+                </div>
+            </div>
+            <div class="annotation">
+                <strong>Note:</strong> Users enter through J1 (Marketing) and can branch to J2 (Passerby) for quick contributions, J3 (Early Learner) for curriculum preview, or J4 (Expert Review) for scholarly tools. Each journey is designed for specific user types and goals.
+            </div>
+        </section>
+
+        <section class="journeys-grid">
+            <a href="J1-marketing.html" class="journey-card priority-p0">
+                <div class="journey-id">J1</div>
+                <div class="journey-title">Marketing Page</div>
+                <div class="journey-user">All visitors (entry point)</div>
+                <div class="journey-description">
+                    Landing experience that converts visitors to contributors. Hero section, social proof, pathways for different user types, and trust-building content.
+                </div>
+                <div class="journey-meta">
+                    <span>6 screens</span>
+                    <span>P0 - Critical</span>
+                </div>
+            </a>
+
+            <a href="J2-passerby.html" class="journey-card priority-p0">
+                <div class="journey-id">J2</div>
+                <div class="journey-title">Passerby First Contribution</div>
+                <div class="journey-user">Anonymous/new users</div>
+                <div class="journey-description">
+                    Zero-friction contribution flow. Welcome, tutorial, task loop, reward feedback, and session summary. Goal: first task in under 60 seconds.
+                </div>
+                <div class="journey-meta">
+                    <span>7 screens</span>
+                    <span>P0 - Most Critical</span>
+                </div>
+            </a>
+
+            <a href="J3-early-learner.html" class="journey-card priority-p1">
+                <div class="journey-id">J3</div>
+                <div class="journey-title">Early Learner Curriculum</div>
+                <div class="journey-user">Motivated passerby</div>
+                <div class="journey-description">
+                    Preview of learning pathway. Curriculum overview, interactive lessons on cuneiform basics, and email capture for launch notification.
+                </div>
+                <div class="journey-meta">
+                    <span>7 screens</span>
+                    <span>P1 - Should Have</span>
+                </div>
+            </a>
+
+            <a href="J4-expert-review.html" class="journey-card priority-p1">
+                <div class="journey-id">J4</div>
+                <div class="journey-title">Expert Review Workflow</div>
+                <div class="journey-user">Academic/scholar</div>
+                <div class="journey-description">
+                    Demonstration of expert tools. Review queue, transcription interface, action workflows, ATF export, and CDLI integration preview.
+                </div>
+                <div class="journey-meta">
+                    <span>6 screens</span>
+                    <span>P1 - Should Have</span>
+                </div>
+            </a>
+        </section>
+
+        <section class="metrics-section">
+            <h2>Success Metrics by Journey</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">J1 Primary CTA Click Rate</div>
+                    <div class="metric-value">&gt; 15%</div>
+                    <div class="metric-target">Target for marketing conversion</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">J2 Time to First Task</div>
+                    <div class="metric-value">&lt; 25s</div>
+                    <div class="metric-target">From entry to active contribution</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">J2 Tasks per Session</div>
+                    <div class="metric-value">&gt; 5</div>
+                    <div class="metric-target">Average contributions per visit</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">J3 Early Access Signup</div>
+                    <div class="metric-value">&gt; 20%</div>
+                    <div class="metric-target">Email capture rate</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">J4 Demo Completion</div>
+                    <div class="metric-value">&gt; 60%</div>
+                    <div class="metric-target">Experts completing walkthrough</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">J4 Pilot Interest</div>
+                    <div class="metric-value">&gt; 30%</div>
+                    <div class="metric-target">Experts expressing interest</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot p0"></div>
+                <span>P0 - Critical Path (must have for release)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot p1"></div>
+                <span>P1 - Should Have (important for release)</span>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Glintstone UX Documentation - Phase 3 Screenflows</p>
+        <p>Low-fidelity wireframes for browser preview. Not final visual design.</p>
+    </footer>
+</body>
+</html>

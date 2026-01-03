@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J1: Marketing Page - Glintstone Wireframes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .page-header {
+            background: white;
+            border-bottom: 1px solid #ddd;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .page-header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .back-link {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .back-link:hover {
+            color: #333;
+        }
+
+        .page-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .page-meta {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .journey-header {
+            margin-bottom: 40px;
+        }
+
+        .journey-badge {
+            display: inline-block;
+            background: #c00;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .journey-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 8px;
+        }
+
+        .journey-description {
+            font-size: 1rem;
+            color: #666;
+            max-width: 600px;
+        }
+
+        .journey-stats {
+            display: flex;
+            gap: 32px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .screen-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .screen-nav-btn {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .screen-nav-btn:hover {
+            border-color: #999;
+        }
+
+        .screen-nav-btn.active {
+            background: #333;
+            color: white;
+            border-color: #333;
+        }
+
+        .screen-section {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+
+        .screen-header {
+            background: #fafafa;
+            border-bottom: 1px solid #ddd;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .screen-number {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .screen-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #222;
+            margin-top: 4px;
+        }
+
+        .screen-goal {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .screen-meta {
+            text-align: right;
+        }
+
+        .screen-id {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #888;
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+
+        .wireframe-container {
+            padding: 32px;
+            background: #fafafa;
+            display: flex;
+            justify-content: center;
+        }
+
+        .wireframe {
+            background: white;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 800px;
+            min-height: 500px;
+        }
+
+        /* Wireframe components */
+        .wf-header {
+            background: #e8e8e8;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .wf-logo {
+            background: #bbb;
+            width: 100px;
+            height: 24px;
+            border-radius: 3px;
+        }
+
+        .wf-nav {
+            display: flex;
+            gap: 16px;
+        }
+
+        .wf-nav-item {
+            background: #d0d0d0;
+            width: 60px;
+            height: 16px;
+            border-radius: 2px;
+        }
+
+        .wf-button {
+            background: #999;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .wf-button.primary {
+            background: #555;
+        }
+
+        .wf-button.large {
+            padding: 12px 24px;
+            font-size: 0.875rem;
+        }
+
+        .wf-section {
+            padding: 40px 32px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .wf-section:last-child {
+            border-bottom: none;
+        }
+
+        .wf-headline {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #444;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .wf-subhead {
+            font-size: 0.875rem;
+            color: #888;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .wf-hero-image {
+            background: linear-gradient(135deg, #d0d0d0 0%, #b0b0b0 100%);
+            width: 280px;
+            height: 180px;
+            border-radius: 8px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            font-size: 0.75rem;
+        }
+
+        .wf-cta-area {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .wf-scroll-hint {
+            text-align: center;
+            color: #aaa;
+            font-size: 0.75rem;
+            margin-top: 16px;
+        }
+
+        .wf-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .wf-grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .wf-grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .wf-grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .wf-stat-card {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .wf-stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #555;
+        }
+
+        .wf-stat-label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .wf-quote {
+            background: #f9f9f9;
+            border-left: 3px solid #ccc;
+            padding: 16px 20px;
+            margin: 20px 0;
+            font-style: italic;
+            color: #666;
+            font-size: 0.875rem;
+        }
+
+        .wf-badge-row {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .wf-institution-badge {
+            background: #e8e8e8;
+            width: 80px;
+            height: 40px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.625rem;
+            color: #888;
+        }
+
+        .wf-path-card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        .wf-path-icon {
+            background: #d0d0d0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-bottom: 12px;
+        }
+
+        .wf-path-title {
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 8px;
+        }
+
+        .wf-path-desc {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 16px;
+        }
+
+        .wf-step-card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .wf-step-number {
+            background: #555;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin: 0 auto 12px;
+        }
+
+        .wf-step-title {
+            font-weight: 600;
+            color: #444;
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+        }
+
+        .wf-step-desc {
+            font-size: 0.7rem;
+            color: #888;
+            line-height: 1.4;
+        }
+
+        .wf-trust-box {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .wf-scholar-section {
+            background: #fafafa;
+        }
+
+        .wf-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .wf-integration-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .wf-integration-logo {
+            background: #e0e0e0;
+            width: 60px;
+            height: 30px;
+            border-radius: 4px;
+            margin: 0 auto 12px;
+        }
+
+        .wf-integration-name {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.875rem;
+            margin-bottom: 4px;
+        }
+
+        .wf-integration-desc {
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .wf-expert-row {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .wf-expert-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+            width: 120px;
+        }
+
+        .wf-expert-avatar {
+            background: #d0d0d0;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin: 0 auto 8px;
+        }
+
+        .wf-expert-name {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .wf-expert-institution {
+            font-size: 0.625rem;
+            color: #888;
+        }
+
+        .wf-footer {
+            background: #333;
+            color: white;
+            padding: 32px;
+        }
+
+        .wf-footer-logo {
+            background: #555;
+            width: 80px;
+            height: 20px;
+            border-radius: 3px;
+            margin-bottom: 16px;
+        }
+
+        .wf-footer-links {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .wf-footer-link {
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+
+        .wf-newsletter-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .wf-input {
+            background: #444;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 8px 12px;
+            flex: 1;
+            color: #aaa;
+            font-size: 0.75rem;
+        }
+
+        .wf-footer-copyright {
+            font-size: 0.625rem;
+            color: #666;
+            margin-top: 20px;
+        }
+
+        /* Component callouts */
+        .component-panel {
+            padding: 24px;
+            border-top: 1px solid #ddd;
+        }
+
+        .component-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 16px;
+        }
+
+        .component-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .component-table th {
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            padding: 8px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .component-table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            color: #555;
+        }
+
+        .component-table code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+
+        .interaction-panel {
+            padding: 24px;
+            background: #fffde7;
+            border-top: 1px solid #ddd;
+        }
+
+        .interaction-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .interaction-item {
+            display: flex;
+            gap: 12px;
+            font-size: 0.8rem;
+            align-items: baseline;
+        }
+
+        .interaction-element {
+            font-weight: 600;
+            color: #555;
+            min-width: 120px;
+        }
+
+        .interaction-action {
+            color: #888;
+            min-width: 80px;
+        }
+
+        .interaction-result {
+            color: #666;
+        }
+
+        .accessibility-panel {
+            padding: 24px;
+            background: #e8f5e9;
+            border-top: 1px solid #ddd;
+        }
+
+        .accessibility-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .accessibility-item {
+            font-size: 0.8rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .accessibility-check {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .annotation-marker {
+            position: absolute;
+            background: #ff5722;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .responsive-notes {
+            padding: 24px;
+            background: #e3f2fd;
+            border-top: 1px solid #ddd;
+        }
+
+        .responsive-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 12px;
+        }
+
+        .responsive-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .responsive-item {
+            font-size: 0.8rem;
+        }
+
+        .responsive-breakpoint {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 4px;
+        }
+
+        .responsive-desc {
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .wf-grid-3, .wf-grid-4 {
+                grid-template-columns: 1fr;
+            }
+            .wf-grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .responsive-grid {
+                grid-template-columns: 1fr;
+            }
+            .journey-stats {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header-inner">
+            <a href="index.html" class="back-link">
+                <span>&larr;</span> All Journeys
+            </a>
+            <div class="page-title">J1: Marketing Page</div>
+            <div class="page-meta">6 screens</div>
+        </div>
+    </header>
+
+    <div class="container">
+        <section class="journey-header">
+            <div class="journey-badge">P0 - Critical Path</div>
+            <h1 class="journey-title">J1: Marketing Page Journey</h1>
+            <p class="journey-description">
+                Landing experience for all visitors. The goal is to convert visitors to contributors within one page scroll. Entry point for all user journeys.
+            </p>
+            <div class="journey-stats">
+                <div class="stat">
+                    <div class="stat-value">&gt;15%</div>
+                    <div class="stat-label">CTA Click Rate</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&gt;60%</div>
+                    <div class="stat-label">Scroll Depth</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&gt;10%</div>
+                    <div class="stat-label">First Task Transition</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&lt;2.5s</div>
+                    <div class="stat-label">LCP Target</div>
+                </div>
+            </div>
+        </section>
+
+        <nav class="screen-nav">
+            <button class="screen-nav-btn active" onclick="scrollToScreen('screen-1')">1. Hero</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-2')">2. Social Proof</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-3')">3. How You Help</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-4')">4. How It Works</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-5')">5. For Scholars</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-6')">6. Final CTA</button>
+        </nav>
+
+        <!-- Screen 1: Hero -->
+        <section id="screen-1" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 1 of 6</div>
+                    <h2 class="screen-title">Hero Section</h2>
+                    <p class="screen-goal">User Goal: Understand what Glintstone is within 10 seconds</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J1-S1-hero</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-header">
+                        <div class="wf-logo"></div>
+                        <div class="wf-nav">
+                            <div class="wf-nav-item"></div>
+                            <div class="wf-nav-item"></div>
+                        </div>
+                        <div class="wf-button">Try it now</div>
+                    </div>
+                    <div class="wf-section" style="text-align: center; padding: 60px 32px;">
+                        <div class="wf-hero-image">
+                            [TabletViewer: hero]<br>
+                            Tablet + constellation animation
+                        </div>
+                        <div class="wf-headline">WRITTEN IN THE STARS.<br>WAITING TO BE READ.</div>
+                        <div class="wf-subhead">Help unlock humanity's oldest stories. No experience needed.</div>
+                        <div class="wf-cta-area">
+                            <div class="wf-button primary large">Try it now - 2 minutes</div>
+                        </div>
+                        <div class="wf-scroll-hint">
+                            Scroll to learn more<br>
+                            <span style="font-size: 1.5rem;">&#8595;</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Components Used</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Source</th>
+                            <th>Configuration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Header</td>
+                            <td><code>navigation.md</code></td>
+                            <td>variant="marketing"</td>
+                        </tr>
+                        <tr>
+                            <td>Button</td>
+                            <td><code>forms.md</code></td>
+                            <td>variant="primary", size="lg"</td>
+                        </tr>
+                        <tr>
+                            <td>TabletViewer</td>
+                            <td><code>tablet.md</code></td>
+                            <td>variant="hero", readonly</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">"Try it now" (header)</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J2 Screen 1</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">"Try it now" (hero)</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J2 Screen 1</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Scroll indicator</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Smooth scroll to Screen 2</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Tablet image</span>
+                        <span class="interaction-action">None</span>
+                        <span class="interaction-result">Decorative animation only</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Headline uses &lt;h1&gt;</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Tablet image has alt text describing the artifact</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Animation respects prefers-reduced-motion</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> CTA is keyboard focusable</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Skip link available in header</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 2: Social Proof -->
+        <section id="screen-2" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 2 of 6</div>
+                    <h2 class="screen-title">Social Proof Section</h2>
+                    <p class="screen-goal">User Goal: Verify this is real and credible</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J1-S2-proof</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-section">
+                        <div class="wf-grid wf-grid-3" style="margin-bottom: 24px;">
+                            <div class="wf-stat-card">
+                                <div class="wf-stat-number">1.2M+</div>
+                                <div class="wf-stat-label">tablets exist</div>
+                            </div>
+                            <div class="wf-stat-card">
+                                <div class="wf-stat-number">4,700+</div>
+                                <div class="wf-stat-label">contributors worldwide</div>
+                            </div>
+                            <div class="wf-stat-card">
+                                <div class="wf-stat-number">85%</div>
+                                <div class="wf-stat-label">still unread</div>
+                            </div>
+                        </div>
+                        <div class="wf-quote">
+                            "This is the largest untapped archive of human knowledge on Earth. These tablets hold 3,000 years of stories, laws, letters, and recipes - waiting to be read."
+                        </div>
+                        <div style="text-align: center; margin-top: 24px;">
+                            <div style="font-size: 0.75rem; color: #888; margin-bottom: 12px;">Trusted by:</div>
+                            <div class="wf-badge-row">
+                                <div class="wf-institution-badge">Yale</div>
+                                <div class="wf-institution-badge">CDLI</div>
+                                <div class="wf-institution-badge">Penn</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Components Used</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Source</th>
+                            <th>Configuration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>StatCard</td>
+                            <td><code>progress.md</code></td>
+                            <td>variant="lg"</td>
+                        </tr>
+                        <tr>
+                            <td>Grid</td>
+                            <td><code>layout.md</code></td>
+                            <td>columns="3"</td>
+                        </tr>
+                        <tr>
+                            <td>InstitutionBadge</td>
+                            <td><code>trust.md</code></td>
+                            <td>variant="logo-only"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Stats</span>
+                        <span class="interaction-action">Scroll into view</span>
+                        <span class="interaction-result">Animate count-up (1.5s, staggered 100ms)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Institution logos</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Open institution site (new tab)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Stats have proper labels (not just numbers)</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Institution links indicate external destination</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Animation respects prefers-reduced-motion</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 3: How You Can Help -->
+        <section id="screen-3" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 3 of 6</div>
+                    <h2 class="screen-title">How You Can Help</h2>
+                    <p class="screen-goal">User Goal: Understand what they would actually do</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J1-S3-help</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-section">
+                        <div class="wf-section-title">HOW YOU CAN HELP</div>
+                        <div class="wf-grid wf-grid-2" style="margin-bottom: 16px;">
+                            <div class="wf-path-card">
+                                <div class="wf-path-icon"></div>
+                                <div class="wf-path-title">Got 2 minutes?</div>
+                                <div class="wf-path-desc">Match ancient signs with modern references. No expertise needed. Your input trains our AI and helps experts focus.</div>
+                                <div class="wf-button">Try quick tasks</div>
+                            </div>
+                            <div class="wf-path-card">
+                                <div class="wf-path-icon"></div>
+                                <div class="wf-path-title">Want to go deeper?</div>
+                                <div class="wf-path-desc">Learn to read cuneiform and contribute full transcriptions with AI assistance.</div>
+                                <div class="wf-button">Start learning</div>
+                            </div>
+                        </div>
+                        <div class="wf-path-card" style="text-align: center;">
+                            <div class="wf-path-icon" style="margin: 0 auto 12px;"></div>
+                            <div class="wf-path-title">Already an expert?</div>
+                            <div class="wf-path-desc">Accelerate your review workflow. Approve AI-assisted drafts, export to ATF, and publish faster.</div>
+                            <div class="wf-button">Access review tools</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Components Used</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Source</th>
+                            <th>Configuration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Grid</td>
+                            <td><code>layout.md</code></td>
+                            <td>columns="2" (top), columns="1" (bottom)</td>
+                        </tr>
+                        <tr>
+                            <td>Stack</td>
+                            <td><code>layout.md</code></td>
+                            <td>space="md"</td>
+                        </tr>
+                        <tr>
+                            <td>Button</td>
+                            <td><code>forms.md</code></td>
+                            <td>variant="secondary"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">"Try quick tasks"</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J2 Screen 1</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">"Start learning"</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J3 Screen 1</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">"Access review tools"</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J4 Screen 1</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Section has heading for navigation</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Three distinct paths clearly differentiated</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> All buttons are keyboard accessible</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> No jargon in hobbyist path</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 4: How It Works -->
+        <section id="screen-4" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 4 of 6</div>
+                    <h2 class="screen-title">How It Works</h2>
+                    <p class="screen-goal">User Goal: Understand the process and trust the system</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J1-S4-works</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-section">
+                        <div class="wf-section-title">HOW IT WORKS</div>
+                        <div class="wf-grid wf-grid-4">
+                            <div class="wf-step-card">
+                                <div class="wf-step-number">1</div>
+                                <div class="wf-step-title">CONTRIBUTE</div>
+                                <div class="wf-step-desc">Complete simple visual tasks or transcribe with AI help.</div>
+                            </div>
+                            <div class="wf-step-card">
+                                <div class="wf-step-number">2</div>
+                                <div class="wf-step-title">VERIFY</div>
+                                <div class="wf-step-desc">Your work is compared with other contributors and AI suggestions.</div>
+                            </div>
+                            <div class="wf-step-card">
+                                <div class="wf-step-number">3</div>
+                                <div class="wf-step-title">REVIEW</div>
+                                <div class="wf-step-desc">Expert Assyriologists verify and approve final work.</div>
+                            </div>
+                            <div class="wf-step-card">
+                                <div class="wf-step-number">4</div>
+                                <div class="wf-step-title">PUBLISH</div>
+                                <div class="wf-step-desc">Verified translations are published. You're credited.</div>
+                            </div>
+                        </div>
+                        <div class="wf-trust-box">
+                            "Every contribution is validated. Expert review ensures accuracy. You're always credited for your work. Nothing is published without verification."
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Components Used</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Source</th>
+                            <th>Configuration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Grid</td>
+                            <td><code>layout.md</code></td>
+                            <td>columns="4" (desktop), "2" (tablet), "1" (mobile)</td>
+                        </tr>
+                        <tr>
+                            <td>Stack</td>
+                            <td><code>layout.md</code></td>
+                            <td>space="sm"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">None</span>
+                        <span class="interaction-action">-</span>
+                        <span class="interaction-result">Informational content only</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Steps are numbered for clarity</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Each step is a discrete article</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Trust messaging is emphasized</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> No interaction needed</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 5: For Scholars -->
+        <section id="screen-5" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 5 of 6</div>
+                    <h2 class="screen-title">For Scholars</h2>
+                    <p class="screen-goal">User Goal: (For academics) Verify scholarly legitimacy</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J1-S5-scholars</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-section wf-scholar-section">
+                        <div class="wf-section-title">BUILT FOR SCHOLARS</div>
+                        <p style="text-align: center; font-size: 0.875rem; color: #666; margin-bottom: 20px;">Glintstone integrates with the tools you already use:</p>
+                        <div class="wf-grid wf-grid-3" style="margin-bottom: 32px;">
+                            <div class="wf-integration-card">
+                                <div class="wf-integration-logo"></div>
+                                <div class="wf-integration-name">CDLI</div>
+                                <div class="wf-integration-desc">P-number linking and metadata sync</div>
+                            </div>
+                            <div class="wf-integration-card">
+                                <div class="wf-integration-logo"></div>
+                                <div class="wf-integration-name">ORACC</div>
+                                <div class="wf-integration-desc">ATF format export for publications</div>
+                            </div>
+                            <div class="wf-integration-card">
+                                <div class="wf-integration-logo"></div>
+                                <div class="wf-integration-name">ePSD</div>
+                                <div class="wf-integration-desc">Dictionary lookup and lemmatization</div>
+                            </div>
+                        </div>
+                        <hr style="border: none; border-top: 1px solid #ddd; margin: 24px 0;">
+                        <div class="wf-section-title">ADVISORY BOARD</div>
+                        <div class="wf-expert-row">
+                            <div class="wf-expert-card">
+                                <div class="wf-expert-avatar"></div>
+                                <div class="wf-expert-name">Dr. Name</div>
+                                <div class="wf-expert-institution">Institution</div>
+                            </div>
+                            <div class="wf-expert-card">
+                                <div class="wf-expert-avatar"></div>
+                                <div class="wf-expert-name">Dr. Name</div>
+                                <div class="wf-expert-institution">Institution</div>
+                            </div>
+                            <div class="wf-expert-card">
+                                <div class="wf-expert-avatar"></div>
+                                <div class="wf-expert-name">Dr. Name</div>
+                                <div class="wf-expert-institution">Institution</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Components Used</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Source</th>
+                            <th>Configuration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>InstitutionBadge</td>
+                            <td><code>trust.md</code></td>
+                            <td>variant="default", linked</td>
+                        </tr>
+                        <tr>
+                            <td>ExpertCard</td>
+                            <td><code>trust.md</code></td>
+                            <td>variant="compact"</td>
+                        </tr>
+                        <tr>
+                            <td>Grid</td>
+                            <td><code>layout.md</code></td>
+                            <td>columns="3"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">CDLI badge</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Open cdli.ucla.edu (new tab)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">ORACC badge</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Open oracc.org (new tab)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Expert card</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">(Future: expert profile page)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> External links indicate destination</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Advisory board uses proper headings</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Integration details expandable for detail</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 6: Final CTA -->
+        <section id="screen-6" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 6 of 6</div>
+                    <h2 class="screen-title">Final CTA + Footer</h2>
+                    <p class="screen-goal">User Goal: Take action or get more information</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J1-S6-cta</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-section" style="text-align: center; background: #f5f5f5;">
+                        <div class="wf-headline">READY TO MAKE HISTORY?</div>
+                        <div style="margin-top: 20px;">
+                            <div class="wf-button primary large">Try it now - No account needed</div>
+                        </div>
+                    </div>
+                    <div class="wf-footer">
+                        <div class="wf-footer-logo"></div>
+                        <div class="wf-footer-links">
+                            <span class="wf-footer-link">About</span>
+                            <span class="wf-footer-link">For Scholars</span>
+                            <span class="wf-footer-link">For Volunteers</span>
+                            <span class="wf-footer-link">Contact</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px;">Newsletter:</div>
+                        <div class="wf-newsletter-row">
+                            <div class="wf-input">your@email.com</div>
+                            <div class="wf-button">Subscribe</div>
+                        </div>
+                        <div class="wf-footer-copyright">(c) 2026 Glintstone. Built to unlock the past.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Components Used</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Source</th>
+                            <th>Configuration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Button</td>
+                            <td><code>forms.md</code></td>
+                            <td>variant="primary", size="lg"</td>
+                        </tr>
+                        <tr>
+                            <td>EmailInput</td>
+                            <td><code>forms.md</code></td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>Cluster</td>
+                            <td><code>layout.md</code></td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">"Try it now"</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J2 Screen 1</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Footer links</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to respective pages</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Newsletter submit</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Record email (localStorage for demo)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Email input has proper label</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Footer navigation uses semantic list</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> All links are keyboard accessible</div>
+                </div>
+            </div>
+
+            <div class="responsive-notes">
+                <div class="responsive-title">Responsive Behavior (All Screens)</div>
+                <div class="responsive-grid">
+                    <div class="responsive-item">
+                        <div class="responsive-breakpoint">Mobile (&lt; 768px)</div>
+                        <div class="responsive-desc">Tablet image smaller, centered. Headlines stack. Single column stats and paths. Advisory board horizontal scroll.</div>
+                    </div>
+                    <div class="responsive-item">
+                        <div class="responsive-breakpoint">Tablet (768-1023px)</div>
+                        <div class="responsive-desc">3-column stats maintained. 2x2 path grid. Steps in 2x2 grid.</div>
+                    </div>
+                    <div class="responsive-item">
+                        <div class="responsive-breakpoint">Desktop (&ge; 1024px)</div>
+                        <div class="responsive-desc">Full layout as wireframed. Maximum content width applies.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function scrollToScreen(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+
+            // Update active nav button
+            document.querySelectorAll('.screen-nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // Update active nav on scroll
+        const screens = document.querySelectorAll('.screen-section');
+        const navButtons = document.querySelectorAll('.screen-nav-btn');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            screens.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navButtons.forEach((btn, index) => {
+                btn.classList.remove('active');
+                if (current === `screen-${index + 1}`) {
+                    btn.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

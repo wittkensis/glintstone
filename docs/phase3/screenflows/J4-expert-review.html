@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J4: Expert Review Workflow - Glintstone Wireframes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .page-header {
+            background: white;
+            border-bottom: 1px solid #ddd;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .page-header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .back-link {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .back-link:hover {
+            color: #333;
+        }
+
+        .page-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .page-meta {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .journey-header {
+            margin-bottom: 40px;
+        }
+
+        .journey-badge {
+            display: inline-block;
+            background: #f90;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .journey-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 8px;
+        }
+
+        .journey-description {
+            font-size: 1rem;
+            color: #666;
+            max-width: 600px;
+        }
+
+        .journey-stats {
+            display: flex;
+            gap: 32px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .screen-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .screen-nav-btn {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .screen-nav-btn:hover {
+            border-color: #999;
+        }
+
+        .screen-nav-btn.active {
+            background: #333;
+            color: white;
+            border-color: #333;
+        }
+
+        .screen-section {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+
+        .screen-header {
+            background: #fafafa;
+            border-bottom: 1px solid #ddd;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .screen-number {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .screen-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #222;
+            margin-top: 4px;
+        }
+
+        .screen-goal {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .screen-meta {
+            text-align: right;
+        }
+
+        .screen-id {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #888;
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+
+        .wireframe-container {
+            padding: 32px;
+            background: #fafafa;
+            display: flex;
+            justify-content: center;
+        }
+
+        .wireframe {
+            background: white;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 900px;
+            min-height: 500px;
+        }
+
+        .wireframe.narrow {
+            max-width: 500px;
+        }
+
+        /* Wireframe components */
+        .wf-demo-banner {
+            background: #fff3e0;
+            border-bottom: 1px solid #ffe0b2;
+            padding: 8px 20px;
+            font-size: 0.75rem;
+            color: #e65100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wf-demo-icon {
+            background: #ff9800;
+            color: white;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.625rem;
+            font-weight: bold;
+        }
+
+        .wf-header {
+            background: #e8e8e8;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .wf-logo {
+            background: #bbb;
+            width: 100px;
+            height: 24px;
+            border-radius: 3px;
+        }
+
+        .wf-nav {
+            display: flex;
+            gap: 16px;
+        }
+
+        .wf-nav-item {
+            background: #d0d0d0;
+            width: 60px;
+            height: 16px;
+            border-radius: 2px;
+        }
+
+        .wf-breadcrumb {
+            padding: 12px 20px;
+            font-size: 0.75rem;
+            color: #888;
+            border-bottom: 1px solid #eee;
+        }
+
+        .wf-section {
+            padding: 24px;
+        }
+
+        .wf-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 16px;
+        }
+
+        .wf-headline {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #444;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .wf-subhead {
+            font-size: 0.875rem;
+            color: #888;
+            text-align: center;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .wf-button {
+            background: #999;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .wf-button.primary {
+            background: #555;
+        }
+
+        .wf-button.large {
+            padding: 12px 24px;
+            font-size: 0.875rem;
+        }
+
+        .wf-button.secondary {
+            background: #eee;
+            color: #555;
+        }
+
+        .wf-button.success {
+            background: #4caf50;
+        }
+
+        .wf-button.warning {
+            background: #ff9800;
+        }
+
+        .wf-button.danger {
+            background: #f44336;
+        }
+
+        .wf-button.ghost {
+            background: transparent;
+            color: #888;
+            border: 1px solid #ddd;
+        }
+
+        .wf-how-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .wf-how-card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .wf-how-icon {
+            background: #e0e0e0;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .wf-how-number {
+            font-size: 0.625rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .wf-how-title {
+            font-weight: 600;
+            color: #444;
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+        }
+
+        .wf-how-desc {
+            font-size: 0.75rem;
+            color: #888;
+            line-height: 1.4;
+        }
+
+        .wf-page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .wf-page-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .wf-queue-count {
+            font-size: 0.875rem;
+            color: #888;
+        }
+
+        .wf-queue-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .wf-queue-item:hover {
+            border-color: #999;
+        }
+
+        .wf-queue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .wf-queue-title {
+            font-weight: 600;
+            color: #444;
+            font-size: 0.875rem;
+        }
+
+        .wf-queue-id {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .wf-queue-meta {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .wf-confidence-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wf-confidence-track {
+            width: 60px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .wf-confidence-fill {
+            height: 100%;
+            background: #4caf50;
+            border-radius: 3px;
+        }
+
+        .wf-confidence-fill.medium {
+            background: #ff9800;
+        }
+
+        .wf-confidence-fill.low {
+            background: #f44336;
+        }
+
+        .wf-confidence-label {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .wf-contributors {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .wf-queue-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .wf-status-badge {
+            font-size: 0.625rem;
+            padding: 3px 8px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .wf-status-badge.accepted {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .wf-status-badge.review {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .wf-status-badge.proposed {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .wf-expert-count {
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .wf-review-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 400px;
+        }
+
+        .wf-review-left {
+            border-right: 1px solid #ddd;
+            padding: 20px;
+        }
+
+        .wf-review-right {
+            padding: 20px;
+        }
+
+        .wf-tablet-container {
+            background: linear-gradient(135deg, #d0d0d0 0%, #b0b0b0 100%);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .wf-tablet-image {
+            background: #a0a0a0;
+            width: 100%;
+            height: 200px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 0.75rem;
+        }
+
+        .wf-surface-tabs {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .wf-surface-tab {
+            background: rgba(255,255,255,0.3);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .wf-surface-tab.active {
+            background: rgba(255,255,255,0.6);
+            color: #444;
+        }
+
+        .wf-context-section {
+            margin-top: 16px;
+        }
+
+        .wf-context-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 8px;
+        }
+
+        .wf-context-item {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .wf-transcription-header {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 16px;
+        }
+
+        .wf-transcription-section {
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .wf-transcription-line {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .wf-transcription-line:hover {
+            background: #f5f5f5;
+        }
+
+        .wf-transcription-line.selected {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+        }
+
+        .wf-line-number {
+            font-size: 0.7rem;
+            color: #888;
+            width: 20px;
+        }
+
+        .wf-line-text {
+            flex: 1;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #444;
+        }
+
+        .wf-line-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .wf-line-confidence {
+            font-size: 0.625rem;
+            color: #888;
+        }
+
+        .wf-selected-detail {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .wf-detail-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 12px;
+        }
+
+        .wf-detail-row {
+            font-size: 0.8rem;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .wf-detail-label {
+            color: #888;
+        }
+
+        .wf-history-link {
+            font-size: 0.75rem;
+            color: #1976d2;
+            text-decoration: underline;
+            margin-top: 12px;
+            display: block;
+        }
+
+        .wf-action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .wf-modal {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 400px;
+            margin: 40px auto;
+        }
+
+        .wf-modal-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 16px;
+        }
+
+        .wf-modal-content {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .wf-modal-label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .wf-modal-value {
+            font-family: monospace;
+            font-size: 0.875rem;
+            color: #444;
+            margin-bottom: 12px;
+        }
+
+        .wf-modal-list {
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        .wf-modal-list li {
+            margin-bottom: 4px;
+        }
+
+        .wf-modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .wf-input {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px 14px;
+            font-size: 0.875rem;
+            color: #666;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .wf-input.monospace {
+            font-family: monospace;
+        }
+
+        .wf-textarea {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px 14px;
+            font-size: 0.875rem;
+            color: #666;
+            width: 100%;
+            min-height: 80px;
+            margin-bottom: 12px;
+        }
+
+        .wf-demo-confirmation {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .wf-demo-icon-large {
+            font-size: 2.5rem;
+            color: #4caf50;
+            margin-bottom: 16px;
+        }
+
+        .wf-demo-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 12px;
+        }
+
+        .wf-demo-message {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .wf-demo-note {
+            font-size: 0.8rem;
+            color: #888;
+            font-style: italic;
+            margin-top: 16px;
+        }
+
+        .wf-export-section {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .wf-export-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 12px;
+        }
+
+        .wf-export-desc {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .wf-code-block {
+            background: #2d2d2d;
+            color: #f0f0f0;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin-bottom: 12px;
+        }
+
+        .wf-code-comment {
+            color: #888;
+        }
+
+        .wf-export-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .wf-cdli-section {
+            margin-top: 24px;
+        }
+
+        .wf-cdli-badge {
+            background: #e8e8e8;
+            width: 60px;
+            height: 30px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .wf-cdli-desc {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .wf-cdli-list {
+            font-size: 0.75rem;
+            color: #888;
+            padding-left: 20px;
+        }
+
+        .wf-cdli-list li {
+            margin-bottom: 4px;
+        }
+
+        .wf-form-section {
+            padding: 24px;
+        }
+
+        .wf-form-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .wf-form-subtitle {
+            font-size: 0.875rem;
+            color: #888;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .wf-form-group {
+            margin-bottom: 16px;
+        }
+
+        .wf-form-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .wf-form-hint {
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .wf-form-footer {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .wf-email-contact {
+            font-size: 0.8rem;
+            color: #888;
+            text-align: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #ddd;
+        }
+
+        .wf-confirmation {
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .wf-confirmation-icon {
+            color: #4caf50;
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .wf-confirmation-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 8px;
+        }
+
+        .wf-confirmation-message {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 24px;
+        }
+
+        .wf-button-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Component panels */
+        .component-panel {
+            padding: 24px;
+            border-top: 1px solid #ddd;
+        }
+
+        .component-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 16px;
+        }
+
+        .component-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .component-table th {
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            padding: 8px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .component-table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            color: #555;
+        }
+
+        .component-table code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+
+        .interaction-panel {
+            padding: 24px;
+            background: #fffde7;
+            border-top: 1px solid #ddd;
+        }
+
+        .interaction-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .interaction-item {
+            display: flex;
+            gap: 12px;
+            font-size: 0.8rem;
+            align-items: baseline;
+        }
+
+        .interaction-element {
+            font-weight: 600;
+            color: #555;
+            min-width: 120px;
+        }
+
+        .interaction-action {
+            color: #888;
+            min-width: 80px;
+        }
+
+        .interaction-result {
+            color: #666;
+        }
+
+        .accessibility-panel {
+            padding: 24px;
+            background: #e8f5e9;
+            border-top: 1px solid #ddd;
+        }
+
+        .accessibility-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .accessibility-item {
+            font-size: 0.8rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .accessibility-check {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .trust-panel {
+            padding: 24px;
+            background: #e3f2fd;
+            border-top: 1px solid #ddd;
+        }
+
+        .trust-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .trust-item {
+            display: flex;
+            gap: 8px;
+            font-size: 0.8rem;
+        }
+
+        .trust-element {
+            font-weight: 600;
+            color: #1565c0;
+        }
+
+        .trust-purpose {
+            color: #555;
+        }
+
+        @media (max-width: 768px) {
+            .wf-how-grid {
+                grid-template-columns: 1fr;
+            }
+            .wf-review-layout {
+                grid-template-columns: 1fr;
+            }
+            .journey-stats {
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header-inner">
+            <a href="index.html" class="back-link">
+                <span>&larr;</span> All Journeys
+            </a>
+            <div class="page-title">J4: Expert Review Workflow</div>
+            <div class="page-meta">6 screens</div>
+        </div>
+    </header>
+
+    <div class="container">
+        <section class="journey-header">
+            <div class="journey-badge">P1 - Should Have</div>
+            <h1 class="journey-title">J4: Expert Review Workflow Preview</h1>
+            <p class="journey-description">
+                Demonstration of expert review tools for academics and scholars. Shows the review workflow and integration capabilities to build trust with potential expert users.
+            </p>
+            <div class="journey-stats">
+                <div class="stat">
+                    <div class="stat-value">&gt;80%</div>
+                    <div class="stat-label">Workflow Understanding</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&gt;60%</div>
+                    <div class="stat-label">Demo Completion</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">&gt;30%</div>
+                    <div class="stat-label">Pilot Interest</div>
+                </div>
+            </div>
+        </section>
+
+        <nav class="screen-nav">
+            <button class="screen-nav-btn active" onclick="scrollToScreen('screen-1')">1. Landing</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-2')">2. Queue</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-3')">3. Review Detail</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-4')">4. Action Demo</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-5')">5. Integration</button>
+            <button class="screen-nav-btn" onclick="scrollToScreen('screen-6')">6. Interest Form</button>
+        </nav>
+
+        <!-- Screen 1: Expert Landing -->
+        <section id="screen-1" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 1 of 6</div>
+                    <h2 class="screen-title">Expert Landing</h2>
+                    <p class="screen-goal">User Goal: Understand what Glintstone offers for expert scholars</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J4-S1-landing</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-header">
+                        <div class="wf-logo"></div>
+                        <div class="wf-nav">
+                            <div class="wf-nav-item"></div>
+                            <div class="wf-nav-item"></div>
+                        </div>
+                    </div>
+                    <div class="wf-section" style="text-align: center;">
+                        <div class="wf-headline">FOR SCHOLARS</div>
+                        <div style="font-size: 1.125rem; color: #555; margin-bottom: 8px;">Accelerate Your Transcription Workflow</div>
+                        <div class="wf-subhead">
+                            Glintstone brings AI-assisted drafts and crowdsourced verification to your desktop.<br>
+                            You review. You approve. You publish.
+                        </div>
+
+                        <div class="wf-section-title" style="margin-top: 32px;">HOW IT WORKS FOR EXPERTS</div>
+
+                        <div class="wf-how-grid">
+                            <div class="wf-how-card">
+                                <div class="wf-how-icon"></div>
+                                <div class="wf-how-number">1. AI + CROWD PREPARE</div>
+                                <div class="wf-how-desc">AI proposes initial readings. Volunteers verify. You get a head start.</div>
+                            </div>
+                            <div class="wf-how-card">
+                                <div class="wf-how-icon"></div>
+                                <div class="wf-how-number">2. YOU REVIEW</div>
+                                <div class="wf-how-desc">Approve, correct, or reject. Full control remains with you.</div>
+                            </div>
+                            <div class="wf-how-card">
+                                <div class="wf-how-icon"></div>
+                                <div class="wf-how-number">3. YOU PUBLISH</div>
+                                <div class="wf-how-desc">ATF export, full attribution, your name on it.</div>
+                            </div>
+                            <div class="wf-how-card">
+                                <div class="wf-how-icon"></div>
+                                <div class="wf-how-number">4. INTEGRATION</div>
+                                <div class="wf-how-desc">CDLI linking, ORACC-ready formats, familiar tools.</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 24px;">
+                            <div class="wf-button primary large">See the Review Interface</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Key Messages Addressing Academic Concerns</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Concern</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Loss of control</td>
+                            <td>"You review. You approve."</td>
+                        </tr>
+                        <tr>
+                            <td>Quality</td>
+                            <td>"Experts verify. That's how it works."</td>
+                        </tr>
+                        <tr>
+                            <td>Attribution</td>
+                            <td>"Full attribution. Your name on it."</td>
+                        </tr>
+                        <tr>
+                            <td>Integration</td>
+                            <td>"CDLI linking. ORACC-ready."</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">"See the Review Interface"</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J4-S2</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accessibility-panel">
+                <div class="component-title">Accessibility Notes</div>
+                <div class="accessibility-list">
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Professional, jargon-appropriate language</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> Clear value proposition</div>
+                    <div class="accessibility-item"><span class="accessibility-check">&#10003;</span> No dumbing down</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 2: Review Queue Demo -->
+        <section id="screen-2" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 2 of 6</div>
+                    <h2 class="screen-title">Review Queue Demo</h2>
+                    <p class="screen-goal">User Goal: See what the review workflow looks like</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J4-S2-queue</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-demo-banner">
+                        <div class="wf-demo-icon">i</div>
+                        <span>Demo Mode - Viewing sample data (this is a demo)</span>
+                    </div>
+                    <div class="wf-header">
+                        <div class="wf-logo"></div>
+                        <div class="wf-nav">
+                            <div class="wf-nav-item"></div>
+                            <div class="wf-nav-item"></div>
+                        </div>
+                    </div>
+                    <div class="wf-page-header">
+                        <div>
+                            <div class="wf-page-title">REVIEW QUEUE</div>
+                            <div class="wf-queue-count">8 items awaiting review</div>
+                        </div>
+                        <div class="wf-button secondary">Filters</div>
+                    </div>
+                    <div class="wf-section" style="padding-top: 12px;">
+                        <div class="wf-queue-item">
+                            <div class="wf-queue-header">
+                                <div>
+                                    <div class="wf-queue-title">YBC 4644 - Old Babylonian Letter</div>
+                                    <div class="wf-queue-id">P123456 | Sippar</div>
+                                </div>
+                                <div class="wf-queue-meta">
+                                    <div class="wf-confidence-bar">
+                                        <div class="wf-confidence-track">
+                                            <div class="wf-confidence-fill" style="width: 78%;"></div>
+                                        </div>
+                                        <span class="wf-confidence-label">78%</span>
+                                    </div>
+                                    <span class="wf-contributors">12 contributors</span>
+                                </div>
+                            </div>
+                            <div class="wf-queue-footer">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <span class="wf-status-badge accepted">Provisionally Accepted</span>
+                                    <span class="wf-expert-count">1 expert review</span>
+                                </div>
+                                <div class="wf-button secondary">Review &rarr;</div>
+                            </div>
+                        </div>
+
+                        <div class="wf-queue-item">
+                            <div class="wf-queue-header">
+                                <div>
+                                    <div class="wf-queue-title">BM 106056 - Ur III Labor Account</div>
+                                    <div class="wf-queue-id">P789012 | Drehem</div>
+                                </div>
+                                <div class="wf-queue-meta">
+                                    <div class="wf-confidence-bar">
+                                        <div class="wf-confidence-track">
+                                            <div class="wf-confidence-fill medium" style="width: 65%;"></div>
+                                        </div>
+                                        <span class="wf-confidence-label">65%</span>
+                                    </div>
+                                    <span class="wf-contributors">8 contributors</span>
+                                </div>
+                            </div>
+                            <div class="wf-queue-footer">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <span class="wf-status-badge review">Under Review</span>
+                                    <span class="wf-expert-count">Awaiting first expert</span>
+                                </div>
+                                <div class="wf-button secondary">Review &rarr;</div>
+                            </div>
+                        </div>
+
+                        <div class="wf-queue-item">
+                            <div class="wf-queue-header">
+                                <div>
+                                    <div class="wf-queue-title">CBS 10467 - Administrative Receipt</div>
+                                    <div class="wf-queue-id">P345678 | Nippur</div>
+                                </div>
+                                <div class="wf-queue-meta">
+                                    <div class="wf-confidence-bar">
+                                        <div class="wf-confidence-track">
+                                            <div class="wf-confidence-fill" style="width: 89%;"></div>
+                                        </div>
+                                        <span class="wf-confidence-label">89%</span>
+                                    </div>
+                                    <span class="wf-contributors">15 contributors</span>
+                                </div>
+                            </div>
+                            <div class="wf-queue-footer">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <span class="wf-status-badge review">Under Review</span>
+                                    <span class="wf-expert-count">High consensus</span>
+                                </div>
+                                <div class="wf-button secondary">Review &rarr;</div>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 0.75rem; color: #888; text-align: center; margin-top: 16px;">(3 more items below)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Queue Item Information</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Title</td>
+                            <td>Tablet name + genre</td>
+                        </tr>
+                        <tr>
+                            <td>P-number</td>
+                            <td>CDLI identifier (linked)</td>
+                        </tr>
+                        <tr>
+                            <td>Provenience</td>
+                            <td>Origin location</td>
+                        </tr>
+                        <tr>
+                            <td>Confidence</td>
+                            <td>Aggregate score</td>
+                        </tr>
+                        <tr>
+                            <td>Contributors</td>
+                            <td>Count</td>
+                        </tr>
+                        <tr>
+                            <td>Status</td>
+                            <td>Current state</td>
+                        </tr>
+                        <tr>
+                            <td>Expert reviews</td>
+                            <td>Count of expert actions</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">"Review" button</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J4-S3</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">P-number</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">(Future: link to CDLI)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Filters</span>
+                        <span class="interaction-action">Select</span>
+                        <span class="interaction-result">Filter queue items</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 3: Review Detail Demo -->
+        <section id="screen-3" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 3 of 6</div>
+                    <h2 class="screen-title">Review Detail Demo</h2>
+                    <p class="screen-goal">User Goal: Understand the expert review workflow in detail</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J4-S3-detail</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-demo-banner">
+                        <div class="wf-demo-icon">i</div>
+                        <span>Demo Mode</span>
+                    </div>
+                    <div class="wf-breadcrumb">&larr; Back to Queue</div>
+                    <div style="padding: 12px 20px; border-bottom: 1px solid #ddd;">
+                        <div style="font-weight: 600; color: #444;">YBC 4644 - Old Babylonian Letter</div>
+                        <div style="font-size: 0.75rem; color: #888;">P123456 | Yale Babylonian Collection</div>
+                    </div>
+                    <div class="wf-review-layout">
+                        <div class="wf-review-left">
+                            <div class="wf-tablet-container">
+                                <div class="wf-tablet-image">[TabletViewer with zoom/pan]</div>
+                                <div class="wf-surface-tabs">
+                                    <div class="wf-surface-tab active">Obv</div>
+                                    <div class="wf-surface-tab">Rev</div>
+                                    <div class="wf-surface-tab">Edge</div>
+                                </div>
+                            </div>
+                            <div class="wf-context-section">
+                                <div class="wf-context-title">CONTEXT</div>
+                                <div class="wf-context-item">Period: Old Babylonian</div>
+                                <div class="wf-context-item">Genre: Letter</div>
+                                <div class="wf-context-item">Language: Akkadian</div>
+                            </div>
+                        </div>
+                        <div class="wf-review-right">
+                            <div class="wf-transcription-header">TRANSCRIPTION</div>
+                            <div class="wf-transcription-section">@obverse</div>
+                            <div class="wf-transcription-line">
+                                <span class="wf-line-number">1.</span>
+                                <span class="wf-line-text">a-na {d}utu be-li2-ia</span>
+                                <div class="wf-line-meta">
+                                    <span class="wf-status-badge accepted">Accepted</span>
+                                    <span class="wf-line-confidence">92%</span>
+                                </div>
+                            </div>
+                            <div class="wf-transcription-line selected">
+                                <span class="wf-line-number">2.</span>
+                                <span class="wf-line-text">um-ma {m}a-bi-e-szar2-rum</span>
+                                <div class="wf-line-meta">
+                                    <span class="wf-status-badge review">Under Review</span>
+                                    <span class="wf-line-confidence">78%</span>
+                                </div>
+                            </div>
+                            <div class="wf-transcription-line">
+                                <span class="wf-line-number">3.</span>
+                                <span class="wf-line-text">ar-du-ka-a-ma</span>
+                                <div class="wf-line-meta">
+                                    <span class="wf-status-badge proposed">Proposed</span>
+                                    <span class="wf-line-confidence">65%</span>
+                                </div>
+                            </div>
+                            <div class="wf-transcription-section">@reverse</div>
+                            <div class="wf-transcription-line">
+                                <span class="wf-line-number">4.</span>
+                                <span class="wf-line-text">...</span>
+                                <div class="wf-line-meta"></div>
+                            </div>
+
+                            <div class="wf-selected-detail">
+                                <div class="wf-detail-title">SELECTED: Line 2</div>
+                                <div class="wf-detail-row">
+                                    <span class="wf-detail-label">AI Proposal:</span> um-ma {m}a-bi-e-szar2-rum
+                                </div>
+                                <div class="wf-detail-row">
+                                    <span class="wf-detail-label">Crowd Consensus:</span> 78% agreement (12 contributors)
+                                </div>
+                                <a href="#" class="wf-history-link">Show contribution history</a>
+                            </div>
+
+                            <div class="wf-action-buttons">
+                                <div class="wf-button success">Approve</div>
+                                <div class="wf-button warning">Correct</div>
+                                <div class="wf-button danger">Reject</div>
+                                <div class="wf-button ghost">Skip</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Line Selection Behavior</div>
+                <ol style="font-size: 0.875rem; color: #555; padding-left: 20px; margin-top: 8px;">
+                    <li style="margin-bottom: 8px;">Click line in transcription panel</li>
+                    <li style="margin-bottom: 8px;">Corresponding region highlights in tablet viewer</li>
+                    <li style="margin-bottom: 8px;">Line detail appears below</li>
+                    <li style="margin-bottom: 8px;">Review actions become available</li>
+                </ol>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Transcription line</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Select line, show detail</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Tablet region</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Select corresponding line</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Surface tabs</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Switch tablet surface</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Approve</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J4-S4 (approve demo)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Correct</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J4-S4 (correct demo)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Reject</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J4-S4 (reject demo)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Skip</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Return to queue</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Show history</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Expand ProvenanceTimeline</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 4: Action Demo -->
+        <section id="screen-4" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 4 of 6</div>
+                    <h2 class="screen-title">Action Demo</h2>
+                    <p class="screen-goal">User Goal: See how review actions work</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J4-S4-action</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container" style="flex-direction: column; gap: 24px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; width: 100%;">
+                    <!-- Approve Demo -->
+                    <div class="wireframe narrow" style="min-height: auto;">
+                        <div class="wf-demo-banner">
+                            <div class="wf-demo-icon">i</div>
+                            <span>Demo Mode</span>
+                        </div>
+                        <div class="wf-modal" style="margin: 20px;">
+                            <div class="wf-modal-title">APPROVE READING</div>
+                            <div class="wf-modal-content">
+                                <div class="wf-modal-label">You are approving:</div>
+                                <div class="wf-modal-value">Line 2: um-ma {m}a-bi-e-szar2-rum</div>
+                                <div class="wf-modal-label">This will:</div>
+                                <ul class="wf-modal-list">
+                                    <li>Mark the line as Provisionally Accepted</li>
+                                    <li>Credit 12 contributors</li>
+                                    <li>Record your approval with timestamp</li>
+                                </ul>
+                            </div>
+                            <div class="wf-modal-actions">
+                                <div class="wf-button ghost">Cancel</div>
+                                <div class="wf-button success">Confirm Approval</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; font-size: 0.7rem; color: #888; padding: 8px;">Approve Demo</div>
+                    </div>
+
+                    <!-- Correct Demo -->
+                    <div class="wireframe narrow" style="min-height: auto;">
+                        <div class="wf-demo-banner">
+                            <div class="wf-demo-icon">i</div>
+                            <span>Demo Mode</span>
+                        </div>
+                        <div class="wf-modal" style="margin: 20px;">
+                            <div class="wf-modal-title">CORRECT READING</div>
+                            <div class="wf-modal-content" style="background: transparent; border: none; padding: 0;">
+                                <div class="wf-modal-label">Original:</div>
+                                <div class="wf-modal-value">um-ma {m}a-bi-e-szar2-rum</div>
+                                <div class="wf-modal-label">Your correction:</div>
+                                <input type="text" class="wf-input monospace" value="um-ma {m}a-bi-e-szar2-rum" style="margin-bottom: 12px;">
+                                <div class="wf-modal-label">Note (optional):</div>
+                                <textarea class="wf-textarea" placeholder="Explanation of correction..."></textarea>
+                            </div>
+                            <div class="wf-modal-actions">
+                                <div class="wf-button ghost">Cancel</div>
+                                <div class="wf-button warning">Submit Correction</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; font-size: 0.7rem; color: #888; padding: 8px;">Correct Demo</div>
+                    </div>
+                </div>
+
+                <!-- Demo Confirmation -->
+                <div class="wireframe narrow" style="min-height: auto; margin: 0 auto;">
+                    <div class="wf-demo-confirmation">
+                        <div class="wf-demo-icon-large">&#10003;</div>
+                        <div class="wf-demo-title">In the live system, this would:</div>
+                        <ul style="text-align: left; font-size: 0.875rem; color: #555; padding-left: 24px; margin-bottom: 16px;">
+                            <li style="margin-bottom: 4px;">Update the transcription</li>
+                            <li style="margin-bottom: 4px;">Notify original contributors</li>
+                            <li style="margin-bottom: 4px;">Add your name to attribution</li>
+                            <li style="margin-bottom: 4px;">Record timestamp and provenance</li>
+                        </ul>
+                        <div class="wf-demo-note">This is demo mode - no data was changed.</div>
+                        <div class="wf-button-row" style="margin-top: 20px;">
+                            <div class="wf-button secondary">Continue reviewing</div>
+                            <div class="wf-button primary">See export options</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; font-size: 0.7rem; color: #888; padding: 8px;">Demo Confirmation</div>
+                </div>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Cancel</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Return to J4-S3</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Confirm action</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Show demo confirmation</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Continue reviewing</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Return to J4-S3</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">See export options</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J4-S5</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 5: Integration Preview -->
+        <section id="screen-5" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 5 of 6</div>
+                    <h2 class="screen-title">Integration Preview</h2>
+                    <p class="screen-goal">User Goal: Understand data export and integration capabilities</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J4-S5-integration</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container">
+                <div class="wireframe">
+                    <div class="wf-demo-banner">
+                        <div class="wf-demo-icon">i</div>
+                        <span>Demo Mode</span>
+                    </div>
+                    <div class="wf-section">
+                        <div class="wf-section-title">EXPORT OPTIONS</div>
+                        <p style="font-size: 0.875rem; color: #666; margin-bottom: 20px;">This tablet can be exported to:</p>
+
+                        <div class="wf-export-section">
+                            <div class="wf-export-title">ATF FORMAT</div>
+                            <div class="wf-export-desc">Standard transliteration format - ORACC compatible</div>
+                            <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px;">Preview:</div>
+                            <div class="wf-code-block">
+<span class="wf-code-comment">&P123456 = YBC 4644</span>
+<span class="wf-code-comment">#atf: lang akk</span>
+@tablet
+@obverse
+1. a-na {d}utu be-li2-ia
+<span class="wf-code-comment">#lem: ana[to]PRP; +Samas[1]DN$; belu[lord]N$beliya</span>
+2. um-ma {m}a-bi-e-szar2-rum
+...
+
+<span class="wf-code-comment"># Attribution block:</span>
+<span class="wf-code-comment"># Glintstone Platform</span>
+<span class="wf-code-comment"># Contributors: [anonymized list]</span>
+<span class="wf-code-comment"># Reviewer: [your name]</span>
+                            </div>
+                            <div class="wf-export-actions">
+                                <div class="wf-button secondary">Copy to clipboard</div>
+                                <div class="wf-button primary">Download .atf</div>
+                            </div>
+                        </div>
+
+                        <div class="wf-cdli-section">
+                            <div class="wf-section-title">VIEW IN CDLI</div>
+                            <div class="wf-cdli-badge"></div>
+                            <div class="wf-cdli-desc">This tablet is cataloged as P123456 in CDLI.</div>
+                            <div class="wf-button secondary" style="margin-bottom: 16px;">Open in CDLI &rarr;</div>
+                            <div style="font-size: 0.8rem; color: #666; margin-bottom: 8px;">Glintstone syncs with CDLI metadata for:</div>
+                            <ul class="wf-cdli-list">
+                                <li>Museum numbers</li>
+                                <li>Provenience data</li>
+                                <li>Physical dimensions</li>
+                                <li>Bibliography</li>
+                            </ul>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 32px;">
+                            <div class="wf-button secondary">Back to review</div>
+                            <div class="wf-button primary">Register for pilot access</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="interaction-panel">
+                <div class="component-title">Interactions</div>
+                <div class="interaction-list">
+                    <div class="interaction-item">
+                        <span class="interaction-element">Copy to clipboard</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Copy ATF, show toast confirmation</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Download .atf</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Download ATF file</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Open in CDLI</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Open CDLI page (new tab)</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Back to review</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Return to J4-S3</span>
+                    </div>
+                    <div class="interaction-item">
+                        <span class="interaction-element">Register for pilot</span>
+                        <span class="interaction-action">Click</span>
+                        <span class="interaction-result">Navigate to J4-S6</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 6: Interest Form -->
+        <section id="screen-6" class="screen-section">
+            <div class="screen-header">
+                <div>
+                    <div class="screen-number">Screen 6 of 6</div>
+                    <h2 class="screen-title">Interest Form</h2>
+                    <p class="screen-goal">User Goal: Express interest in pilot participation</p>
+                </div>
+                <div class="screen-meta">
+                    <span class="screen-id">J4-S6-interest</span>
+                </div>
+            </div>
+
+            <div class="wireframe-container" style="flex-direction: column; gap: 24px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; width: 100%;">
+                    <!-- Interest Form -->
+                    <div class="wireframe narrow" style="min-height: auto;">
+                        <div class="wf-form-section">
+                            <div class="wf-form-title">INTERESTED IN EARLY ACCESS?</div>
+                            <div class="wf-form-subtitle">We're looking for expert reviewers to help shape Glintstone during our pilot phase.</div>
+
+                            <div class="wf-form-group">
+                                <label class="wf-form-label">Name *</label>
+                                <input type="text" class="wf-input" placeholder="">
+                            </div>
+
+                            <div class="wf-form-group">
+                                <label class="wf-form-label">Institution *</label>
+                                <input type="text" class="wf-input" placeholder="">
+                            </div>
+
+                            <div class="wf-form-group">
+                                <label class="wf-form-label">Specialization</label>
+                                <div class="wf-form-hint">e.g., "Ur III administrative texts"</div>
+                                <input type="text" class="wf-input" placeholder="">
+                            </div>
+
+                            <div class="wf-form-group">
+                                <label class="wf-form-label">Email *</label>
+                                <input type="email" class="wf-input" placeholder="">
+                            </div>
+
+                            <div class="wf-form-group">
+                                <label class="wf-form-label">How can Glintstone help your research?</label>
+                                <textarea class="wf-textarea" rows="3"></textarea>
+                            </div>
+
+                            <div class="wf-form-footer">
+                                <div class="wf-button primary large">Submit Interest</div>
+                            </div>
+
+                            <div class="wf-email-contact">
+                                Or contact us directly: expert@glintstone.io
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Confirmation -->
+                    <div class="wireframe narrow" style="min-height: auto;">
+                        <div class="wf-confirmation">
+                            <div class="wf-confirmation-icon">&#10003;</div>
+                            <div class="wf-confirmation-title">Thank you for your interest!</div>
+                            <div class="wf-confirmation-message">
+                                We'll be in touch soon about pilot participation.
+                            </div>
+
+                            <div style="font-size: 0.875rem; color: #666; margin-bottom: 16px;">In the meantime, explore the demo further:</div>
+                            <div class="wf-button-row">
+                                <div class="wf-button secondary">Back to demo</div>
+                                <div class="wf-button secondary">Visit marketing page</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; font-size: 0.7rem; color: #888; padding: 8px;">Confirmation State</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="component-panel">
+                <div class="component-title">Form Fields</div>
+                <table class="component-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Required</th>
+                            <th>Validation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Name</td>
+                            <td>Yes</td>
+                            <td>Non-empty</td>
+                        </tr>
+                        <tr>
+                            <td>Institution</td>
+                            <td>Yes</td>
+                            <td>Non-empty</td>
+                        </tr>
+                        <tr>
+                            <td>Specialization</td>
+                            <td>No</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>Email</td>
+                            <td>Yes</td>
+                            <td>Email format</td>
+                        </tr>
+                        <tr>
+                            <td>How can we help</td>
+                            <td>No</td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="trust-panel">
+                <div class="component-title">Trust Building Elements (All J4 Screens)</div>
+                <div class="trust-grid">
+                    <div class="trust-item">
+                        <span class="trust-element">Demo mode banner:</span>
+                        <span class="trust-purpose">Transparency about sample data</span>
+                    </div>
+                    <div class="trust-item">
+                        <span class="trust-element">Provenance display:</span>
+                        <span class="trust-purpose">Shows nothing is hidden</span>
+                    </div>
+                    <div class="trust-item">
+                        <span class="trust-element">ATF export preview:</span>
+                        <span class="trust-purpose">Familiar format builds trust</span>
+                    </div>
+                    <div class="trust-item">
+                        <span class="trust-element">Attribution in export:</span>
+                        <span class="trust-purpose">Respects scholarly credit</span>
+                    </div>
+                    <div class="trust-item">
+                        <span class="trust-element">CDLI integration:</span>
+                        <span class="trust-purpose">Shows ecosystem awareness</span>
+                    </div>
+                    <div class="trust-item">
+                        <span class="trust-element">Professional UI:</span>
+                        <span class="trust-purpose">Signals serious scholarly tool</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function scrollToScreen(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+            document.querySelectorAll('.screen-nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        const screens = document.querySelectorAll('.screen-section');
+        const navButtons = document.querySelectorAll('.screen-nav-btn');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            screens.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navButtons.forEach((btn, index) => {
+                btn.classList.remove('active');
+                if (current === `screen-${index + 1}`) {
+                    btn.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
