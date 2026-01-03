@@ -6,9 +6,9 @@
 
 ---
 
-[@Claude, i need this in a viual format that I can review, such as a simple HTML page, an image, or a PDF]
+~~[@Claude, i need this in a viual format that I can review, such as a simple HTML page, an image, or a PDF]~~
 
-[@Claude @brand-visual-designer these are in the right direction. We need the warmth of "Illuminated" with the edginess of Stargazer. it needs to be optimized for dark mode primarily. No italics but love the use of serifs for headers. Make the UI feel more "tactile" overall, as if the buttons themselves are clay tablets, and find a way to add SVG texture to various surfaces in a tasteful way. Come up with 3 more options given this feedback. (generate a new HTML file and proposal for this, preserving the previous one.)]
+~~[@Claude @brand-visual-designer these are in the right direction. We need the warmth of "Illuminated" with the edginess of Stargazer. it needs to be optimized for dark mode primarily. No italics but love the use of serifs for headers. Make the UI feel more "tactile" overall, as if the buttons themselves are clay tablets, and find a way to add SVG texture to various surfaces in a tasteful way. Come up with 3 more options given this feedback. (generate a new HTML file and proposal for this, preserving the previous one.)]~~
 
 ## Executive Summary
 

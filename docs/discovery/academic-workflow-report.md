@@ -474,7 +474,7 @@ The recommendations in this report are grounded in decades of professional exper
 
 The key metrics identified in the capstone research - contributions per hour for hobbyists and newly transcribed artifacts for academics - are sound. But beneath these metrics lies a deeper imperative: building a platform that scholars trust enough to use, that maintains quality standards rigorous enough to advance knowledge, and that respects the human expertise that remains irreplaceable in cuneiform scholarship.
 
-[@Claude update the KPIs/metrics in the Brief to match this feedback and make measureable trust a priority for everyone]
+~~[@Claude update the KPIs/metrics in the Brief to match this feedback and make measureable trust a priority for everyone]~~
 
 Implemented thoughtfully, Glintstone could accelerate the transcription of humanity's earliest written records by an order of magnitude. Implemented carelessly, it could produce a flood of unreliable content that damages both the scholarly record and AI's reputation in the humanities. The path forward requires sustained collaboration between technologists and domain experts, with the latter holding meaningful authority over quality standards and platform governance.
 
