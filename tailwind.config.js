@@ -23,6 +23,7 @@ export default {
         "serif": ["Eczar", "Spectral", "serif"],
         "sans": ["Inter", "system-ui", "sans-serif"],
         "mono": ["Menlo", "Monaco", "monospace"],
+        "cuneiform": ["Noto Sans Cuneiform", "serif"],
       },
       spacing: {
         "xs": "0.5rem",

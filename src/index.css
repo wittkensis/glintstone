@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Cuneiform Font */
+@font-face {
+  font-family: 'Noto Sans Cuneiform';
+  src: url('/fonts/NotoSansCuneiform-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --background: 7 12 20; /* #0a0e14 - Celestial Navy */
@@ -183,4 +192,9 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--text-muted));
+}
+
+/* Cuneiform font utility */
+.font-cuneiform {
+  font-family: 'Noto Sans Cuneiform', serif;
 }
