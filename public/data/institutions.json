@@ -1,0 +1,173 @@
+[
+  {
+    "id": "inst-yale",
+    "name": "Yale University",
+    "type": "university",
+    "department": "Department of Near Eastern Languages and Civilizations",
+    "logoUrl": "/images/institutions/yale.png",
+    "partnered": true,
+    "location": "New Haven, CT, USA",
+    "website": "https://nelc.yale.edu/",
+    "credibilityScore": 98
+  },
+  {
+    "id": "inst-chicago",
+    "name": "University of Chicago",
+    "type": "university",
+    "department": "Oriental Institute",
+    "logoUrl": "/images/institutions/chicago.png",
+    "partnered": true,
+    "location": "Chicago, IL, USA",
+    "website": "https://oi.uchicago.edu/",
+    "credibilityScore": 99
+  },
+  {
+    "id": "inst-penn",
+    "name": "University of Pennsylvania",
+    "type": "university",
+    "department": "Department of Near Eastern Languages and Civilizations",
+    "logoUrl": "/images/institutions/penn.png",
+    "partnered": true,
+    "location": "Philadelphia, PA, USA",
+    "website": "https://www.sas.upenn.edu/nelc/",
+    "credibilityScore": 97
+  },
+  {
+    "id": "inst-oxford",
+    "name": "University of Oxford",
+    "type": "university",
+    "department": "Faculty of Oriental Studies",
+    "logoUrl": "/images/institutions/oxford.png",
+    "partnered": true,
+    "location": "Oxford, UK",
+    "website": "https://www.orinst.ox.ac.uk/",
+    "credibilityScore": 98
+  },
+  {
+    "id": "inst-harvard",
+    "name": "Harvard University",
+    "type": "university",
+    "department": "Department of Near Eastern Languages and Civilizations",
+    "logoUrl": "/images/institutions/harvard.png",
+    "partnered": false,
+    "location": "Cambridge, MA, USA",
+    "website": "https://nelc.fas.harvard.edu/",
+    "credibilityScore": 98
+  },
+  {
+    "id": "inst-heidelberg",
+    "name": "Heidelberg University",
+    "type": "university",
+    "department": "Institute of Assyriology",
+    "logoUrl": "/images/institutions/heidelberg.png",
+    "partnered": true,
+    "location": "Heidelberg, Germany",
+    "website": "https://www.uni-heidelberg.de/",
+    "credibilityScore": 96
+  },
+  {
+    "id": "inst-berlin-fu",
+    "name": "Freie Universität Berlin",
+    "type": "university",
+    "department": "Institute of Ancient Near Eastern Studies",
+    "logoUrl": "/images/institutions/berlin-fu.png",
+    "partnered": true,
+    "location": "Berlin, Germany",
+    "website": "https://www.fu-berlin.de/",
+    "credibilityScore": 95
+  },
+  {
+    "id": "inst-leiden",
+    "name": "Leiden University",
+    "type": "university",
+    "department": "Netherlands Institute for the Near East",
+    "logoUrl": "/images/institutions/leiden.png",
+    "partnered": false,
+    "location": "Leiden, Netherlands",
+    "website": "https://www.universiteitleiden.nl/",
+    "credibilityScore": 96
+  },
+  {
+    "id": "inst-british-museum",
+    "name": "British Museum",
+    "type": "museum",
+    "department": "Department of the Middle East",
+    "logoUrl": "/images/institutions/british-museum.png",
+    "partnered": true,
+    "location": "London, UK",
+    "website": "https://www.britishmuseum.org/",
+    "credibilityScore": 99,
+    "collectionSize": "130,000+ cuneiform tablets"
+  },
+  {
+    "id": "inst-louvre",
+    "name": "Louvre Museum",
+    "type": "museum",
+    "department": "Department of Near Eastern Antiquities",
+    "logoUrl": "/images/institutions/louvre.png",
+    "partnered": true,
+    "location": "Paris, France",
+    "website": "https://www.louvre.fr/",
+    "credibilityScore": 99,
+    "collectionSize": "30,000+ cuneiform tablets"
+  },
+  {
+    "id": "inst-penn-museum",
+    "name": "Penn Museum",
+    "type": "museum",
+    "department": "Near East Section",
+    "logoUrl": "/images/institutions/penn-museum.png",
+    "partnered": true,
+    "location": "Philadelphia, PA, USA",
+    "website": "https://www.penn.museum/",
+    "credibilityScore": 97,
+    "collectionSize": "40,000+ cuneiform tablets"
+  },
+  {
+    "id": "inst-vorderasiatisches",
+    "name": "Vorderasiatisches Museum",
+    "type": "museum",
+    "department": "Near Eastern Museum, Berlin",
+    "logoUrl": "/images/institutions/vorderasiatisches.png",
+    "partnered": false,
+    "location": "Berlin, Germany",
+    "website": "https://www.smb.museum/",
+    "credibilityScore": 98,
+    "collectionSize": "50,000+ cuneiform tablets"
+  },
+  {
+    "id": "inst-cdli",
+    "name": "Cuneiform Digital Library Initiative",
+    "type": "research-platform",
+    "department": null,
+    "logoUrl": "/images/institutions/cdli.png",
+    "partnered": true,
+    "location": "International (UCLA/Oxford)",
+    "website": "https://cdli.ucla.edu/",
+    "credibilityScore": 100,
+    "collectionSize": "340,000+ catalog entries"
+  },
+  {
+    "id": "inst-oracc",
+    "name": "ORACC",
+    "type": "research-platform",
+    "department": "Open Richly Annotated Cuneiform Corpus",
+    "logoUrl": "/images/institutions/oracc.png",
+    "partnered": true,
+    "location": "International",
+    "website": "http://oracc.museum.upenn.edu/",
+    "credibilityScore": 99,
+    "collectionSize": "Multiple corpus projects"
+  },
+  {
+    "id": "inst-lmu-munich",
+    "name": "Ludwig Maximilian University of Munich",
+    "type": "university",
+    "department": "Institute for Assyriology and Hittitology",
+    "logoUrl": "/images/institutions/lmu-munich.png",
+    "partnered": false,
+    "location": "Munich, Germany",
+    "website": "https://www.lmu.de/",
+    "credibilityScore": 97
+  }
+]
