@@ -1,0 +1,12 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Classical columns -->
+    <rect x="90" y="110" width="20" height="90"/>
+    <rect x="140" y="110" width="20" height="90"/>
+    <rect x="190" y="110" width="20" height="90"/>
+    <rect x="70" y="95" width="160" height="15"/>
+    <rect x="70" y="200" width="160" height="10"/>
+    <text x="150" y="235" font-family="serif" font-size="14" text-anchor="middle">PENN MUSEUM</text>
+  </g>
+</svg>

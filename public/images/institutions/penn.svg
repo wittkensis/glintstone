@@ -1,0 +1,9 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Penn shield -->
+    <path d="M80 80 L220 80 L220 200 L150 240 L80 200 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+    <path d="M110 130 L130 130 L130 180 L110 180 Z M140 130 L160 130 L160 150 L140 150 Z M170 130 L190 130 L190 180 L170 180 Z"/>
+    <text x="150" y="250" font-family="serif" font-size="20" text-anchor="middle">PENN</text>
+  </g>
+</svg>

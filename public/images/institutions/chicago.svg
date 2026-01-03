@@ -1,0 +1,10 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Phoenix rising -->
+    <circle cx="150" cy="140" r="40" fill="none" stroke="currentColor" stroke-width="3"/>
+    <path d="M150 100 L130 70 M150 100 L170 70 M150 100 L150 60"/>
+    <path stroke="currentColor" stroke-width="2" fill="none" d="M110 160 Q90 180 100 200 M190 160 Q210 180 200 200"/>
+    <text x="150" y="240" font-family="serif" font-size="24" text-anchor="middle" font-weight="bold">CHICAGO</text>
+  </g>
+</svg>

@@ -1,0 +1,10 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Oxford open book with crown -->
+    <path d="M80 150 Q150 130 220 150 L220 200 Q150 220 80 200 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+    <path d="M130 100 L150 80 L170 100 L165 110 L135 110 Z"/>
+    <line x1="150" y1="150" x2="150" y2="200" stroke="currentColor" stroke-width="2"/>
+    <text x="150" y="235" font-family="serif" font-size="18" text-anchor="middle">OXFORD</text>
+  </g>
+</svg>

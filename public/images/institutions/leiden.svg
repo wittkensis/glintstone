@@ -1,0 +1,10 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Leiden key -->
+    <circle cx="150" cy="120" r="25" fill="none" stroke="currentColor" stroke-width="3"/>
+    <rect x="145" y="145" width="10" height="60" rx="2"/>
+    <path d="M145 185 L135 185 L135 195 L145 195 M155 185 L165 185 L165 195 L155 195" fill="none" stroke="currentColor" stroke-width="2"/>
+    <text x="150" y="240" font-family="serif" font-size="18" text-anchor="middle">LEIDEN</text>
+  </g>
+</svg>

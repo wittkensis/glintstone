@@ -1,0 +1,8 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Yale "Y" shield -->
+    <path d="M150 80 L180 120 L165 120 L165 220 L135 220 L135 120 L120 120 Z"/>
+    <path d="M100 60 L200 60 L220 100 L220 240 L80 240 L80 100 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+  </g>
+</svg>

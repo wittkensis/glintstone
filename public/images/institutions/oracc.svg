@@ -1,0 +1,16 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Interconnected corpus nodes -->
+    <circle cx="150" cy="120" r="20" fill="none" stroke="currentColor" stroke-width="3"/>
+    <circle cx="100" cy="160" r="15" fill="none" stroke="currentColor" stroke-width="2"/>
+    <circle cx="200" cy="160" r="15" fill="none" stroke="currentColor" stroke-width="2"/>
+    <circle cx="125" cy="200" r="12" fill="none" stroke="currentColor" stroke-width="2"/>
+    <circle cx="175" cy="200" r="12" fill="none" stroke="currentColor" stroke-width="2"/>
+    <line x1="150" y1="140" x2="100" y2="160" stroke="currentColor" stroke-width="2"/>
+    <line x1="150" y1="140" x2="200" y2="160" stroke="currentColor" stroke-width="2"/>
+    <line x1="100" y1="175" x2="125" y2="188" stroke="currentColor" stroke-width="1.5"/>
+    <line x1="200" y1="175" x2="175" y2="188" stroke="currentColor" stroke-width="1.5"/>
+    <text x="150" y="245" font-family="monospace" font-size="16" text-anchor="middle" font-weight="bold">ORACC</text>
+  </g>
+</svg>

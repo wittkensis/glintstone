@@ -1,0 +1,13 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Greek revival portico -->
+    <path d="M60 180 L240 180 L240 190 L60 190 Z"/>
+    <rect x="80" y="120" width="15" height="60"/>
+    <rect x="120" y="120" width="15" height="60"/>
+    <rect x="165" y="120" width="15" height="60"/>
+    <rect x="205" y="120" width="15" height="60"/>
+    <path d="M50 110 L150 70 L250 110 L240 120 L150 85 L60 120 Z"/>
+    <text x="150" y="225" font-family="serif" font-size="14" text-anchor="middle">BRITISH MUSEUM</text>
+  </g>
+</svg>

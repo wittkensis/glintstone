@@ -1,0 +1,11 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Ishtar Gate motif -->
+    <path d="M150 80 Q120 80 120 110 L120 180 Q120 200 150 200 Q180 200 180 180 L180 110 Q180 80 150 80 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+    <rect x="130" y="120" width="40" height="40" rx="5" fill="none" stroke="currentColor" stroke-width="2"/>
+    <circle cx="145" cy="135" r="3"/>
+    <circle cx="155" cy="135" r="3"/>
+    <text x="150" y="235" font-family="serif" font-size="12" text-anchor="middle">VORDERASIATISCHES</text>
+  </g>
+</svg>

@@ -1,0 +1,10 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Harvard shield with books -->
+    <path d="M90 70 L210 70 L210 210 L150 235 L90 210 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+    <text x="150" y="130" font-family="serif" font-size="32" text-anchor="middle" font-weight="bold">VE</text>
+    <text x="150" y="165" font-family="serif" font-size="32" text-anchor="middle" font-weight="bold">RI</text>
+    <text x="150" y="200" font-family="serif" font-size="32" text-anchor="middle" font-weight="bold">TAS</text>
+  </g>
+</svg>

@@ -1,0 +1,12 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Ludwig crown and book -->
+    <path d="M120 100 L135 85 L150 95 L165 85 L180 100 L175 110 L125 110 Z"/>
+    <rect x="110" y="130" width="80" height="60" rx="3" fill="none" stroke="currentColor" stroke-width="3"/>
+    <line x1="150" y1="130" x2="150" y2="190" stroke="currentColor" stroke-width="2"/>
+    <path d="M120 145 L140 145 M120 160 L140 160" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M160 145 L180 145 M160 160 L180 160" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <text x="150" y="225" font-family="serif" font-size="16" text-anchor="middle">LMU MUNICH</text>
+  </g>
+</svg>

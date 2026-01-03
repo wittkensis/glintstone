@@ -1,0 +1,11 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Pyramid -->
+    <path d="M150 70 L230 180 L70 180 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+    <path d="M150 90 L210 170 L90 170 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+    <line x1="120" y1="180" x2="150" y2="120" stroke="currentColor" stroke-width="1.5"/>
+    <line x1="180" y1="180" x2="150" y2="120" stroke="currentColor" stroke-width="1.5"/>
+    <text x="150" y="220" font-family="serif" font-size="20" text-anchor="middle">LOUVRE</text>
+  </g>
+</svg>

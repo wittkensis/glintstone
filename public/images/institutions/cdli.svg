@@ -1,0 +1,13 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="none"/>
+  <g fill="currentColor">
+    <!-- Digital cuneiform tablet -->
+    <rect x="90" y="90" width="120" height="140" rx="5" fill="none" stroke="currentColor" stroke-width="3"/>
+    <path d="M110 120 L130 120 M110 135 L140 135 M110 150 L125 150" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M150 120 L180 120 M150 135 L175 135 M155 150 L180 150" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M110 170 L130 170 M150 170 L170 170" stroke="currentColor" stroke-width="2" fill="none"/>
+    <circle cx="195" cy="105" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+    <circle cx="195" cy="105" r="3"/>
+    <text x="150" y="255" font-family="monospace" font-size="16" text-anchor="middle" font-weight="bold">CDLI</text>
+  </g>
+</svg>
