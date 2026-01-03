@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glintstone Brand Identity Proposals</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1f3d 0%, #2e3557 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .proposal {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 3rem;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .proposal-header {
+            padding: 2rem;
+            border-bottom: 3px solid;
+        }
+
+        .proposal-header h2 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .proposal-header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        .proposal-content {
+            padding: 2rem;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .color-swatch {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .color-block {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .color-info {
+            padding: 0.75rem;
+            background: #f8f9fa;
+        }
+
+        .color-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .color-hex {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .typography-section {
+            margin: 2rem 0;
+        }
+
+        .type-sample {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .component-preview {
+            margin: 2rem 0;
+            padding: 2rem;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .button-demo {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            margin: 0.5rem;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .pros, .cons {
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+
+        .pros {
+            background: #e6f7f1;
+            border-left: 4px solid #059669;
+        }
+
+        .cons {
+            background: #fff3f3;
+            border-left: 4px solid #dc2626;
+        }
+
+        .pros h4, .cons h4 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .pros ul, .cons ul {
+            list-style-position: inside;
+            padding-left: 0;
+        }
+
+        .pros li, .cons li {
+            margin-bottom: 0.5rem;
+        }
+
+        .recommendation {
+            background: linear-gradient(135deg, #FFD166 0%, #E8B84A 100%);
+            padding: 2rem;
+            border-radius: 12px;
+            margin: 3rem 0;
+            box-shadow: 0 4px 20px rgba(255, 209, 102, 0.3);
+        }
+
+        .recommendation h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #1a1f3d;
+        }
+
+        /* Proposal 1: Illuminated Clay */
+        .proposal1 .proposal-header {
+            background: linear-gradient(180deg, #C4956A 0%, #A67B52 100%);
+            color: #FFFFFF;
+            border-bottom-color: #8B5E3C;
+        }
+
+        /* Proposal 2: Digital Archaeology */
+        .proposal2 .proposal-header {
+            background: #1A1F3D;
+            color: #FFFFFF;
+            border-bottom-color: #00B4B4;
+        }
+
+        /* Proposal 3: Stargazer's Script */
+        .proposal3 .proposal-header {
+            background: linear-gradient(135deg, #0D1B2A 0%, #1B2838 100%);
+            color: #F0F4F8;
+            border-bottom-color: #FFD166;
+        }
+
+        /* Proposal 4: Community Archive */
+        .proposal4 .proposal-header {
+            background: #2563EB;
+            color: #FFFFFF;
+            border-bottom-color: #F59E0B;
+        }
+
+        @media (max-width: 768px) {
+            .pros-cons {
+                grid-template-columns: 1fr;
+            }
+
+            .color-palette {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Glintstone Brand Identity Proposals</h1>
+        <p>Visual exploration of four distinct brand directions for the AI-powered cuneiform transcription platform</p>
+        <p style="font-size: 0.9rem; margin-top: 1rem; opacity: 0.7;">Date: January 2, 2026 | Prepared by: Brand Visual Designer</p>
+    </div>
+
+    <div class="container">
+        <!-- Proposal 1: Illuminated Clay -->
+        <div class="proposal proposal1">
+            <div class="proposal-header">
+                <h2>1. Illuminated Clay</h2>
+                <p class="subtitle">Warm, scholarly, intimate, reverent</p>
+            </div>
+            <div class="proposal-content">
+                <p style="font-size: 1.1rem; margin-bottom: 2rem;"><strong>Core Metaphor:</strong> Light revealing ancient knowledge - the moment a scholar's lamp first illuminates a clay tablet in the archives.</p>
+
+                <h3>Color Palette</h3>
+                <div class="color-palette">
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #C4956A; color: white;">Primary</div>
+                        <div class="color-info">
+                            <div class="color-name">Clay Ochre</div>
+                            <div class="color-hex">#C4956A</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #8B5E3C; color: white;">Primary Dark</div>
+                        <div class="color-info">
+                            <div class="color-name">Fired Earth</div>
+                            <div class="color-hex">#8B5E3C</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #F5EDE0; color: #2D2926;">Secondary</div>
+                        <div class="color-info">
+                            <div class="color-name">Parchment Cream</div>
+                            <div class="color-hex">#F5EDE0</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #1E4D7B; color: white;">Accent</div>
+                        <div class="color-info">
+                            <div class="color-name">Lapis Blue</div>
+                            <div class="color-hex">#1E4D7B</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #D4A843; color: #2D2926;">Warning</div>
+                        <div class="color-info">
+                            <div class="color-name">Amber Glow</div>
+                            <div class="color-hex">#D4A843</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Typography</h3>
+                <div class="type-sample">
+                    <div style="font-family: 'Georgia', serif; font-size: 2.5rem; font-weight: 600; margin-bottom: 1rem;">Source Serif 4</div>
+                    <p style="font-family: 'Georgia', serif; font-size: 1.1rem;">Heading font - Scholarly, readable, historically resonant serif. Professional academic feel with excellent screen rendering.</p>
+                </div>
+                <div class="type-sample">
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 2rem; margin-bottom: 1rem;">Inter</div>
+                    <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Body font - Clean, accessible, highly legible. Modern workhorse typeface that maintains readability across devices.</p>
+                </div>
+
+                <h3>Component Styling</h3>
+                <div class="component-preview" style="background: #F5EDE0;">
+                    <button class="button-demo" style="background: linear-gradient(180deg, #C4956A 0%, #A67B52 100%); color: white; box-shadow: 0 2px 4px rgba(45, 41, 38, 0.15);">Primary Button</button>
+                    <button class="button-demo" style="background: transparent; border: 2px solid #C4956A; color: #8B5E3C;">Secondary Button</button>
+                </div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✓ Pros</h4>
+                        <ul>
+                            <li>Strongest connection to physical cuneiform</li>
+                            <li>Warm palette reduces intimidation</li>
+                            <li>Evokes scholarly discovery</li>
+                            <li>Highly differentiated from tech platforms</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>✗ Cons</h4>
+                        <ul>
+                            <li>May feel traditional or "musty"</li>
+                            <li>Warm palette requires contrast management</li>
+                            <li>Could seem less technologically sophisticated</li>
+                            <li>Risk of feeling like museum website</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proposal 2: Digital Archaeology -->
+        <div class="proposal proposal2">
+            <div class="proposal-header">
+                <h2>2. Digital Archaeology</h2>
+                <p class="subtitle">Precise, innovative, trustworthy, forward-looking</p>
+            </div>
+            <div class="proposal-content">
+                <p style="font-size: 1.1rem; margin-bottom: 2rem;"><strong>Core Metaphor:</strong> High-tech tools applied to ancient mysteries - the convergence of cutting-edge AI and millennia-old artifacts.</p>
+
+                <h3>Color Palette</h3>
+                <div class="color-palette">
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #1A1F3D; color: white;">Primary</div>
+                        <div class="color-info">
+                            <div class="color-name">Deep Indigo</div>
+                            <div class="color-hex">#1A1F3D</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #F8F9FC; color: #121420;">Secondary</div>
+                        <div class="color-info">
+                            <div class="color-name">Digital White</div>
+                            <div class="color-hex">#F8F9FC</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #00B4B4; color: white;">Accent</div>
+                        <div class="color-info">
+                            <div class="color-name">Electric Teal</div>
+                            <div class="color-hex">#00B4B4</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #D4A843; color: #121420;">Accent Warm</div>
+                        <div class="color-info">
+                            <div class="color-name">Cuneiform Gold</div>
+                            <div class="color-hex">#D4A843</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #00875A; color: white;">Success</div>
+                        <div class="color-info">
+                            <div class="color-name">Signal Green</div>
+                            <div class="color-hex">#00875A</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Typography</h3>
+                <div class="type-sample">
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 2.5rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: -0.02em;">Space Grotesk</div>
+                    <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 1.1rem;">Heading font - Geometric, technical, contemporary. Slightly quirky geometry suggests innovation.</p>
+                </div>
+                <div class="type-sample">
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 2rem; margin-bottom: 1rem;">IBM Plex Sans</div>
+                    <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Body font - Technical, neutral, excellent legibility. Designed for digital interfaces with strong technical heritage.</p>
+                </div>
+
+                <h3>Component Styling</h3>
+                <div class="component-preview" style="background: #F8F9FC;">
+                    <button class="button-demo" style="background: #00B4B4; color: #1A1F3D; text-transform: uppercase; letter-spacing: 0.5px;">Start Analyzing</button>
+                    <button class="button-demo" style="background: transparent; border: 1.5px solid #1A1F3D; color: #1A1F3D;">Learn More</button>
+                </div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✓ Pros</h4>
+                        <ul>
+                            <li>Clearly communicates tech sophistication</li>
+                            <li>Appeals to modern digital product users</li>
+                            <li>Clean, scalable system</li>
+                            <li>Strong visual distinction from academic tools</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>✗ Cons</h4>
+                        <ul>
+                            <li>May feel cold or clinical</li>
+                            <li>Risk of seeming generic among startups</li>
+                            <li>Could intimidate less tech-savvy users</li>
+                            <li>Cuneiform connection feels secondary</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proposal 3: Stargazer's Script -->
+        <div class="proposal proposal3">
+            <div class="proposal-header">
+                <h2>3. Stargazer's Script</h2>
+                <p class="subtitle">Mystical, intellectual, curious, expansive</p>
+            </div>
+            <div class="proposal-content">
+                <p style="font-size: 1.1rem; margin-bottom: 2rem;"><strong>Core Metaphor:</strong> The connection between cuneiform and astronomy - tablets that once mapped the heavens, now rediscovered by digital stars.</p>
+
+                <h3>Color Palette</h3>
+                <div class="color-palette">
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #0D1B2A; color: white;">Primary</div>
+                        <div class="color-info">
+                            <div class="color-name">Celestial Navy</div>
+                            <div class="color-hex">#0D1B2A</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #F0F4F8; color: #0A0F14;">Secondary</div>
+                        <div class="color-info">
+                            <div class="color-name">Starlight</div>
+                            <div class="color-hex">#F0F4F8</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #FFD166; color: #0D1B2A;">Accent</div>
+                        <div class="color-info">
+                            <div class="color-name">Celestial Gold</div>
+                            <div class="color-hex">#FFD166</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #7B68EE; color: white;">Accent Cool</div>
+                        <div class="color-info">
+                            <div class="color-name">Nebula Violet</div>
+                            <div class="color-hex">#7B68EE</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #10B981; color: white;">Success</div>
+                        <div class="color-info">
+                            <div class="color-name">Aurora Green</div>
+                            <div class="color-hex">#10B981</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Typography</h3>
+                <div class="type-sample">
+                    <div style="font-family: 'Georgia', serif; font-size: 2.5rem; font-weight: 600; margin-bottom: 1rem; font-style: italic;">Cormorant Garamond</div>
+                    <p style="font-family: 'Georgia', serif; font-size: 1.1rem;">Heading font - Elegant, classical, with subtle drama. The contrast and refined curves evoke historical scholarship.</p>
+                </div>
+                <div class="type-sample">
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 2rem; margin-bottom: 1rem;">Open Sans</div>
+                    <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Body font - Neutral, friendly, highly legible. Excellent screen rendering and accessibility.</p>
+                </div>
+
+                <h3>Component Styling</h3>
+                <div class="component-preview" style="background: #0D1B2A;">
+                    <button class="button-demo" style="background: linear-gradient(135deg, #FFD166 0%, #E8B84A 100%); color: #0D1B2A; box-shadow: 0 4px 14px rgba(255, 209, 102, 0.3); border-radius: 8px;">Explore the Archive</button>
+                    <button class="button-demo" style="background: transparent; border: 1.5px solid #FFD166; color: #FFD166; border-radius: 8px;">Learn More</button>
+                </div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✓ Pros</h4>
+                        <ul>
+                            <li>Creates strong emotional impact and wonder</li>
+                            <li>Astronomical connection is historically accurate</li>
+                            <li>Highly differentiated and memorable</li>
+                            <li>The dingir/heaven connection provides brand coherence</li>
+                            <li>Appeals to curiosity mandate</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>✗ Cons</h4>
+                        <ul>
+                            <li>Dark UI may fatigue during long sessions</li>
+                            <li>Requires strong light mode alternative</li>
+                            <li>Could feel more style than substance</li>
+                            <li>May not suit all contexts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proposal 4: Community Archive -->
+        <div class="proposal proposal4">
+            <div class="proposal-header">
+                <h2>4. Community Archive</h2>
+                <p class="subtitle">Welcoming, organized, trustworthy, collaborative</p>
+            </div>
+            <div class="proposal-content">
+                <p style="font-size: 1.1rem; margin-bottom: 2rem;"><strong>Core Metaphor:</strong> A collaborative library - a shared space where knowledge is collected, organized, and made accessible by a community.</p>
+
+                <h3>Color Palette</h3>
+                <div class="color-palette">
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #2563EB; color: white;">Primary</div>
+                        <div class="color-info">
+                            <div class="color-name">Library Blue</div>
+                            <div class="color-hex">#2563EB</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #FAFBFC; color: #1F2937;">Secondary</div>
+                        <div class="color-info">
+                            <div class="color-name">Paper White</div>
+                            <div class="color-hex">#FAFBFC</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #F59E0B; color: white;">Accent</div>
+                        <div class="color-info">
+                            <div class="color-name">Knowledge Gold</div>
+                            <div class="color-hex">#F59E0B</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #C2410C; color: white;">Accent Warm</div>
+                        <div class="color-info">
+                            <div class="color-name">Terracotta</div>
+                            <div class="color-hex">#C2410C</div>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-block" style="background: #059669; color: white;">Success</div>
+                        <div class="color-info">
+                            <div class="color-name">Verdant</div>
+                            <div class="color-hex">#059669</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Typography</h3>
+                <div class="type-sample">
+                    <div style="font-family: 'Georgia', serif; font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">Merriweather</div>
+                    <p style="font-family: 'Georgia', serif; font-size: 1.1rem;">Heading font - Readable, authoritative, warm. Designed specifically for screen reading with scholarly gravitas.</p>
+                </div>
+                <div class="type-sample">
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 2rem; margin-bottom: 1rem;">Lato</div>
+                    <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Body font - Friendly, professional, clear. Warm sans-serif with humanist touches for approachability.</p>
+                </div>
+
+                <h3>Component Styling</h3>
+                <div class="component-preview" style="background: #FAFBFC;">
+                    <button class="button-demo" style="background: #2563EB; color: white; border-radius: 8px;">Contribute Today</button>
+                    <button class="button-demo" style="background: white; border: 1.5px solid #2563EB; color: #2563EB; border-radius: 8px;">Learn More</button>
+                </div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h4>✓ Pros</h4>
+                        <ul>
+                            <li>Most accessible and welcoming</li>
+                            <li>Clear, functional design</li>
+                            <li>Emphasizes community and collaboration</li>
+                            <li>Familiar patterns reduce learning curve</li>
+                            <li>Aligns with Zooniverse-inspired experience</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h4>✗ Cons</h4>
+                        <ul>
+                            <li>Less distinctive/memorable</li>
+                            <li>Could feel generic or corporate</li>
+                            <li>May lack sense of discovery</li>
+                            <li>Risk of seeming less innovative</li>
+                            <li>Blue may feel disconnected from subject matter</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendation -->
+        <div class="recommendation">
+            <h3>🌟 Recommended Direction: Stargazer's Script</h3>
+            <p style="font-size: 1.1rem; margin-bottom: 1rem;">The astronomical connection creates a genuinely distinctive brand identity with deep historical meaning. The dingir sign literally means "heaven," making this conceptually coherent while commanding intrigue, trust, and curiosity.</p>
+
+            <h4 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Key Adaptations:</h4>
+            <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+                <li>Develop robust light mode alternative using Illuminated Clay warm tones</li>
+                <li>For CDLI integration demos, use restrained version emphasizing Library Blue</li>
+                <li>Use Illuminated Clay palette for tablet transcription interface (reduces eye strain)</li>
+                <li>Use Community Archive patterns for onboarding and help systems</li>
+            </ul>
+
+            <p style="font-size: 1.1rem;"><strong>Why this works:</strong> Unique positioning that no competitor can replicate, achieves "intrigue, trust, and curiosity" mandate, amplifies "Glintstone" name meaning, and appeals to both academics (scholarly astronomical history) and hobbyists (sense of cosmic wonder).</p>
+        </div>
+
+        <div style="text-align: center; padding: 3rem 0; color: #666;">
+            <p>This document represents initial brand exploration for Glintstone Phase 1: Discovery</p>
+            <p style="font-size: 0.9rem; margin-top: 0.5rem;">For questions or feedback, consult with the Brand Visual Designer agent</p>
+        </div>
+    </div>
+</body>
+</html>

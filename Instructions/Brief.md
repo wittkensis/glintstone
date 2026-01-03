@@ -11,12 +11,28 @@ Glintstone initially needs to serve two kinds of users:
 ## Hobbyist Experience
 The solution should build on the Zooniverse.org model, which excels at getting volunteers to help with data tagging and transcription. For instance, participants can help transcribe American Civil War-era handwritten notes for handoff to academics to study.
 
-Key Metric to Optimize For: Number of contributions per hour.
+### Key Metrics to Optimize For:
+- **Primary:** Number of contributions per hour
+- **Secondary:** Task completion rate (% of started sessions that reach completion)
+- **Trust Indicator:** User confidence in contribution value (measured through post-session feedback)
 
 ## Academic Experience
-This end of the solution should integrate with the existing academic ecosystem, such as CDLI and ORACC. It needs to integrate not only from a data perspective, but also from a perspective that respects and adheres to norms in the academic fields associated with this. A key part of this is the social layer – Assyriology is a small field, and we want this project to pour rocket fuel on their processes to speed up their time to insights.
+This end of the solution should integrate with the existing academic ecosystem, such as CDLI and ORACC. It needs to integrate not only from a data perspective, but also from a perspective that respects and adheres to norms in the academic fields associated with this. A key part of this is the social layer – Assyriology is a small field, and we want this project to pour rocket fuel on their processes to speed up their time to insights.
 
-Key Metric to Optimize For: Number of newly transcribed artifacts.
+### Key Metrics to Optimize For:
+- **Primary:** Number of newly transcribed artifacts
+- **Secondary:** Time reduction in transcription workflow (compared to traditional methods)
+- **Trust Indicator:** Academic adoption rate (% of surveyed scholars who would use the platform)
+- **Quality Assurance:** Expert verification rate (% of AI-assisted content that passes expert review)
+
+## Cross-Audience Trust Metrics
+
+Trust is paramount for both audiences. The following metrics should be tracked across all releases:
+
+- **Platform Trust:** Net Promoter Score (NPS) from both hobbyists and academics
+- **Content Trust:** Ratio of Accepted vs. Proposed content (per status taxonomy in academic workflow report)
+- **Attribution Trust:** % of users satisfied with credit/attribution mechanisms
+- **Institutional Trust:** Number of formal partnerships with museums, academic institutions, or platforms (CDLI, Oracc, etc.)
 
 # Releases
 
