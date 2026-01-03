@@ -14,17 +14,22 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const variantClasses: Record<ButtonVariant, string> = {
   primary: `
     bg-[rgb(var(--accent))] text-black
-    hover:brightness-110
+    hover:brightness-110 active:brightness-95
     focus:ring-[rgb(var(--accent))]
+    shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.2),inset_0_-2px_4px_0_rgba(0,0,0,0.3),0_4px_12px_0_rgba(246,173,85,0.25)]
+    hover:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.25),inset_0_-2px_4px_0_rgba(0,0,0,0.35),0_6px_16px_0_rgba(246,173,85,0.35)]
+    active:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.15),inset_0_-1px_2px_0_rgba(0,0,0,0.4),0_2px_4px_0_rgba(246,173,85,0.15)]
   `,
   secondary: `
-    bg-transparent border border-[rgb(var(--border))] text-[rgb(var(--text))]
-    hover:bg-[rgb(var(--background))]
+    bg-[rgb(var(--surface))] border border-[rgb(var(--border))] text-[rgb(var(--text))]
+    hover:bg-[rgb(var(--border))] hover:border-[rgb(var(--accent))]
     focus:ring-[rgb(var(--accent))]
+    shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.1),inset_0_-1px_2px_0_rgba(0,0,0,0.2),0_2px_8px_0_rgba(0,0,0,0.2)]
+    hover:shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.15),inset_0_-1px_2px_0_rgba(0,0,0,0.25),0_4px_12px_0_rgba(0,0,0,0.25)]
   `,
   ghost: `
     bg-transparent text-[rgb(var(--text-secondary))]
-    hover:bg-[rgb(var(--background))] hover:text-[rgb(var(--text))]
+    hover:bg-[rgb(var(--background))] hover:text-[rgb(var(--accent))]
     focus:ring-[rgb(var(--accent))]
   `,
 }

@@ -27,13 +27,27 @@ export function TaskCard({
     <article
       className={`
         bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-xl
-        overflow-hidden
+        overflow-hidden relative
+        shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.05),0_4px_12px_0_rgba(0,0,0,0.3)]
         ${className}
       `.trim()}
       aria-label={title}
     >
+      {/* Clay texture overlay */}
+      <div
+        className="absolute inset-0 rounded-xl pointer-events-none z-0"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 2px 2px, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+            radial-gradient(circle at 5px 4px, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+            radial-gradient(circle at 3px 6px, rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+            radial-gradient(circle at 6px 3px, rgba(0, 0, 0, 0.07) 1px, transparent 1px)
+          `,
+          backgroundSize: '7px 7px',
+        }}
+      />
       {/* Header */}
-      <header className="p-4 border-b border-[rgb(var(--border))] flex items-center justify-between">
+      <header className="relative z-10 p-4 border-b border-[rgb(var(--border))] flex items-center justify-between">
         <h2 className="m-0 text-lg font-semibold text-[rgb(var(--text))]">
           {title}
         </h2>
@@ -47,7 +61,7 @@ export function TaskCard({
 
       {/* Progress bar */}
       <div
-        className="h-1 bg-[rgb(var(--background))]"
+        className="relative z-10 h-1 bg-[rgb(var(--background))]"
         role="progressbar"
         aria-valuenow={current}
         aria-valuemin={0}
@@ -61,13 +75,13 @@ export function TaskCard({
       </div>
 
       {/* Content */}
-      <div className="p-4 sm:p-6">
+      <div className="relative z-10 p-4 sm:p-6">
         {children}
       </div>
 
       {/* Footer actions */}
       {onSkip && (
-        <footer className="p-4 border-t border-[rgb(var(--border))] flex justify-end">
+        <footer className="relative z-10 p-4 border-t border-[rgb(var(--border))] flex justify-end">
           <button
             type="button"
             onClick={onSkip}
