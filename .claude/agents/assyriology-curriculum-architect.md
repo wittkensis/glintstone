@@ -1,7 +1,7 @@
 ---
 name: assyriology-curriculum-architect
 description: Use this agent when you need to develop educational curricula for ancient languages (particularly cuneiform), identify authentic historical texts for learning materials, assess the viability of scaling language-learning tools to other ancient writing systems, or create compelling narratives around historical mysteries that could be unlocked through improved translation capabilities. Examples: When asked to 'design a learning path for cuneiform beginners', 'find untranslated tablets suitable for practice exercises', 'evaluate which ancient languages have the most research interest', 'identify compelling historical mysteries that could attract both academic and hobbyist audiences to ancient language study', or 'create a proof-of-concept dataset for an ancient language learning tool'.
-model: opus
+model: sonnet
 color: purple
 ---
 

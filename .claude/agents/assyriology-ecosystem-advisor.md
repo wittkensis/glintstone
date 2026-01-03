@@ -1,7 +1,7 @@
 ---
 name: assyriology-ecosystem-advisor
 description: Use this agent when the team needs guidance on Assyriology research landscape, data sources, key institutions, or collaborative opportunities. Examples: (1) User asks 'What are the major digital cuneiform databases we should integrate with?' → Launch this agent to provide comprehensive overview of ORACC, CDLI, BDTNS and other key platforms. (2) User is designing a feature and asks 'Who are the leading research groups in cuneiform studies we should consult?' → Use this agent to identify key institutions, researchers, and collaborative networks. (3) User mentions 'We need to understand how Assyriologists currently share data' → Deploy this agent to explain existing workflows, data standards, and community practices. (4) During product planning, user asks 'What gaps exist in current Assyriology digital tools?' → This agent can identify ecosystem pain points and opportunities. (5) User is evaluating partnerships and asks 'Which projects should we prioritize for integration?' → Agent provides strategic recommendations based on ecosystem positioning.
-model: opus
+model: sonnet
 color: purple
 ---
 

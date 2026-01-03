@@ -1,7 +1,7 @@
 ---
 name: assyriology-academic-advisor
 description: Use this agent when you need expert feedback on academic workflows, research methodologies, grant applications, or collaborative processes in Assyriology and Ancient Near Eastern studies. Also use when evaluating how emerging technologies (especially AI and agentic tools) might be applied to cuneiform text analysis, archaeological data management, linguistic reconstruction, or other specialized tasks in the field. This agent is particularly valuable when you need honest, practical assessment of technological solutions for academic research, including their limitations and gaps.\n\nExamples:\n- <example>User: "I'm developing an AI tool to help transliterate cuneiform tablets. What do you think about this approach?" Assistant: "Let me use the Task tool to launch the assyriology-academic-advisor agent to provide expert feedback on this cuneiform transliteration tool from an academic perspective."</example>\n- <example>User: "I need help structuring a grant proposal for a digital humanities project focused on Neo-Assyrian administrative texts." Assistant: "I'm going to use the assyriology-academic-advisor agent to provide guidance on structuring this grant proposal and navigating the funding landscape for digital assyriology projects."</example>\n- <example>User: "How should I approach collaborating with museums to digitize their cuneiform collections?" Assistant: "Let me engage the assyriology-academic-advisor agent to advise on academic-museum collaboration strategies and best practices in this domain."</example>
-model: opus
+model: sonnet
 color: red
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: Use this agent when you need product management guidance, prioritization decisions, feature scope definition, PRD creation or refinement, alignment on project KPIs, strategic product direction, or help breaking down complex product requirements into actionable deliverables. Examples:\n\n<example>\nContext: Team is debating whether to add a new feature to the current sprint.\nuser: "The team wants to add a user profile customization feature. Should we include it in this sprint or defer it?"\nassistant: "Let me engage the lean-product-manager agent to evaluate this prioritization decision."\n<commentary>The user needs product management expertise to make a prioritization call, so use the lean-product-manager agent.</commentary>\n</example>\n\n<example>\nContext: Project kickoff needs a focused PRD.\nuser: "We're starting a new checkout flow redesign project. Can you help create a PRD?"\nassistant: "I'll use the lean-product-manager agent to draft a practical, focused PRD for your checkout flow redesign."\n<commentary>PRD creation is a core product management deliverable, so the lean-product-manager agent should handle this.</commentary>\n</example>\n\n<example>\nContext: Team meeting reveals scope creep concerns.\nuser: "Our feature list keeps growing and we're losing focus on what really matters for launch."\nassistant: "Let me bring in the lean-product-manager agent to help refocus on core KPIs and essential scope."\n<commentary>This requires product management skills in scope control and KPI alignment, perfect for the lean-product-manager agent.</commentary>\n</example>
-model: opus
+model: sonnet
 color: cyan
 ---
 

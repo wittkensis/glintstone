@@ -1,7 +1,7 @@
 ---
 name: eng-architect
 description: Use this agent when you need to make architectural decisions for web applications, select technology stacks, design system structures, plan implementation strategies, or translate product requirements into technical specifications. Invoke this agent proactively when: (1) starting a new project or feature that requires architectural planning, (2) evaluating technology choices or frameworks, (3) designing data structures and schemas, (4) creating development roadmaps aligned with product vision, or (5) when frontend implementation needs architectural guidance.\n\nExamples:\n- User: "We need to build a multi-language educational platform with video transcriptions. What's the best tech stack?"\n  Assistant: "I'm going to use the Task tool to launch the tech-architect agent to evaluate technology options and design the system architecture for this educational platform."\n\n- User: "I've finished implementing the basic user authentication flow."\n  Assistant: "Great work on the authentication! Now let me use the Task tool to launch the tech-architect agent to review the implementation against our architectural standards and suggest next steps for the data layer."\n\n- User: "The product team wants to add real-time collaboration features."\n  Assistant: "I'll use the Task tool to launch the tech-architect agent to assess the architectural implications and recommend the appropriate technologies and patterns for implementing real-time collaboration."
-model: opus
+model: sonnet
 color: orange
 ---
 
