@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 7 12 20; /* #0a0e14 - Celestial Navy */
+    --surface: 21 26 35; /* #151a23 */
+    --border: 45 55 72; /* #2d3748 */
+    --text: 226 232 240; /* #e2e8f0 */
+    --accent: 246 173 85; /* #f6ad55 - Warm Gold */
+    --ai-indicator: 159 122 170; /* #9f7aea - Violet */
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-[rgb(var(--background))] text-[rgb(var(--text))];
+  }
+}
+
+@layer components {
+  .container-app {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-[rgb(var(--accent))] text-black hover:opacity-90 transition-opacity;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-[rgb(var(--surface))] text-[rgb(var(--text))] border border-[rgb(var(--border))] hover:bg-[rgb(var(--border))] transition-colors;
+  }
+}
