@@ -1,0 +1,2198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overlay Components - Glintstone Component Library</title>
+  <style>
+    /* ========================================
+       Design Tokens
+       ======================================== */
+    :root {
+      /* Colors */
+      --color-bg: #fafafa;
+      --color-surface: #ffffff;
+      --color-border: #e5e7eb;
+      --color-border-strong: #d1d5db;
+      --color-text: #111827;
+      --color-text-secondary: #6b7280;
+      --color-text-muted: #9ca3af;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-light: #dbeafe;
+      --color-success: #059669;
+      --color-success-light: #d1fae5;
+      --color-warning: #d97706;
+      --color-warning-light: #fef3c7;
+      --color-error: #dc2626;
+      --color-error-light: #fee2e2;
+      --color-info: #0284c7;
+      --color-info-light: #e0f2fe;
+
+      /* Spacing */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+
+      /* Typography */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+      --text-xs: 12px;
+      --text-sm: 14px;
+      --text-base: 16px;
+      --text-lg: 18px;
+      --text-xl: 20px;
+      --text-2xl: 24px;
+      --text-3xl: 30px;
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+      --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+
+      /* Z-Index */
+      --z-base: 0;
+      --z-dropdown: 200;
+      --z-popover: 300;
+      --z-panel: 400;
+      --z-modal: 500;
+      --z-toast: 600;
+
+      /* Transitions */
+      --transition-fast: 150ms ease;
+      --transition-base: 200ms ease;
+      --transition-slow: 300ms ease;
+    }
+
+    /* ========================================
+       Reset & Base
+       ======================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    h1, h2, h3, h4 {
+      margin: 0 0 var(--space-md);
+      line-height: 1.3;
+    }
+
+    p {
+      margin: 0 0 var(--space-md);
+    }
+
+    a {
+      color: var(--color-primary);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+      background: var(--color-bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ========================================
+       Layout
+       ======================================== */
+    .page-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-lg);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .page-header__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .page-header__brand {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .page-header__nav a {
+      color: var(--color-text-secondary);
+      margin-left: var(--space-lg);
+    }
+
+    .page-header__nav a:hover {
+      color: var(--color-primary);
+    }
+
+    .page-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-2xl) var(--space-lg);
+    }
+
+    .page-title {
+      font-size: var(--text-3xl);
+      margin-bottom: var(--space-sm);
+    }
+
+    .page-description {
+      font-size: var(--text-lg);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-2xl);
+      max-width: 720px;
+    }
+
+    /* ========================================
+       Section Styling
+       ======================================== */
+    .component-section {
+      margin-bottom: var(--space-2xl);
+      padding-bottom: var(--space-2xl);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .component-section:last-child {
+      border-bottom: none;
+    }
+
+    .section-title {
+      font-size: var(--text-2xl);
+      margin-bottom: var(--space-sm);
+    }
+
+    .section-description {
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-lg);
+      max-width: 640px;
+    }
+
+    .subsection {
+      margin-top: var(--space-xl);
+    }
+
+    .subsection-title {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      margin-bottom: var(--space-md);
+    }
+
+    /* ========================================
+       Demo Container
+       ======================================== */
+    .demo-container {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      margin-bottom: var(--space-lg);
+    }
+
+    .demo-label {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-sm);
+      font-weight: 500;
+    }
+
+    .demo-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+      align-items: flex-start;
+    }
+
+    .demo-centered {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 200px;
+    }
+
+    /* ========================================
+       Variant Controls
+       ======================================== */
+    .variant-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .variant-btn {
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .variant-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .variant-btn.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+
+    /* ========================================
+       Specs Table
+       ======================================== */
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .specs-table th,
+    .specs-table td {
+      text-align: left;
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .specs-table th {
+      background: var(--color-bg);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .specs-table code {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    /* ========================================
+       Code Block
+       ======================================== */
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      overflow-x: auto;
+      margin-bottom: var(--space-lg);
+    }
+
+    .code-block code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    /* ========================================
+       Accessibility Notes
+       ======================================== */
+    .a11y-notes {
+      background: var(--color-info-light);
+      border-left: 4px solid var(--color-info);
+      padding: var(--space-md);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      margin-bottom: var(--space-lg);
+    }
+
+    .a11y-notes__title {
+      font-weight: 600;
+      color: var(--color-info);
+      margin-bottom: var(--space-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .a11y-notes ul {
+      margin: 0;
+      padding-left: var(--space-lg);
+      color: var(--color-text);
+    }
+
+    .a11y-notes li {
+      margin-bottom: var(--space-xs);
+    }
+
+    /* ========================================
+       Buttons (shared)
+       ======================================== */
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      min-height: 40px;
+    }
+
+    .button[data-variant="primary"] {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .button[data-variant="primary"]:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .button[data-variant="secondary"] {
+      background: var(--color-surface);
+      border-color: var(--color-border);
+      color: var(--color-text);
+    }
+
+    .button[data-variant="secondary"]:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .button[data-variant="ghost"] {
+      background: transparent;
+      color: var(--color-text-secondary);
+    }
+
+    .button[data-variant="ghost"]:hover {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    .button[data-variant="danger"] {
+      background: var(--color-error);
+      color: white;
+    }
+
+    .button[data-variant="danger"]:hover {
+      background: #b91c1c;
+    }
+
+    .button:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* ========================================
+       Modal Component
+       ======================================== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: var(--z-modal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-md);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--transition-base), visibility var(--transition-base);
+    }
+
+    .modal[data-open="true"] {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+    }
+
+    .modal[data-open="true"] .modal__backdrop {
+      animation: fadeIn 150ms ease;
+    }
+
+    .modal__dialog {
+      position: relative;
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-xl);
+      width: 100%;
+      max-height: calc(100vh - var(--space-2xl));
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.95);
+      opacity: 0;
+      transition: transform var(--transition-base), opacity var(--transition-base);
+    }
+
+    .modal[data-open="true"] .modal__dialog {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    .modal[data-size="sm"] .modal__dialog {
+      max-width: 400px;
+    }
+
+    .modal[data-size="md"] .modal__dialog {
+      max-width: 560px;
+    }
+
+    .modal[data-size="lg"] .modal__dialog {
+      max-width: 720px;
+    }
+
+    .modal__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .modal__title {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .modal__close {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      transition: all var(--transition-fast);
+    }
+
+    .modal__close:hover {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    .modal__close:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .modal__content {
+      padding: var(--space-lg);
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal__content p {
+      margin: 0;
+    }
+
+    .modal__footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-sm);
+      padding: var(--space-md) var(--space-lg);
+      border-top: 1px solid var(--color-border);
+      background: var(--color-bg);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* ========================================
+       Popover Component
+       ======================================== */
+    .popover-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .popover-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .popover-trigger:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .popover-trigger:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .popover-trigger[aria-expanded="true"] {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .popover {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 280px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      z-index: var(--z-popover);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .popover[data-visible="true"] {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .popover__arrow {
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 12px;
+      height: 12px;
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .popover__content {
+      padding: var(--space-md);
+    }
+
+    .popover__title {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+    }
+
+    .popover__body {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      margin: 0 0 var(--space-md);
+      line-height: 1.5;
+    }
+
+    .popover__action {
+      font-size: var(--text-sm);
+      font-weight: 500;
+    }
+
+    /* Popover positioning variants */
+    .popover[data-placement="bottom"] {
+      top: calc(100% + 8px);
+      bottom: auto;
+    }
+
+    .popover[data-placement="bottom"] .popover__arrow {
+      top: -6px;
+      bottom: auto;
+      border-right: none;
+      border-bottom: none;
+      border-left: 1px solid var(--color-border);
+      border-top: 1px solid var(--color-border);
+    }
+
+    /* ========================================
+       Tooltip Component
+       ======================================== */
+    .tooltip-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .tooltip-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .tooltip-trigger:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .tooltip-trigger:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    .tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: var(--space-sm) var(--space-md);
+      background: #1e293b;
+      color: white;
+      font-size: var(--text-xs);
+      border-radius: var(--radius-md);
+      white-space: nowrap;
+      z-index: var(--z-popover);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--transition-fast), visibility var(--transition-fast);
+      pointer-events: none;
+    }
+
+    .tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: #1e293b;
+    }
+
+    .tooltip-wrapper:hover .tooltip,
+    .tooltip-trigger:focus + .tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* ========================================
+       Toast Component
+       ======================================== */
+    .toast-container {
+      position: fixed;
+      bottom: var(--space-lg);
+      right: var(--space-lg);
+      z-index: var(--z-toast);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+      max-width: 400px;
+    }
+
+    .toast {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      animation: slideInRight 200ms ease;
+    }
+
+    .toast.removing {
+      animation: fadeOut 150ms ease forwards;
+    }
+
+    .toast__icon {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+    }
+
+    .toast[data-type="info"] .toast__icon {
+      color: var(--color-info);
+    }
+
+    .toast[data-type="success"] .toast__icon {
+      color: var(--color-success);
+    }
+
+    .toast[data-type="warning"] .toast__icon {
+      color: var(--color-warning);
+    }
+
+    .toast[data-type="error"] .toast__icon {
+      color: var(--color-error);
+    }
+
+    .toast__message {
+      flex: 1;
+      font-size: var(--text-sm);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .toast__dismiss {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .toast__dismiss:hover {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+    }
+
+    /* ========================================
+       Context Panel Component
+       ======================================== */
+    .layout-with-context {
+      display: flex;
+      gap: var(--space-lg);
+      min-height: 300px;
+    }
+
+    .main-content {
+      flex: 1;
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+    }
+
+    .main-content__placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+    }
+
+    .context-panel {
+      width: 300px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      transition: transform var(--transition-slow), opacity var(--transition-slow);
+    }
+
+    .context-panel[data-open="false"] {
+      transform: translateX(100%);
+      opacity: 0;
+      position: absolute;
+      right: 0;
+    }
+
+    .context-panel__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .context-panel__title {
+      font-size: var(--text-base);
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .context-panel__close {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      transition: all var(--transition-fast);
+    }
+
+    .context-panel__close:hover {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    .context-panel__content {
+      padding: var(--space-md);
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .context-panel__details {
+      margin: 0 0 var(--space-lg);
+    }
+
+    .context-panel__details dt {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-xs);
+    }
+
+    .context-panel__details dd {
+      margin: 0 0 var(--space-md);
+      font-size: var(--text-sm);
+    }
+
+    .context-panel__action {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-size: var(--text-sm);
+      font-weight: 500;
+    }
+
+    /* ========================================
+       Demo-specific styles
+       ======================================== */
+    .demo-trigger-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+      justify-content: center;
+      padding: var(--space-xl);
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+    }
+
+    .inline-demo {
+      position: relative;
+      min-height: 200px;
+      padding-top: 100px;
+    }
+
+    .tooltip-demo-row {
+      display: flex;
+      gap: var(--space-lg);
+      justify-content: center;
+      padding: var(--space-xl);
+    }
+
+    .static-toast-demo {
+      position: relative;
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+      padding: var(--space-xl);
+    }
+
+    .static-toast {
+      position: relative;
+      animation: none;
+    }
+
+    .panel-toggle-bar {
+      display: flex;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="page-header__inner">
+      <a href="index.html" class="page-header__brand">Glintstone Components</a>
+      <nav class="page-header__nav">
+        <a href="index.html">All Components</a>
+        <a href="navigation.html">Navigation</a>
+        <a href="forms.html">Forms</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <h1 class="page-title">Overlay Components</h1>
+    <p class="page-description">
+      Overlay components present content that floats above the main interface. They handle focus management, backdrop interaction, and dismissal patterns while ensuring users are never trapped.
+    </p>
+
+    <!-- Modal Section -->
+    <section class="component-section" id="modal">
+      <h2 class="section-title">Modal</h2>
+      <p class="section-description">
+        Modal displays content that requires user attention or decision. Use for confirmation dialogs, forms, important alerts, and content previews.
+      </p>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Interactive Demo</h3>
+        <p class="demo-label">Click buttons to open different modal variants:</p>
+
+        <div class="variant-controls">
+          <button class="variant-btn" onclick="openModal('sm', 'confirm')">Confirmation (Small)</button>
+          <button class="variant-btn" onclick="openModal('md', 'form')">Form (Medium)</button>
+          <button class="variant-btn" onclick="openModal('lg', 'content')">Content (Large)</button>
+          <button class="variant-btn" onclick="openModal('md', 'danger')">Danger Action</button>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Size Variants</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Variant</th>
+              <th>Max Width</th>
+              <th>Use Case</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>sm</code></td>
+              <td>400px</td>
+              <td>Simple confirmations</td>
+            </tr>
+            <tr>
+              <td><code>md</code></td>
+              <td>560px</td>
+              <td>Forms, detailed content</td>
+            </tr>
+            <tr>
+              <td><code>lg</code></td>
+              <td>720px</td>
+              <td>Complex content</td>
+            </tr>
+            <tr>
+              <td><code>fullscreen</code></td>
+              <td>100%</td>
+              <td>Mobile, immersive</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Keyboard Interaction</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Tab</code></td>
+              <td>Cycle through focusable elements</td>
+            </tr>
+            <tr>
+              <td><code>Shift+Tab</code></td>
+              <td>Cycle backwards</td>
+            </tr>
+            <tr>
+              <td><code>Escape</code></td>
+              <td>Close modal</td>
+            </tr>
+            <tr>
+              <td><code>Enter</code></td>
+              <td>Activate focused button</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="a11y-notes">
+        <div class="a11y-notes__title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4M12 8h.01"/>
+          </svg>
+          Accessibility Requirements
+        </div>
+        <ul>
+          <li><code>role="dialog"</code> with <code>aria-modal="true"</code></li>
+          <li>Title linked via <code>aria-labelledby</code></li>
+          <li>Description linked via <code>aria-describedby</code></li>
+          <li>Focus trapped within modal while open</li>
+          <li>Escape key closes (unless persistent)</li>
+          <li>Body scroll disabled when open</li>
+          <li>Focus returns to trigger element on close</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Code Example</h3>
+        <div class="code-block">
+<code>&lt;div
+  class="modal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="modal-title"
+  aria-describedby="modal-description"
+  data-size="md"
+&gt;
+  &lt;div class="modal__backdrop" data-action="close"&gt;&lt;/div&gt;
+
+  &lt;div class="modal__dialog" role="document"&gt;
+    &lt;header class="modal__header"&gt;
+      &lt;h2 id="modal-title" class="modal__title"&gt;Confirm Action&lt;/h2&gt;
+      &lt;button type="button" class="modal__close" aria-label="Close dialog"&gt;
+        &lt;!-- close icon --&gt;
+      &lt;/button&gt;
+    &lt;/header&gt;
+
+    &lt;div id="modal-description" class="modal__content"&gt;
+      &lt;p&gt;Are you sure you want to perform this action?&lt;/p&gt;
+    &lt;/div&gt;
+
+    &lt;footer class="modal__footer"&gt;
+      &lt;button type="button" class="button" data-variant="ghost"&gt;Cancel&lt;/button&gt;
+      &lt;button type="button" class="button" data-variant="primary"&gt;Confirm&lt;/button&gt;
+    &lt;/footer&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Popover Section -->
+    <section class="component-section" id="popover">
+      <h2 class="section-title">Popover</h2>
+      <p class="section-description">
+        Popover shows contextual information triggered by interaction. Use for additional details, quick actions, help content, and sign/line context.
+      </p>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Interactive Demo</h3>
+        <p class="demo-label">Click triggers to open popovers:</p>
+
+        <div class="demo-container">
+          <div class="demo-trigger-area inline-demo">
+            <!-- Popover positioned above -->
+            <div class="popover-wrapper">
+              <button
+                type="button"
+                class="popover-trigger"
+                aria-expanded="false"
+                aria-haspopup="dialog"
+                onclick="togglePopover(this)"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 16v-4M12 8h.01"/>
+                </svg>
+                Sign Info
+              </button>
+
+              <div class="popover" role="dialog" aria-label="Sign information">
+                <div class="popover__arrow"></div>
+                <div class="popover__content">
+                  <h3 class="popover__title">Sign: AN</h3>
+                  <p class="popover__body">
+                    This sign means "god" or "sky" in Sumerian. It appears before divine names as a determinative.
+                  </p>
+                  <a href="#" class="popover__action">Learn more</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Popover positioned below -->
+            <div class="popover-wrapper">
+              <button
+                type="button"
+                class="popover-trigger"
+                aria-expanded="false"
+                aria-haspopup="dialog"
+                onclick="togglePopover(this)"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Quick Actions
+              </button>
+
+              <div class="popover" data-placement="bottom" role="dialog" aria-label="Quick actions">
+                <div class="popover__arrow"></div>
+                <div class="popover__content">
+                  <h3 class="popover__title">Available Actions</h3>
+                  <p class="popover__body">
+                    Add a note, mark for review, or flag this sign for expert verification.
+                  </p>
+                  <a href="#" class="popover__action">View all actions</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Dismiss Triggers</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Trigger</th>
+              <th>Behavior</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Click outside</td>
+              <td>Closes popover</td>
+            </tr>
+            <tr>
+              <td>Press Escape</td>
+              <td>Closes popover</td>
+            </tr>
+            <tr>
+              <td>Click close button</td>
+              <td>Closes popover (if present)</td>
+            </tr>
+            <tr>
+              <td>Scroll</td>
+              <td>Optional, configurable</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="a11y-notes">
+        <div class="a11y-notes__title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4M12 8h.01"/>
+          </svg>
+          Accessibility Requirements
+        </div>
+        <ul>
+          <li><code>aria-expanded</code> on trigger (true/false)</li>
+          <li><code>aria-haspopup="dialog"</code> on trigger</li>
+          <li><code>role="dialog"</code> on popover container</li>
+          <li>Focus moves to popover on open (optional)</li>
+          <li>Escape key closes popover</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Props/Attributes</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>data-placement</code></td>
+              <td>string</td>
+              <td>Preferred position (top, bottom, left, right)</td>
+            </tr>
+            <tr>
+              <td><code>data-offset</code></td>
+              <td>number</td>
+              <td>Distance from trigger (px)</td>
+            </tr>
+            <tr>
+              <td><code>data-arrow</code></td>
+              <td>boolean</td>
+              <td>Show pointing arrow</td>
+            </tr>
+            <tr>
+              <td><code>data-dismiss-on-scroll</code></td>
+              <td>boolean</td>
+              <td>Close when page scrolls</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tooltip Section -->
+    <section class="component-section" id="tooltip">
+      <h2 class="section-title">Tooltip</h2>
+      <p class="section-description">
+        Tooltip provides brief supplementary information on hover/focus. Use for icon labels, abbreviated text explanation, and keyboard shortcut hints.
+      </p>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Interactive Demo</h3>
+        <p class="demo-label">Hover over icons or focus them to see tooltips:</p>
+
+        <div class="demo-container">
+          <div class="tooltip-demo-row">
+            <div class="tooltip-wrapper">
+              <button type="button" class="tooltip-trigger" aria-describedby="tooltip-1">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                  <polyline points="17,21 17,13 7,13 7,21"/>
+                  <polyline points="7,3 7,8 15,8"/>
+                </svg>
+                <span class="visually-hidden">Save changes</span>
+              </button>
+              <div id="tooltip-1" role="tooltip" class="tooltip">Save changes (Cmd+S)</div>
+            </div>
+
+            <div class="tooltip-wrapper">
+              <button type="button" class="tooltip-trigger" aria-describedby="tooltip-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                <span class="visually-hidden">Edit transcription</span>
+              </button>
+              <div id="tooltip-2" role="tooltip" class="tooltip">Edit transcription</div>
+            </div>
+
+            <div class="tooltip-wrapper">
+              <button type="button" class="tooltip-trigger" aria-describedby="tooltip-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3,6 5,6 21,6"/>
+                  <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                </svg>
+                <span class="visually-hidden">Delete</span>
+              </button>
+              <div id="tooltip-3" role="tooltip" class="tooltip">Delete</div>
+            </div>
+
+            <div class="tooltip-wrapper">
+              <button type="button" class="tooltip-trigger" aria-describedby="tooltip-4">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span class="visually-hidden">Help</span>
+              </button>
+              <div id="tooltip-4" role="tooltip" class="tooltip">Get help</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Show/Hide Behavior</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Trigger Type</th>
+              <th>Show Delay</th>
+              <th>Hide Trigger</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Mouse hover</td>
+              <td>300ms</td>
+              <td>Mouse leaves element</td>
+            </tr>
+            <tr>
+              <td>Keyboard focus</td>
+              <td>100ms</td>
+              <td>Focus moves away</td>
+            </tr>
+            <tr>
+              <td>Touch (long-press)</td>
+              <td>300ms</td>
+              <td>Touch release</td>
+            </tr>
+            <tr>
+              <td>Escape key</td>
+              <td>-</td>
+              <td>Immediately hides</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="a11y-notes">
+        <div class="a11y-notes__title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4M12 8h.01"/>
+          </svg>
+          Accessibility Requirements
+        </div>
+        <ul>
+          <li><code>role="tooltip"</code> on tooltip element</li>
+          <li><code>aria-describedby</code> links trigger to tooltip</li>
+          <li>NOT for essential information (supplementary only)</li>
+          <li>Visible text alternative always present (e.g., visually-hidden span)</li>
+          <li>Maximum 8 words - keep content brief</li>
+          <li>No interactive elements inside tooltips</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Code Example</h3>
+        <div class="code-block">
+<code>&lt;!-- Custom tooltip with full control --&gt;
+&lt;button
+  type="button"
+  aria-describedby="tooltip-1"
+  class="tooltip-trigger"
+&gt;
+  &lt;svg aria-hidden="true"&gt;&lt;!-- save icon --&gt;&lt;/svg&gt;
+  &lt;span class="visually-hidden"&gt;Save changes&lt;/span&gt;
+&lt;/button&gt;
+
+&lt;div
+  id="tooltip-1"
+  role="tooltip"
+  class="tooltip"
+&gt;
+  Save changes (Cmd+S)
+&lt;/div&gt;</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toast Section -->
+    <section class="component-section" id="toast">
+      <h2 class="section-title">Toast</h2>
+      <p class="section-description">
+        Toast shows transient notifications that auto-dismiss. Use for success confirmations, error notifications, system status updates, and non-critical alerts.
+      </p>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Interactive Demo</h3>
+        <p class="demo-label">Click buttons to trigger different toast types:</p>
+
+        <div class="variant-controls">
+          <button class="variant-btn" onclick="showToast('info', 'New tablet added to your collection.')">Info Toast</button>
+          <button class="variant-btn" onclick="showToast('success', 'Your changes have been saved.')">Success Toast</button>
+          <button class="variant-btn" onclick="showToast('warning', 'Session will expire in 5 minutes.')">Warning Toast</button>
+          <button class="variant-btn" onclick="showToast('error', 'Failed to save. Please try again.')">Error Toast</button>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Toast Types</h3>
+
+        <div class="demo-container">
+          <div class="static-toast-demo">
+            <div style="display: flex; flex-direction: column; gap: 12px; max-width: 400px;">
+              <!-- Info Toast -->
+              <div class="toast static-toast" data-type="info" role="status">
+                <svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 16v-4M12 8h.01"/>
+                </svg>
+                <p class="toast__message">New tablet added to your collection.</p>
+                <button type="button" class="toast__dismiss" aria-label="Dismiss">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Success Toast -->
+              <div class="toast static-toast" data-type="success" role="status">
+                <svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                  <polyline points="22,4 12,14.01 9,11.01"/>
+                </svg>
+                <p class="toast__message">Your changes have been saved.</p>
+                <button type="button" class="toast__dismiss" aria-label="Dismiss">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Warning Toast -->
+              <div class="toast static-toast" data-type="warning" role="status">
+                <svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <p class="toast__message">Session will expire in 5 minutes.</p>
+                <button type="button" class="toast__dismiss" aria-label="Dismiss">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Error Toast -->
+              <div class="toast static-toast" data-type="error" role="status">
+                <svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M15 9l-6 6M9 9l6 6"/>
+                </svg>
+                <p class="toast__message">Failed to save. Please try again.</p>
+                <button type="button" class="toast__dismiss" aria-label="Dismiss">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Behavior</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Position (desktop)</td>
+              <td>Bottom-right of viewport</td>
+            </tr>
+            <tr>
+              <td>Position (mobile)</td>
+              <td>Bottom-center of viewport</td>
+            </tr>
+            <tr>
+              <td>Stacking</td>
+              <td>Vertical, newest at bottom</td>
+            </tr>
+            <tr>
+              <td>Max visible</td>
+              <td>3 toasts at once</td>
+            </tr>
+            <tr>
+              <td>Auto-dismiss</td>
+              <td>4-6 seconds (longer for errors)</td>
+            </tr>
+            <tr>
+              <td>Pause on hover/focus</td>
+              <td>Yes, resumes on leave</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="a11y-notes">
+        <div class="a11y-notes__title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4M12 8h.01"/>
+          </svg>
+          Accessibility Requirements
+        </div>
+        <ul>
+          <li>Container uses <code>aria-live="polite"</code> for announcements</li>
+          <li>Content is announced when toast appears</li>
+          <li>Dismiss button is keyboard accessible</li>
+          <li>Does not steal focus from current task</li>
+          <li>Essential information must have alternative display method</li>
+          <li>Error toasts should persist longer or be persistent</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Code Example</h3>
+        <div class="code-block">
+<code>&lt;!-- Toast container (add to page once) --&gt;
+&lt;div
+  class="toast-container"
+  aria-live="polite"
+  aria-atomic="true"
+&gt;
+  &lt;!-- Toasts inserted here dynamically --&gt;
+&lt;/div&gt;
+
+&lt;!-- Individual toast --&gt;
+&lt;div class="toast" data-type="success" role="status"&gt;
+  &lt;svg class="toast__icon" aria-hidden="true"&gt;
+    &lt;!-- success icon --&gt;
+  &lt;/svg&gt;
+  &lt;p class="toast__message"&gt;
+    Your changes have been saved.
+  &lt;/p&gt;
+  &lt;button
+    type="button"
+    class="toast__dismiss"
+    aria-label="Dismiss"
+  &gt;
+    &lt;svg aria-hidden="true"&gt;&lt;!-- close icon --&gt;&lt;/svg&gt;
+  &lt;/button&gt;
+&lt;/div&gt;</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Context Panel Section -->
+    <section class="component-section" id="context-panel">
+      <h2 class="section-title">Context Panel</h2>
+      <p class="section-description">
+        Context Panel shows detailed information in a side panel. Use for sign/line detail, tablet metadata, help content, and secondary navigation.
+      </p>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Interactive Demo</h3>
+        <p class="demo-label">Toggle the context panel visibility:</p>
+
+        <div class="panel-toggle-bar">
+          <button class="variant-btn active" onclick="toggleContextPanel(true, this)">Panel Open</button>
+          <button class="variant-btn" onclick="toggleContextPanel(false, this)">Panel Closed</button>
+        </div>
+
+        <div class="demo-container" style="padding: 0; overflow: hidden;">
+          <div class="layout-with-context" id="context-panel-demo">
+            <main class="main-content">
+              <div class="main-content__placeholder">
+                <div style="text-align: center;">
+                  <p style="margin-bottom: 8px;">Main Content Area</p>
+                  <p style="font-size: 12px; color: var(--color-text-muted);">Click on signs in the tablet to see details in the context panel</p>
+                </div>
+              </div>
+            </main>
+
+            <aside
+              class="context-panel"
+              id="demo-context-panel"
+              aria-label="Sign information"
+              data-open="true"
+            >
+              <header class="context-panel__header">
+                <h2 class="context-panel__title">Sign: AN</h2>
+                <button
+                  type="button"
+                  class="context-panel__close"
+                  aria-label="Close panel"
+                  onclick="toggleContextPanel(false)"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </header>
+
+              <div class="context-panel__content">
+                <dl class="context-panel__details">
+                  <dt>Meaning</dt>
+                  <dd>god, sky, heaven</dd>
+
+                  <dt>Readings</dt>
+                  <dd>an, dingir, ilu</dd>
+
+                  <dt>Period</dt>
+                  <dd>All periods</dd>
+
+                  <dt>Frequency</dt>
+                  <dd>Very common (top 50)</dd>
+                </dl>
+
+                <a href="#" class="context-panel__action">
+                  Learn more about this sign
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </a>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Responsive Variants</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Screen Size</th>
+              <th>Behavior</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Desktop (>1024px)</td>
+              <td>Inline sidebar, always visible space reserved</td>
+            </tr>
+            <tr>
+              <td>Tablet (768-1024px)</td>
+              <td>Collapsible sidebar, toggle button</td>
+            </tr>
+            <tr>
+              <td>Mobile (&lt;768px)</td>
+              <td>Full-height overlay, slide from right</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Animation Timing</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Animation</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Open (overlay/modal)</td>
+              <td>Slide in from right</td>
+              <td>250ms</td>
+            </tr>
+            <tr>
+              <td>Close</td>
+              <td>Slide out to right</td>
+              <td>200ms</td>
+            </tr>
+            <tr>
+              <td>Content update</td>
+              <td>Fade transition</td>
+              <td>150ms</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="a11y-notes">
+        <div class="a11y-notes__title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4M12 8h.01"/>
+          </svg>
+          Accessibility Requirements
+        </div>
+        <ul>
+          <li><code>&lt;aside&gt;</code> landmark when inline (visible)</li>
+          <li><code>role="dialog"</code> when overlay/modal variant</li>
+          <li>Focus managed when opening overlay variants</li>
+          <li>Escape key closes overlay variants</li>
+          <li>Content updates announced to screen readers</li>
+          <li>Descriptive <code>aria-label</code> on panel</li>
+        </ul>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Props/Attributes</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>data-open</code></td>
+              <td>boolean</td>
+              <td>Panel visibility state</td>
+            </tr>
+            <tr>
+              <td><code>data-variant</code></td>
+              <td>string</td>
+              <td>inline | overlay | modal</td>
+            </tr>
+            <tr>
+              <td><code>data-width</code></td>
+              <td>string</td>
+              <td>Panel width (default: 300px)</td>
+            </tr>
+            <tr>
+              <td><code>data-context-type</code></td>
+              <td>string</td>
+              <td>sign | line | tablet</td>
+            </tr>
+            <tr>
+              <td><code>data-context-id</code></td>
+              <td>string</td>
+              <td>Identifier for the context item</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Usage Guidelines Section -->
+    <section class="component-section" id="guidelines">
+      <h2 class="section-title">Usage Guidelines</h2>
+
+      <div class="subsection">
+        <h3 class="subsection-title">When to Use Each Component</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Use For</th>
+              <th>Do Not Use For</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Modal</strong></td>
+              <td>Blocking decisions, forms, confirmations</td>
+              <td>Notifications, help content</td>
+            </tr>
+            <tr>
+              <td><strong>Popover</strong></td>
+              <td>Detailed context, quick actions</td>
+              <td>Essential information</td>
+            </tr>
+            <tr>
+              <td><strong>Tooltip</strong></td>
+              <td>Brief labels, keyboard hints</td>
+              <td>Long content, interactive elements</td>
+            </tr>
+            <tr>
+              <td><strong>Toast</strong></td>
+              <td>Transient notifications</td>
+              <td>Blocking alerts, critical errors</td>
+            </tr>
+            <tr>
+              <td><strong>Context Panel</strong></td>
+              <td>Detailed side information</td>
+              <td>Quick glances, primary content</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Z-Index Stack</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Layer</th>
+              <th>Z-Index</th>
+              <th>Components</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Base</td>
+              <td>0</td>
+              <td>Page content</td>
+            </tr>
+            <tr>
+              <td>Header</td>
+              <td>100</td>
+              <td>Fixed header</td>
+            </tr>
+            <tr>
+              <td>Dropdown</td>
+              <td>200</td>
+              <td>Select menus</td>
+            </tr>
+            <tr>
+              <td>Popover</td>
+              <td>300</td>
+              <td>Popovers, tooltips</td>
+            </tr>
+            <tr>
+              <td>Panel</td>
+              <td>400</td>
+              <td>Context panels</td>
+            </tr>
+            <tr>
+              <td>Modal</td>
+              <td>500</td>
+              <td>Modals</td>
+            </tr>
+            <tr>
+              <td>Toast</td>
+              <td>600</td>
+              <td>Toast notifications</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <h3 class="subsection-title">Animation Timing Summary</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Enter</th>
+              <th>Exit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Modal</td>
+              <td>200ms</td>
+              <td>150ms</td>
+            </tr>
+            <tr>
+              <td>Popover</td>
+              <td>150ms</td>
+              <td>100ms</td>
+            </tr>
+            <tr>
+              <td>Tooltip</td>
+              <td>150ms</td>
+              <td>100ms</td>
+            </tr>
+            <tr>
+              <td>Toast</td>
+              <td>200ms</td>
+              <td>150ms</td>
+            </tr>
+            <tr>
+              <td>Context Panel</td>
+              <td>250ms</td>
+              <td>200ms</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal (hidden by default) -->
+  <div
+    class="modal"
+    id="demo-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="demo-modal-title"
+    aria-describedby="demo-modal-description"
+    data-size="md"
+    data-open="false"
+  >
+    <div class="modal__backdrop" onclick="closeModal()"></div>
+
+    <div class="modal__dialog" role="document">
+      <header class="modal__header">
+        <h2 id="demo-modal-title" class="modal__title">Modal Title</h2>
+        <button
+          type="button"
+          class="modal__close"
+          aria-label="Close dialog"
+          onclick="closeModal()"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </header>
+
+      <div id="demo-modal-description" class="modal__content">
+        <p>Modal content goes here.</p>
+      </div>
+
+      <footer class="modal__footer" id="demo-modal-footer">
+        <button type="button" class="button" data-variant="ghost" onclick="closeModal()">Cancel</button>
+        <button type="button" class="button" data-variant="primary" onclick="closeModal()">Confirm</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    // ========================================
+    // Modal Functions
+    // ========================================
+    let previousActiveElement = null;
+
+    function openModal(size, type) {
+      const modal = document.getElementById('demo-modal');
+      const title = document.getElementById('demo-modal-title');
+      const content = document.getElementById('demo-modal-description');
+      const footer = document.getElementById('demo-modal-footer');
+
+      // Save current focus
+      previousActiveElement = document.activeElement;
+
+      // Set size
+      modal.setAttribute('data-size', size);
+
+      // Set content based on type
+      switch(type) {
+        case 'confirm':
+          title.textContent = 'Confirm Action';
+          content.innerHTML = '<p>Are you sure you want to perform this action? This cannot be undone.</p>';
+          footer.innerHTML = `
+            <button type="button" class="button" data-variant="ghost" onclick="closeModal()">Cancel</button>
+            <button type="button" class="button" data-variant="primary" onclick="closeModal()">Confirm</button>
+          `;
+          break;
+        case 'form':
+          title.textContent = 'Add Note';
+          content.innerHTML = `
+            <div style="margin-bottom: 16px;">
+              <label for="note-input" style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px;">Note</label>
+              <textarea id="note-input" rows="4" style="width: 100%; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical;" placeholder="Enter your note about this sign..."></textarea>
+            </div>
+            <div>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                <input type="checkbox" style="width: 18px; height: 18px;">
+                Share with other contributors
+              </label>
+            </div>
+          `;
+          footer.innerHTML = `
+            <button type="button" class="button" data-variant="ghost" onclick="closeModal()">Cancel</button>
+            <button type="button" class="button" data-variant="primary" onclick="closeModal()">Save Note</button>
+          `;
+          break;
+        case 'content':
+          title.textContent = 'About This Tablet';
+          content.innerHTML = `
+            <p style="margin-bottom: 16px;">This administrative tablet from the Ur III period (c. 2100-2000 BCE) records grain distributions to temple workers.</p>
+            <p style="margin-bottom: 16px;"><strong>Museum:</strong> British Museum<br><strong>Catalog Number:</strong> BM 12345<br><strong>Provenance:</strong> Girsu (modern Tello)</p>
+            <p>The tablet is well-preserved with clear impressions on both obverse and reverse surfaces. The scribe used a standard Neo-Sumerian cuneiform script.</p>
+          `;
+          footer.innerHTML = `
+            <button type="button" class="button" data-variant="ghost" onclick="closeModal()">Close</button>
+            <button type="button" class="button" data-variant="primary" onclick="closeModal()">View Full Record</button>
+          `;
+          break;
+        case 'danger':
+          title.textContent = 'Delete Transcription';
+          content.innerHTML = '<p>Are you sure you want to delete this transcription? This action cannot be undone and all associated notes will be permanently removed.</p>';
+          footer.innerHTML = `
+            <button type="button" class="button" data-variant="ghost" onclick="closeModal()">Cancel</button>
+            <button type="button" class="button" data-variant="danger" onclick="closeModal()">Delete</button>
+          `;
+          break;
+      }
+
+      // Open modal
+      modal.setAttribute('data-open', 'true');
+      document.body.style.overflow = 'hidden';
+
+      // Focus first focusable element
+      setTimeout(() => {
+        const firstFocusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (firstFocusable) firstFocusable.focus();
+      }, 100);
+
+      // Add escape key listener
+      document.addEventListener('keydown', handleModalEscape);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('demo-modal');
+      modal.setAttribute('data-open', 'false');
+      document.body.style.overflow = '';
+
+      // Restore focus
+      if (previousActiveElement) {
+        previousActiveElement.focus();
+      }
+
+      // Remove escape key listener
+      document.removeEventListener('keydown', handleModalEscape);
+    }
+
+    function handleModalEscape(e) {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    }
+
+    // ========================================
+    // Popover Functions
+    // ========================================
+    let activePopover = null;
+
+    function togglePopover(trigger) {
+      const wrapper = trigger.closest('.popover-wrapper');
+      const popover = wrapper.querySelector('.popover');
+      const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+
+      // Close any other open popovers
+      if (activePopover && activePopover !== popover) {
+        const activeTrigger = activePopover.closest('.popover-wrapper').querySelector('.popover-trigger');
+        activeTrigger.setAttribute('aria-expanded', 'false');
+        activePopover.setAttribute('data-visible', 'false');
+      }
+
+      // Toggle current popover
+      if (isExpanded) {
+        trigger.setAttribute('aria-expanded', 'false');
+        popover.setAttribute('data-visible', 'false');
+        activePopover = null;
+      } else {
+        trigger.setAttribute('aria-expanded', 'true');
+        popover.setAttribute('data-visible', 'true');
+        activePopover = popover;
+      }
+    }
+
+    // Close popover on click outside
+    document.addEventListener('click', (e) => {
+      if (activePopover && !e.target.closest('.popover-wrapper')) {
+        const trigger = activePopover.closest('.popover-wrapper').querySelector('.popover-trigger');
+        trigger.setAttribute('aria-expanded', 'false');
+        activePopover.setAttribute('data-visible', 'false');
+        activePopover = null;
+      }
+    });
+
+    // Close popover on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && activePopover) {
+        const trigger = activePopover.closest('.popover-wrapper').querySelector('.popover-trigger');
+        trigger.setAttribute('aria-expanded', 'false');
+        activePopover.setAttribute('data-visible', 'false');
+        activePopover = null;
+        trigger.focus();
+      }
+    });
+
+    // ========================================
+    // Toast Functions
+    // ========================================
+    const toastIcons = {
+      info: `<svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 16v-4M12 8h.01"/>
+      </svg>`,
+      success: `<svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+        <polyline points="22,4 12,14.01 9,11.01"/>
+      </svg>`,
+      warning: `<svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>`,
+      error: `<svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M15 9l-6 6M9 9l6 6"/>
+      </svg>`
+    };
+
+    function showToast(type, message) {
+      const container = document.getElementById('toast-container');
+
+      // Limit to 3 toasts
+      const toasts = container.querySelectorAll('.toast');
+      if (toasts.length >= 3) {
+        dismissToast(toasts[0]);
+      }
+
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.setAttribute('data-type', type);
+      toast.setAttribute('role', 'status');
+      toast.innerHTML = `
+        ${toastIcons[type]}
+        <p class="toast__message">${message}</p>
+        <button type="button" class="toast__dismiss" aria-label="Dismiss" onclick="dismissToast(this.parentElement)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      `;
+
+      container.appendChild(toast);
+
+      // Auto dismiss (longer for errors)
+      const duration = type === 'error' ? 6000 : 4000;
+      let timeout = setTimeout(() => dismissToast(toast), duration);
+
+      // Pause on hover
+      toast.addEventListener('mouseenter', () => clearTimeout(timeout));
+      toast.addEventListener('mouseleave', () => {
+        timeout = setTimeout(() => dismissToast(toast), duration);
+      });
+    }
+
+    function dismissToast(toast) {
+      if (!toast || !toast.parentElement) return;
+      toast.classList.add('removing');
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.parentElement.removeChild(toast);
+        }
+      }, 150);
+    }
+
+    // ========================================
+    // Context Panel Functions
+    // ========================================
+    function toggleContextPanel(open, btn) {
+      const panel = document.getElementById('demo-context-panel');
+      panel.setAttribute('data-open', open);
+
+      // Update button states
+      if (btn) {
+        document.querySelectorAll('.panel-toggle-bar .variant-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>

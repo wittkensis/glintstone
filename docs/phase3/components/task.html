@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Components - Glintstone Component Library</title>
+  <style>
+    :root {
+      --color-bg: #fafafa;
+      --color-surface: #ffffff;
+      --color-border: #e5e5e5;
+      --color-border-subtle: #f0f0f0;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #666666;
+      --color-text-muted: #999999;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-light: #eff6ff;
+      --color-focus: #3b82f6;
+      --color-success: #10b981;
+      --color-success-light: #d1fae5;
+      --color-warning: #f59e0b;
+      --color-error: #ef4444;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', Monaco, monospace;
+      --font-size-sm: 0.875rem;
+      --font-size-base: 1rem;
+      --font-size-lg: 1.125rem;
+      --font-size-xl: 1.25rem;
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: var(--font-size-base);
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    a { color: var(--color-primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .page-header__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .page-header__back {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .page-header__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+    }
+
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-xl);
+    }
+
+    .component-section {
+      margin-bottom: var(--space-2xl);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .component-header {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .component-title {
+      margin: 0 0 var(--space-sm);
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+    }
+
+    .component-description {
+      margin: 0;
+      color: var(--color-text-secondary);
+    }
+
+    .component-demo {
+      padding: var(--space-lg);
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .demo-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-md);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .component-specs {
+      padding: var(--space-lg);
+    }
+
+    .specs-title {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+    }
+
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .specs-table th, .specs-table td {
+      padding: var(--space-sm) var(--space-md);
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .specs-table th {
+      background: var(--color-bg);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .specs-table code {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      background: var(--color-bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .code-block .tag { color: #f472b6; }
+    .code-block .attr { color: #a5b4fc; }
+    .code-block .value { color: #86efac; }
+
+    .a11y-note {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: var(--space-md);
+      margin-top: var(--space-md);
+      font-size: var(--font-size-sm);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .a11y-note strong { color: #92400e; }
+
+    .variant-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .variant-button {
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      transition: all 0.15s ease;
+    }
+
+    .variant-button:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .variant-button.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+
+    /* ========================================
+       TaskCard Component
+       ======================================== */
+    .task-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      max-width: 480px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    .task-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-md) var(--space-lg);
+      background: var(--color-bg);
+    }
+
+    .task-card__position {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .task-card__position strong {
+      color: var(--color-text);
+    }
+
+    .task-card__timer {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+    }
+
+    .task-card__progress {
+      height: 4px;
+      background: var(--color-border);
+      position: relative;
+    }
+
+    .task-card__progress-fill {
+      position: absolute;
+      height: 100%;
+      background: var(--color-primary);
+      transition: width 0.3s ease;
+    }
+
+    .task-card__content {
+      padding: var(--space-lg);
+    }
+
+    .task-card__prompt {
+      margin: 0 0 var(--space-lg);
+      font-size: var(--font-size-lg);
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .task-card__footer {
+      display: flex;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      border-top: 1px solid var(--color-border-subtle);
+      background: var(--color-bg);
+    }
+
+    /* ========================================
+       SignMatchTask Component
+       ======================================== */
+    .sign-match-task__target {
+      background: #1a1a1a;
+      padding: var(--space-lg);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-lg);
+      text-align: center;
+    }
+
+    .sign-match-task__image {
+      width: 120px;
+      height: 100px;
+      background: linear-gradient(135deg, #d4a574 0%, #b38560 100%);
+      border-radius: var(--radius-sm);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #5c4a3a;
+      font-size: 2rem;
+      font-family: serif;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+    }
+
+    .sign-match-task__options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-md);
+    }
+
+    .sign-option {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .sign-option input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .sign-option__card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--space-md);
+      background: var(--color-surface);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-md);
+      transition: all 0.15s ease;
+    }
+
+    .sign-option:hover .sign-option__card {
+      border-color: var(--color-primary);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+    }
+
+    .sign-option input:focus + .sign-option__card {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .sign-option input:checked + .sign-option__card {
+      border-color: var(--color-primary);
+      border-width: 3px;
+      background: var(--color-primary-light);
+    }
+
+    .sign-option input:checked + .sign-option__card::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 20px;
+      height: 20px;
+      background: var(--color-success);
+      border-radius: 50%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E");
+      background-size: 12px;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .sign-option__image {
+      width: 60px;
+      height: 50px;
+      background: #f8f4f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: #5c4a3a;
+      font-family: serif;
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-sm);
+    }
+
+    .sign-option__name {
+      font-weight: 600;
+      font-size: var(--font-size-sm);
+    }
+
+    .sign-option__meaning {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ========================================
+       BinaryTask Component
+       ======================================== */
+    .binary-task__context {
+      background: var(--color-bg);
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-lg);
+      text-align: center;
+    }
+
+    .binary-task__ai-label {
+      display: inline-block;
+      background: #8b5cf6;
+      color: white;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-right: var(--space-sm);
+    }
+
+    .binary-task__suggestion {
+      margin: 0 0 var(--space-md);
+      font-size: var(--font-size-lg);
+    }
+
+    .binary-task__comparison {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-lg);
+    }
+
+    .binary-task__comparison figure {
+      margin: 0;
+      text-align: center;
+    }
+
+    .binary-task__comparison img {
+      width: 80px;
+      height: 70px;
+      background: #f8f4f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-xs);
+    }
+
+    .binary-task__comparison figcaption {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+    }
+
+    .binary-task__options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-md);
+    }
+
+    .binary-option {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .binary-option input {
+      position: absolute;
+      opacity: 0;
+    }
+
+    .binary-option__card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-lg);
+      background: var(--color-surface);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-md);
+      min-height: 80px;
+      transition: all 0.15s ease;
+    }
+
+    .binary-option:hover .binary-option__card {
+      border-color: var(--color-primary);
+    }
+
+    .binary-option input:focus + .binary-option__card {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .binary-option[data-value="yes"] input:checked + .binary-option__card {
+      border-color: var(--color-success);
+      background: var(--color-success-light);
+    }
+
+    .binary-option[data-value="no"] input:checked + .binary-option__card {
+      border-color: var(--color-error);
+      background: #fef2f2;
+    }
+
+    .binary-option__card svg {
+      width: 24px;
+      height: 24px;
+      margin-bottom: var(--space-sm);
+    }
+
+    .binary-option__label {
+      font-weight: 500;
+    }
+
+    /* ========================================
+       CountTask Component
+       ======================================== */
+    .count-task__image {
+      background: #1a1a1a;
+      padding: var(--space-lg);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-lg);
+      text-align: center;
+    }
+
+    .count-task__placeholder {
+      width: 200px;
+      height: 150px;
+      background: linear-gradient(135deg, #d4a574 0%, #b38560 100%);
+      border-radius: var(--radius-sm);
+      margin: 0 auto;
+      position: relative;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+    }
+
+    .count-task__placeholder::before {
+      content: '';
+      position: absolute;
+      left: 20%;
+      right: 20%;
+      top: 15%;
+      bottom: 15%;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(139, 90, 43, 0.4) 0px,
+        rgba(139, 90, 43, 0.4) 2px,
+        transparent 2px,
+        transparent 20px
+      );
+    }
+
+    .count-task__options {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-sm);
+    }
+
+    .count-option {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .count-option input {
+      position: absolute;
+      opacity: 0;
+    }
+
+    .count-option__button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      background: var(--color-surface);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .count-option:hover .count-option__button {
+      border-color: var(--color-primary);
+    }
+
+    .count-option input:focus + .count-option__button {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .count-option input:checked + .count-option__button {
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+      color: white;
+    }
+
+    /* ========================================
+       TaskQueue Component
+       ======================================== */
+    .task-queue {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      max-width: 320px;
+    }
+
+    .task-queue__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .task-queue__header h2 {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+    }
+
+    .task-queue__count {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+    }
+
+    .task-queue__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .task-queue__item {
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    .task-queue__item:last-child {
+      border-bottom: none;
+    }
+
+    .task-queue__item[data-status="current"] {
+      background: var(--color-primary-light);
+    }
+
+    .task-queue__type {
+      font-size: 0.75rem;
+      background: var(--color-bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .task-queue__tablet {
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+    }
+
+    .task-queue__estimate {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .task-queue__progress {
+      grid-column: 1 / -1;
+      height: 3px;
+      background: var(--color-border);
+      border-radius: 2px;
+      margin-top: var(--space-xs);
+      overflow: hidden;
+    }
+
+    .task-queue__progress-fill {
+      height: 100%;
+      background: var(--color-primary);
+      width: 60%;
+    }
+
+    /* ========================================
+       Buttons
+       ======================================== */
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .button--primary {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .button--primary:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .button--secondary {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+    }
+
+    .button--secondary:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .button--ghost {
+      background: transparent;
+      color: var(--color-text-secondary);
+    }
+
+    .button--ghost:hover {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    .button:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-header__inner">
+      <a href="index.html" class="page-header__back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back
+      </a>
+      <h1 class="page-header__title">Task Components</h1>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- TaskCard Component -->
+    <section class="component-section" id="task-card">
+      <header class="component-header">
+        <h2 class="component-title">TaskCard</h2>
+        <p class="component-description">The container component for all task types. Provides consistent framing, progress indication, and action controls for the Contribution-Reward Cycle.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Complete a task</p>
+
+        <article class="task-card" id="demo-task-card">
+          <header class="task-card__header">
+            <span class="task-card__position">
+              Task <strong id="task-current">3</strong> of <span id="task-total">10</span>
+            </span>
+            <time class="task-card__timer" id="task-timer">0:45</time>
+          </header>
+
+          <div class="task-card__progress" role="progressbar" aria-valuenow="3" aria-valuemin="0" aria-valuemax="10" aria-label="Session progress">
+            <div class="task-card__progress-fill" id="task-progress" style="width: 30%"></div>
+          </div>
+
+          <div class="task-card__content">
+            <p class="task-card__prompt" id="task-prompt">Which sign matches the highlighted area?</p>
+
+            <!-- SignMatchTask embedded -->
+            <div class="sign-match-task">
+              <figure class="sign-match-task__target">
+                <div class="sign-match-task__image">AN</div>
+              </figure>
+
+              <div class="sign-match-task__options" role="radiogroup" aria-label="Select the matching sign">
+                <label class="sign-option" data-option-id="an">
+                  <input type="radio" name="sign-choice" value="an" onchange="handleTaskSelection(this)">
+                  <span class="sign-option__card">
+                    <span class="sign-option__image">AN</span>
+                    <span class="sign-option__name">AN</span>
+                    <span class="sign-option__meaning">god, sky</span>
+                  </span>
+                </label>
+
+                <label class="sign-option" data-option-id="en">
+                  <input type="radio" name="sign-choice" value="en" onchange="handleTaskSelection(this)">
+                  <span class="sign-option__card">
+                    <span class="sign-option__image">EN</span>
+                    <span class="sign-option__name">EN</span>
+                    <span class="sign-option__meaning">lord</span>
+                  </span>
+                </label>
+
+                <label class="sign-option" data-option-id="lu">
+                  <input type="radio" name="sign-choice" value="lu" onchange="handleTaskSelection(this)">
+                  <span class="sign-option__card">
+                    <span class="sign-option__image">LU</span>
+                    <span class="sign-option__name">LU</span>
+                    <span class="sign-option__meaning">man</span>
+                  </span>
+                </label>
+
+                <label class="sign-option" data-option-id="ud">
+                  <input type="radio" name="sign-choice" value="ud" onchange="handleTaskSelection(this)">
+                  <span class="sign-option__card">
+                    <span class="sign-option__image">UD</span>
+                    <span class="sign-option__name">UD</span>
+                    <span class="sign-option__meaning">sun, day</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <footer class="task-card__footer">
+            <button type="button" class="button button--secondary" onclick="handleUnsure()">
+              I'm not sure
+            </button>
+            <button type="button" class="button button--ghost" onclick="handleSkip()">
+              Skip
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </footer>
+        </article>
+
+        <div id="task-feedback" style="margin-top: var(--space-lg); display: none;"></div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Task States</h3>
+        <table class="specs-table">
+          <thead>
+            <tr><th>State</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>loading</td><td>Task content loading</td></tr>
+            <tr><td>ready</td><td>Awaiting user input</td></tr>
+            <tr><td>submitting</td><td>Processing response</td></tr>
+            <tr><td>feedback</td><td>Showing result feedback</td></tr>
+            <tr><td>transitioning</td><td>Animating to next task</td></tr>
+          </tbody>
+        </table>
+
+        <h3 class="specs-title">Footer Actions</h3>
+        <table class="specs-table">
+          <thead>
+            <tr><th>Action</th><th>Behavior</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>"I'm not sure"</td><td>Marks task with uncertainty flag, counts toward progress, shows positive feedback</td></tr>
+            <tr><td>"Skip"</td><td>Silent skip, task returns to queue, does NOT count toward progress</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Progress bar has proper ARIA attributes. Task prompt linked to content via <code>aria-describedby</code>. Focus managed on task load.
+        </div>
+      </div>
+    </section>
+
+    <!-- BinaryTask Component -->
+    <section class="component-section" id="binary-task">
+      <header class="component-header">
+        <h2 class="component-title">BinaryTask</h2>
+        <p class="component-description">Presents a yes/no or true/false decision. Use for AI suggestion validation, damage identification, and simple verification tasks.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Validate AI suggestion</p>
+
+        <div style="max-width: 480px; margin: 0 auto; background: var(--color-surface); padding: var(--space-lg); border-radius: var(--radius-lg);">
+          <p style="font-size: var(--font-size-lg); font-weight: 500; text-align: center; margin: 0 0 var(--space-lg);">
+            Does this AI suggestion look correct?
+          </p>
+
+          <div class="binary-task">
+            <div class="binary-task__context">
+              <p class="binary-task__suggestion">
+                <span class="binary-task__ai-label">AI suggests</span>
+                This sign is "<strong>AN</strong>"
+              </p>
+              <div class="binary-task__comparison">
+                <figure>
+                  <div style="width: 80px; height: 70px; background: linear-gradient(135deg, #d4a574, #b38560); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #5c4a3a; font-size: 1.5rem; font-family: serif; margin: 0 auto var(--space-xs);">AN</div>
+                  <figcaption>From tablet</figcaption>
+                </figure>
+                <figure>
+                  <div style="width: 80px; height: 70px; background: #f8f4f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #5c4a3a; font-size: 1.5rem; font-family: serif; margin: 0 auto var(--space-xs);">AN</div>
+                  <figcaption>AN reference</figcaption>
+                </figure>
+              </div>
+            </div>
+
+            <div class="binary-task__options" role="radiogroup" aria-label="Is this suggestion correct?">
+              <label class="binary-option" data-value="yes">
+                <input type="radio" name="binary-choice" value="yes">
+                <span class="binary-option__card">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-success);">
+                    <path d="M20 6L9 17l-5-5"/>
+                  </svg>
+                  <span class="binary-option__label">Yes, correct</span>
+                </span>
+              </label>
+
+              <label class="binary-option" data-value="no">
+                <input type="radio" name="binary-choice" value="no">
+                <span class="binary-option__card">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-error);">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                  <span class="binary-option__label">No, different</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Variants</h3>
+        <table class="specs-table">
+          <thead><tr><th>Variant</th><th>Labels</th><th>Use Case</th></tr></thead>
+          <tbody>
+            <tr><td>correct</td><td>Yes/No</td><td>AI validation</td></tr>
+            <tr><td>damage</td><td>Damaged/Clear</td><td>Damage marking</td></tr>
+            <tr><td>custom</td><td>Configurable</td><td>Flexible</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Two large buttons with clear labels. Keyboard: Tab between, Space/Enter to select. Minimum button size: 120x60px.
+        </div>
+      </div>
+    </section>
+
+    <!-- CountTask Component -->
+    <section class="component-section" id="count-task">
+      <header class="component-header">
+        <h2 class="component-title">CountTask</h2>
+        <p class="component-description">Asks the user to count something visible on the tablet. Use for line counting, sign counting, and column identification.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Count the lines</p>
+
+        <div style="max-width: 480px; margin: 0 auto; background: var(--color-surface); padding: var(--space-lg); border-radius: var(--radius-lg);">
+          <p style="font-size: var(--font-size-lg); font-weight: 500; text-align: center; margin: 0 0 var(--space-lg);">
+            How many lines of text are visible?
+          </p>
+
+          <div class="count-task">
+            <figure class="count-task__image">
+              <div class="count-task__placeholder"></div>
+            </figure>
+
+            <div class="count-task__options" role="radiogroup" aria-label="Select the number of lines">
+              <label class="count-option">
+                <input type="radio" name="count-choice" value="1">
+                <span class="count-option__button">1</span>
+              </label>
+              <label class="count-option">
+                <input type="radio" name="count-choice" value="2">
+                <span class="count-option__button">2</span>
+              </label>
+              <label class="count-option">
+                <input type="radio" name="count-choice" value="3">
+                <span class="count-option__button">3</span>
+              </label>
+              <label class="count-option">
+                <input type="radio" name="count-choice" value="4">
+                <span class="count-option__button">4</span>
+              </label>
+              <label class="count-option">
+                <input type="radio" name="count-choice" value="5+">
+                <span class="count-option__button">5+</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Large number buttons (minimum 60x60px). Clear focus states. Semantic radio group.
+        </div>
+      </div>
+    </section>
+
+    <!-- TaskQueue Component -->
+    <section class="component-section" id="task-queue">
+      <header class="component-header">
+        <h2 class="component-title">TaskQueue</h2>
+        <p class="component-description">Manages the list of pending tasks and provides queue visualization. Use for Early Learner task selection and Expert review queue.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Task queue with progress</p>
+
+        <aside class="task-queue" aria-label="Task queue">
+          <header class="task-queue__header">
+            <h2>Up Next</h2>
+            <span class="task-queue__count">4 tasks remaining</span>
+          </header>
+
+          <ol class="task-queue__list" role="list">
+            <li class="task-queue__item" data-status="current" aria-current="true">
+              <span class="task-queue__type">Sign match</span>
+              <span class="task-queue__tablet">YBC 4644</span>
+              <span class="task-queue__estimate">~30s</span>
+              <div class="task-queue__progress">
+                <div class="task-queue__progress-fill"></div>
+              </div>
+            </li>
+            <li class="task-queue__item">
+              <span class="task-queue__type">Transcribe</span>
+              <span class="task-queue__tablet">P123456</span>
+              <span class="task-queue__estimate">~2min</span>
+            </li>
+            <li class="task-queue__item">
+              <span class="task-queue__type">Verify</span>
+              <span class="task-queue__tablet">CBS 10467</span>
+              <span class="task-queue__estimate">~1min</span>
+            </li>
+            <li class="task-queue__item">
+              <span class="task-queue__type">Sign match</span>
+              <span class="task-queue__tablet">BM 106056</span>
+              <span class="task-queue__estimate">~30s</span>
+            </li>
+          </ol>
+        </aside>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Variants</h3>
+        <table class="specs-table">
+          <thead><tr><th>Variant</th><th>Description</th><th>Use Case</th></tr></thead>
+          <tbody>
+            <tr><td>minimal</td><td>Just progress indicator</td><td>Passerby flow</td></tr>
+            <tr><td>list</td><td>Shows upcoming tasks</td><td>Early Learner</td></tr>
+            <tr><td>selectable</td><td>Can choose next task</td><td>Expert queue</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Ordered list semantics. Current task marked with <code>aria-current</code>. Clickable items (if selectable) are buttons.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let taskNumber = 3;
+    let seconds = 45;
+
+    // Timer simulation
+    setInterval(() => {
+      seconds++;
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      document.getElementById('task-timer').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    }, 1000);
+
+    function handleTaskSelection(input) {
+      const feedback = document.getElementById('task-feedback');
+      feedback.style.display = 'block';
+      feedback.innerHTML = `
+        <div style="background: var(--color-success-light); border: 1px solid var(--color-success); border-radius: var(--radius-md); padding: var(--space-md); text-align: center;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2" style="margin-bottom: var(--space-sm);">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          <p style="margin: 0; font-weight: 500; color: var(--color-success);">Great job!</p>
+          <p style="margin: var(--space-xs) 0 0; font-size: var(--font-size-sm); color: var(--color-text-secondary);">Your answer matched 7 other contributors.</p>
+        </div>
+      `;
+
+      setTimeout(() => {
+        advanceTask();
+      }, 2000);
+    }
+
+    function handleUnsure() {
+      const feedback = document.getElementById('task-feedback');
+      feedback.style.display = 'block';
+      feedback.innerHTML = `
+        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: var(--radius-md); padding: var(--space-md); text-align: center;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="margin-bottom: var(--space-sm);">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          <p style="margin: 0; font-weight: 500; color: #92400e;">Uncertainty is helpful!</p>
+          <p style="margin: var(--space-xs) 0 0; font-size: var(--font-size-sm); color: var(--color-text-secondary);">Flagging difficult tasks helps experts prioritize their review.</p>
+        </div>
+      `;
+
+      setTimeout(() => {
+        advanceTask();
+      }, 2000);
+    }
+
+    function handleSkip() {
+      advanceTask();
+    }
+
+    function advanceTask() {
+      taskNumber++;
+      if (taskNumber > 10) taskNumber = 1;
+
+      document.getElementById('task-current').textContent = taskNumber;
+      document.getElementById('task-progress').style.width = (taskNumber * 10) + '%';
+      document.getElementById('task-feedback').style.display = 'none';
+
+      // Reset radio buttons
+      document.querySelectorAll('input[name="sign-choice"]').forEach(input => {
+        input.checked = false;
+      });
+
+      seconds = 0;
+    }
+  </script>
+</body>
+</html>

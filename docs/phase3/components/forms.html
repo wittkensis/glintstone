@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form Components - Glintstone Component Library</title>
+  <style>
+    :root {
+      --color-bg: #fafafa;
+      --color-surface: #ffffff;
+      --color-border: #e5e5e5;
+      --color-border-subtle: #f0f0f0;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #666666;
+      --color-text-muted: #999999;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-light: #eff6ff;
+      --color-focus: #3b82f6;
+      --color-success: #10b981;
+      --color-success-light: #d1fae5;
+      --color-error: #ef4444;
+      --color-error-light: #fef2f2;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', Monaco, monospace;
+      --font-size-sm: 0.875rem;
+      --font-size-base: 1rem;
+      --font-size-lg: 1.125rem;
+      --font-size-xl: 1.25rem;
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: var(--font-size-base);
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    a { color: var(--color-primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .page-header__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .page-header__back {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .page-header__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+    }
+
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-xl);
+    }
+
+    .component-section {
+      margin-bottom: var(--space-2xl);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .component-header {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .component-title {
+      margin: 0 0 var(--space-sm);
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+    }
+
+    .component-description {
+      margin: 0;
+      color: var(--color-text-secondary);
+    }
+
+    .component-demo {
+      padding: var(--space-lg);
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .demo-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-md);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .component-specs {
+      padding: var(--space-lg);
+    }
+
+    .specs-title {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+    }
+
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .specs-table th, .specs-table td {
+      padding: var(--space-sm) var(--space-md);
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .specs-table th {
+      background: var(--color-bg);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .specs-table code {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      background: var(--color-bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .a11y-note {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: var(--space-md);
+      margin-top: var(--space-md);
+      font-size: var(--font-size-sm);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .a11y-note strong { color: #92400e; }
+
+    .demo-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-lg);
+      align-items: flex-start;
+    }
+
+    /* ========================================
+       Button Component
+       ======================================== */
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      padding: 12px 24px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-base);
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      min-height: 44px;
+    }
+
+    .button:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .button[data-variant="primary"] {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .button[data-variant="primary"]:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .button[data-variant="secondary"] {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+    }
+
+    .button[data-variant="secondary"]:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .button[data-variant="ghost"] {
+      background: transparent;
+      color: var(--color-text-secondary);
+    }
+
+    .button[data-variant="ghost"]:hover {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    .button[data-variant="danger"] {
+      background: var(--color-error);
+      color: white;
+    }
+
+    .button[data-variant="danger"]:hover {
+      background: #dc2626;
+    }
+
+    .button[data-size="sm"] {
+      padding: 8px 12px;
+      font-size: var(--font-size-sm);
+      min-height: 32px;
+    }
+
+    .button[data-size="lg"] {
+      padding: 16px 32px;
+      font-size: var(--font-size-lg);
+      min-height: 52px;
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .button[data-loading="true"] {
+      position: relative;
+      color: transparent;
+    }
+
+    .button__spinner {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .button--icon-only {
+      padding: var(--space-sm);
+      width: 44px;
+      height: 44px;
+    }
+
+    .button__icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ========================================
+       Form Field Component
+       ======================================== */
+    .form-field {
+      margin-bottom: var(--space-md);
+    }
+
+    .form-field__label {
+      display: block;
+      margin-bottom: var(--space-xs);
+      font-weight: 500;
+      font-size: var(--font-size-sm);
+    }
+
+    .form-field__required {
+      color: var(--color-error);
+      margin-left: 2px;
+    }
+
+    .form-field__hint {
+      display: block;
+      margin-top: var(--space-xs);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+    }
+
+    .form-field__error {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      margin-top: var(--space-xs);
+      font-size: var(--font-size-sm);
+      color: var(--color-error);
+    }
+
+    .form-field__error svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    /* ========================================
+       TextInput Component
+       ======================================== */
+    .text-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-base);
+      font-family: inherit;
+      background: var(--color-surface);
+      transition: all 0.15s ease;
+      min-height: 44px;
+    }
+
+    .text-input:hover {
+      border-color: var(--color-text-muted);
+    }
+
+    .text-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .text-input::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    .text-input:disabled {
+      background: var(--color-bg);
+      cursor: not-allowed;
+    }
+
+    .text-input[aria-invalid="true"] {
+      border-color: var(--color-error);
+    }
+
+    .text-input[aria-invalid="true"]:focus {
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .text-input[data-variant="monospace"] {
+      font-family: var(--font-mono);
+    }
+
+    /* ========================================
+       TextArea Component
+       ======================================== */
+    .textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-base);
+      font-family: inherit;
+      background: var(--color-surface);
+      transition: all 0.15s ease;
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .textarea:hover {
+      border-color: var(--color-text-muted);
+    }
+
+    .textarea:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-field__meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: var(--space-xs);
+    }
+
+    .form-field__count {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* ========================================
+       Select Component
+       ======================================== */
+    .select-wrapper {
+      position: relative;
+    }
+
+    .select {
+      width: 100%;
+      padding: 12px 40px 12px 16px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-base);
+      font-family: inherit;
+      background: var(--color-surface);
+      appearance: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      min-height: 44px;
+    }
+
+    .select:hover {
+      border-color: var(--color-text-muted);
+    }
+
+    .select:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .select-wrapper__icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--color-text-muted);
+      pointer-events: none;
+    }
+
+    /* ========================================
+       Checkbox Component
+       ======================================== */
+    .checkbox {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      cursor: pointer;
+      min-height: 44px;
+      padding: var(--space-sm) 0;
+    }
+
+    .checkbox__input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .checkbox__control {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      margin-top: 2px;
+    }
+
+    .checkbox:hover .checkbox__control {
+      border-color: var(--color-primary);
+    }
+
+    .checkbox__input:focus + .checkbox__control {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .checkbox__input:checked + .checkbox__control {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .checkbox__check {
+      width: 12px;
+      height: 12px;
+      color: white;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .checkbox__input:checked + .checkbox__control .checkbox__check {
+      opacity: 1;
+    }
+
+    .checkbox__label {
+      font-size: var(--font-size-base);
+      color: var(--color-text);
+    }
+
+    /* Indeterminate state */
+    .checkbox__minus {
+      width: 10px;
+      height: 2px;
+      background: white;
+      opacity: 0;
+    }
+
+    .checkbox__input:indeterminate + .checkbox__control {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .checkbox__input:indeterminate + .checkbox__control .checkbox__minus {
+      opacity: 1;
+    }
+
+    /* ========================================
+       RadioGroup Component
+       ======================================== */
+    .radio-group {
+      border: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .radio-group__legend {
+      font-weight: 500;
+      margin-bottom: var(--space-md);
+      font-size: var(--font-size-sm);
+    }
+
+    .radio-group__options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .radio {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      cursor: pointer;
+      padding: var(--space-sm);
+      border-radius: var(--radius-sm);
+      transition: background 0.15s ease;
+    }
+
+    .radio:hover {
+      background: var(--color-bg);
+    }
+
+    .radio__input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .radio__control {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--color-border);
+      border-radius: 50%;
+      background: var(--color-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      margin-top: 2px;
+    }
+
+    .radio:hover .radio__control {
+      border-color: var(--color-primary);
+    }
+
+    .radio__input:focus + .radio__control {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .radio__input:checked + .radio__control {
+      border-color: var(--color-primary);
+    }
+
+    .radio__input:checked + .radio__control::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      background: var(--color-primary);
+      border-radius: 50%;
+    }
+
+    .radio__content {
+      flex: 1;
+    }
+
+    .radio__label {
+      display: block;
+      font-weight: 500;
+    }
+
+    .radio__description {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      margin-top: 2px;
+    }
+
+    /* Card variant */
+    .radio-group[data-variant="card"] .radio {
+      border: 1px solid var(--color-border);
+      padding: var(--space-md);
+    }
+
+    .radio-group[data-variant="card"] .radio:has(.radio__input:checked) {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+    }
+
+    /* ========================================
+       Input Group Component
+       ======================================== */
+    .input-group {
+      display: flex;
+      gap: 0;
+    }
+
+    .input-group .text-input {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .input-group__button {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      white-space: nowrap;
+    }
+
+    /* Visually hidden utility */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-header__inner">
+      <a href="index.html" class="page-header__back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back
+      </a>
+      <h1 class="page-header__title">Form Components</h1>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- Button Component -->
+    <section class="component-section" id="button">
+      <header class="component-header">
+        <h2 class="component-title">Button</h2>
+        <p class="component-description">Triggers actions and navigation. Minimum touch target of 44px. Use for form submissions, navigation actions, and modal triggers.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Variants</p>
+        <div class="demo-row" style="margin-bottom: var(--space-lg);">
+          <button type="button" class="button" data-variant="primary">Primary</button>
+          <button type="button" class="button" data-variant="secondary">Secondary</button>
+          <button type="button" class="button" data-variant="ghost">Ghost</button>
+          <button type="button" class="button" data-variant="danger">Danger</button>
+        </div>
+
+        <p class="demo-label">Sizes</p>
+        <div class="demo-row" style="align-items: center; margin-bottom: var(--space-lg);">
+          <button type="button" class="button" data-variant="primary" data-size="sm">Small</button>
+          <button type="button" class="button" data-variant="primary">Medium</button>
+          <button type="button" class="button" data-variant="primary" data-size="lg">Large</button>
+        </div>
+
+        <p class="demo-label">States</p>
+        <div class="demo-row" style="align-items: center; margin-bottom: var(--space-lg);">
+          <button type="button" class="button" data-variant="primary">Default</button>
+          <button type="button" class="button" data-variant="primary" disabled>Disabled</button>
+          <button type="button" class="button" data-variant="primary" data-loading="true" disabled>
+            <span class="button__spinner" style="border-color: white; border-right-color: transparent;"></span>
+            Loading
+          </button>
+        </div>
+
+        <p class="demo-label">With Icons</p>
+        <div class="demo-row">
+          <button type="button" class="button" data-variant="primary">
+            <svg class="button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Continue
+          </button>
+          <button type="button" class="button button--icon-only" data-variant="secondary" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Sizes</h3>
+        <table class="specs-table">
+          <thead><tr><th>Size</th><th>Height</th><th>Font Size</th><th>Padding</th></tr></thead>
+          <tbody>
+            <tr><td>sm</td><td>32px</td><td>14px</td><td>8px 12px</td></tr>
+            <tr><td>md</td><td>44px</td><td>16px</td><td>12px 24px</td></tr>
+            <tr><td>lg</td><td>52px</td><td>18px</td><td>16px 32px</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Use <code>&lt;button&gt;</code> for actions, <code>&lt;a&gt;</code> for navigation. Always include accessible name. Focus ring visible at all times. Minimum touch target: 44x44px.
+        </div>
+      </div>
+    </section>
+
+    <!-- TextInput Component -->
+    <section class="component-section" id="text-input">
+      <header class="component-header">
+        <h2 class="component-title">TextInput</h2>
+        <p class="component-description">Captures single-line text. Labels always visible - placeholder is not a substitute for label.</p>
+      </header>
+
+      <div class="component-demo">
+        <div style="max-width: 400px;">
+          <p class="demo-label">Standard Input</p>
+          <div class="form-field">
+            <label for="input-name" class="form-field__label">
+              Full name
+              <span class="form-field__required" aria-hidden="true">*</span>
+            </label>
+            <input type="text" id="input-name" class="text-input" placeholder="Enter your full name" required aria-required="true" aria-describedby="input-name-hint">
+            <span id="input-name-hint" class="form-field__hint">As it appears on your publications</span>
+          </div>
+
+          <p class="demo-label" style="margin-top: var(--space-lg);">Error State</p>
+          <div class="form-field" data-state="error">
+            <label for="input-email-error" class="form-field__label">Email address</label>
+            <input type="email" id="input-email-error" class="text-input" aria-invalid="true" aria-describedby="input-email-error-msg" value="invalid-email">
+            <span id="input-email-error-msg" class="form-field__error" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Please enter a valid email address
+            </span>
+          </div>
+
+          <p class="demo-label" style="margin-top: var(--space-lg);">Disabled</p>
+          <div class="form-field">
+            <label for="input-disabled" class="form-field__label">Username</label>
+            <input type="text" id="input-disabled" class="text-input" value="user123" disabled>
+          </div>
+
+          <p class="demo-label" style="margin-top: var(--space-lg);">Monospace (ATF input)</p>
+          <div class="form-field">
+            <label for="input-atf" class="form-field__label">Transcription</label>
+            <input type="text" id="input-atf" class="text-input" data-variant="monospace" placeholder="a-na {d}utu be-li2-ia">
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">States</h3>
+        <table class="specs-table">
+          <thead><tr><th>State</th><th>Description</th><th>ARIA</th></tr></thead>
+          <tbody>
+            <tr><td>default</td><td>Ready for input</td><td>-</td></tr>
+            <tr><td>focus</td><td>Receiving input</td><td>-</td></tr>
+            <tr><td>disabled</td><td>Not editable</td><td><code>aria-disabled="true"</code></td></tr>
+            <tr><td>error</td><td>Invalid value</td><td><code>aria-invalid="true"</code></td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Label always associated via <code>for</code>/<code>id</code>. Required fields marked with <code>aria-required</code>. Error messages linked via <code>aria-describedby</code>.
+        </div>
+      </div>
+    </section>
+
+    <!-- TextArea Component -->
+    <section class="component-section" id="textarea">
+      <header class="component-header">
+        <h2 class="component-title">TextArea</h2>
+        <p class="component-description">Captures multi-line text. Use for notes, comments, and correction explanations.</p>
+      </header>
+
+      <div class="component-demo">
+        <div style="max-width: 400px;">
+          <div class="form-field">
+            <label for="textarea-notes" class="form-field__label">Notes</label>
+            <textarea id="textarea-notes" class="textarea" rows="4" aria-describedby="textarea-notes-hint textarea-notes-count" oninput="updateCount(this)"></textarea>
+            <div class="form-field__meta">
+              <span id="textarea-notes-hint" class="form-field__hint">Optional notes about this correction</span>
+              <span id="textarea-notes-count" class="form-field__count" aria-live="polite">0/500</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Same pattern as TextInput. Character count is <code>aria-live</code> for screen reader announcements.
+        </div>
+      </div>
+    </section>
+
+    <!-- Select Component -->
+    <section class="component-section" id="select">
+      <header class="component-header">
+        <h2 class="component-title">Select</h2>
+        <p class="component-description">Dropdown selection from predefined options. Uses native select for best accessibility and mobile support.</p>
+      </header>
+
+      <div class="component-demo">
+        <div style="max-width: 400px;">
+          <div class="form-field">
+            <label for="select-period" class="form-field__label">Period</label>
+            <div class="select-wrapper">
+              <select id="select-period" class="select">
+                <option value="">Select a period</option>
+                <option value="ur-iii">Ur III (2112-2004 BCE)</option>
+                <option value="old-babylonian">Old Babylonian (2000-1600 BCE)</option>
+                <option value="middle-babylonian">Middle Babylonian (1400-1000 BCE)</option>
+                <option value="neo-assyrian">Neo-Assyrian (911-612 BCE)</option>
+                <option value="neo-babylonian">Neo-Babylonian (626-539 BCE)</option>
+              </select>
+              <svg class="select-wrapper__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Native <code>&lt;select&gt;</code> for best compatibility. Keyboard: Arrow keys navigate options. Screen reader announces options.
+        </div>
+      </div>
+    </section>
+
+    <!-- Checkbox Component -->
+    <section class="component-section" id="checkbox">
+      <header class="component-header">
+        <h2 class="component-title">Checkbox</h2>
+        <p class="component-description">Boolean toggle for agreement, consent, and optional features. Custom visual with native input for accessibility.</p>
+      </header>
+
+      <div class="component-demo">
+        <div style="max-width: 400px;">
+          <label class="checkbox">
+            <input type="checkbox" class="checkbox__input">
+            <span class="checkbox__control">
+              <svg class="checkbox__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+            </span>
+            <span class="checkbox__label">I agree to the <a href="#">terms of service</a></span>
+          </label>
+
+          <label class="checkbox">
+            <input type="checkbox" class="checkbox__input" checked>
+            <span class="checkbox__control">
+              <svg class="checkbox__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+            </span>
+            <span class="checkbox__label">Send me email updates about new tablets</span>
+          </label>
+
+          <label class="checkbox">
+            <input type="checkbox" class="checkbox__input" disabled>
+            <span class="checkbox__control">
+              <svg class="checkbox__check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+            </span>
+            <span class="checkbox__label">Disabled option</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">States</h3>
+        <table class="specs-table">
+          <thead><tr><th>State</th><th>ARIA</th></tr></thead>
+          <tbody>
+            <tr><td>unchecked</td><td><code>aria-checked="false"</code></td></tr>
+            <tr><td>checked</td><td><code>aria-checked="true"</code></td></tr>
+            <tr><td>indeterminate</td><td><code>aria-checked="mixed"</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- RadioGroup Component -->
+    <section class="component-section" id="radio-group">
+      <header class="component-header">
+        <h2 class="component-title">RadioGroup</h2>
+        <p class="component-description">Single selection from multiple options. Arrow keys navigate within group.</p>
+      </header>
+
+      <div class="component-demo">
+        <div style="max-width: 400px;">
+          <p class="demo-label">Standard Radio Group</p>
+          <fieldset class="radio-group">
+            <legend class="radio-group__legend">Select export format</legend>
+            <div class="radio-group__options">
+              <label class="radio">
+                <input type="radio" name="format" value="atf" class="radio__input" checked>
+                <span class="radio__control"></span>
+                <span class="radio__content">
+                  <span class="radio__label">ATF Format</span>
+                  <span class="radio__description">Standard transliteration format</span>
+                </span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="format" value="json" class="radio__input">
+                <span class="radio__control"></span>
+                <span class="radio__content">
+                  <span class="radio__label">JSON</span>
+                  <span class="radio__description">Structured data format</span>
+                </span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="format" value="csv" class="radio__input">
+                <span class="radio__control"></span>
+                <span class="radio__content">
+                  <span class="radio__label">CSV</span>
+                  <span class="radio__description">Spreadsheet compatible</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <p class="demo-label" style="margin-top: var(--space-lg);">Card Variant</p>
+          <fieldset class="radio-group" data-variant="card">
+            <legend class="radio-group__legend">Select difficulty</legend>
+            <div class="radio-group__options">
+              <label class="radio">
+                <input type="radio" name="difficulty" value="easy" class="radio__input" checked>
+                <span class="radio__control"></span>
+                <span class="radio__content">
+                  <span class="radio__label">Easy</span>
+                  <span class="radio__description">Well-preserved, clear signs</span>
+                </span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="difficulty" value="moderate" class="radio__input">
+                <span class="radio__control"></span>
+                <span class="radio__content">
+                  <span class="radio__label">Moderate</span>
+                  <span class="radio__description">Some damage, readable</span>
+                </span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="difficulty" value="hard" class="radio__input">
+                <span class="radio__control"></span>
+                <span class="radio__content">
+                  <span class="radio__label">Challenging</span>
+                  <span class="radio__description">Significant damage</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Keyboard Navigation</h3>
+        <table class="specs-table">
+          <thead><tr><th>Key</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Tab</td><td>Move to/from group</td></tr>
+            <tr><td>Arrow Up/Down</td><td>Navigate options</td></tr>
+            <tr><td>Arrow Left/Right</td><td>Navigate options</td></tr>
+            <tr><td>Space</td><td>Select focused option</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Fieldset + legend groups related radios. All radios share same <code>name</code>. Arrow keys navigate within group. Only selected or first radio is tabbable.
+        </div>
+      </div>
+    </section>
+
+    <!-- Input Group / Email Input -->
+    <section class="component-section" id="input-group">
+      <header class="component-header">
+        <h2 class="component-title">Input Group (Email Signup)</h2>
+        <p class="component-description">Combined input with action button. Common pattern for email subscription.</p>
+      </header>
+
+      <div class="component-demo">
+        <div style="max-width: 400px;">
+          <div class="form-field">
+            <label for="input-email" class="form-field__label">Email address</label>
+            <div class="input-group">
+              <input type="email" id="input-email" class="text-input" placeholder="you@example.com" autocomplete="email" aria-describedby="input-email-hint">
+              <button type="submit" class="button input-group__button" data-variant="primary">Subscribe</button>
+            </div>
+            <span id="input-email-hint" class="form-field__hint">We'll never share your email.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> <code>autocomplete="email"</code> for autofill. Validation errors announced. Submit button within form.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function updateCount(textarea) {
+      const count = textarea.value.length;
+      const countEl = document.getElementById('textarea-notes-count');
+      countEl.textContent = count + '/500';
+    }
+  </script>
+</body>
+</html>

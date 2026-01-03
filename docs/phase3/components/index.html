@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glintstone Component Library</title>
+  <style>
+    /* ========================================
+       CSS Variables - Design Tokens
+       ======================================== */
+    :root {
+      /* Colors */
+      --color-bg: #fafafa;
+      --color-surface: #ffffff;
+      --color-border: #e5e5e5;
+      --color-border-subtle: #f0f0f0;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #666666;
+      --color-text-muted: #999999;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-light: #eff6ff;
+      --color-focus: #3b82f6;
+
+      /* Spacing */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+
+      /* Typography */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+      --font-size-sm: 0.875rem;
+      --font-size-base: 1rem;
+      --font-size-lg: 1.125rem;
+      --font-size-xl: 1.25rem;
+      --font-size-2xl: 1.5rem;
+      --font-size-3xl: 2rem;
+      --font-size-4xl: 2.5rem;
+
+      /* Borders & Shadows */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    /* ========================================
+       Base Styles
+       ======================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-sans);
+      font-size: var(--font-size-base);
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    a {
+      color: var(--color-primary);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    a:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ========================================
+       Layout
+       ======================================== */
+    .page-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-lg) var(--space-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .page-header__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .page-header__title {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .page-header__title svg {
+      width: 28px;
+      height: 28px;
+      color: var(--color-primary);
+    }
+
+    .page-header__version {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      background: var(--color-bg);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-sm);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-2xl) var(--space-xl);
+    }
+
+    /* ========================================
+       Hero Section
+       ======================================== */
+    .hero {
+      text-align: center;
+      padding: var(--space-3xl) 0;
+      border-bottom: 1px solid var(--color-border-subtle);
+      margin-bottom: var(--space-2xl);
+    }
+
+    .hero__title {
+      font-size: var(--font-size-4xl);
+      font-weight: 700;
+      margin: 0 0 var(--space-md);
+      color: var(--color-text);
+    }
+
+    .hero__description {
+      font-size: var(--font-size-lg);
+      color: var(--color-text-secondary);
+      max-width: 600px;
+      margin: 0 auto var(--space-lg);
+      line-height: 1.7;
+    }
+
+    .hero__stats {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-2xl);
+      margin-top: var(--space-xl);
+    }
+
+    .hero__stat {
+      text-align: center;
+    }
+
+    .hero__stat-value {
+      display: block;
+      font-size: var(--font-size-3xl);
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .hero__stat-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ========================================
+       Category Cards Grid
+       ======================================== */
+    .categories {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-lg);
+      margin-bottom: var(--space-3xl);
+    }
+
+    .category-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .category-card:hover {
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .category-card:focus-within {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .category-card__icon {
+      width: 48px;
+      height: 48px;
+      background: var(--color-primary-light);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--space-md);
+    }
+
+    .category-card__icon svg {
+      width: 24px;
+      height: 24px;
+      color: var(--color-primary);
+    }
+
+    .category-card__title {
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+    }
+
+    .category-card__title a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .category-card__title a::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    .category-card {
+      position: relative;
+    }
+
+    .category-card__description {
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      margin: 0 0 var(--space-md);
+      flex-grow: 1;
+    }
+
+    .category-card__components {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+    }
+
+    .category-card__tag {
+      font-size: 0.75rem;
+      background: var(--color-bg);
+      color: var(--color-text-muted);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-sm);
+    }
+
+    /* ========================================
+       Design Principles Section
+       ======================================== */
+    .section-title {
+      font-size: var(--font-size-2xl);
+      font-weight: 600;
+      margin: 0 0 var(--space-lg);
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .principles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--space-lg);
+      margin-bottom: var(--space-3xl);
+    }
+
+    .principle {
+      padding: var(--space-md);
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border-subtle);
+    }
+
+    .principle__title {
+      font-size: var(--font-size-base);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .principle__title svg {
+      width: 18px;
+      height: 18px;
+      color: var(--color-primary);
+    }
+
+    .principle__description {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* ========================================
+       Getting Started Section
+       ======================================== */
+    .getting-started {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      margin-bottom: var(--space-3xl);
+    }
+
+    .getting-started__title {
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+      margin: 0 0 var(--space-md);
+    }
+
+    .getting-started__list {
+      margin: 0;
+      padding-left: var(--space-lg);
+    }
+
+    .getting-started__list li {
+      margin-bottom: var(--space-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .getting-started__list li strong {
+      color: var(--color-text);
+    }
+
+    /* ========================================
+       Footer
+       ======================================== */
+    .page-footer {
+      text-align: center;
+      padding: var(--space-xl);
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+      border-top: 1px solid var(--color-border-subtle);
+    }
+
+    /* ========================================
+       Responsive Adjustments
+       ======================================== */
+    @media (max-width: 768px) {
+      .hero__stats {
+        flex-direction: column;
+        gap: var(--space-lg);
+      }
+
+      .hero__title {
+        font-size: var(--font-size-3xl);
+      }
+
+      .container {
+        padding: var(--space-lg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="page-header__inner">
+      <h1 class="page-header__title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M9 3v18"/>
+          <path d="M3 9h6"/>
+          <path d="M3 15h6"/>
+        </svg>
+        Glintstone Design System
+      </h1>
+      <span class="page-header__version">v1.0</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero Section -->
+    <section class="hero">
+      <h2 class="hero__title">Component Library</h2>
+      <p class="hero__description">
+        A comprehensive collection of accessible, mobile-first components
+        designed for the Glintstone crowdsourced cuneiform transcription platform.
+      </p>
+      <div class="hero__stats">
+        <div class="hero__stat">
+          <span class="hero__stat-value">50+</span>
+          <span class="hero__stat-label">Components</span>
+        </div>
+        <div class="hero__stat">
+          <span class="hero__stat-value">8</span>
+          <span class="hero__stat-label">Categories</span>
+        </div>
+        <div class="hero__stat">
+          <span class="hero__stat-value">WCAG AA</span>
+          <span class="hero__stat-label">Accessible</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Component Categories -->
+    <section aria-labelledby="categories-title">
+      <h2 id="categories-title" class="section-title">Component Categories</h2>
+
+      <div class="categories">
+        <!-- Layout -->
+        <article class="category-card">
+          <div class="category-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M9 3v18"/>
+            </svg>
+          </div>
+          <h3 class="category-card__title">
+            <a href="layout.html">Layout</a>
+          </h3>
+          <p class="category-card__description">
+            Structural foundation components for spacing, alignment, and responsive behavior.
+          </p>
+          <div class="category-card__components">
+            <span class="category-card__tag">Container</span>
+            <span class="category-card__tag">Stack</span>
+            <span class="category-card__tag">Cluster</span>
+            <span class="category-card__tag">Grid</span>
+            <span class="category-card__tag">Sidebar</span>
+            <span class="category-card__tag">Switcher</span>
+          </div>
+        </article>
+
+        <!-- Tablet -->
+        <article class="category-card">
+          <div class="category-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="4" y="2" width="16" height="20" rx="2"/>
+              <path d="M8 6h8"/>
+              <path d="M8 10h8"/>
+              <path d="M8 14h4"/>
+            </svg>
+          </div>
+          <h3 class="category-card__title">
+            <a href="tablet.html">Tablet Interaction</a>
+          </h3>
+          <p class="category-card__description">
+            Components for viewing and interacting with cuneiform tablet images and transcriptions.
+          </p>
+          <div class="category-card__components">
+            <span class="category-card__tag">TabletViewer</span>
+            <span class="category-card__tag">RegionOverlay</span>
+            <span class="category-card__tag">SignCard</span>
+            <span class="category-card__tag">TranscriptionLine</span>
+            <span class="category-card__tag">TranscriptionPanel</span>
+          </div>
+        </article>
+
+        <!-- Task -->
+        <article class="category-card">
+          <div class="category-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+          </div>
+          <h3 class="category-card__title">
+            <a href="task.html">Task</a>
+          </h3>
+          <p class="category-card__description">
+            Contribution task components for presenting micro-tasks and capturing user responses.
+          </p>
+          <div class="category-card__components">
+            <span class="category-card__tag">TaskCard</span>
+            <span class="category-card__tag">SignMatchTask</span>
+            <span class="category-card__tag">BinaryTask</span>
+            <span class="category-card__tag">CountTask</span>
+            <span class="category-card__tag">TaskQueue</span>
+          </div>
+        </article>
+
+        <!-- Progress -->
+        <article class="category-card">
+          <div class="category-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 20V10"/>
+              <path d="M18 20V4"/>
+              <path d="M6 20v-4"/>
+            </svg>
+          </div>
+          <h3 class="category-card__title">
+            <a href="progress.html">Progress and Feedback</a>
+          </h3>
+          <p class="category-card__description">
+            Immediate feedback and progress visualization for the Contribution-Reward Cycle.
+          </p>
+          <div class="category-card__components">
+            <span class="category-card__tag">ProgressBar</span>
+            <span class="category-card__tag">ProgressCircle</span>
+            <span class="category-card__tag">ConfidenceMeter</span>
+            <span class="category-card__tag">RewardFeedback</span>
+            <span class="category-card__tag">SessionSummary</span>
+            <span class="category-card__tag">StatCard</span>
+          </div>
+        </article>
+
+        <!-- Trust -->
+        <article class="category-card">
+          <div class="category-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h3 class="category-card__title">
+            <a href="trust.html">Trust and Authority</a>
+          </h3>
+          <p class="category-card__description">
+            Components visualizing the Contextual Authority Model for provenance and credibility.
+          </p>
+          <div class="category-card__components">
+            <span class="category-card__tag">StatusBadge</span>
+            <span class="category-card__tag">TrustIndicator</span>
+            <span class="category-card__tag">ExpertCard</span>
+            <span class="category-card__tag">InstitutionBadge</span>
+            <span class="category-card__tag">ContributorList</span>
+            <span class="category-card__tag">ProvenanceTimeline</span>
+          </div>
+        </article>
+
+        <!-- Navigation -->
+        <article class="category-card">
+          <div class="category-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </div>
+          <h3 class="category-card__title">
+            <a href="navigation.html">Navigation</a>
+          </h3>
+          <p class="category-card__description">
+            Wayfinding and orientation components that adapt to user tier and context.
+          </p>
+          <div class="category-card__components">
+            <span class="category-card__tag">Header</span>
+            <span class="category-card__tag">NavItem</span>
+            <span class="category-card__tag">Breadcrumb</span>
+            <span class="category-card__tag">TabGroup</span>
+            <span class="category-card__tag">SurfaceTabs</span>
+            <span class="category-card__tag">MobileNav</span>
+          </div>
+        </article>
+
+        <!-- Forms -->
+        <article class="category-card">
+          <div class="category-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M7 7h10"/>
+              <path d="M7 12h10"/>
+              <path d="M7 17h6"/>
+            </svg>
+          </div>
+          <h3 class="category-card__title">
+            <a href="forms.html">Forms</a>
+          </h3>
+          <p class="category-card__description">
+            Accessible form components with clear error states and mobile-friendly interaction.
+          </p>
+          <div class="category-card__components">
+            <span class="category-card__tag">Button</span>
+            <span class="category-card__tag">TextInput</span>
+            <span class="category-card__tag">TextArea</span>
+            <span class="category-card__tag">Select</span>
+            <span class="category-card__tag">Checkbox</span>
+            <span class="category-card__tag">RadioGroup</span>
+          </div>
+        </article>
+
+        <!-- Overlays -->
+        <article class="category-card">
+          <div class="category-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="2" y="4" width="20" height="16" rx="2"/>
+              <rect x="6" y="8" width="12" height="8" rx="1"/>
+            </svg>
+          </div>
+          <h3 class="category-card__title">
+            <a href="overlays.html">Overlays</a>
+          </h3>
+          <p class="category-card__description">
+            Floating content components with proper focus management and dismissal patterns.
+          </p>
+          <div class="category-card__components">
+            <span class="category-card__tag">Modal</span>
+            <span class="category-card__tag">Popover</span>
+            <span class="category-card__tag">Tooltip</span>
+            <span class="category-card__tag">Toast</span>
+            <span class="category-card__tag">ContextPanel</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Design Principles -->
+    <section aria-labelledby="principles-title">
+      <h2 id="principles-title" class="section-title">Design Principles</h2>
+
+      <div class="principles">
+        <div class="principle">
+          <h3 class="principle__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v8"/>
+              <path d="M8 12h8"/>
+            </svg>
+            Accessibility First
+          </h3>
+          <p class="principle__description">
+            Every component meets WCAG AA standards. Keyboard navigation, screen reader support, and clear focus states are built in from the start.
+          </p>
+        </div>
+
+        <div class="principle">
+          <h3 class="principle__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="5" y="2" width="14" height="20" rx="2"/>
+              <line x1="12" y1="18" x2="12.01" y2="18"/>
+            </svg>
+            Mobile-First
+          </h3>
+          <p class="principle__description">
+            Components are designed for touch interaction first with 44px minimum touch targets, then enhanced for mouse and keyboard.
+          </p>
+        </div>
+
+        <div class="principle">
+          <h3 class="principle__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            Immediate Feedback
+          </h3>
+          <p class="principle__description">
+            Every interaction provides immediate, visible feedback. Users never have to wonder if their action was registered.
+          </p>
+        </div>
+
+        <div class="principle">
+          <h3 class="principle__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Transparent Trust
+          </h3>
+          <p class="principle__description">
+            Provenance and authority are always visible. Users can trace how content was created and validated.
+          </p>
+        </div>
+
+        <div class="principle">
+          <h3 class="principle__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+              <line x1="9" y1="9" x2="9.01" y2="9"/>
+              <line x1="15" y1="9" x2="15.01" y2="9"/>
+            </svg>
+            Positive Experience
+          </h3>
+          <p class="principle__description">
+            No wrong answers, only data. Components celebrate contributions and reward honest uncertainty.
+          </p>
+        </div>
+
+        <div class="principle">
+          <h3 class="principle__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            Direct Manipulation
+          </h3>
+          <p class="principle__description">
+            Prioritize direct interaction (pan, zoom, tap) over indirect controls. Reduce cognitive distance between intention and action.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Getting Started -->
+    <section class="getting-started" aria-labelledby="getting-started-title">
+      <h2 id="getting-started-title" class="getting-started__title">Getting Started</h2>
+      <ul class="getting-started__list">
+        <li><strong>Browse Categories:</strong> Click any category card above to see live component examples.</li>
+        <li><strong>View States:</strong> Each component page shows all variants and interactive states.</li>
+        <li><strong>Copy Code:</strong> HTML structure is provided with accessibility attributes included.</li>
+        <li><strong>Check Accessibility:</strong> Review ARIA requirements and keyboard navigation patterns.</li>
+        <li><strong>Responsive Design:</strong> Resize your browser to see responsive behavior in action.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <p>Glintstone Component Library v1.0 | Phase 3 UX Design Documentation</p>
+  </footer>
+</body>
+</html>

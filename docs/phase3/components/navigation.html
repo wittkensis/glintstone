@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Navigation Components - Glintstone Component Library</title>
+  <style>
+    :root {
+      --color-bg: #fafafa;
+      --color-surface: #ffffff;
+      --color-border: #e5e5e5;
+      --color-border-subtle: #f0f0f0;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #666666;
+      --color-text-muted: #999999;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-light: #eff6ff;
+      --color-focus: #3b82f6;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', Monaco, monospace;
+      --font-size-sm: 0.875rem;
+      --font-size-base: 1rem;
+      --font-size-lg: 1.125rem;
+      --font-size-xl: 1.25rem;
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: var(--font-size-base);
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    a { color: var(--color-primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .page-header__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .page-header__back {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .page-header__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+    }
+
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-xl);
+    }
+
+    .component-section {
+      margin-bottom: var(--space-2xl);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .component-header {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .component-title {
+      margin: 0 0 var(--space-sm);
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+    }
+
+    .component-description {
+      margin: 0;
+      color: var(--color-text-secondary);
+    }
+
+    .component-demo {
+      padding: var(--space-lg);
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .demo-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-md);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .component-specs {
+      padding: var(--space-lg);
+    }
+
+    .specs-title {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+    }
+
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .specs-table th, .specs-table td {
+      padding: var(--space-sm) var(--space-md);
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .specs-table th {
+      background: var(--color-bg);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .specs-table code {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      background: var(--color-bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .a11y-note {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: var(--space-md);
+      margin-top: var(--space-md);
+      font-size: var(--font-size-sm);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .a11y-note strong { color: #92400e; }
+
+    /* ========================================
+       Header Component
+       ======================================== */
+    .demo-header {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+    }
+
+    .demo-header__container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+    }
+
+    .demo-header__logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-weight: 600;
+      color: var(--color-text);
+      text-decoration: none;
+    }
+
+    .demo-header__logo svg {
+      width: 28px;
+      height: 28px;
+      color: var(--color-primary);
+    }
+
+    .demo-header__nav {
+      display: flex;
+      gap: var(--space-md);
+    }
+
+    .demo-header__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .demo-header__user-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--color-primary-light);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-primary);
+      font-weight: 600;
+      font-size: var(--font-size-sm);
+    }
+
+    .demo-header__mobile-toggle {
+      display: none;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      .demo-header__nav {
+        display: none;
+      }
+      .demo-header__mobile-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--color-primary);
+      color: white;
+      padding: var(--space-sm) var(--space-md);
+      z-index: 1000;
+      transition: top 0.3s;
+    }
+
+    .skip-link:focus {
+      top: 0;
+    }
+
+    /* ========================================
+       NavItem Component
+       ======================================== */
+    .nav-item {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      transition: all 0.15s ease;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+
+    .nav-item:hover {
+      color: var(--color-text);
+      background: var(--color-bg);
+      text-decoration: none;
+    }
+
+    .nav-item:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .nav-item[aria-current="page"] {
+      color: var(--color-primary);
+      font-weight: 600;
+      position: relative;
+    }
+
+    .nav-item[aria-current="page"]::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: var(--space-md);
+      right: var(--space-md);
+      height: 2px;
+      background: var(--color-primary);
+      border-radius: 1px;
+    }
+
+    .nav-item__icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .nav-item__badge {
+      background: var(--color-primary);
+      color: white;
+      font-size: 0.625rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+
+    .nav-item[disabled] {
+      color: var(--color-text-muted);
+      cursor: not-allowed;
+    }
+
+    /* ========================================
+       Breadcrumb Component
+       ======================================== */
+    .breadcrumb {
+      font-size: var(--font-size-sm);
+    }
+
+    .breadcrumb__list {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      gap: var(--space-xs);
+    }
+
+    .breadcrumb__item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .breadcrumb__link {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+    }
+
+    .breadcrumb__link:hover {
+      color: var(--color-primary);
+      text-decoration: underline;
+    }
+
+    .breadcrumb__separator {
+      color: var(--color-text-muted);
+    }
+
+    .breadcrumb__current {
+      color: var(--color-text);
+      font-weight: 500;
+    }
+
+    /* ========================================
+       TabGroup Component
+       ======================================== */
+    .tab-group {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .tab-group__tabs {
+      display: flex;
+      border-bottom: 1px solid var(--color-border-subtle);
+      background: var(--color-bg);
+    }
+
+    .tab-group__tab {
+      padding: var(--space-md) var(--space-lg);
+      border: none;
+      background: transparent;
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+    }
+
+    .tab-group__tab:hover {
+      color: var(--color-text);
+      background: var(--color-surface);
+    }
+
+    .tab-group__tab:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: -2px;
+    }
+
+    .tab-group__tab[aria-selected="true"] {
+      color: var(--color-primary);
+      background: var(--color-surface);
+    }
+
+    .tab-group__tab[aria-selected="true"]::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color-primary);
+    }
+
+    .tab-group__panel {
+      padding: var(--space-lg);
+    }
+
+    /* Pills variant */
+    .tab-group[data-variant="pills"] .tab-group__tabs {
+      background: transparent;
+      border: none;
+      padding: var(--space-sm);
+      gap: var(--space-xs);
+    }
+
+    .tab-group[data-variant="pills"] .tab-group__tab {
+      border-radius: var(--radius-sm);
+      padding: var(--space-sm) var(--space-md);
+    }
+
+    .tab-group[data-variant="pills"] .tab-group__tab[aria-selected="true"] {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .tab-group[data-variant="pills"] .tab-group__tab[aria-selected="true"]::after {
+      display: none;
+    }
+
+    /* ========================================
+       SurfaceTabs Component
+       ======================================== */
+    .surface-tabs {
+      display: flex;
+      gap: var(--space-xs);
+      padding: var(--space-sm);
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+    }
+
+    .surface-tabs__tab {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .surface-tabs__tab:hover {
+      background: var(--color-surface);
+      border-color: var(--color-border);
+    }
+
+    .surface-tabs__tab:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .surface-tabs__tab[aria-selected="true"] {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+    }
+
+    .surface-tabs__tab[disabled] {
+      color: var(--color-text-muted);
+      cursor: not-allowed;
+    }
+
+    .surface-tabs__count {
+      font-size: 0.75rem;
+      opacity: 0.7;
+    }
+
+    /* ========================================
+       MobileNav Component
+       ======================================== */
+    .mobile-nav-demo {
+      position: relative;
+      height: 400px;
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .mobile-nav {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+    }
+
+    .mobile-nav[hidden] {
+      display: none;
+    }
+
+    .mobile-nav__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      cursor: pointer;
+    }
+
+    .mobile-nav__panel {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 280px;
+      background: var(--color-surface);
+      box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      animation: slideIn 0.25s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(0); }
+    }
+
+    .mobile-nav__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .mobile-nav__title {
+      font-weight: 600;
+      font-size: var(--font-size-base);
+    }
+
+    .mobile-nav__close {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+    }
+
+    .mobile-nav__close:hover {
+      background: var(--color-bg);
+    }
+
+    .mobile-nav__primary,
+    .mobile-nav__secondary {
+      list-style: none;
+      margin: 0;
+      padding: var(--space-md);
+    }
+
+    .mobile-nav__divider {
+      border: none;
+      border-top: 1px solid var(--color-border-subtle);
+      margin: 0;
+    }
+
+    .mobile-nav__item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      width: 100%;
+      padding: var(--space-md);
+      border: none;
+      background: transparent;
+      text-align: left;
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-base);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .mobile-nav__item:hover {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    .mobile-nav__item[aria-current="page"] {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      font-weight: 500;
+    }
+
+    .mobile-nav__item svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Demo toggle button */
+    .demo-toggle {
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      margin-bottom: var(--space-md);
+    }
+
+    .demo-toggle:hover {
+      background: var(--color-primary-hover);
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-header__inner">
+      <a href="index.html" class="page-header__back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back
+      </a>
+      <h1 class="page-header__title">Navigation Components</h1>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- Header Component -->
+    <section class="component-section" id="header">
+      <header class="component-header">
+        <h2 class="component-title">Header</h2>
+        <p class="component-description">Global navigation with branding and user actions. Adapts to user tier and context while maintaining consistent patterns.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Desktop Header</p>
+
+        <div class="demo-header" role="banner">
+          <a href="#main-content" class="skip-link">Skip to main content</a>
+
+          <div class="demo-header__container">
+            <a href="#" class="demo-header__logo" aria-label="Glintstone home">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M9 3v18"/>
+                <path d="M3 9h6"/>
+              </svg>
+              <span>Glintstone</span>
+            </a>
+
+            <nav class="demo-header__nav" aria-label="Main navigation">
+              <a href="#" class="nav-item" aria-current="page">
+                Contribute
+              </a>
+              <a href="#" class="nav-item">
+                Explore
+              </a>
+              <a href="#" class="nav-item">
+                Learn
+              </a>
+            </nav>
+
+            <div class="demo-header__actions">
+              <button type="button" class="nav-item" aria-label="Search">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </button>
+
+              <button type="button" class="demo-header__user-toggle" aria-label="User menu" aria-haspopup="menu">
+                JS
+              </button>
+
+              <button type="button" class="demo-header__mobile-toggle" aria-label="Open menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="3" y1="12" x2="21" y2="12"/>
+                  <line x1="3" y1="6" x2="21" y2="6"/>
+                  <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Navigation by User Tier</h3>
+        <table class="specs-table">
+          <thead><tr><th>Nav Item</th><th>Passerby</th><th>Early Learner</th><th>Expert</th></tr></thead>
+          <tbody>
+            <tr><td>Contribute</td><td>Quick tasks</td><td>Task queue + transcription</td><td>+ Review</td></tr>
+            <tr><td>Explore</td><td>Featured</td><td>Full archive</td><td>+ Publication pipeline</td></tr>
+            <tr><td>Learn</td><td>Teaser</td><td>Full curriculum</td><td>"Teach" mode</td></tr>
+            <tr><td>Review</td><td>Hidden</td><td>Hidden</td><td>Visible</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Skip link as first focusable element. Proper landmark role (banner). ARIA labels on all interactive elements. Focus trapped in open menus. Escape closes menus.
+        </div>
+      </div>
+    </section>
+
+    <!-- NavItem Component -->
+    <section class="component-section" id="nav-item">
+      <header class="component-header">
+        <h2 class="component-title">NavItem</h2>
+        <p class="component-description">Single navigation link within any navigation context. Supports icons, badges, and multiple states.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">States and Variants</p>
+
+        <div style="display: flex; flex-wrap: wrap; gap: var(--space-lg); align-items: flex-start;">
+          <div>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-sm);">Default</p>
+            <a href="#" class="nav-item">
+              <svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <span>Home</span>
+            </a>
+          </div>
+
+          <div>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-sm);">Current Page</p>
+            <a href="#" class="nav-item" aria-current="page">
+              <svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+              <span>Contribute</span>
+            </a>
+          </div>
+
+          <div>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-sm);">With Badge</p>
+            <a href="#" class="nav-item">
+              <svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span>Review</span>
+              <span class="nav-item__badge" aria-label="8 pending reviews">8</span>
+            </a>
+          </div>
+
+          <div>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-sm);">Disabled</p>
+            <span class="nav-item" disabled aria-disabled="true">
+              <svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Locked</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">States</h3>
+        <table class="specs-table">
+          <thead><tr><th>State</th><th>Description</th><th>Visual</th></tr></thead>
+          <tbody>
+            <tr><td>default</td><td>Inactive</td><td>Standard text</td></tr>
+            <tr><td>hover</td><td>Mouse over</td><td>Subtle background</td></tr>
+            <tr><td>focus</td><td>Keyboard focus</td><td>Focus ring</td></tr>
+            <tr><td>active</td><td>Being pressed</td><td>Darker background</td></tr>
+            <tr><td>current</td><td>Current page</td><td>Bold, indicator</td></tr>
+            <tr><td>disabled</td><td>Not available</td><td>Muted, no interaction</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Breadcrumb Component -->
+    <section class="component-section" id="breadcrumb">
+      <header class="component-header">
+        <h2 class="component-title">Breadcrumb</h2>
+        <p class="component-description">Shows the user's location in the site hierarchy. Use for deep navigation like tablet detail pages.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Navigation Path</p>
+
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <ol class="breadcrumb__list">
+            <li class="breadcrumb__item">
+              <a href="#" class="breadcrumb__link">Home</a>
+              <span class="breadcrumb__separator" aria-hidden="true">/</span>
+            </li>
+            <li class="breadcrumb__item">
+              <a href="#" class="breadcrumb__link">Explore</a>
+              <span class="breadcrumb__separator" aria-hidden="true">/</span>
+            </li>
+            <li class="breadcrumb__item">
+              <a href="#" class="breadcrumb__link">Tablets</a>
+              <span class="breadcrumb__separator" aria-hidden="true">/</span>
+            </li>
+            <li class="breadcrumb__item" aria-current="page">
+              <span class="breadcrumb__current">YBC 4644</span>
+            </li>
+          </ol>
+        </nav>
+      </div>
+
+      <div class="component-specs">
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Uses nav landmark with <code>aria-label</code>. Ordered list semantics. <code>aria-current="page"</code> on last item. Separators are decorative (<code>aria-hidden</code>).
+        </div>
+      </div>
+    </section>
+
+    <!-- TabGroup Component -->
+    <section class="component-section" id="tab-group">
+      <header class="component-header">
+        <h2 class="component-title">TabGroup</h2>
+        <p class="component-description">Tabbed navigation within a page section. Use for content organization like tablet surfaces or view switching.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Default Tabs (click to switch)</p>
+
+        <div class="tab-group" id="demo-tabs">
+          <div class="tab-group__tabs" role="tablist" aria-label="Content views">
+            <button role="tab" aria-selected="true" aria-controls="panel-1" id="tab-1" class="tab-group__tab" onclick="selectTab(this, 'panel-1')">
+              Transcription
+            </button>
+            <button role="tab" aria-selected="false" aria-controls="panel-2" id="tab-2" class="tab-group__tab" tabindex="-1" onclick="selectTab(this, 'panel-2')">
+              Translation
+            </button>
+            <button role="tab" aria-selected="false" aria-controls="panel-3" id="tab-3" class="tab-group__tab" tabindex="-1" onclick="selectTab(this, 'panel-3')">
+              Context
+            </button>
+          </div>
+
+          <div role="tabpanel" id="panel-1" aria-labelledby="tab-1" class="tab-group__panel">
+            <p style="margin: 0; color: var(--color-text-secondary);">Transcription content appears here. This panel shows the cuneiform transliteration.</p>
+          </div>
+
+          <div role="tabpanel" id="panel-2" aria-labelledby="tab-2" class="tab-group__panel" hidden>
+            <p style="margin: 0; color: var(--color-text-secondary);">Translation content appears here. This panel shows the English translation.</p>
+          </div>
+
+          <div role="tabpanel" id="panel-3" aria-labelledby="tab-3" class="tab-group__panel" hidden>
+            <p style="margin: 0; color: var(--color-text-secondary);">Context content appears here. This panel shows historical and cultural context.</p>
+          </div>
+        </div>
+
+        <p class="demo-label" style="margin-top: var(--space-lg);">Pills Variant</p>
+
+        <div class="tab-group" data-variant="pills">
+          <div class="tab-group__tabs" role="tablist" aria-label="View options">
+            <button role="tab" aria-selected="true" class="tab-group__tab">Grid</button>
+            <button role="tab" aria-selected="false" class="tab-group__tab" tabindex="-1">List</button>
+            <button role="tab" aria-selected="false" class="tab-group__tab" tabindex="-1">Table</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Keyboard Navigation</h3>
+        <table class="specs-table">
+          <thead><tr><th>Key</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Tab</td><td>Move to tab list, then to panel</td></tr>
+            <tr><td>Arrow Left/Right</td><td>Navigate between tabs</td></tr>
+            <tr><td>Home</td><td>First tab</td></tr>
+            <tr><td>End</td><td>Last tab</td></tr>
+            <tr><td>Enter/Space</td><td>Activate focused tab</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Full ARIA tablist pattern. Only selected tab is focusable (tabindex management). Arrow keys navigate tabs. Panel associates with tab via <code>aria-labelledby</code>.
+        </div>
+      </div>
+    </section>
+
+    <!-- SurfaceTabs Component -->
+    <section class="component-section" id="surface-tabs">
+      <header class="component-header">
+        <h2 class="component-title">SurfaceTabs</h2>
+        <p class="component-description">Specialized TabGroup for switching tablet surfaces. A common pattern in Glintstone for obverse/reverse/edge navigation.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Tablet Surface Navigation</p>
+
+        <div class="surface-tabs" role="tablist" aria-label="Tablet surfaces">
+          <button role="tab" aria-selected="true" data-surface="obverse" class="surface-tabs__tab">
+            <span class="surface-tabs__label">Obverse</span>
+            <span class="surface-tabs__count" aria-label="12 lines">12</span>
+          </button>
+
+          <button role="tab" aria-selected="false" data-surface="reverse" class="surface-tabs__tab" tabindex="-1">
+            <span class="surface-tabs__label">Reverse</span>
+            <span class="surface-tabs__count" aria-label="8 lines">8</span>
+          </button>
+
+          <button role="tab" aria-selected="false" data-surface="edge" class="surface-tabs__tab" tabindex="-1" disabled>
+            <span class="surface-tabs__label">Edge</span>
+            <span class="surface-tabs__count" aria-label="no text">-</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Same as TabGroup. Line counts have proper <code>aria-label</code> for screen readers.
+        </div>
+      </div>
+    </section>
+
+    <!-- MobileNav Component -->
+    <section class="component-section" id="mobile-nav">
+      <header class="component-header">
+        <h2 class="component-title">MobileNav</h2>
+        <p class="component-description">Mobile navigation drawer with slide-in animation and proper focus management.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Mobile Navigation Drawer</p>
+
+        <button type="button" class="demo-toggle" onclick="toggleMobileNav()">
+          Toggle Mobile Nav
+        </button>
+
+        <div class="mobile-nav-demo">
+          <div class="mobile-nav" id="demo-mobile-nav" role="dialog" aria-label="Navigation menu" aria-modal="true" hidden>
+            <div class="mobile-nav__backdrop" onclick="toggleMobileNav()"></div>
+
+            <nav class="mobile-nav__panel">
+              <header class="mobile-nav__header">
+                <span class="mobile-nav__title">Menu</span>
+                <button type="button" class="mobile-nav__close" aria-label="Close menu" onclick="toggleMobileNav()">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </header>
+
+              <ul class="mobile-nav__primary" role="list">
+                <li>
+                  <a href="#" class="mobile-nav__item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                    Home
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="mobile-nav__item" aria-current="page">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83"/></svg>
+                    Contribute
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="mobile-nav__item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Explore
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="mobile-nav__item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    Learn
+                  </a>
+                </li>
+              </ul>
+
+              <hr class="mobile-nav__divider" role="separator">
+
+              <ul class="mobile-nav__secondary" role="list">
+                <li>
+                  <a href="#" class="mobile-nav__item">Profile</a>
+                </li>
+                <li>
+                  <a href="#" class="mobile-nav__item">Settings</a>
+                </li>
+                <li>
+                  <button type="button" class="mobile-nav__item">Sign out</button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Animation</h3>
+        <table class="specs-table">
+          <thead><tr><th>Phase</th><th>Animation</th><th>Duration</th></tr></thead>
+          <tbody>
+            <tr><td>Open</td><td>Backdrop fades in, panel slides from left</td><td>200ms / 250ms</td></tr>
+            <tr><td>Close</td><td>Panel slides out, backdrop fades out</td><td>200ms / 150ms</td></tr>
+          </tbody>
+        </table>
+
+        <h3 class="specs-title">Focus Management</h3>
+        <table class="specs-table">
+          <thead><tr><th>Event</th><th>Behavior</th></tr></thead>
+          <tbody>
+            <tr><td>On open</td><td>Focus moves to close button</td></tr>
+            <tr><td>While open</td><td>Focus trapped within panel</td></tr>
+            <tr><td>Escape key</td><td>Closes menu</td></tr>
+            <tr><td>On close</td><td>Focus returns to trigger</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> <code>role="dialog"</code> with <code>aria-modal</code>. Focus trapped while open. Escape key closes. Backdrop click closes. <code>aria-current</code> on current page.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function selectTab(tab, panelId) {
+      const tabGroup = tab.closest('.tab-group');
+      const tabs = tabGroup.querySelectorAll('[role="tab"]');
+      const panels = tabGroup.querySelectorAll('[role="tabpanel"]');
+
+      tabs.forEach(t => {
+        t.setAttribute('aria-selected', 'false');
+        t.setAttribute('tabindex', '-1');
+      });
+
+      panels.forEach(p => {
+        p.hidden = true;
+      });
+
+      tab.setAttribute('aria-selected', 'true');
+      tab.setAttribute('tabindex', '0');
+      document.getElementById(panelId).hidden = false;
+    }
+
+    function toggleMobileNav() {
+      const nav = document.getElementById('demo-mobile-nav');
+      nav.hidden = !nav.hidden;
+    }
+  </script>
+</body>
+</html>

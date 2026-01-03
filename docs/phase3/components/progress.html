@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progress and Feedback Components - Glintstone Component Library</title>
+  <style>
+    :root {
+      --color-bg: #fafafa;
+      --color-surface: #ffffff;
+      --color-border: #e5e5e5;
+      --color-border-subtle: #f0f0f0;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #666666;
+      --color-text-muted: #999999;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-light: #eff6ff;
+      --color-focus: #3b82f6;
+      --color-success: #10b981;
+      --color-success-light: #d1fae5;
+      --color-warning: #f59e0b;
+      --color-warning-light: #fef3c7;
+      --color-error: #ef4444;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', Monaco, monospace;
+      --font-size-sm: 0.875rem;
+      --font-size-base: 1rem;
+      --font-size-lg: 1.125rem;
+      --font-size-xl: 1.25rem;
+      --font-size-2xl: 1.5rem;
+      --font-size-3xl: 2rem;
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: var(--font-size-base);
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    a { color: var(--color-primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .page-header__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .page-header__back {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .page-header__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+    }
+
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-xl);
+    }
+
+    .component-section {
+      margin-bottom: var(--space-2xl);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .component-header {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .component-title {
+      margin: 0 0 var(--space-sm);
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+    }
+
+    .component-description {
+      margin: 0;
+      color: var(--color-text-secondary);
+    }
+
+    .component-demo {
+      padding: var(--space-lg);
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .demo-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-md);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .component-specs {
+      padding: var(--space-lg);
+    }
+
+    .specs-title {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+    }
+
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .specs-table th, .specs-table td {
+      padding: var(--space-sm) var(--space-md);
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .specs-table th {
+      background: var(--color-bg);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .specs-table code {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      background: var(--color-bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .a11y-note {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: var(--space-md);
+      margin-top: var(--space-md);
+      font-size: var(--font-size-sm);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .a11y-note strong { color: #92400e; }
+
+    .variant-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .variant-button {
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      transition: all 0.15s ease;
+    }
+
+    .variant-button:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .variant-button.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+
+    .demo-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-lg);
+      align-items: flex-start;
+    }
+
+    /* ========================================
+       ProgressBar Component
+       ======================================== */
+    .progress-bar {
+      width: 100%;
+    }
+
+    .progress-bar__track {
+      height: 8px;
+      background: var(--color-border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar__fill {
+      height: 100%;
+      background: var(--color-primary);
+      border-radius: 4px;
+      transition: width 0.3s ease-out;
+    }
+
+    .progress-bar__label {
+      display: block;
+      margin-top: var(--space-xs);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      text-align: right;
+    }
+
+    .progress-bar[data-variant="slim"] .progress-bar__track {
+      height: 4px;
+    }
+
+    .progress-bar[data-variant="slim"] .progress-bar__label {
+      display: none;
+    }
+
+    .progress-bar[data-variant="thick"] .progress-bar__track {
+      height: 12px;
+    }
+
+    /* Segmented variant */
+    .progress-bar__segments {
+      display: flex;
+      gap: 4px;
+    }
+
+    .progress-bar__segment {
+      flex: 1;
+      height: 8px;
+      background: var(--color-border);
+      border-radius: 2px;
+      transition: background 0.3s ease;
+    }
+
+    .progress-bar__segment[data-filled="true"] {
+      background: var(--color-primary);
+    }
+
+    /* Milestone animation */
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
+    }
+
+    .progress-bar--milestone .progress-bar__fill {
+      animation: pulse 0.5s ease;
+    }
+
+    /* Complete animation */
+    @keyframes celebrate {
+      0% { background: var(--color-primary); }
+      50% { background: var(--color-success); }
+      100% { background: var(--color-success); }
+    }
+
+    .progress-bar--complete .progress-bar__fill {
+      animation: celebrate 0.8s ease forwards;
+    }
+
+    /* ========================================
+       ProgressCircle Component
+       ======================================== */
+    .progress-circle {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .progress-circle[data-size="sm"] { width: 40px; height: 40px; }
+    .progress-circle[data-size="md"] { width: 64px; height: 64px; }
+    .progress-circle[data-size="lg"] { width: 96px; height: 96px; }
+
+    .progress-circle__svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .progress-circle__track {
+      stroke: var(--color-border);
+    }
+
+    .progress-circle__fill {
+      stroke: var(--color-primary);
+      transition: stroke-dasharray 0.3s ease-out;
+    }
+
+    .progress-circle__content {
+      position: absolute;
+      text-align: center;
+    }
+
+    .progress-circle__value {
+      font-weight: 600;
+      font-size: var(--font-size-lg);
+    }
+
+    .progress-circle__separator {
+      color: var(--color-text-muted);
+      margin: 0 2px;
+    }
+
+    .progress-circle__max {
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+    }
+
+    .progress-circle[data-size="sm"] .progress-circle__content {
+      font-size: var(--font-size-sm);
+    }
+
+    .progress-circle[data-size="sm"] .progress-circle__value {
+      font-size: var(--font-size-sm);
+    }
+
+    /* ========================================
+       ConfidenceMeter Component
+       ======================================== */
+    .confidence-meter {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .confidence-meter__dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .confidence-meter__dot[data-confidence="uncertain"] { background: #94a3b8; }
+    .confidence-meter__dot[data-confidence="possible"] { background: #fbbf24; }
+    .confidence-meter__dot[data-confidence="likely"] { background: #34d399; }
+    .confidence-meter__dot[data-confidence="confident"] { background: #22c55e; }
+    .confidence-meter__dot[data-confidence="verified"] { background: #10b981; }
+
+    .confidence-meter__bar {
+      width: 80px;
+      height: 6px;
+      background: var(--color-border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .confidence-meter__fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    .confidence-meter__fill[data-confidence="uncertain"] { background: #94a3b8; }
+    .confidence-meter__fill[data-confidence="possible"] { background: #fbbf24; }
+    .confidence-meter__fill[data-confidence="likely"] { background: #34d399; }
+    .confidence-meter__fill[data-confidence="confident"] { background: #22c55e; }
+    .confidence-meter__fill[data-confidence="verified"] { background: #10b981; }
+
+    .confidence-meter__value {
+      font-size: var(--font-size-sm);
+      font-family: var(--font-mono);
+      color: var(--color-text-secondary);
+    }
+
+    /* Detailed variant */
+    .confidence-meter--detailed {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+    }
+
+    .confidence-meter__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .confidence-meter__label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+    }
+
+    .confidence-meter__level {
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+    }
+
+    .confidence-meter__source {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ========================================
+       RewardFeedback Component
+       ======================================== */
+    .reward-feedback {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      max-width: 320px;
+      animation: slideUp 0.25s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .reward-feedback[data-type="success"] {
+      border-top: 4px solid var(--color-success);
+    }
+
+    .reward-feedback[data-type="uncertainty"] {
+      border-top: 4px solid var(--color-warning);
+    }
+
+    .reward-feedback[data-type="milestone"] {
+      border-top: 4px solid var(--color-primary);
+    }
+
+    .reward-feedback[data-type="funfact"] {
+      border-top: 4px solid #8b5cf6;
+    }
+
+    .reward-feedback__icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto var(--space-md);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .reward-feedback[data-type="success"] .reward-feedback__icon {
+      background: var(--color-success-light);
+      color: var(--color-success);
+    }
+
+    .reward-feedback[data-type="uncertainty"] .reward-feedback__icon {
+      background: var(--color-warning-light);
+      color: var(--color-warning);
+    }
+
+    .reward-feedback[data-type="milestone"] .reward-feedback__icon {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .reward-feedback[data-type="funfact"] .reward-feedback__icon {
+      background: #ede9fe;
+      color: #8b5cf6;
+    }
+
+    .reward-feedback__message {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+    }
+
+    .reward-feedback__detail {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      margin: 0 0 var(--space-md);
+    }
+
+    .reward-feedback__actions {
+      display: flex;
+      justify-content: center;
+    }
+
+    .reward-feedback__continue {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-lg);
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .reward-feedback__continue:hover {
+      background: var(--color-primary-hover);
+    }
+
+    /* Icon animations */
+    @keyframes checkDraw {
+      from { stroke-dashoffset: 24; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    .reward-feedback__icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .reward-feedback[data-type="success"] .reward-feedback__icon svg path {
+      stroke-dasharray: 24;
+      animation: checkDraw 0.4s ease 0.2s forwards;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    .reward-feedback[data-type="milestone"] .reward-feedback__icon {
+      animation: bounce 0.4s ease;
+    }
+
+    /* ========================================
+       SessionSummary Component
+       ======================================== */
+    .session-summary {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      max-width: 480px;
+    }
+
+    .session-summary__header {
+      background: linear-gradient(135deg, var(--color-primary) 0%, #1d4ed8 100%);
+      color: white;
+      padding: var(--space-xl);
+      text-align: center;
+    }
+
+    .session-summary__celebration {
+      margin-bottom: var(--space-md);
+    }
+
+    .session-summary__title {
+      margin: 0;
+      font-size: var(--font-size-2xl);
+      font-weight: 700;
+    }
+
+    .session-summary__stats {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .stat-card {
+      text-align: center;
+      padding: var(--space-md);
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+      min-width: 80px;
+    }
+
+    .stat-card__value {
+      display: block;
+      font-size: var(--font-size-2xl);
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .stat-card__label {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .session-summary__tablets {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .session-summary__tablets h2 {
+      margin: 0 0 var(--space-md);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .session-summary__tablet-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .tablet-contribution {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-sm) 0;
+    }
+
+    .tablet-contribution__thumb {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #d4a574 0%, #b38560 100%);
+      border-radius: var(--radius-sm);
+    }
+
+    .tablet-contribution__info strong {
+      display: block;
+      font-size: var(--font-size-sm);
+    }
+
+    .tablet-contribution__info span {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+
+    .session-summary__achievement {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .achievement-card {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-radius: var(--radius-md);
+      border: 2px solid #f59e0b;
+    }
+
+    .achievement-card[data-new="true"]::before {
+      content: 'NEW';
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--color-error);
+      color: white;
+      font-size: 0.625rem;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+    }
+
+    .achievement-card { position: relative; }
+
+    .achievement-card__icon {
+      width: 40px;
+      height: 40px;
+      color: #f59e0b;
+    }
+
+    .achievement-card__name {
+      font-weight: 600;
+    }
+
+    .session-summary__cta {
+      padding: var(--space-lg);
+      text-align: center;
+    }
+
+    .session-summary__prompt {
+      margin: 0 0 var(--space-md);
+      color: var(--color-text-secondary);
+    }
+
+    .session-summary__actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--space-sm);
+      margin-top: var(--space-md);
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .button--primary {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .button--primary:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .button--secondary {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+    }
+
+    .button--secondary:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .button--ghost {
+      background: transparent;
+      color: var(--color-text-secondary);
+    }
+
+    .button--ghost:hover {
+      background: var(--color-bg);
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-header__inner">
+      <a href="index.html" class="page-header__back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back
+      </a>
+      <h1 class="page-header__title">Progress and Feedback Components</h1>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- ProgressBar Component -->
+    <section class="component-section" id="progress-bar">
+      <header class="component-header">
+        <h2 class="component-title">ProgressBar</h2>
+        <p class="component-description">Visualizes progress toward a goal as a linear fill. Use for session progress, tablet completion, and skill tracking.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Click buttons to update progress</p>
+
+        <div class="variant-controls">
+          <button class="variant-button active" onclick="setProgressVariant('linear')">Linear</button>
+          <button class="variant-button" onclick="setProgressVariant('segmented')">Segmented</button>
+          <button class="variant-button" onclick="setProgressVariant('slim')">Slim</button>
+          <button class="variant-button" onclick="setProgressVariant('thick')">Thick</button>
+        </div>
+
+        <div style="max-width: 400px;">
+          <!-- Linear Progress -->
+          <div class="progress-bar" id="demo-progress-linear" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100" aria-label="Session progress: 3 of 10 tasks complete">
+            <div class="progress-bar__track">
+              <div class="progress-bar__fill" id="progress-fill" style="width: 30%"></div>
+            </div>
+            <span class="progress-bar__label" id="progress-label">3 of 10</span>
+          </div>
+
+          <!-- Segmented Progress (hidden by default) -->
+          <div class="progress-bar" id="demo-progress-segmented" style="display: none;" role="progressbar" aria-valuenow="3" aria-valuemin="0" aria-valuemax="10">
+            <div class="progress-bar__segments" id="progress-segments">
+              <span class="progress-bar__segment" data-filled="true"></span>
+              <span class="progress-bar__segment" data-filled="true"></span>
+              <span class="progress-bar__segment" data-filled="true"></span>
+              <span class="progress-bar__segment"></span>
+              <span class="progress-bar__segment"></span>
+              <span class="progress-bar__segment"></span>
+              <span class="progress-bar__segment"></span>
+              <span class="progress-bar__segment"></span>
+              <span class="progress-bar__segment"></span>
+              <span class="progress-bar__segment"></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: var(--space-lg); display: flex; gap: var(--space-sm);">
+          <button class="button button--secondary" onclick="updateProgress(-10)">- 10%</button>
+          <button class="button button--primary" onclick="updateProgress(10)">+ 10%</button>
+          <button class="button button--secondary" onclick="setProgress(100)">Complete</button>
+          <button class="button button--ghost" onclick="setProgress(30)">Reset</button>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Animation States</h3>
+        <table class="specs-table">
+          <thead><tr><th>State</th><th>Animation</th><th>Timing</th></tr></thead>
+          <tbody>
+            <tr><td>updating</td><td>Smooth fill transition</td><td>300ms ease-out</td></tr>
+            <tr><td>milestone</td><td>Pulse/glow effect</td><td>500ms</td></tr>
+            <tr><td>complete</td><td>Celebration animation</td><td>800ms</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Uses <code>role="progressbar"</code> with <code>aria-valuenow</code>, <code>aria-valuemin</code>, <code>aria-valuemax</code>. Animation can be disabled with <code>prefers-reduced-motion</code>.
+        </div>
+      </div>
+    </section>
+
+    <!-- ProgressCircle Component -->
+    <section class="component-section" id="progress-circle">
+      <header class="component-header">
+        <h2 class="component-title">ProgressCircle</h2>
+        <p class="component-description">Shows progress as a circular indicator. Use for tablet completion, skill level indicators, and compact displays.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Different sizes</p>
+
+        <div class="demo-row" style="gap: var(--space-xl);">
+          <!-- Small -->
+          <div class="progress-circle" data-size="sm" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" aria-label="75% complete">
+            <svg class="progress-circle__svg" viewBox="0 0 36 36">
+              <path class="progress-circle__track" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3"/>
+              <path class="progress-circle__fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3" stroke-dasharray="75, 100"/>
+            </svg>
+            <div class="progress-circle__content">
+              <span class="progress-circle__value">75%</span>
+            </div>
+          </div>
+
+          <!-- Medium -->
+          <div class="progress-circle" data-size="md" role="progressbar" aria-valuenow="3" aria-valuemin="0" aria-valuemax="10">
+            <svg class="progress-circle__svg" viewBox="0 0 36 36">
+              <path class="progress-circle__track" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3"/>
+              <path class="progress-circle__fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3" stroke-dasharray="30, 100"/>
+            </svg>
+            <div class="progress-circle__content">
+              <span class="progress-circle__value">3</span>
+              <span class="progress-circle__separator">/</span>
+              <span class="progress-circle__max">10</span>
+            </div>
+          </div>
+
+          <!-- Large -->
+          <div class="progress-circle" data-size="lg" role="progressbar" aria-valuenow="87" aria-valuemin="0" aria-valuemax="100">
+            <svg class="progress-circle__svg" viewBox="0 0 36 36">
+              <path class="progress-circle__track" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="2.5"/>
+              <path class="progress-circle__fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="2.5" stroke-dasharray="87, 100" style="stroke: var(--color-success);"/>
+            </svg>
+            <div class="progress-circle__content">
+              <span class="progress-circle__value" style="font-size: var(--font-size-2xl);">87%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Size Variants</h3>
+        <table class="specs-table">
+          <thead><tr><th>Size</th><th>Dimensions</th><th>Content</th></tr></thead>
+          <tbody>
+            <tr><td>sm</td><td>40px</td><td>Percentage only</td></tr>
+            <tr><td>md</td><td>64px</td><td>Value + max</td></tr>
+            <tr><td>lg</td><td>96px</td><td>Value + label</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ConfidenceMeter Component -->
+    <section class="component-section" id="confidence-meter">
+      <header class="component-header">
+        <h2 class="component-title">ConfidenceMeter</h2>
+        <p class="component-description">Displays the confidence level of AI-generated or crowd-aggregated content. Use for transcription line and sign identification confidence.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Confidence levels</p>
+
+        <div class="demo-row" style="flex-direction: column; gap: var(--space-lg);">
+          <!-- Compact variants -->
+          <div style="display: flex; flex-wrap: wrap; gap: var(--space-xl); align-items: center;">
+            <div>
+              <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-xs);">Compact (dot only)</p>
+              <div style="display: flex; gap: var(--space-md);">
+                <span class="confidence-meter" aria-label="Uncertain, 15%">
+                  <span class="confidence-meter__dot" data-confidence="uncertain"></span>
+                </span>
+                <span class="confidence-meter" aria-label="Possible, 40%">
+                  <span class="confidence-meter__dot" data-confidence="possible"></span>
+                </span>
+                <span class="confidence-meter" aria-label="Likely, 65%">
+                  <span class="confidence-meter__dot" data-confidence="likely"></span>
+                </span>
+                <span class="confidence-meter" aria-label="Confident, 85%">
+                  <span class="confidence-meter__dot" data-confidence="confident"></span>
+                </span>
+                <span class="confidence-meter" aria-label="Verified, 98%">
+                  <span class="confidence-meter__dot" data-confidence="verified"></span>
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-xs);">Standard (bar + value)</p>
+              <div class="confidence-meter" role="meter" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100" aria-label="Confidence: 72%">
+                <div class="confidence-meter__bar">
+                  <div class="confidence-meter__fill" data-confidence="likely" style="width: 72%"></div>
+                </div>
+                <span class="confidence-meter__value">72%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed variant -->
+          <div style="max-width: 280px;">
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-xs);">Detailed</p>
+            <div class="confidence-meter confidence-meter--detailed">
+              <div class="confidence-meter__header">
+                <span class="confidence-meter__label">Confidence:</span>
+                <span class="confidence-meter__level" style="color: var(--color-success);">Likely (72%)</span>
+              </div>
+              <div class="confidence-meter__bar" style="width: 100%;">
+                <div class="confidence-meter__fill" data-confidence="likely" style="width: 72%"></div>
+              </div>
+              <span class="confidence-meter__source">AI + 8 contributors</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Confidence Levels</h3>
+        <table class="specs-table">
+          <thead><tr><th>Level</th><th>Range</th><th>Label</th><th>Color</th></tr></thead>
+          <tbody>
+            <tr><td>uncertain</td><td>0-20%</td><td>Uncertain</td><td>Gray</td></tr>
+            <tr><td>possible</td><td>21-50%</td><td>Possible</td><td>Yellow</td></tr>
+            <tr><td>likely</td><td>51-75%</td><td>Likely</td><td>Light Green</td></tr>
+            <tr><td>confident</td><td>76-90%</td><td>Confident</td><td>Green</td></tr>
+            <tr><td>verified</td><td>91-100%</td><td>Verified</td><td>Dark Green</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Uses <code>role="meter"</code>. Color is NEVER the only indicator - icons and labels differentiate levels. Tooltip explains what confidence means.
+        </div>
+      </div>
+    </section>
+
+    <!-- RewardFeedback Component -->
+    <section class="component-section" id="reward-feedback">
+      <header class="component-header">
+        <h2 class="component-title">RewardFeedback</h2>
+        <p class="component-description">Provides immediate positive feedback after task completion. This is the "reward" part of the Contribution-Reward Cycle.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Click to show different feedback types</p>
+
+        <div class="variant-controls">
+          <button class="variant-button active" onclick="showFeedback('success')">Success</button>
+          <button class="variant-button" onclick="showFeedback('uncertainty')">Uncertainty</button>
+          <button class="variant-button" onclick="showFeedback('milestone')">Milestone</button>
+          <button class="variant-button" onclick="showFeedback('funfact')">Fun Fact</button>
+        </div>
+
+        <div id="feedback-container" style="display: flex; justify-content: center;">
+          <aside class="reward-feedback" id="demo-feedback" data-type="success" role="status" aria-live="polite">
+            <div class="reward-feedback__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+            </div>
+            <p class="reward-feedback__message" id="feedback-message">Great job!</p>
+            <p class="reward-feedback__detail" id="feedback-detail">Your answer matched 7 other contributors.</p>
+            <div class="reward-feedback__actions">
+              <button class="reward-feedback__continue">
+                Continue
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Feedback Types</h3>
+        <table class="specs-table">
+          <thead><tr><th>Type</th><th>Icon</th><th>Primary Message</th><th>Use Case</th></tr></thead>
+          <tbody>
+            <tr><td>success</td><td>Checkmark</td><td>"Great job!"</td><td>Consensus match</td></tr>
+            <tr><td>uncertainty</td><td>Flag</td><td>"Uncertainty is helpful!"</td><td>User marked unsure</td></tr>
+            <tr><td>milestone</td><td>Trophy</td><td>"10 tasks complete!"</td><td>Achievement</td></tr>
+            <tr><td>funfact</td><td>Lightbulb</td><td>"Did you know?"</td><td>Educational (~15% of tasks)</td></tr>
+          </tbody>
+        </table>
+
+        <h3 class="specs-title">Animation Timing</h3>
+        <table class="specs-table">
+          <thead><tr><th>Phase</th><th>Animation</th><th>Duration</th></tr></thead>
+          <tbody>
+            <tr><td>Enter</td><td>Slide up + fade in</td><td>250ms ease-out</td></tr>
+            <tr><td>Icon</td><td>Draw/bounce/scale</td><td>400ms</td></tr>
+            <tr><td>Exit</td><td>Fade out + slide down</td><td>200ms ease-in</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Uses <code>role="status"</code> and <code>aria-live="polite"</code>. Content announced to screen readers on appear. Escape key dismisses. Auto-dismiss pauses on hover/focus.
+        </div>
+      </div>
+    </section>
+
+    <!-- SessionSummary Component -->
+    <section class="component-section" id="session-summary">
+      <header class="component-header">
+        <h2 class="component-title">SessionSummary</h2>
+        <p class="component-description">Displays end-of-session impact and encourages continued engagement. Shows what the user accomplished and celebrates their contribution.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - End of session view</p>
+
+        <div style="display: flex; justify-content: center;">
+          <section class="session-summary" aria-label="Session summary">
+            <header class="session-summary__header">
+              <div class="session-summary__celebration">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto;">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+              <h1 class="session-summary__title">Session Complete!</h1>
+            </header>
+
+            <div class="session-summary__stats">
+              <article class="stat-card">
+                <span class="stat-card__value">15</span>
+                <span class="stat-card__label">tasks</span>
+              </article>
+              <article class="stat-card">
+                <span class="stat-card__value">3</span>
+                <span class="stat-card__label">tablets</span>
+              </article>
+              <article class="stat-card">
+                <span class="stat-card__value">87%</span>
+                <span class="stat-card__label">accuracy</span>
+              </article>
+            </div>
+
+            <section class="session-summary__tablets" aria-label="Tablets you helped">
+              <h2>You helped with:</h2>
+              <ul class="session-summary__tablet-list">
+                <li class="tablet-contribution">
+                  <div class="tablet-contribution__thumb"></div>
+                  <div class="tablet-contribution__info">
+                    <strong>YBC 4644</strong>
+                    <span>Identified 5 signs</span>
+                  </div>
+                </li>
+                <li class="tablet-contribution">
+                  <div class="tablet-contribution__thumb"></div>
+                  <div class="tablet-contribution__info">
+                    <strong>P123456</strong>
+                    <span>Marked damage areas</span>
+                  </div>
+                </li>
+                <li class="tablet-contribution">
+                  <div class="tablet-contribution__thumb"></div>
+                  <div class="tablet-contribution__info">
+                    <strong>CBS 10467</strong>
+                    <span>Verified transcription</span>
+                  </div>
+                </li>
+              </ul>
+            </section>
+
+            <section class="session-summary__achievement" aria-label="Achievement unlocked">
+              <div class="achievement-card" data-new="true">
+                <svg class="achievement-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 15l-2 5h4l-2-5z"/>
+                  <path d="M8 9h8l2-2H6l2 2z"/>
+                  <circle cx="12" cy="7" r="5"/>
+                </svg>
+                <span class="achievement-card__name">First Session!</span>
+              </div>
+            </section>
+
+            <footer class="session-summary__cta">
+              <p class="session-summary__prompt">Want to track your progress?</p>
+              <button class="button button--secondary">Create free account</button>
+              <div class="session-summary__actions">
+                <button class="button button--primary">Do more tasks</button>
+                <button class="button button--ghost">Explore tablets</button>
+                <button class="button button--ghost">Learn cuneiform</button>
+              </div>
+            </footer>
+          </section>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Semantic sections with labels. Statistics are live regions. Focus moves to summary on display. All actions keyboard accessible.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let currentProgress = 30;
+    let currentVariant = 'linear';
+
+    function setProgressVariant(variant) {
+      currentVariant = variant;
+      const linear = document.getElementById('demo-progress-linear');
+      const segmented = document.getElementById('demo-progress-segmented');
+
+      if (variant === 'segmented') {
+        linear.style.display = 'none';
+        segmented.style.display = 'block';
+        updateSegments();
+      } else {
+        linear.style.display = 'block';
+        segmented.style.display = 'none';
+        linear.setAttribute('data-variant', variant === 'linear' ? '' : variant);
+      }
+
+      updateActiveButton(event.target);
+    }
+
+    function updateProgress(delta) {
+      currentProgress = Math.max(0, Math.min(100, currentProgress + delta));
+      setProgress(currentProgress);
+    }
+
+    function setProgress(value) {
+      currentProgress = value;
+      const fill = document.getElementById('progress-fill');
+      const label = document.getElementById('progress-label');
+      const bar = document.getElementById('demo-progress-linear');
+
+      fill.style.width = value + '%';
+      label.textContent = Math.round(value / 10) + ' of 10';
+
+      bar.classList.remove('progress-bar--milestone', 'progress-bar--complete');
+      if (value === 50 || value === 100) {
+        bar.classList.add(value === 100 ? 'progress-bar--complete' : 'progress-bar--milestone');
+      }
+
+      if (currentVariant === 'segmented') {
+        updateSegments();
+      }
+    }
+
+    function updateSegments() {
+      const segments = document.querySelectorAll('.progress-bar__segment');
+      const filledCount = Math.round(currentProgress / 10);
+      segments.forEach((seg, i) => {
+        seg.setAttribute('data-filled', i < filledCount ? 'true' : 'false');
+      });
+    }
+
+    function showFeedback(type) {
+      const feedback = document.getElementById('demo-feedback');
+      const message = document.getElementById('feedback-message');
+      const detail = document.getElementById('feedback-detail');
+      const icon = feedback.querySelector('.reward-feedback__icon');
+
+      feedback.setAttribute('data-type', type);
+
+      const content = {
+        success: {
+          message: 'Great job!',
+          detail: 'Your answer matched 7 other contributors.',
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>'
+        },
+        uncertainty: {
+          message: 'Uncertainty is helpful!',
+          detail: 'Flagging difficult tasks helps experts prioritize their review.',
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>'
+        },
+        milestone: {
+          message: '10 tasks complete!',
+          detail: 'You helped decode ancient history. Keep going!',
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15l-2 5h4l-2-5z"/><circle cx="12" cy="7" r="5"/></svg>'
+        },
+        funfact: {
+          message: 'Did you know?',
+          detail: 'The sign AN was one of the first symbols invented in ancient Sumer.',
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 2.4 1.2 4.5 3 5.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3c1.8-1.2 3-3.3 3-5.7a7 7 0 0 0-7-7z"/><path d="M9 21h6"/></svg>'
+        }
+      };
+
+      message.textContent = content[type].message;
+      detail.textContent = content[type].detail;
+      icon.innerHTML = content[type].icon;
+
+      // Re-trigger animation
+      feedback.style.animation = 'none';
+      feedback.offsetHeight; // Trigger reflow
+      feedback.style.animation = null;
+
+      updateActiveButton(event.target);
+    }
+
+    function updateActiveButton(clickedButton) {
+      const controls = clickedButton.parentElement;
+      controls.querySelectorAll('.variant-button').forEach(btn => btn.classList.remove('active'));
+      clickedButton.classList.add('active');
+    }
+  </script>
+</body>
+</html>

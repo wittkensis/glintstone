@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trust and Authority Components - Glintstone Component Library</title>
+  <style>
+    :root {
+      --color-bg: #fafafa;
+      --color-surface: #ffffff;
+      --color-border: #e5e5e5;
+      --color-border-subtle: #f0f0f0;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #666666;
+      --color-text-muted: #999999;
+      --color-primary: #2563eb;
+      --color-primary-light: #eff6ff;
+      --color-focus: #3b82f6;
+      --color-success: #10b981;
+      --color-success-light: #d1fae5;
+      --color-warning: #f59e0b;
+      --color-warning-light: #fef3c7;
+      --color-ai: #8b5cf6;
+      --color-ai-light: #ede9fe;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', Monaco, monospace;
+      --font-size-sm: 0.875rem;
+      --font-size-base: 1rem;
+      --font-size-lg: 1.125rem;
+      --font-size-xl: 1.25rem;
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: var(--font-size-base);
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    a { color: var(--color-primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .page-header__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .page-header__back {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .page-header__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+    }
+
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-xl);
+    }
+
+    .component-section {
+      margin-bottom: var(--space-2xl);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .component-header {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .component-title {
+      margin: 0 0 var(--space-sm);
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+    }
+
+    .component-description {
+      margin: 0;
+      color: var(--color-text-secondary);
+    }
+
+    .component-demo {
+      padding: var(--space-lg);
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .demo-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-md);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .component-specs {
+      padding: var(--space-lg);
+    }
+
+    .specs-title {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+    }
+
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .specs-table th, .specs-table td {
+      padding: var(--space-sm) var(--space-md);
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .specs-table th {
+      background: var(--color-bg);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .specs-table code {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      background: var(--color-bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .a11y-note {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: var(--space-md);
+      margin-top: var(--space-md);
+      font-size: var(--font-size-sm);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .a11y-note strong { color: #92400e; }
+
+    .demo-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-lg);
+      align-items: flex-start;
+    }
+
+    /* ========================================
+       StatusBadge Component
+       ======================================== */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 500;
+      border: 1px solid;
+      cursor: default;
+    }
+
+    .status-badge[data-status="proposed"] {
+      background: var(--color-warning-light);
+      color: #92400e;
+      border-color: var(--color-warning);
+      border-style: dashed;
+    }
+
+    .status-badge[data-status="under-review"] {
+      background: var(--color-primary-light);
+      color: #1e40af;
+      border-color: var(--color-primary);
+    }
+
+    .status-badge[data-status="provisionally-accepted"] {
+      background: #ecfdf5;
+      color: #047857;
+      border-color: #10b981;
+    }
+
+    .status-badge[data-status="accepted"] {
+      background: var(--color-success-light);
+      color: #065f46;
+      border-color: var(--color-success);
+      font-weight: 600;
+    }
+
+    .status-badge[data-status="disputed"] {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #ef4444;
+      border-style: double;
+    }
+
+    .status-badge[data-status="superseded"] {
+      background: var(--color-bg);
+      color: var(--color-text-muted);
+      border-color: var(--color-border);
+      text-decoration: line-through;
+    }
+
+    .status-badge svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .status-badge[data-variant="compact"] {
+      padding: 2px;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      justify-content: center;
+    }
+
+    .status-badge[data-variant="compact"] .status-badge__label {
+      display: none;
+    }
+
+    .status-badge[data-variant="pill"] {
+      border-radius: 999px;
+      padding: var(--space-xs) var(--space-md);
+    }
+
+    .status-badge[data-interactive="true"] {
+      cursor: pointer;
+    }
+
+    .status-badge[data-interactive="true"]:hover {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .status-badge[data-interactive="true"]:focus {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    /* ========================================
+       TrustIndicator Component
+       ======================================== */
+    .trust-indicator {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      max-width: 280px;
+    }
+
+    .trust-indicator__header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+
+    .trust-indicator__icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .trust-indicator[data-level="low"] .trust-indicator__icon { color: #94a3b8; }
+    .trust-indicator[data-level="medium"] .trust-indicator__icon { color: #fbbf24; }
+    .trust-indicator[data-level="high"] .trust-indicator__icon { color: #22c55e; }
+    .trust-indicator[data-level="verified"] .trust-indicator__icon { color: #10b981; }
+
+    .trust-indicator__level {
+      font-weight: 600;
+      font-size: var(--font-size-sm);
+    }
+
+    .trust-indicator__signals {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .trust-signal {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-xs) 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .trust-signal svg {
+      width: 14px;
+      height: 14px;
+      color: var(--color-success);
+    }
+
+    /* ========================================
+       ExpertCard Component
+       ======================================== */
+    .expert-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      max-width: 280px;
+    }
+
+    .expert-card__header {
+      display: flex;
+      gap: var(--space-md);
+      margin-bottom: var(--space-md);
+    }
+
+    .expert-card__avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: var(--color-primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .expert-card__photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .expert-card__initials {
+      font-weight: 600;
+      color: var(--color-primary);
+      font-size: var(--font-size-lg);
+    }
+
+    .expert-card__identity {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .expert-card__name {
+      margin: 0;
+      font-size: var(--font-size-base);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .expert-card__verified {
+      color: var(--color-primary);
+    }
+
+    .expert-card__verified svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .expert-card__institution {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .expert-card__details {
+      margin-bottom: var(--space-md);
+    }
+
+    .expert-card__metadata {
+      margin: 0;
+      font-size: var(--font-size-sm);
+    }
+
+    .expert-card__metadata dt {
+      color: var(--color-text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    .expert-card__metadata dd {
+      margin: 0 0 var(--space-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .expert-card__actions a {
+      font-size: var(--font-size-sm);
+    }
+
+    /* Compact variant */
+    .expert-card--compact {
+      padding: var(--space-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .expert-card--compact .expert-card__header {
+      margin: 0;
+      flex: 1;
+    }
+
+    .expert-card--compact .expert-card__avatar {
+      width: 32px;
+      height: 32px;
+    }
+
+    .expert-card--compact .expert-card__details,
+    .expert-card--compact .expert-card__actions {
+      display: none;
+    }
+
+    /* ========================================
+       InstitutionBadge Component
+       ======================================== */
+    .institution-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .institution-badge:hover {
+      background: var(--color-surface);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-decoration: none;
+    }
+
+    .institution-badge__logo {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+    }
+
+    .institution-badge__name {
+      font-weight: 500;
+    }
+
+    .institution-badge[data-variant="logo-only"] .institution-badge__name {
+      display: none;
+    }
+
+    .institution-badge[data-variant="text"] .institution-badge__logo {
+      display: none;
+    }
+
+    /* ========================================
+       ContributorList Component
+       ======================================== */
+    .contributor-list {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .contributor-list__stack {
+      display: flex;
+    }
+
+    .contributor-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--color-surface);
+      margin-left: -8px;
+      overflow: hidden;
+      background: var(--color-primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.625rem;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    .contributor-avatar:first-child {
+      margin-left: 0;
+    }
+
+    .contributor-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .contributor-avatar--overflow {
+      background: var(--color-text-muted);
+      color: white;
+      font-size: 0.625rem;
+    }
+
+    .contributor-avatar--ai {
+      background: var(--color-ai-light);
+      color: var(--color-ai);
+    }
+
+    .contributor-list__toggle {
+      font-size: var(--font-size-sm);
+      color: var(--color-primary);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .contributor-list__toggle:hover {
+      text-decoration: underline;
+    }
+
+    .contributor-list__details {
+      list-style: none;
+      margin: var(--space-md) 0 0;
+      padding: var(--space-md);
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+    }
+
+    .contributor-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-xs) 0;
+    }
+
+    .contributor-name {
+      flex: 1;
+      font-size: var(--font-size-sm);
+    }
+
+    .contributor-count {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ========================================
+       ProvenanceTimeline Component
+       ======================================== */
+    .provenance-timeline {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      max-width: 400px;
+    }
+
+    .provenance-timeline__title {
+      margin: 0;
+      padding: var(--space-md);
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .provenance-timeline__events {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .provenance-event {
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+      position: relative;
+    }
+
+    .provenance-event:last-child {
+      border-bottom: none;
+    }
+
+    .provenance-event::before {
+      content: '';
+      position: absolute;
+      left: var(--space-md);
+      top: calc(var(--space-md) + 24px);
+      bottom: 0;
+      width: 2px;
+      background: var(--color-border-subtle);
+    }
+
+    .provenance-event:last-child::before {
+      display: none;
+    }
+
+    .provenance-event__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-sm);
+    }
+
+    .provenance-event__actor {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+    }
+
+    .actor-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .actor-badge[data-type="ai"] {
+      background: var(--color-ai-light);
+      color: var(--color-ai);
+    }
+
+    .actor-badge[data-type="user"] {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .actor-badge[data-type="expert"] {
+      background: var(--color-success-light);
+      color: #065f46;
+    }
+
+    .provenance-event__time {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+
+    .provenance-event__content {
+      margin-left: calc(var(--space-xs) + 28px);
+    }
+
+    .provenance-event__action {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .provenance-event__value {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      background: var(--color-bg);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-sm);
+      margin-top: var(--space-xs);
+    }
+
+    .provenance-event__note {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      font-style: italic;
+      margin: var(--space-xs) 0 0;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-header__inner">
+      <a href="index.html" class="page-header__back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back
+      </a>
+      <h1 class="page-header__title">Trust and Authority Components</h1>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- StatusBadge Component -->
+    <section class="component-section" id="status-badge">
+      <header class="component-header">
+        <h2 class="component-title">StatusBadge</h2>
+        <p class="component-description">Displays the verification status of content per the Contextual Authority Model. Authority is always visible, never hidden.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Status Types</p>
+
+        <div class="demo-row" style="gap: var(--space-md); flex-wrap: wrap;">
+          <span class="status-badge" data-status="proposed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span class="status-badge__label">Proposed</span>
+          </span>
+
+          <span class="status-badge" data-status="under-review">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="status-badge__label">Under Review</span>
+          </span>
+
+          <span class="status-badge" data-status="provisionally-accepted">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            <span class="status-badge__label">Provisionally Accepted</span>
+          </span>
+
+          <span class="status-badge" data-status="accepted">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            <span class="status-badge__label">Accepted</span>
+          </span>
+
+          <span class="status-badge" data-status="disputed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span class="status-badge__label">Disputed</span>
+          </span>
+
+          <span class="status-badge" data-status="superseded">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 6v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6"/></svg>
+            <span class="status-badge__label">Superseded</span>
+          </span>
+        </div>
+
+        <p class="demo-label" style="margin-top: var(--space-lg);">Variants</p>
+
+        <div class="demo-row" style="gap: var(--space-lg); flex-wrap: wrap;">
+          <div>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-sm);">Compact (icon only)</p>
+            <div style="display: flex; gap: var(--space-sm);">
+              <span class="status-badge" data-status="proposed" data-variant="compact" aria-label="Status: Proposed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/></svg>
+              </span>
+              <span class="status-badge" data-status="under-review" data-variant="compact" aria-label="Status: Under Review">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </span>
+              <span class="status-badge" data-status="accepted" data-variant="compact" aria-label="Status: Accepted">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-sm);">Pill</p>
+            <span class="status-badge" data-status="accepted" data-variant="pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+              <span class="status-badge__label">Accepted</span>
+            </span>
+          </div>
+
+          <div>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 var(--space-sm);">Interactive</p>
+            <button class="status-badge" data-status="under-review" data-interactive="true" aria-expanded="false" aria-haspopup="dialog" onclick="alert('Shows detail popover with contributor count and history link')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span class="status-badge__label">Under Review</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Status Types</h3>
+        <table class="specs-table">
+          <thead><tr><th>Status</th><th>Icon</th><th>Border</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>proposed</td><td>Question mark</td><td>Dashed</td><td>AI-generated or single contributor</td></tr>
+            <tr><td>under-review</td><td>Clock</td><td>Solid</td><td>Multiple contributors, awaiting expert</td></tr>
+            <tr><td>provisionally-accepted</td><td>Single check</td><td>Solid</td><td>One expert approval</td></tr>
+            <tr><td>accepted</td><td>Shield + check</td><td>Bold</td><td>Multiple expert approval</td></tr>
+            <tr><td>disputed</td><td>Warning</td><td>Double</td><td>Experts disagree</td></tr>
+            <tr><td>superseded</td><td>Archive</td><td>Faded</td><td>Previously accepted, now revised</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Icon alone is never sufficient - <code>aria-label</code> required for compact variant. Color is not the only indicator. Interactive badges are buttons with proper ARIA.
+        </div>
+      </div>
+    </section>
+
+    <!-- TrustIndicator Component -->
+    <section class="component-section" id="trust-indicator">
+      <header class="component-header">
+        <h2 class="component-title">TrustIndicator</h2>
+        <p class="component-description">Aggregates multiple trust signals into a single visual. Use for tablet overall trust level and source credibility.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Trust Levels</p>
+
+        <div class="demo-row">
+          <div class="trust-indicator" data-level="low">
+            <div class="trust-indicator__header">
+              <svg class="trust-indicator__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span class="trust-indicator__level">Limited Verification</span>
+            </div>
+            <ul class="trust-indicator__signals">
+              <li class="trust-signal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-text-muted);"><circle cx="12" cy="12" r="10"/></svg>
+                No expert review
+              </li>
+              <li class="trust-signal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                2 contributors
+              </li>
+            </ul>
+          </div>
+
+          <div class="trust-indicator" data-level="high">
+            <div class="trust-indicator__header">
+              <svg class="trust-indicator__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="M9 12l2 2 4-4"/>
+              </svg>
+              <span class="trust-indicator__level">Verified Source</span>
+            </div>
+            <ul class="trust-indicator__signals">
+              <li class="trust-signal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                Expert reviewed
+              </li>
+              <li class="trust-signal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                CDLI verified
+              </li>
+              <li class="trust-signal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                15 contributors
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Trust Levels</h3>
+        <table class="specs-table">
+          <thead><tr><th>Level</th><th>Icon</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>low</td><td>Open shield</td><td>Minimal verification</td></tr>
+            <tr><td>medium</td><td>Half shield</td><td>Some verification</td></tr>
+            <tr><td>high</td><td>Full shield</td><td>Well verified</td></tr>
+            <tr><td>verified</td><td>Shield + check</td><td>Fully verified</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ExpertCard Component -->
+    <section class="component-section" id="expert-card">
+      <header class="component-header">
+        <h2 class="component-title">ExpertCard</h2>
+        <p class="component-description">Displays an expert's profile and credentials. Use for reviewer attribution and expert endorsements.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Variants</p>
+
+        <div class="demo-row">
+          <!-- Full Card -->
+          <article class="expert-card" data-expert-id="expert-123">
+            <header class="expert-card__header">
+              <figure class="expert-card__avatar">
+                <span class="expert-card__initials">JS</span>
+              </figure>
+              <div class="expert-card__identity">
+                <h3 class="expert-card__name">
+                  Dr. Jane Smith
+                  <span class="expert-card__verified" aria-label="Verified expert">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                  </span>
+                </h3>
+                <p class="expert-card__institution">Yale University</p>
+              </div>
+            </header>
+            <div class="expert-card__details">
+              <dl class="expert-card__metadata">
+                <dt>Specialization</dt>
+                <dd>Old Babylonian, Sippar corpus</dd>
+                <dt>Reviews</dt>
+                <dd>1,247 approved</dd>
+              </dl>
+            </div>
+            <footer class="expert-card__actions">
+              <a href="#">View profile</a>
+            </footer>
+          </article>
+
+          <!-- Compact Card -->
+          <article class="expert-card expert-card--compact" data-expert-id="expert-456">
+            <figure class="expert-card__avatar">
+              <span class="expert-card__initials">MK</span>
+            </figure>
+            <div class="expert-card__identity">
+              <h3 class="expert-card__name">
+                Prof. Michael Klein
+                <span class="expert-card__verified" aria-label="Verified expert">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                </span>
+              </h3>
+              <p class="expert-card__institution">University of Chicago</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Article semantics for card. Definition list for metadata. Photo is decorative (name provides identity). Verified status announced.
+        </div>
+      </div>
+    </section>
+
+    <!-- ContributorList Component -->
+    <section class="component-section" id="contributor-list">
+      <header class="component-header">
+        <h2 class="component-title">ContributorList</h2>
+        <p class="component-description">Displays all contributors to a piece of content. Use for transcription attribution and tablet credits.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Avatar Stack (collapsed)</p>
+
+        <div class="contributor-list" aria-label="Contributors" id="demo-contributors">
+          <div class="contributor-list__stack">
+            <span class="contributor-avatar" aria-label="User A">UA</span>
+            <span class="contributor-avatar" aria-label="User B">UB</span>
+            <span class="contributor-avatar contributor-avatar--ai" aria-label="AI Assistant">AI</span>
+            <span class="contributor-avatar contributor-avatar--overflow">+2</span>
+          </div>
+          <button type="button" class="contributor-list__toggle" aria-expanded="false" onclick="toggleContributors()">
+            5 contributors
+          </button>
+        </div>
+
+        <ul class="contributor-list__details" id="contributor-details" hidden>
+          <li class="contributor-item">
+            <span class="contributor-avatar">UA</span>
+            <span class="contributor-name">User A</span>
+            <span class="contributor-count">5 contributions</span>
+          </li>
+          <li class="contributor-item">
+            <span class="contributor-avatar">UB</span>
+            <span class="contributor-name">User B</span>
+            <span class="contributor-count">3 contributions</span>
+          </li>
+          <li class="contributor-item" data-type="ai">
+            <span class="contributor-avatar contributor-avatar--ai">AI</span>
+            <span class="contributor-name">AI Assistant</span>
+            <span class="contributor-count">Initial proposal</span>
+          </li>
+          <li class="contributor-item">
+            <span class="contributor-avatar">UC</span>
+            <span class="contributor-name">User C</span>
+            <span class="contributor-count">2 contributions</span>
+          </li>
+          <li class="contributor-item">
+            <span class="contributor-avatar">UD</span>
+            <span class="contributor-name">User D</span>
+            <span class="contributor-count">1 contribution</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="component-specs">
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Each avatar has <code>aria-label</code> with name. Expandable section uses proper ARIA. AI contributions clearly marked.
+        </div>
+      </div>
+    </section>
+
+    <!-- ProvenanceTimeline Component -->
+    <section class="component-section" id="provenance-timeline">
+      <header class="component-header">
+        <h2 class="component-title">ProvenanceTimeline</h2>
+        <p class="component-description">Shows the complete history of content changes. Use for detailed review view and dispute resolution context.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Content History</p>
+
+        <section class="provenance-timeline" aria-label="Content history">
+          <h3 class="provenance-timeline__title">History</h3>
+
+          <ol class="provenance-timeline__events">
+            <li class="provenance-event" data-type="ai">
+              <div class="provenance-event__header">
+                <span class="provenance-event__actor">
+                  <span class="actor-badge" data-type="ai">AI</span>
+                  AI Assistant
+                </span>
+                <time class="provenance-event__time" datetime="2026-01-03T10:42:00">Jan 3, 10:42 AM</time>
+              </div>
+              <div class="provenance-event__content">
+                <span class="provenance-event__action">Initial proposal:</span>
+                <code class="provenance-event__value">um-ma a-bi-e-szar</code>
+              </div>
+            </li>
+
+            <li class="provenance-event" data-type="user">
+              <div class="provenance-event__header">
+                <span class="provenance-event__actor">
+                  <span class="actor-badge" data-type="user">User</span>
+                  Contributor123
+                </span>
+                <time class="provenance-event__time" datetime="2026-01-03T11:15:00">Jan 3, 11:15 AM</time>
+              </div>
+              <div class="provenance-event__content">
+                <span class="provenance-event__action">Corrected to:</span>
+                <code class="provenance-event__value">um-ma {m}a-bi-e-szar2</code>
+                <p class="provenance-event__note">Added determinative, corrected szar</p>
+              </div>
+            </li>
+
+            <li class="provenance-event" data-type="user">
+              <div class="provenance-event__header">
+                <span class="provenance-event__actor">
+                  <span class="actor-badge" data-type="user">User</span>
+                  Scholar42
+                </span>
+                <time class="provenance-event__time" datetime="2026-01-03T11:30:00">Jan 3, 11:30 AM</time>
+              </div>
+              <div class="provenance-event__content">
+                <span class="provenance-event__action">Confirmed reading</span>
+              </div>
+            </li>
+
+            <li class="provenance-event" data-type="expert">
+              <div class="provenance-event__header">
+                <span class="provenance-event__actor">
+                  <span class="actor-badge" data-type="expert">Expert</span>
+                  Dr. Jane Smith
+                </span>
+                <time class="provenance-event__time" datetime="2026-01-03T14:45:00">Jan 3, 2:45 PM</time>
+              </div>
+              <div class="provenance-event__content">
+                <span class="provenance-event__action">Approved</span>
+              </div>
+            </li>
+          </ol>
+        </section>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Event Types</h3>
+        <table class="specs-table">
+          <thead><tr><th>Type</th><th>Actor Badge</th><th>Use Case</th></tr></thead>
+          <tbody>
+            <tr><td>ai</td><td>Purple "AI"</td><td>AI-generated content</td></tr>
+            <tr><td>user</td><td>Blue "User"</td><td>Volunteer contribution</td></tr>
+            <tr><td>expert</td><td>Green "Expert"</td><td>Expert action</td></tr>
+            <tr><td>system</td><td>Gray "System"</td><td>Automated change</td></tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Ordered list semantics. Time elements with machine-readable <code>datetime</code>. Clear visual hierarchy. Can be navigated linearly.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function toggleContributors() {
+      const details = document.getElementById('contributor-details');
+      const toggle = document.querySelector('.contributor-list__toggle');
+
+      if (details.hidden) {
+        details.hidden = false;
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.textContent = 'Hide contributors';
+      } else {
+        details.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.textContent = '5 contributors';
+      }
+    }
+  </script>
+</body>
+</html>

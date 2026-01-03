@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout Components - Glintstone Component Library</title>
+  <style>
+    /* ========================================
+       CSS Variables - Design Tokens
+       ======================================== */
+    :root {
+      --color-bg: #fafafa;
+      --color-surface: #ffffff;
+      --color-border: #e5e5e5;
+      --color-border-subtle: #f0f0f0;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #666666;
+      --color-text-muted: #999999;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-light: #eff6ff;
+      --color-focus: #3b82f6;
+      --color-demo: #dbeafe;
+      --color-demo-border: #93c5fd;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', Monaco, 'Inconsolata', monospace;
+      --font-size-sm: 0.875rem;
+      --font-size-base: 1rem;
+      --font-size-lg: 1.125rem;
+      --font-size-xl: 1.25rem;
+      --font-size-2xl: 1.5rem;
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: var(--font-size-base);
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    a { color: var(--color-primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    a:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+
+    /* ========================================
+       Page Layout
+       ======================================== */
+    .page-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .page-header__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .page-header__back {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .page-header__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+    }
+
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-xl);
+    }
+
+    /* ========================================
+       Component Section Styles
+       ======================================== */
+    .component-section {
+      margin-bottom: var(--space-2xl);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .component-header {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .component-title {
+      margin: 0 0 var(--space-sm);
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+    }
+
+    .component-description {
+      margin: 0;
+      color: var(--color-text-secondary);
+    }
+
+    .component-demo {
+      padding: var(--space-lg);
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .demo-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-md);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .demo-box {
+      background: var(--color-demo);
+      border: 2px dashed var(--color-demo-border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      text-align: center;
+      color: var(--color-primary);
+      font-size: var(--font-size-sm);
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .demo-box--tall {
+      min-height: 120px;
+    }
+
+    .component-specs {
+      padding: var(--space-lg);
+    }
+
+    .specs-title {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+      color: var(--color-text);
+    }
+
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .specs-table th,
+    .specs-table td {
+      padding: var(--space-sm) var(--space-md);
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .specs-table th {
+      background: var(--color-bg);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .specs-table code {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      background: var(--color-bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .code-block .tag { color: #f472b6; }
+    .code-block .attr { color: #a5b4fc; }
+    .code-block .value { color: #86efac; }
+    .code-block .comment { color: #94a3b8; }
+
+    /* ========================================
+       Live Layout Components
+       ======================================== */
+
+    /* Container Component */
+    .container {
+      max-width: 1024px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: var(--space-md);
+      padding-right: var(--space-md);
+    }
+
+    .container[data-size="narrow"] { max-width: 640px; }
+    .container[data-size="wide"] { max-width: 1280px; }
+    .container[data-size="full"] { max-width: 100%; }
+
+    /* Stack Component */
+    .stack {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stack > * + * {
+      margin-top: var(--space-md);
+    }
+
+    .stack[data-space="xs"] > * + * { margin-top: var(--space-xs); }
+    .stack[data-space="sm"] > * + * { margin-top: var(--space-sm); }
+    .stack[data-space="lg"] > * + * { margin-top: var(--space-lg); }
+    .stack[data-space="xl"] > * + * { margin-top: var(--space-xl); }
+
+    .stack[data-dividers] > * + * {
+      padding-top: var(--space-md);
+      border-top: 1px solid var(--color-border-subtle);
+    }
+
+    /* Cluster Component */
+    .cluster {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    .cluster[data-space="xs"] { gap: var(--space-xs); }
+    .cluster[data-space="md"] { gap: var(--space-md); }
+    .cluster[data-space="lg"] { gap: var(--space-lg); }
+
+    .cluster[data-align="start"] { justify-content: flex-start; }
+    .cluster[data-align="center"] { justify-content: center; }
+    .cluster[data-align="end"] { justify-content: flex-end; }
+    .cluster[data-align="space-between"] { justify-content: space-between; }
+
+    /* Grid Component */
+    .grid {
+      display: grid;
+      gap: var(--space-md);
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+
+    .grid[data-columns="2"] { grid-template-columns: repeat(2, 1fr); }
+    .grid[data-columns="3"] { grid-template-columns: repeat(3, 1fr); }
+    .grid[data-columns="4"] { grid-template-columns: repeat(4, 1fr); }
+
+    .grid[data-gap="sm"] { gap: var(--space-sm); }
+    .grid[data-gap="lg"] { gap: var(--space-lg); }
+
+    @media (max-width: 768px) {
+      .grid[data-columns="2"],
+      .grid[data-columns="3"],
+      .grid[data-columns="4"] {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sidebar Layout Component */
+    .sidebar-layout {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-lg);
+    }
+
+    .sidebar-layout > :first-child {
+      flex-basis: 250px;
+      flex-grow: 1;
+    }
+
+    .sidebar-layout > :last-child {
+      flex-basis: 0;
+      flex-grow: 999;
+      min-width: 50%;
+    }
+
+    .sidebar-layout[data-side="right"] {
+      flex-direction: row-reverse;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar-layout {
+        flex-direction: column;
+      }
+      .sidebar-layout > :first-child,
+      .sidebar-layout > :last-child {
+        flex-basis: auto;
+        min-width: 0;
+      }
+    }
+
+    /* Switcher Component */
+    .switcher {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+    }
+
+    .switcher > * {
+      flex-grow: 1;
+      flex-basis: calc((480px - 100%) * 999);
+    }
+
+    /* Demo Tags */
+    .tag {
+      display: inline-block;
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+    }
+
+    /* Demo Buttons */
+    .demo-button {
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+    }
+
+    .demo-button--secondary {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+    }
+
+    /* Variant Controls */
+    .variant-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .variant-button {
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      transition: all 0.15s ease;
+    }
+
+    .variant-button:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .variant-button.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+
+    /* Accessibility info */
+    .a11y-note {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: var(--space-md);
+      margin-top: var(--space-md);
+      font-size: var(--font-size-sm);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .a11y-note strong {
+      color: #92400e;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-header__inner">
+      <a href="index.html" class="page-header__back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back
+      </a>
+      <h1 class="page-header__title">Layout Components</h1>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- Container Component -->
+    <section class="component-section" id="container">
+      <header class="component-header">
+        <h2 class="component-title">Container</h2>
+        <p class="component-description">Constrains content width and centers it within the viewport. Use for page-level content containment and readable line lengths.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Resize to see behavior</p>
+
+        <div class="variant-controls">
+          <button class="variant-button active" onclick="setContainerSize('default')">Default (1024px)</button>
+          <button class="variant-button" onclick="setContainerSize('narrow')">Narrow (640px)</button>
+          <button class="variant-button" onclick="setContainerSize('wide')">Wide (1280px)</button>
+          <button class="variant-button" onclick="setContainerSize('full')">Full Width</button>
+        </div>
+
+        <div style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md);">
+          <div class="container" id="demo-container" style="background: var(--color-demo); padding: var(--space-lg); border-radius: var(--radius-sm); transition: max-width 0.3s ease;">
+            <p style="margin: 0; text-align: center; color: var(--color-primary);">
+              Container content is centered and constrained.
+              <br>
+              <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">Current: <span id="container-size-label">1024px max-width</span></span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Variants</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Variant</th>
+              <th>Max Width</th>
+              <th>Use Case</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>narrow</code></td>
+              <td>640px</td>
+              <td>Text-focused content, forms</td>
+            </tr>
+            <tr>
+              <td><code>default</code></td>
+              <td>1024px</td>
+              <td>Standard page content</td>
+            </tr>
+            <tr>
+              <td><code>wide</code></td>
+              <td>1280px</td>
+              <td>Dashboard layouts</td>
+            </tr>
+            <tr>
+              <td><code>full</code></td>
+              <td>100%</td>
+              <td>Edge-to-edge layouts</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 class="specs-title">HTML Structure</h3>
+        <pre class="code-block"><span class="comment">&lt;!-- Standard container --&gt;</span>
+<span class="tag">&lt;div</span> <span class="attr">class=</span><span class="value">"container"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;main&gt;</span>Page content<span class="tag">&lt;/main&gt;</span>
+<span class="tag">&lt;/div&gt;</span>
+
+<span class="comment">&lt;!-- Narrow container for forms --&gt;</span>
+<span class="tag">&lt;div</span> <span class="attr">class=</span><span class="value">"container"</span> <span class="attr">data-size=</span><span class="value">"narrow"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;form&gt;</span>Form content<span class="tag">&lt;/form&gt;</span>
+<span class="tag">&lt;/div&gt;</span></pre>
+      </div>
+    </section>
+
+    <!-- Stack Component -->
+    <section class="component-section" id="stack">
+      <header class="component-header">
+        <h2 class="component-title">Stack</h2>
+        <p class="component-description">Creates consistent vertical spacing between child elements. Use for form field groups, card content, and any vertical list of elements.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Different spacing options</p>
+
+        <div class="variant-controls">
+          <button class="variant-button" onclick="setStackSpace('xs')">XS (4px)</button>
+          <button class="variant-button" onclick="setStackSpace('sm')">SM (8px)</button>
+          <button class="variant-button active" onclick="setStackSpace('md')">MD (16px)</button>
+          <button class="variant-button" onclick="setStackSpace('lg')">LG (24px)</button>
+          <button class="variant-button" onclick="setStackSpace('xl')">XL (32px)</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg);">
+          <div>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-sm);">Standard Stack</p>
+            <div class="stack" id="demo-stack" style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md);">
+              <div class="demo-box">Item 1</div>
+              <div class="demo-box">Item 2</div>
+              <div class="demo-box">Item 3</div>
+            </div>
+          </div>
+          <div>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-sm);">Stack with Dividers</p>
+            <div class="stack" data-dividers style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md);">
+              <div class="demo-box">Item 1</div>
+              <div class="demo-box">Item 2</div>
+              <div class="demo-box">Item 3</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Props/Attributes</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Type</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>data-space</code></td>
+              <td>string</td>
+              <td>"md"</td>
+              <td>Gap between children: xs, sm, md, lg, xl</td>
+            </tr>
+            <tr>
+              <td><code>data-dividers</code></td>
+              <td>boolean</td>
+              <td>false</td>
+              <td>Add visual dividers between items</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 class="specs-title">HTML Structure</h3>
+        <pre class="code-block"><span class="tag">&lt;div</span> <span class="attr">class=</span><span class="value">"stack"</span> <span class="attr">data-space=</span><span class="value">"lg"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;h2&gt;</span>Heading<span class="tag">&lt;/h2&gt;</span>
+  <span class="tag">&lt;p&gt;</span>Paragraph content<span class="tag">&lt;/p&gt;</span>
+  <span class="tag">&lt;p&gt;</span>More content<span class="tag">&lt;/p&gt;</span>
+<span class="tag">&lt;/div&gt;</span></pre>
+      </div>
+    </section>
+
+    <!-- Cluster Component -->
+    <section class="component-section" id="cluster">
+      <header class="component-header">
+        <h2 class="component-title">Cluster</h2>
+        <p class="component-description">Groups elements horizontally with automatic wrapping. Use for tag groups, button groups, and icon + text combinations.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Alignment options</p>
+
+        <div class="variant-controls">
+          <button class="variant-button active" onclick="setClusterAlign('start')">Start</button>
+          <button class="variant-button" onclick="setClusterAlign('center')">Center</button>
+          <button class="variant-button" onclick="setClusterAlign('end')">End</button>
+          <button class="variant-button" onclick="setClusterAlign('space-between')">Space Between</button>
+        </div>
+
+        <div style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md);">
+          <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-sm);">Tag Cluster</p>
+          <div class="cluster" id="demo-cluster" data-space="xs">
+            <span class="tag">Sumerian</span>
+            <span class="tag">Administrative</span>
+            <span class="tag">Ur III</span>
+            <span class="tag">Royal</span>
+            <span class="tag">Economic</span>
+          </div>
+        </div>
+
+        <div style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md); margin-top: var(--space-md);">
+          <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-sm);">Button Group (Aligned End)</p>
+          <div class="cluster" data-align="end">
+            <button class="demo-button demo-button--secondary">Cancel</button>
+            <button class="demo-button">Submit</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Props/Attributes</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Type</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>data-space</code></td>
+              <td>string</td>
+              <td>"sm"</td>
+              <td>Gap between items</td>
+            </tr>
+            <tr>
+              <td><code>data-align</code></td>
+              <td>string</td>
+              <td>"start"</td>
+              <td>start, center, end, space-between</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Use <code>role="group"</code> for button groups and consider <code>aria-label</code> for grouped controls.
+        </div>
+      </div>
+    </section>
+
+    <!-- Grid Component -->
+    <section class="component-section" id="grid">
+      <header class="component-header">
+        <h2 class="component-title">Grid</h2>
+        <p class="component-description">Creates multi-column layouts with responsive behavior. Use for card grids, feature sections, and dashboard widgets.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Column options (resize browser to see responsive behavior)</p>
+
+        <div class="variant-controls">
+          <button class="variant-button active" onclick="setGridColumns('auto')">Auto-fit</button>
+          <button class="variant-button" onclick="setGridColumns('2')">2 Columns</button>
+          <button class="variant-button" onclick="setGridColumns('3')">3 Columns</button>
+          <button class="variant-button" onclick="setGridColumns('4')">4 Columns</button>
+        </div>
+
+        <div class="grid" id="demo-grid">
+          <div class="demo-box">Card 1</div>
+          <div class="demo-box">Card 2</div>
+          <div class="demo-box">Card 3</div>
+          <div class="demo-box">Card 4</div>
+          <div class="demo-box">Card 5</div>
+          <div class="demo-box">Card 6</div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Responsive Behavior</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Viewport</th>
+              <th>Columns</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>&lt; 480px</td>
+              <td>1 column</td>
+            </tr>
+            <tr>
+              <td>480-768px</td>
+              <td>2 columns</td>
+            </tr>
+            <tr>
+              <td>&gt; 768px</td>
+              <td>As specified</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 class="specs-title">HTML Structure</h3>
+        <pre class="code-block"><span class="comment">&lt;!-- Responsive card grid --&gt;</span>
+<span class="tag">&lt;div</span> <span class="attr">class=</span><span class="value">"grid"</span> <span class="attr">data-columns=</span><span class="value">"auto-fit"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;article</span> <span class="attr">class=</span><span class="value">"card"</span><span class="tag">&gt;</span>Card 1<span class="tag">&lt;/article&gt;</span>
+  <span class="tag">&lt;article</span> <span class="attr">class=</span><span class="value">"card"</span><span class="tag">&gt;</span>Card 2<span class="tag">&lt;/article&gt;</span>
+  <span class="tag">&lt;article</span> <span class="attr">class=</span><span class="value">"card"</span><span class="tag">&gt;</span>Card 3<span class="tag">&lt;/article&gt;</span>
+<span class="tag">&lt;/div&gt;</span></pre>
+      </div>
+    </section>
+
+    <!-- Sidebar Component -->
+    <section class="component-section" id="sidebar">
+      <header class="component-header">
+        <h2 class="component-title">Sidebar</h2>
+        <p class="component-description">Creates a two-column layout with one flexible and one fixed column. Use for navigation + content, or tablet image + transcription.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Side options</p>
+
+        <div class="variant-controls">
+          <button class="variant-button active" onclick="setSidebarSide('left')">Sidebar Left</button>
+          <button class="variant-button" onclick="setSidebarSide('right')">Sidebar Right</button>
+        </div>
+
+        <div class="sidebar-layout" id="demo-sidebar" style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md);">
+          <aside style="background: var(--color-demo); padding: var(--space-md); border-radius: var(--radius-sm);">
+            <strong style="color: var(--color-primary);">Sidebar</strong>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary); margin: var(--space-sm) 0 0;">Fixed width area for navigation or secondary content.</p>
+          </aside>
+          <main style="background: var(--color-bg); padding: var(--space-md); border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+            <strong>Main Content</strong>
+            <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary); margin: var(--space-sm) 0 0;">This area fills the remaining space. On small screens, the layout stacks vertically.</p>
+          </main>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Props/Attributes</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Type</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>data-side</code></td>
+              <td>string</td>
+              <td>"left"</td>
+              <td>Which side for sidebar: left, right</td>
+            </tr>
+            <tr>
+              <td><code>data-width</code></td>
+              <td>string</td>
+              <td>"25%"</td>
+              <td>Sidebar width</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Use appropriate landmark elements: <code>&lt;aside&gt;</code> for sidebar, <code>&lt;nav&gt;</code> for navigation, <code>&lt;main&gt;</code> for primary content.
+        </div>
+      </div>
+    </section>
+
+    <!-- Switcher Component -->
+    <section class="component-section" id="switcher">
+      <header class="component-header">
+        <h2 class="component-title">Switcher</h2>
+        <p class="component-description">Displays children in a row when space permits, stacking when constrained. Use for adaptive form layouts and button groups.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Resize browser to see switching behavior</p>
+
+        <div style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md);">
+          <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-sm);">Form Fields (switches to stacked below ~480px)</p>
+          <div class="switcher">
+            <div class="demo-box">First Name</div>
+            <div class="demo-box">Last Name</div>
+          </div>
+        </div>
+
+        <div style="background: var(--color-surface); padding: var(--space-md); border-radius: var(--radius-md); margin-top: var(--space-md);">
+          <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-sm);">Stats Display</p>
+          <div class="switcher">
+            <div class="demo-box">15 Tasks</div>
+            <div class="demo-box">3 Tablets</div>
+            <div class="demo-box">87% Accuracy</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Behavior</h3>
+        <ul style="font-size: var(--font-size-sm); color: var(--color-text-secondary); padding-left: var(--space-lg);">
+          <li>Uses CSS container queries or viewport width</li>
+          <li>Switches between row and column layout automatically</li>
+          <li>All children have equal width in row mode</li>
+          <li>Content should make sense in both layouts</li>
+        </ul>
+
+        <h3 class="specs-title">HTML Structure</h3>
+        <pre class="code-block"><span class="tag">&lt;div</span> <span class="attr">class=</span><span class="value">"switcher"</span> <span class="attr">data-threshold=</span><span class="value">"480px"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">class=</span><span class="value">"form-group"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;label&gt;</span>First Name<span class="tag">&lt;/label&gt;</span>
+    <span class="tag">&lt;input</span> <span class="attr">type=</span><span class="value">"text"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;/div&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">class=</span><span class="value">"form-group"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;label&gt;</span>Last Name<span class="tag">&lt;/label&gt;</span>
+    <span class="tag">&lt;input</span> <span class="attr">type=</span><span class="value">"text"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;/div&gt;</span>
+<span class="tag">&lt;/div&gt;</span></pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Variant control interactions
+    function setContainerSize(size) {
+      const container = document.getElementById('demo-container');
+      const label = document.getElementById('container-size-label');
+
+      container.removeAttribute('data-size');
+      if (size !== 'default') {
+        container.setAttribute('data-size', size);
+      }
+
+      const sizes = { default: '1024px', narrow: '640px', wide: '1280px', full: '100%' };
+      label.textContent = sizes[size] + ' max-width';
+
+      updateActiveButton(event.target);
+    }
+
+    function setStackSpace(space) {
+      const stack = document.getElementById('demo-stack');
+      stack.setAttribute('data-space', space);
+      updateActiveButton(event.target);
+    }
+
+    function setClusterAlign(align) {
+      const cluster = document.getElementById('demo-cluster');
+      cluster.setAttribute('data-align', align);
+      updateActiveButton(event.target);
+    }
+
+    function setGridColumns(columns) {
+      const grid = document.getElementById('demo-grid');
+      grid.removeAttribute('data-columns');
+      if (columns !== 'auto') {
+        grid.setAttribute('data-columns', columns);
+      }
+      updateActiveButton(event.target);
+    }
+
+    function setSidebarSide(side) {
+      const sidebar = document.getElementById('demo-sidebar');
+      if (side === 'right') {
+        sidebar.setAttribute('data-side', 'right');
+      } else {
+        sidebar.removeAttribute('data-side');
+      }
+      updateActiveButton(event.target);
+    }
+
+    function updateActiveButton(clickedButton) {
+      const controls = clickedButton.parentElement;
+      controls.querySelectorAll('.variant-button').forEach(btn => btn.classList.remove('active'));
+      clickedButton.classList.add('active');
+    }
+  </script>
+</body>
+</html>

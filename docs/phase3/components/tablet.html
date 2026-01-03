@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tablet Components - Glintstone Component Library</title>
+  <style>
+    /* ========================================
+       CSS Variables
+       ======================================== */
+    :root {
+      --color-bg: #fafafa;
+      --color-surface: #ffffff;
+      --color-border: #e5e5e5;
+      --color-border-subtle: #f0f0f0;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #666666;
+      --color-text-muted: #999999;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-light: #eff6ff;
+      --color-focus: #3b82f6;
+      --color-success: #10b981;
+      --color-warning: #f59e0b;
+      --color-ai: #8b5cf6;
+
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', Monaco, monospace;
+      --font-size-sm: 0.875rem;
+      --font-size-base: 1rem;
+      --font-size-lg: 1.125rem;
+      --font-size-xl: 1.25rem;
+      --font-size-2xl: 1.5rem;
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: var(--font-size-base);
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-bg);
+    }
+
+    a { color: var(--color-primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Page Layout */
+    .page-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-xl);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .page-header__inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .page-header__back {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    .page-header__title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+    }
+
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-xl);
+    }
+
+    /* Component Sections */
+    .component-section {
+      margin-bottom: var(--space-2xl);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .component-header {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .component-title {
+      margin: 0 0 var(--space-sm);
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+    }
+
+    .component-description {
+      margin: 0;
+      color: var(--color-text-secondary);
+    }
+
+    .component-demo {
+      padding: var(--space-lg);
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .demo-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-md);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .component-specs {
+      padding: var(--space-lg);
+    }
+
+    .specs-title {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      margin: 0 0 var(--space-sm);
+    }
+
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .specs-table th,
+    .specs-table td {
+      padding: var(--space-sm) var(--space-md);
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .specs-table th {
+      background: var(--color-bg);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .specs-table code {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      background: var(--color-bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .code-block .tag { color: #f472b6; }
+    .code-block .attr { color: #a5b4fc; }
+    .code-block .value { color: #86efac; }
+    .code-block .comment { color: #94a3b8; }
+
+    .a11y-note {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: var(--space-md);
+      margin-top: var(--space-md);
+      font-size: var(--font-size-sm);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .a11y-note strong { color: #92400e; }
+
+    /* ========================================
+       Tablet Viewer Component
+       ======================================== */
+    .tablet-viewer {
+      position: relative;
+      background: #1a1a1a;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .tablet-viewer__controls {
+      position: absolute;
+      top: var(--space-md);
+      right: var(--space-md);
+      display: flex;
+      gap: var(--space-xs);
+      z-index: 10;
+    }
+
+    .tablet-viewer__controls button {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: rgba(255,255,255,0.9);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .tablet-viewer__controls button:hover {
+      background: white;
+    }
+
+    .tablet-viewer__controls button:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .tablet-viewer__viewport {
+      position: relative;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: grab;
+    }
+
+    .tablet-viewer__viewport:active {
+      cursor: grabbing;
+    }
+
+    .tablet-viewer__image {
+      max-width: 80%;
+      max-height: 280px;
+      object-fit: contain;
+      transition: transform 0.3s ease;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .tablet-viewer__placeholder {
+      width: 200px;
+      height: 250px;
+      background: linear-gradient(135deg, #d4a574 0%, #c4956a 50%, #b38560 100%);
+      border-radius: var(--radius-sm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #5c4a3a;
+      font-size: var(--font-size-sm);
+      transition: transform 0.3s ease;
+      position: relative;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.2);
+    }
+
+    .tablet-viewer__placeholder::before {
+      content: '';
+      position: absolute;
+      width: 80%;
+      height: 70%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 8px,
+        rgba(139, 90, 43, 0.3) 8px,
+        rgba(139, 90, 43, 0.3) 10px
+      );
+    }
+
+    .tablet-viewer__overlays {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .tablet-viewer__region {
+      position: absolute;
+      border: 2px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      pointer-events: all;
+      border-radius: 2px;
+      transition: all 0.15s ease;
+    }
+
+    .tablet-viewer__region:hover,
+    .tablet-viewer__region:focus {
+      border-color: var(--color-primary);
+      background: rgba(37, 99, 235, 0.15);
+    }
+
+    .tablet-viewer__region[data-state="selected"] {
+      border-color: var(--color-primary);
+      border-width: 3px;
+      background: rgba(37, 99, 235, 0.2);
+    }
+
+    .tablet-viewer__region[data-state="ai-suggested"] {
+      border-style: dashed;
+      border-color: var(--color-ai);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .tablet-viewer__surfaces {
+      display: flex;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      background: rgba(0,0,0,0.5);
+    }
+
+    .tablet-viewer__surfaces button {
+      padding: var(--space-sm) var(--space-md);
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+      transition: all 0.15s;
+    }
+
+    .tablet-viewer__surfaces button:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .tablet-viewer__surfaces button[aria-selected="true"] {
+      background: var(--color-primary);
+    }
+
+    .tablet-viewer__surfaces button:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .tablet-viewer__caption {
+      padding: var(--space-sm) var(--space-md);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      font-size: var(--font-size-sm);
+      text-align: center;
+    }
+
+    .tablet-viewer__zoom-label {
+      position: absolute;
+      bottom: var(--space-md);
+      left: var(--space-md);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      font-family: var(--font-mono);
+    }
+
+    /* Loading State */
+    .tablet-viewer--loading .tablet-viewer__viewport {
+      background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s ease-in-out infinite;
+    }
+
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Error State */
+    .tablet-viewer--error .tablet-viewer__viewport {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .tablet-viewer__error {
+      color: white;
+      text-align: center;
+    }
+
+    .tablet-viewer__error button {
+      margin-top: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+
+    /* ========================================
+       Sign Card Component
+       ======================================== */
+    .sign-card {
+      background: var(--color-surface);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .sign-card:hover {
+      border-color: var(--color-primary);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+
+    .sign-card:focus-within {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .sign-card[data-selected="true"] {
+      border-color: var(--color-primary);
+      border-width: 3px;
+      background: var(--color-primary-light);
+    }
+
+    .sign-card[data-ai-suggested="true"]::after {
+      content: 'AI';
+      position: absolute;
+      top: var(--space-xs);
+      right: var(--space-xs);
+      background: var(--color-ai);
+      color: white;
+      font-size: 0.625rem;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .sign-card { position: relative; }
+
+    .sign-card__image {
+      width: 100%;
+      aspect-ratio: 1;
+      background: #f8f4f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      color: #5c4a3a;
+      font-family: serif;
+    }
+
+    .sign-card__content {
+      padding: var(--space-md);
+      text-align: center;
+    }
+
+    .sign-card__name {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+    }
+
+    .sign-card__reading {
+      margin: var(--space-xs) 0 0;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      font-style: italic;
+    }
+
+    .sign-card__meaning {
+      margin: var(--space-xs) 0 0;
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+    }
+
+    .sign-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: var(--space-md);
+    }
+
+    /* Compact variant */
+    .sign-card--compact {
+      width: 60px;
+    }
+
+    .sign-card--compact .sign-card__image {
+      font-size: 1.5rem;
+    }
+
+    .sign-card--compact .sign-card__content {
+      padding: var(--space-xs);
+    }
+
+    .sign-card--compact .sign-card__name {
+      font-size: var(--font-size-sm);
+    }
+
+    .sign-card--compact .sign-card__reading,
+    .sign-card--compact .sign-card__meaning {
+      display: none;
+    }
+
+    /* ========================================
+       Transcription Line Component
+       ======================================== */
+    .transcription-line {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .transcription-line:hover {
+      background: var(--color-primary-light);
+    }
+
+    .transcription-line__number {
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+      font-family: var(--font-mono);
+      min-width: 24px;
+    }
+
+    .transcription-line__content {
+      flex: 1;
+      font-family: var(--font-mono);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+    }
+
+    .transcription-segment {
+      padding: 2px 4px;
+      border-radius: 2px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: inherit;
+      transition: all 0.1s;
+    }
+
+    .transcription-segment:hover {
+      background: var(--color-primary-light);
+    }
+
+    .transcription-segment:focus {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 1px;
+    }
+
+    .transcription-segment[data-type="determinative"] {
+      font-size: 0.75em;
+      vertical-align: super;
+      color: var(--color-text-secondary);
+    }
+
+    .transcription-segment[data-type="divine-name"] {
+      color: var(--color-primary);
+    }
+
+    .transcription-segment[data-type="damaged"] {
+      color: var(--color-text-muted);
+      text-decoration: line-through;
+    }
+
+    .transcription-segment[data-type="uncertain"] {
+      text-decoration: underline;
+      text-decoration-style: wavy;
+    }
+
+    .transcription-line__meta {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    /* ========================================
+       Transcription Panel Component
+       ======================================== */
+    .transcription-panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .transcription-panel__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+      background: var(--color-bg);
+    }
+
+    .transcription-panel__header h2 {
+      margin: 0;
+      font-size: var(--font-size-base);
+      font-weight: 600;
+    }
+
+    .transcription-panel__tabs {
+      display: flex;
+      gap: var(--space-xs);
+    }
+
+    .transcription-panel__tabs button {
+      padding: var(--space-xs) var(--space-sm);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+      transition: all 0.15s;
+    }
+
+    .transcription-panel__tabs button:hover {
+      border-color: var(--color-primary);
+    }
+
+    .transcription-panel__tabs button[aria-selected="true"] {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+
+    .transcription-panel__surface-label {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border-subtle);
+      margin: 0;
+    }
+
+    .transcription-panel__lines {
+      list-style: none;
+      margin: 0;
+      padding: var(--space-md);
+    }
+
+    /* Status badges (simplified for demo) */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status-badge[data-status="proposed"] {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px dashed #f59e0b;
+    }
+
+    .status-badge[data-status="under-review"] {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #3b82f6;
+    }
+
+    .status-badge[data-status="accepted"] {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+    }
+
+    .confidence-meter {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Demo layout */
+    .tablet-demo-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-lg);
+    }
+
+    @media (max-width: 900px) {
+      .tablet-demo-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .variant-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .variant-button {
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      transition: all 0.15s ease;
+    }
+
+    .variant-button:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .variant-button.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-header__inner">
+      <a href="index.html" class="page-header__back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back
+      </a>
+      <h1 class="page-header__title">Tablet Interaction Components</h1>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- TabletViewer Component -->
+    <section class="component-section" id="tablet-viewer">
+      <header class="component-header">
+        <h2 class="component-title">TabletViewer</h2>
+        <p class="component-description">Displays a tablet image with pan/zoom capabilities and optional interactive region overlays. The visual centerpiece of the Glintstone platform.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Interactive viewer with zoom and regions</p>
+
+        <div class="variant-controls">
+          <button class="variant-button active" onclick="setViewerState('default')">Default</button>
+          <button class="variant-button" onclick="setViewerState('loading')">Loading</button>
+          <button class="variant-button" onclick="setViewerState('error')">Error</button>
+          <button class="variant-button" onclick="setViewerState('with-regions')">With Regions</button>
+        </div>
+
+        <figure class="tablet-viewer" id="demo-viewer" aria-label="Tablet viewer">
+          <!-- Zoom controls -->
+          <div class="tablet-viewer__controls" role="group" aria-label="Zoom controls">
+            <button type="button" aria-label="Zoom out" onclick="zoomViewer(-0.25)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+            <button type="button" aria-label="Reset zoom" onclick="resetZoom()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+            <button type="button" aria-label="Zoom in" onclick="zoomViewer(0.25)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Viewport -->
+          <div class="tablet-viewer__viewport" id="viewer-viewport" role="img" aria-label="Tablet image: YBC 4644, Old Babylonian letter" tabindex="0">
+            <div class="tablet-viewer__placeholder" id="viewer-placeholder">
+              <span style="font-size: 0.75rem; margin-top: 80px;">Cuneiform Tablet</span>
+            </div>
+
+            <!-- Region overlays (initially hidden) -->
+            <div class="tablet-viewer__overlays" id="viewer-overlays" style="display: none;">
+              <button class="tablet-viewer__region" data-region-id="sign-1" style="left: 25%; top: 20%; width: 15%; height: 12%;" aria-label="Sign region, line 1 position 1" onclick="selectRegion(this)"></button>
+              <button class="tablet-viewer__region" data-region-id="sign-2" style="left: 45%; top: 20%; width: 12%; height: 12%;" aria-label="Sign region, line 1 position 2" onclick="selectRegion(this)"></button>
+              <button class="tablet-viewer__region" data-state="ai-suggested" data-region-id="sign-3" style="left: 30%; top: 40%; width: 18%; height: 12%;" aria-label="AI-suggested sign region, line 2" onclick="selectRegion(this)"></button>
+              <button class="tablet-viewer__region" data-region-id="sign-4" style="left: 35%; top: 60%; width: 14%; height: 12%;" aria-label="Sign region, line 3" onclick="selectRegion(this)"></button>
+            </div>
+          </div>
+
+          <span class="tablet-viewer__zoom-label" id="zoom-label">1.0x</span>
+
+          <!-- Surface tabs -->
+          <div class="tablet-viewer__surfaces" role="tablist" aria-label="Tablet surfaces">
+            <button role="tab" aria-selected="true" onclick="selectSurface(this)">Obverse</button>
+            <button role="tab" aria-selected="false" onclick="selectSurface(this)">Reverse</button>
+            <button role="tab" aria-selected="false" onclick="selectSurface(this)">Edge</button>
+          </div>
+
+          <figcaption class="tablet-viewer__caption">YBC 4644 - Old Babylonian Letter</figcaption>
+        </figure>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Interactive Behavior</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Behavior</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Click [-]</td>
+              <td>Zoom out (step: 0.25x, min: 0.5x)</td>
+            </tr>
+            <tr>
+              <td>Click [+]</td>
+              <td>Zoom in (step: 0.25x, max: 3.0x)</td>
+            </tr>
+            <tr>
+              <td>Scroll wheel + Ctrl</td>
+              <td>Zoom at cursor position</td>
+            </tr>
+            <tr>
+              <td>Click and drag</td>
+              <td>Pan when zoomed > 1.0x</td>
+            </tr>
+            <tr>
+              <td>Arrow keys</td>
+              <td>Pan 10% of viewport when focused</td>
+            </tr>
+            <tr>
+              <td>Tab through regions</td>
+              <td>Navigate interactive regions</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 class="specs-title">Region States</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>Border</th>
+              <th>Background</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>default</td>
+              <td>Transparent</td>
+              <td>None</td>
+            </tr>
+            <tr>
+              <td>hover</td>
+              <td>Solid, subtle</td>
+              <td>5% overlay</td>
+            </tr>
+            <tr>
+              <td>selected</td>
+              <td>Solid, bold</td>
+              <td>15% overlay</td>
+            </tr>
+            <tr>
+              <td>ai-suggested</td>
+              <td>Dashed, purple</td>
+              <td>5% AI overlay</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Viewport is focusable with <code>tabindex="0"</code>. Arrow keys pan when zoomed. Regions are buttons with descriptive <code>aria-label</code>. Screen reader announces tablet description on focus.
+        </div>
+      </div>
+    </section>
+
+    <!-- SignCard Component -->
+    <section class="component-section" id="sign-card">
+      <header class="component-header">
+        <h2 class="component-title">SignCard</h2>
+        <p class="component-description">Displays an individual cuneiform sign with optional metadata. Use for task options, sign learning, and reference display.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Click to select</p>
+
+        <div class="variant-controls">
+          <button class="variant-button active" onclick="setSignCardVariant('default')">Default (Option)</button>
+          <button class="variant-button" onclick="setSignCardVariant('compact')">Compact</button>
+          <button class="variant-button" onclick="setSignCardVariant('detailed')">Detailed</button>
+        </div>
+
+        <div class="sign-cards-grid" id="sign-cards-container" role="radiogroup" aria-label="Select the matching sign">
+          <article class="sign-card" data-sign-id="an" onclick="selectSignCard(this)">
+            <figure class="sign-card__image">AN</figure>
+            <div class="sign-card__content">
+              <h3 class="sign-card__name">AN</h3>
+              <p class="sign-card__reading">an, dingir</p>
+              <p class="sign-card__meaning">god, sky, heaven</p>
+            </div>
+          </article>
+
+          <article class="sign-card" data-sign-id="en" onclick="selectSignCard(this)">
+            <figure class="sign-card__image">EN</figure>
+            <div class="sign-card__content">
+              <h3 class="sign-card__name">EN</h3>
+              <p class="sign-card__reading">en, be</p>
+              <p class="sign-card__meaning">lord, master</p>
+            </div>
+          </article>
+
+          <article class="sign-card" data-sign-id="lu" data-ai-suggested="true" onclick="selectSignCard(this)">
+            <figure class="sign-card__image">LU</figure>
+            <div class="sign-card__content">
+              <h3 class="sign-card__name">LU</h3>
+              <p class="sign-card__reading">lu</p>
+              <p class="sign-card__meaning">man, person</p>
+            </div>
+          </article>
+
+          <article class="sign-card" data-sign-id="ud" onclick="selectSignCard(this)">
+            <figure class="sign-card__image">UD</figure>
+            <div class="sign-card__content">
+              <h3 class="sign-card__name">UD</h3>
+              <p class="sign-card__reading">ud, babbar</p>
+              <p class="sign-card__meaning">sun, day, white</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Variants</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Variant</th>
+              <th>Size</th>
+              <th>Content</th>
+              <th>Use Case</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>option</td>
+              <td>80-120px</td>
+              <td>Image + name only</td>
+              <td>Task options</td>
+            </tr>
+            <tr>
+              <td>compact</td>
+              <td>60px</td>
+              <td>Image only</td>
+              <td>Inline reference</td>
+            </tr>
+            <tr>
+              <td>default</td>
+              <td>120-160px</td>
+              <td>Image + name + meaning</td>
+              <td>Learning</td>
+            </tr>
+            <tr>
+              <td>detailed</td>
+              <td>200px+</td>
+              <td>Full information</td>
+              <td>Sign library</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> When used as task options, wrap in <code>role="radiogroup"</code>. Minimum touch target: 72x72px. Tab to navigate, Space to select.
+        </div>
+      </div>
+    </section>
+
+    <!-- TranscriptionLine & Panel -->
+    <section class="component-section" id="transcription">
+      <header class="component-header">
+        <h2 class="component-title">TranscriptionLine and TranscriptionPanel</h2>
+        <p class="component-description">Displays cuneiform transcription with interactive segments. Lines show individual text lines; Panel organizes complete tablet transcription by surface.</p>
+      </header>
+
+      <div class="component-demo">
+        <p class="demo-label">Live Example - Click segments for details</p>
+
+        <div class="transcription-panel">
+          <header class="transcription-panel__header">
+            <h2>Transcription</h2>
+            <div class="transcription-panel__tabs" role="tablist" aria-label="Surfaces">
+              <button role="tab" aria-selected="true">Obverse</button>
+              <button role="tab" aria-selected="false">Reverse</button>
+              <button role="tab" aria-selected="false">Edge</button>
+            </div>
+          </header>
+
+          <h3 class="transcription-panel__surface-label">@obverse</h3>
+
+          <ol class="transcription-panel__lines" role="list">
+            <li class="transcription-line" data-line-number="1">
+              <span class="transcription-line__number">1.</span>
+              <div class="transcription-line__content">
+                <button class="transcription-segment" data-type="word" onclick="showSegmentInfo(this, 'a-na: to')">a-na</button>
+                <button class="transcription-segment" data-type="determinative" onclick="showSegmentInfo(this, '{d}: divine determinative')">{d}</button>
+                <button class="transcription-segment" data-type="divine-name" onclick="showSegmentInfo(this, 'utu: Shamash (sun god)')">utu</button>
+                <button class="transcription-segment" data-type="word" onclick="showSegmentInfo(this, 'be-li2-ia: my lord')">be-li2-ia</button>
+              </div>
+              <div class="transcription-line__meta">
+                <span class="status-badge" data-status="accepted">Accepted</span>
+                <span class="confidence-meter">92%</span>
+              </div>
+            </li>
+
+            <li class="transcription-line" data-line-number="2">
+              <span class="transcription-line__number">2.</span>
+              <div class="transcription-line__content">
+                <button class="transcription-segment" data-type="word" onclick="showSegmentInfo(this, 'um-ma: saying, thus')">um-ma</button>
+                <button class="transcription-segment" data-type="determinative" onclick="showSegmentInfo(this, '{m}: male name determinative')">{m}</button>
+                <button class="transcription-segment" data-type="word" onclick="showSegmentInfo(this, 'a-bi-e-szar2: personal name')">a-bi-e-szar2</button>
+              </div>
+              <div class="transcription-line__meta">
+                <span class="status-badge" data-status="under-review">Under Review</span>
+                <span class="confidence-meter">78%</span>
+              </div>
+            </li>
+
+            <li class="transcription-line" data-line-number="3">
+              <span class="transcription-line__number">3.</span>
+              <div class="transcription-line__content">
+                <button class="transcription-segment" data-type="word" onclick="showSegmentInfo(this, 'ar-du-ka: your servant')">ar-du-ka</button>
+                <button class="transcription-segment" data-type="uncertain" onclick="showSegmentInfo(this, 'a-ma: uncertain reading')">(a-ma)</button>
+              </div>
+              <div class="transcription-line__meta">
+                <span class="status-badge" data-status="proposed">Proposed</span>
+                <span class="confidence-meter">65%</span>
+              </div>
+            </li>
+
+            <li class="transcription-line" data-line-number="4">
+              <span class="transcription-line__number">4.</span>
+              <div class="transcription-line__content">
+                <button class="transcription-segment" data-type="damaged" onclick="showSegmentInfo(this, 'Damaged/broken text')">x x x</button>
+                <button class="transcription-segment" data-type="word" onclick="showSegmentInfo(this, 'i-na: in, at')">i-na</button>
+              </div>
+              <div class="transcription-line__meta">
+                <span class="status-badge" data-status="proposed">Proposed</span>
+                <span class="confidence-meter">45%</span>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div id="segment-info" style="margin-top: var(--space-md); padding: var(--space-md); background: var(--color-primary-light); border-radius: var(--radius-md); display: none;">
+          <strong>Segment Info:</strong> <span id="segment-info-text"></span>
+        </div>
+      </div>
+
+      <div class="component-specs">
+        <h3 class="specs-title">Segment Types</h3>
+        <table class="specs-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Visual Style</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>word</td>
+              <td>Standard word</td>
+              <td>Default monospace</td>
+            </tr>
+            <tr>
+              <td>determinative</td>
+              <td>Classifier sign</td>
+              <td>Superscript, secondary color</td>
+            </tr>
+            <tr>
+              <td>divine-name</td>
+              <td>Divine/personal name</td>
+              <td>Primary color</td>
+            </tr>
+            <tr>
+              <td>damaged</td>
+              <td>Damaged text</td>
+              <td>Gray, strikethrough</td>
+            </tr>
+            <tr>
+              <td>uncertain</td>
+              <td>Uncertain reading</td>
+              <td>Parenthesized, wavy underline</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="a11y-note">
+          <strong>Accessibility:</strong> Lines are semantic list items. Segments are navigable via Tab. Click/Enter shows segment detail. Screen reader announces segment type and content.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Viewer state management
+    let currentZoom = 1.0;
+
+    function setViewerState(state) {
+      const viewer = document.getElementById('demo-viewer');
+      const overlays = document.getElementById('viewer-overlays');
+      const viewport = document.getElementById('viewer-viewport');
+      const placeholder = document.getElementById('viewer-placeholder');
+
+      viewer.classList.remove('tablet-viewer--loading', 'tablet-viewer--error');
+      overlays.style.display = 'none';
+      placeholder.style.display = 'flex';
+      viewport.innerHTML = '';
+      viewport.appendChild(placeholder);
+      viewport.appendChild(overlays);
+
+      if (state === 'loading') {
+        viewer.classList.add('tablet-viewer--loading');
+        placeholder.style.display = 'none';
+      } else if (state === 'error') {
+        viewer.classList.add('tablet-viewer--error');
+        placeholder.style.display = 'none';
+        viewport.innerHTML = '<div class="tablet-viewer__error"><p>Failed to load tablet image</p><button onclick="setViewerState(\'default\')">Try again</button></div>';
+      } else if (state === 'with-regions') {
+        overlays.style.display = 'block';
+      }
+
+      updateActiveButton(event.target);
+    }
+
+    function zoomViewer(delta) {
+      currentZoom = Math.max(0.5, Math.min(3.0, currentZoom + delta));
+      const placeholder = document.getElementById('viewer-placeholder');
+      placeholder.style.transform = `scale(${currentZoom})`;
+      document.getElementById('zoom-label').textContent = currentZoom.toFixed(1) + 'x';
+    }
+
+    function resetZoom() {
+      currentZoom = 1.0;
+      const placeholder = document.getElementById('viewer-placeholder');
+      placeholder.style.transform = 'scale(1)';
+      document.getElementById('zoom-label').textContent = '1.0x';
+    }
+
+    function selectRegion(button) {
+      document.querySelectorAll('.tablet-viewer__region').forEach(r => r.removeAttribute('data-state'));
+      if (!button.getAttribute('data-state')) {
+        button.setAttribute('data-state', 'selected');
+      }
+    }
+
+    function selectSurface(button) {
+      const tabs = button.parentElement.querySelectorAll('[role="tab"]');
+      tabs.forEach(tab => tab.setAttribute('aria-selected', 'false'));
+      button.setAttribute('aria-selected', 'true');
+    }
+
+    // Sign card interactions
+    function selectSignCard(card) {
+      document.querySelectorAll('.sign-card').forEach(c => c.removeAttribute('data-selected'));
+      card.setAttribute('data-selected', 'true');
+    }
+
+    function setSignCardVariant(variant) {
+      const cards = document.querySelectorAll('.sign-card');
+      cards.forEach(card => {
+        card.classList.remove('sign-card--compact');
+        if (variant === 'compact') {
+          card.classList.add('sign-card--compact');
+        }
+      });
+      updateActiveButton(event.target);
+    }
+
+    // Transcription segment info
+    function showSegmentInfo(button, info) {
+      const infoBox = document.getElementById('segment-info');
+      const infoText = document.getElementById('segment-info-text');
+      infoBox.style.display = 'block';
+      infoText.textContent = info;
+    }
+
+    function updateActiveButton(clickedButton) {
+      const controls = clickedButton.parentElement;
+      controls.querySelectorAll('.variant-button').forEach(btn => btn.classList.remove('active'));
+      clickedButton.classList.add('active');
+    }
+  </script>
+</body>
+</html>
