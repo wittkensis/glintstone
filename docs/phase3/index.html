@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glintstone Phase 3 - Design Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-bg: #0a0e14;
+            --color-surface: #151a23;
+            --color-border: #2d3748;
+            --color-text: #e2e8f0;
+            --color-text-dim: #a0aec0;
+            --color-accent: #f6ad55;
+            --color-accent-dim: #ed8936;
+            --spacing-xs: 0.5rem;
+            --spacing-sm: 1rem;
+            --spacing-md: 1.5rem;
+            --spacing-lg: 2rem;
+            --spacing-xl: 3rem;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            padding: var(--spacing-lg);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: var(--spacing-sm);
+            color: var(--color-accent);
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--color-text-dim);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #22543d;
+            color: #9ae6b4;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 0.5rem;
+            padding: var(--spacing-lg);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(246, 173, 85, 0.15);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: var(--spacing-sm);
+            color: var(--color-accent);
+        }
+
+        .card p {
+            color: var(--color-text-dim);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .card-meta {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+            font-size: 0.875rem;
+            color: var(--color-text-dim);
+        }
+
+        .tag {
+            padding: 0.25rem 0.5rem;
+            background: var(--color-border);
+            border-radius: 0.25rem;
+        }
+
+        .link-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .link-list a {
+            color: var(--color-accent);
+            text-decoration: none;
+            padding: var(--spacing-xs) 0;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .link-list a:hover {
+            color: var(--color-accent-dim);
+        }
+
+        .link-list a::before {
+            content: "→";
+            font-weight: bold;
+        }
+
+        .section {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .section h2 {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-md);
+            color: var(--color-text);
+        }
+
+        .highlights {
+            background: var(--color-surface);
+            border-left: 4px solid var(--color-accent);
+            padding: var(--spacing-lg);
+            border-radius: 0.5rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .highlights h3 {
+            margin-bottom: var(--spacing-sm);
+            color: var(--color-accent);
+        }
+
+        .highlights ul {
+            list-style: none;
+            display: grid;
+            gap: var(--spacing-xs);
+        }
+
+        .highlights li::before {
+            content: "✓";
+            color: var(--color-accent);
+            margin-right: var(--spacing-xs);
+            font-weight: bold;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+
+        .tech-item {
+            padding: 0.5rem 1rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        footer {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--color-border);
+            text-align: center;
+            color: var(--color-text-dim);
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: var(--spacing-sm);
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Glintstone Phase 3</h1>
+            <p class="subtitle">Engineering Architecture & Design Documentation</p>
+            <span class="status-badge">✓ Complete</span>
+        </header>
+
+        <div class="highlights">
+            <h3>Phase 3 Achievements</h3>
+            <ul>
+                <li>Complete component architecture with Vite + React + TypeScript stack</li>
+                <li>50+ unstyled components across 8 categories</li>
+                <li>4 complete user journeys with visual wireframes</li>
+                <li>12 expert profiles + 15 institutional organizations for trust/credibility</li>
+                <li>Accessibility-first design (WCAG 2.1 AA baseline)</li>
+                <li>Clear scaling path from dummy data (R1) to live platform (R4)</li>
+            </ul>
+        </div>
+
+        <section class="section">
+            <h2>Interactive Documentation</h2>
+            <div class="grid">
+                <div class="card">
+                    <h2>Component Library</h2>
+                    <div class="card-meta">
+                        <span class="tag">50+ Components</span>
+                        <span class="tag">8 Categories</span>
+                    </div>
+                    <p>Browse the complete unstyled component library with interactive examples, variants, states, and specifications.</p>
+                    <ul class="link-list">
+                        <li><a href="components/index.html">Component Catalog Home</a></li>
+                        <li><a href="components/layout.html">Layout Components</a></li>
+                        <li><a href="components/tablet.html">Tablet Interaction</a></li>
+                        <li><a href="components/task.html">Task Components</a></li>
+                        <li><a href="components/progress.html">Progress & Feedback</a></li>
+                        <li><a href="components/trust.html">Trust Components</a></li>
+                        <li><a href="components/navigation.html">Navigation</a></li>
+                        <li><a href="components/forms.html">Form Elements</a></li>
+                        <li><a href="components/overlays.html">Overlays & Dialogs</a></li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h2>User Journey Screenflows</h2>
+                    <div class="card-meta">
+                        <span class="tag">4 Journeys</span>
+                        <span class="tag">26 Screens</span>
+                    </div>
+                    <p>Visual wireframes showing complete user flows from entry to completion, with component mapping and interaction specs.</p>
+                    <ul class="link-list">
+                        <li><a href="screenflows/index.html">Journey Overview</a></li>
+                        <li><a href="screenflows/J1-marketing.html">J1: Marketing Page</a></li>
+                        <li><a href="screenflows/J2-passerby.html">J2: Passerby Contribution</a></li>
+                        <li><a href="screenflows/J3-early-learner.html">J3: Early Learner</a></li>
+                        <li><a href="screenflows/J4-expert-review.html">J4: Expert Review</a></li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h2>Architecture Proposal</h2>
+                    <div class="card-meta">
+                        <span class="tag">3 Approaches</span>
+                        <span class="tag">Recommended Stack</span>
+                    </div>
+                    <p>Comprehensive technical architecture including data models, technology stack, and scaling strategy.</p>
+                    <ul class="link-list">
+                        <li><a href="component-architecture-proposal.md">Architecture Proposal</a></li>
+                        <li><a href="README.md">Phase 3 Summary</a></li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h2>Visual Assets</h2>
+                    <div class="card-meta">
+                        <span class="tag">12 Experts</span>
+                        <span class="tag">15 Institutions</span>
+                    </div>
+                    <p>Expert profiles and institutional organizations with sourcing strategy for avatars and logos.</p>
+                    <ul class="link-list">
+                        <li><a href="../../public/README.md">Assets Overview</a></li>
+                        <li><a href="../../public/data/experts.json">Expert Profiles JSON</a></li>
+                        <li><a href="../../public/data/institutions.json">Institutions JSON</a></li>
+                        <li><a href="../../public/ASSET-SOURCING.md">Sourcing Strategy</a></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Recommended Technology Stack</h2>
+            <div class="tech-stack">
+                <span class="tech-item">Vite</span>
+                <span class="tech-item">React 18</span>
+                <span class="tech-item">TypeScript (Strict Mode)</span>
+                <span class="tech-item">Shadcn/UI</span>
+                <span class="tech-item">Tailwind CSS</span>
+                <span class="tech-item">TanStack Router</span>
+                <span class="tech-item">TanStack Query</span>
+                <span class="tech-item">Zustand</span>
+                <span class="tech-item">Zod</span>
+                <span class="tech-item">Vercel</span>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Key Design Principles</h2>
+            <div class="grid">
+                <div class="card">
+                    <h2>Trust-First</h2>
+                    <p>Expert avatars, institutional logos, and credibility indicators integrated throughout to build user confidence in platform quality.</p>
+                </div>
+                <div class="card">
+                    <h2>Accessibility-First</h2>
+                    <p>WCAG 2.1 AA baseline with AAA targets. Touch targets ≥44px, keyboard navigation, screen reader support, reduced motion.</p>
+                </div>
+                <div class="card">
+                    <h2>Progressive Disclosure</h2>
+                    <p>Component complexity layers match user tiers (Passerby → Early Learner → Expert) without duplication.</p>
+                </div>
+                <div class="card">
+                    <h2>Scalability</h2>
+                    <p>Clear path from JSON fixtures (R1) → SQLite → PostgreSQL + Redis + Elasticsearch (R4) with minimal refactoring.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p><strong>Phase 3: Engineering Architecture</strong> | Completed January 3, 2026</p>
+            <p>Ready for Phase 4: Detailed Implementation</p>
+        </footer>
+    </div>
+</body>
+</html>
