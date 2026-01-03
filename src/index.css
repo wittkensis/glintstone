@@ -13,12 +13,41 @@
 
 @layer base {
   :root {
-    --background: 7 12 20; /* #0a0e14 - Celestial Navy */
-    --surface: 21 26 35; /* #151a23 */
-    --border: 45 55 72; /* #2d3748 */
-    --text: 226 232 240; /* #e2e8f0 */
-    --accent: 246 173 85; /* #f6ad55 - Warm Gold */
-    --ai-indicator: 159 122 170; /* #9f7aea - Violet */
+    /* === MIDNIGHT CLAY BASE === */
+    --background: 15 20 25; /* #0f1419 - Deeper aged clay darkness */
+    --surface: 26 31 40; /* #1a1f28 - Twilight clay */
+    --surface-elevated: 36 43 54; /* #242b36 - Lifted surfaces */
+    --border: 61 70 82; /* #3d4652 - Aged edges */
+
+    /* === LAPIS LAZULI ACCENTS === */
+    --accent-blue: 74 111 165; /* #4a6fa5 - Lapis primary */
+    --accent-blue-dim: 45 71 112; /* #2d4770 - Lapis shadow */
+    --accent-blue-bright: 99 144 201; /* #6390c9 - Lapis highlight */
+
+    /* === FIRED GOLD (FIRED UNDER STARS) === */
+    --accent-gold: 212 175 55; /* #d4af37 - Rich gold for CTAs */
+    --accent-gold-glow: 246 211 101; /* #f6d365 - Glowing state */
+    --accent-gold-ember: 255 154 86; /* #ff9a56 - Warm ember */
+
+    /* === TERRACOTTA & CLAY TONES === */
+    --clay-light: 193 154 107; /* #c19a6b - Aged clay highlight */
+    --clay-mid: 139 111 71; /* #8b6f47 - Clay midtone */
+    --clay-dark: 93 78 55; /* #5d4e37 - Clay shadow */
+
+    /* === TEXT HIERARCHY === */
+    --text: 226 232 240; /* #e2e8f0 - Primary text */
+    --text-secondary: 193 154 107; /* #c19a6b - Clay-tinted secondary */
+    --text-muted: 139 111 71; /* #8b6f47 - Warm muted */
+
+    /* === SEMANTIC COLORS === */
+    --success: 212 175 55; /* Gold */
+    --info: 74 111 165; /* Lapis */
+    --warning: 255 154 86; /* Ember */
+    --error: 204 102 102; /* Terracotta red */
+
+    /* === LEGACY (for compatibility) === */
+    --accent: 212 175 55; /* Maps to gold */
+    --ai-indicator: 74 111 165; /* Maps to lapis */
   }
 
   html {
@@ -35,68 +64,233 @@
     @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  /* Clay texture pattern - creates organic stippled effect */
+  /* === ENHANCED CLAY TEXTURES === */
+  /* Organic stippled effect with more variation - like aged clay surface */
   .clay-texture {
     background-image:
-      radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.1) 1px, transparent 1px),
-      radial-gradient(circle at 4px 3px, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
-      radial-gradient(circle at 2px 5px, rgba(0, 0, 0, 0.12) 1px, transparent 1px),
-      radial-gradient(circle at 5px 2px, rgba(0, 0, 0, 0.09) 1px, transparent 1px);
+      radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.12) 1px, transparent 1px),
+      radial-gradient(circle at 4px 3px, rgba(0, 0, 0, 0.09) 1px, transparent 1px),
+      radial-gradient(circle at 2px 5px, rgba(0, 0, 0, 0.15) 1px, transparent 1px),
+      radial-gradient(circle at 5px 2px, rgba(0, 0, 0, 0.11) 1px, transparent 1px),
+      radial-gradient(circle at 3px 4px, rgba(193, 154, 107, 0.03) 1px, transparent 1px),
+      radial-gradient(circle at 6px 1px, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+    background-size: 7px 7px, 5px 5px, 6px 6px, 8px 8px, 4px 4px, 7px 7px;
+    background-position: 0 0, 2px 2px, 4px 4px, 1px 3px, 5px 5px, 3px 1px;
+  }
+
+  /* Subtle clay texture for lighter applications */
+  .clay-texture-subtle {
+    background-image:
+      radial-gradient(circle at 2px 2px, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+      radial-gradient(circle at 5px 3px, rgba(193, 154, 107, 0.04) 1px, transparent 1px);
     background-size: 6px 6px;
-    background-position: 0 0, 2px 2px, 4px 4px, 1px 3px;
+    background-position: 0 0, 3px 3px;
   }
 
-  /* Gold metallic texture overlay for accents */
-  .gold-accent-shimmer {
-    background: linear-gradient(135deg, rgba(246, 173, 85, 0.95), rgba(246, 173, 85, 0.85));
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.3), inset 0 -1px 2px 0 rgba(0, 0, 0, 0.2);
+  /* === LAPIS LAZULI SHIMMER === */
+  /* Iridescent effect for lapis accents */
+  .lapis-shimmer {
+    position: relative;
+    background: linear-gradient(135deg,
+      rgb(74, 111, 165) 0%,
+      rgb(99, 144, 201) 50%,
+      rgb(74, 111, 165) 100%);
+    background-size: 200% 200%;
+    transition: background-position 0.6s ease;
   }
 
-  .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-[rgb(var(--accent))] text-black hover:brightness-110 transition-all relative;
+  .lapis-shimmer:hover {
+    background-position: 100% 100%;
+  }
+
+  /* Lapis border with subtle glow */
+  .lapis-border {
+    border-color: rgb(var(--accent-blue));
     box-shadow:
-      inset 0 2px 4px 0 rgba(255, 255, 255, 0.2),
+      0 0 0 1px rgba(74, 111, 165, 0.3),
+      inset 0 1px 0 0 rgba(99, 144, 201, 0.1);
+  }
+
+  /* === FIRED GOLD EFFECTS === */
+  /* Metallic gold shimmer with warmth */
+  .gold-shimmer {
+    background: linear-gradient(135deg,
+      rgb(var(--accent-gold)) 0%,
+      rgb(var(--accent-gold-glow)) 50%,
+      rgb(var(--accent-gold)) 100%);
+    background-size: 200% 200%;
+    box-shadow:
+      inset 0 2px 4px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -2px 4px 0 rgba(0, 0, 0, 0.25),
+      0 4px 16px 0 rgba(212, 175, 55, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .gold-shimmer:hover {
+    background-position: 100% 100%;
+    box-shadow:
+      inset 0 2px 4px 0 rgba(255, 255, 255, 0.4),
       inset 0 -2px 4px 0 rgba(0, 0, 0, 0.3),
-      0 4px 12px 0 rgba(246, 173, 85, 0.25);
+      0 6px 20px 0 rgba(246, 211, 101, 0.4);
+  }
+
+  /* Gold leaf effect - metallic sheen */
+  .gold-leaf {
+    background: linear-gradient(135deg,
+      rgba(246, 211, 101, 0.15) 0%,
+      rgba(212, 175, 55, 0.25) 50%,
+      rgba(255, 154, 86, 0.15) 100%);
+    background-size: 200% 200%;
+    animation: goldShimmer 3s ease infinite;
+  }
+
+  /* === CUNEIFORM EMBOSS === */
+  /* Subtle wedge patterns in backgrounds */
+  .cuneiform-emboss {
     position: relative;
   }
 
-  .btn-primary:hover {
+  .cuneiform-emboss::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image:
+      linear-gradient(45deg, transparent 48%, rgba(193, 154, 107, 0.4) 49%, rgba(193, 154, 107, 0.4) 51%, transparent 52%),
+      linear-gradient(135deg, transparent 48%, rgba(193, 154, 107, 0.3) 49%, rgba(193, 154, 107, 0.3) 51%, transparent 52%);
+    background-size: 20px 20px, 20px 20px;
+    background-position: 0 0, 10px 10px;
+  }
+
+  /* === STARLIGHT PARTICLES === */
+  /* Subtle animated stars for hero sections */
+  .starlight-particles {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .starlight-particles::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(246, 211, 101, 0.15) 1px, transparent 1px),
+      radial-gradient(circle at 60% 70%, rgba(246, 211, 101, 0.1) 1px, transparent 1px),
+      radial-gradient(circle at 80% 20%, rgba(246, 211, 101, 0.12) 1px, transparent 1px),
+      radial-gradient(circle at 40% 80%, rgba(212, 175, 55, 0.08) 1px, transparent 1px);
+    background-size: 100% 100%;
+    animation: starTwinkle 4s ease infinite;
+  }
+
+  /* === PRIMARY BUTTON (FIRED GOLD CTA) === */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium text-black transition-all relative;
+    background: linear-gradient(135deg,
+      rgb(var(--accent-gold)) 0%,
+      rgb(var(--accent-gold-glow)) 50%,
+      rgb(var(--accent-gold)) 100%);
+    background-size: 200% 200%;
     box-shadow:
-      inset 0 2px 4px 0 rgba(255, 255, 255, 0.25),
-      inset 0 -2px 4px 0 rgba(0, 0, 0, 0.35),
-      0 6px 16px 0 rgba(246, 173, 85, 0.35);
+      inset 0 2px 4px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -2px 4px 0 rgba(0, 0, 0, 0.25),
+      0 4px 16px 0 rgba(212, 175, 55, 0.35),
+      0 2px 8px 0 rgba(246, 211, 101, 0.2);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .btn-primary:hover {
+    background-position: 100% 100%;
+    box-shadow:
+      inset 0 2px 4px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -2px 4px 0 rgba(0, 0, 0, 0.3),
+      0 6px 20px 0 rgba(246, 211, 101, 0.45),
+      0 3px 12px 0 rgba(255, 154, 86, 0.25);
+    transform: translateY(-1px);
   }
 
   .btn-primary:active {
+    background-position: 50% 50%;
     box-shadow:
-      inset 0 2px 4px 0 rgba(255, 255, 255, 0.15),
-      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.4),
-      0 2px 4px 0 rgba(246, 173, 85, 0.15);
+      inset 0 2px 4px 0 rgba(255, 255, 255, 0.2),
+      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.35),
+      0 2px 8px 0 rgba(212, 175, 55, 0.2);
+    transform: translateY(0);
   }
 
+  /* === SECONDARY BUTTON (TERRACOTTA CLAY) === */
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-[rgb(var(--surface))] text-[rgb(var(--text))] border border-[rgb(var(--border))] transition-all relative;
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium text-[rgb(var(--text))] transition-all relative;
+    background: linear-gradient(135deg,
+      rgb(var(--clay-mid)) 0%,
+      rgb(var(--clay-dark)) 100%);
+    border: 1px solid rgba(193, 154, 107, 0.3);
     box-shadow:
-      inset 0 1px 2px 0 rgba(255, 255, 255, 0.1),
-      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.2),
-      0 2px 8px 0 rgba(0, 0, 0, 0.2);
+      inset 0 1px 2px 0 rgba(193, 154, 107, 0.15),
+      inset 0 -2px 4px 0 rgba(0, 0, 0, 0.3),
+      0 2px 8px 0 rgba(0, 0, 0, 0.3);
+    font-weight: 500;
   }
 
   .btn-secondary:hover {
-    @apply bg-[rgb(var(--border))];
+    background: linear-gradient(135deg,
+      rgb(var(--clay-light)) 0%,
+      rgb(var(--clay-mid)) 100%);
+    border-color: rgba(193, 154, 107, 0.5);
     box-shadow:
-      inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
-      inset 0 -1px 2px 0 rgba(0, 0, 0, 0.25),
-      0 4px 12px 0 rgba(0, 0, 0, 0.25);
+      inset 0 1px 2px 0 rgba(193, 154, 107, 0.2),
+      inset 0 -2px 4px 0 rgba(0, 0, 0, 0.35),
+      0 4px 12px 0 rgba(0, 0, 0, 0.35);
+    transform: translateY(-1px);
   }
 
-  /* Card clay texture styling */
-  .card-clay {
-    @apply bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-xl;
+  .btn-secondary:active {
     box-shadow:
-      inset 0 1px 2px 0 rgba(255, 255, 255, 0.05),
+      inset 0 2px 4px 0 rgba(0, 0, 0, 0.3),
+      0 1px 4px 0 rgba(0, 0, 0, 0.2);
+    transform: translateY(0);
+  }
+
+  /* === TERTIARY BUTTON (LAPIS OUTLINE) === */
+  .btn-tertiary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-all relative;
+    background: transparent;
+    color: rgb(var(--accent-blue-bright));
+    border: 1px solid rgb(var(--accent-blue));
+    box-shadow:
+      inset 0 0 0 1px rgba(74, 111, 165, 0.2),
+      0 2px 8px 0 rgba(0, 0, 0, 0.2);
+    font-weight: 500;
+  }
+
+  .btn-tertiary:hover {
+    background: rgba(74, 111, 165, 0.1);
+    border-color: rgb(var(--accent-blue-bright));
+    box-shadow:
+      inset 0 0 0 1px rgba(99, 144, 201, 0.3),
+      0 0 12px 0 rgba(74, 111, 165, 0.3),
       0 4px 12px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-tertiary:active {
+    background: rgba(74, 111, 165, 0.15);
+    box-shadow:
+      inset 0 2px 4px 0 rgba(0, 0, 0, 0.2),
+      0 1px 4px 0 rgba(0, 0, 0, 0.2);
+  }
+
+  /* === CARD COMPONENTS === */
+  /* Deep clay card with warm shadows */
+  .card-clay {
+    @apply bg-[rgb(var(--surface))] rounded-xl relative;
+    border: 1px solid rgba(61, 70, 82, 0.5);
+    box-shadow:
+      inset 0 2px 4px 0 rgba(0, 0, 0, 0.15),
+      inset 0 -1px 2px 0 rgba(193, 154, 107, 0.05),
+      0 4px 12px 0 rgba(0, 0, 0, 0.4),
+      0 2px 6px 0 rgba(0, 0, 0, 0.3);
   }
 
   .card-clay::before {
@@ -106,23 +300,136 @@
     border-radius: 0.75rem;
     pointer-events: none;
     background-image:
-      radial-gradient(circle at 2px 2px, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
-      radial-gradient(circle at 5px 4px, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
-      radial-gradient(circle at 3px 6px, rgba(0, 0, 0, 0.1) 1px, transparent 1px),
-      radial-gradient(circle at 6px 3px, rgba(0, 0, 0, 0.07) 1px, transparent 1px);
+      radial-gradient(circle at 2px 2px, rgba(0, 0, 0, 0.12) 1px, transparent 1px),
+      radial-gradient(circle at 5px 4px, rgba(0, 0, 0, 0.09) 1px, transparent 1px),
+      radial-gradient(circle at 3px 6px, rgba(0, 0, 0, 0.15) 1px, transparent 1px),
+      radial-gradient(circle at 6px 3px, rgba(0, 0, 0, 0.11) 1px, transparent 1px),
+      radial-gradient(circle at 4px 5px, rgba(193, 154, 107, 0.03) 1px, transparent 1px);
     background-size: 7px 7px;
   }
-}
 
-/* Additional CSS variables for extended palette */
-@layer base {
-  :root {
-    --text-secondary: 160 174 192; /* #a0aec0 */
-    --text-muted: 113 128 150; /* #718096 */
+  /* Elevated clay surface */
+  .card-clay-elevated {
+    @apply bg-[rgb(var(--surface-elevated))] rounded-xl relative;
+    border: 1px solid rgba(193, 154, 107, 0.2);
+    box-shadow:
+      inset 0 2px 4px 0 rgba(0, 0, 0, 0.2),
+      inset 0 -1px 2px 0 rgba(193, 154, 107, 0.08),
+      0 6px 16px 0 rgba(0, 0, 0, 0.5),
+      0 3px 8px 0 rgba(0, 0, 0, 0.4);
+  }
+
+  /* Card with lapis border accent */
+  .card-lapis {
+    @apply card-clay;
+    border-color: rgba(74, 111, 165, 0.4);
+    box-shadow:
+      inset 0 2px 4px 0 rgba(0, 0, 0, 0.15),
+      inset 0 -1px 2px 0 rgba(74, 111, 165, 0.08),
+      0 0 0 1px rgba(74, 111, 165, 0.2),
+      0 4px 12px 0 rgba(0, 0, 0, 0.4),
+      0 0 8px 0 rgba(74, 111, 165, 0.15);
+  }
+
+  /* === PROGRESS BARS === */
+  .progress-lapis {
+    @apply relative h-2 rounded-full overflow-hidden;
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  }
+
+  .progress-lapis-fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background: linear-gradient(90deg,
+      rgb(var(--accent-blue)) 0%,
+      rgb(var(--accent-blue-bright)) 50%,
+      rgb(var(--accent-blue)) 100%);
+    background-size: 200% 100%;
+    box-shadow:
+      inset 0 1px 0 0 rgba(99, 144, 201, 0.4),
+      0 0 8px 0 rgba(74, 111, 165, 0.4);
+    animation: progressShimmer 2s ease infinite;
+  }
+
+  .progress-gold-fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background: linear-gradient(90deg,
+      rgb(var(--accent-gold)) 0%,
+      rgb(var(--accent-gold-glow)) 50%,
+      rgb(var(--accent-gold)) 100%);
+    background-size: 200% 100%;
+    box-shadow:
+      inset 0 1px 0 0 rgba(246, 211, 101, 0.5),
+      0 0 10px 0 rgba(212, 175, 55, 0.5);
+    animation: progressShimmer 2s ease infinite;
+  }
+
+  /* === EXPERT CARDS === */
+  .expert-card {
+    @apply card-clay relative p-6;
+  }
+
+  .expert-card-name {
+    @apply inline-block px-3 py-1 rounded-md text-sm font-medium;
+    background: rgba(74, 111, 165, 0.2);
+    color: rgb(var(--accent-blue-bright));
+    border: 1px solid rgba(74, 111, 165, 0.3);
+    box-shadow:
+      inset 0 1px 0 0 rgba(99, 144, 201, 0.1),
+      0 2px 4px 0 rgba(0, 0, 0, 0.2);
+  }
+
+  /* === INPUT FIELDS === */
+  .input-clay {
+    @apply w-full px-4 py-3 rounded-lg transition-all;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(61, 70, 82, 0.5);
+    color: rgb(var(--text));
+    box-shadow:
+      inset 0 2px 4px 0 rgba(0, 0, 0, 0.3),
+      inset 0 -1px 2px 0 rgba(193, 154, 107, 0.05);
+  }
+
+  .input-clay:focus {
+    outline: none;
+    border-color: rgba(74, 111, 165, 0.5);
+    box-shadow:
+      inset 0 2px 4px 0 rgba(0, 0, 0, 0.35),
+      inset 0 -1px 2px 0 rgba(74, 111, 165, 0.1),
+      0 0 0 3px rgba(74, 111, 165, 0.15);
+  }
+
+  .input-clay::placeholder {
+    color: rgb(var(--text-muted));
+  }
+
+  /* === ROUGH EDGES === */
+  /* Slightly irregular borders for authenticity */
+  .rough-edge {
+    position: relative;
+  }
+
+  .rough-edge::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    border-radius: inherit;
+    background-image:
+      linear-gradient(90deg, transparent 0%, rgba(61, 70, 82, 0.3) 50%, transparent 100%),
+      linear-gradient(0deg, transparent 0%, rgba(61, 70, 82, 0.2) 50%, transparent 100%);
+    background-size: 4px 100%, 100% 4px;
+    background-position: 0 0, 0 0;
+    background-repeat: repeat-x, repeat-y;
+    mix-blend-mode: overlay;
   }
 }
 
-/* Animations */
+/* Remove old extended palette section as it's now integrated above */
+
+/* === ANIMATIONS === */
+
+/* Slow, deliberate fade - scholarly pace */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -132,6 +439,7 @@
   }
 }
 
+/* Gentle emergence from below */
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -143,6 +451,7 @@
   }
 }
 
+/* Gentle descent from above */
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -154,6 +463,7 @@
   }
 }
 
+/* Subtle breathing pulse */
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
@@ -163,38 +473,281 @@
   }
 }
 
+/* Gold shimmer wave for success states */
+@keyframes goldShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Progress bar shimmer */
+@keyframes progressShimmer {
+  0% {
+    background-position: 200% 0%;
+  }
+  100% {
+    background-position: -200% 0%;
+  }
+}
+
+/* Starlight twinkle for hero sections */
+@keyframes starTwinkle {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  25% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  75% {
+    opacity: 0.7;
+  }
+}
+
+/* Gentle glow expansion on hover */
+@keyframes glowExpand {
+  0% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 5px rgba(212, 175, 55, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+  }
+}
+
+/* Lapis shimmer for info states */
+@keyframes lapisShimmer {
+  0% {
+    box-shadow: 0 0 0 0 rgba(74, 111, 165, 0);
+  }
+  50% {
+    box-shadow: 0 0 16px 4px rgba(74, 111, 165, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 111, 165, 0);
+  }
+}
+
+/* Ember glow for milestone achievements */
+@keyframes emberGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 10px 2px rgba(255, 154, 86, 0.3),
+      inset 0 0 10px 2px rgba(255, 154, 86, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 20px 5px rgba(255, 154, 86, 0.5),
+      inset 0 0 15px 3px rgba(255, 154, 86, 0.3);
+  }
+}
+
+/* Animation utility classes */
 .animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-fadeIn-slow {
+  animation: fadeIn 1s ease-out;
 }
 
 .animate-slideUp {
-  animation: slideUp 0.3s ease-out;
+  animation: slideUp 0.5s ease-out;
 }
 
 .animate-slideDown {
-  animation: slideDown 0.3s ease-out;
+  animation: slideDown 0.5s ease-out;
 }
 
-/* Custom scrollbar for dark theme */
+.animate-goldShimmer {
+  animation: goldShimmer 3s ease infinite;
+}
+
+.animate-glowExpand {
+  animation: glowExpand 2s ease infinite;
+}
+
+.animate-lapisShimmer {
+  animation: lapisShimmer 2.5s ease infinite;
+}
+
+.animate-emberGlow {
+  animation: emberGlow 2s ease infinite;
+}
+
+/* === CUSTOM SCROLLBAR === */
+/* Clay-themed scrollbar with warm tones */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
   background: rgb(var(--background));
+  border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--border));
-  border-radius: 4px;
+  background: linear-gradient(180deg,
+    rgb(var(--clay-mid)) 0%,
+    rgb(var(--clay-dark)) 100%);
+  border-radius: 5px;
+  border: 2px solid rgb(var(--background));
+  box-shadow: inset 0 1px 2px 0 rgba(193, 154, 107, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--text-muted));
+  background: linear-gradient(180deg,
+    rgb(var(--clay-light)) 0%,
+    rgb(var(--clay-mid)) 100%);
+  box-shadow: inset 0 1px 2px 0 rgba(193, 154, 107, 0.3);
 }
+
+::-webkit-scrollbar-corner {
+  background: rgb(var(--background));
+}
+
+/* === UTILITY CLASSES === */
 
 /* Cuneiform font utility */
 .font-cuneiform {
   font-family: 'Noto Sans Cuneiform', serif;
+}
+
+/* Glow state utilities */
+.glow-gold {
+  box-shadow: 0 0 20px 5px rgba(212, 175, 55, 0.4);
+}
+
+.glow-lapis {
+  box-shadow: 0 0 16px 4px rgba(74, 111, 165, 0.5);
+}
+
+.glow-ember {
+  box-shadow: 0 0 18px 4px rgba(255, 154, 86, 0.5);
+}
+
+/* Shadow utilities - warm clay impression feel */
+.shadow-clay {
+  box-shadow:
+    inset 0 2px 4px 0 rgba(0, 0, 0, 0.15),
+    inset 0 -1px 2px 0 rgba(193, 154, 107, 0.05),
+    0 4px 12px 0 rgba(0, 0, 0, 0.4);
+}
+
+.shadow-clay-deep {
+  box-shadow:
+    inset 0 3px 6px 0 rgba(0, 0, 0, 0.25),
+    inset 0 -2px 4px 0 rgba(193, 154, 107, 0.08),
+    0 6px 16px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Text color utilities */
+.text-clay-light {
+  color: rgb(var(--clay-light));
+}
+
+.text-clay-mid {
+  color: rgb(var(--clay-mid));
+}
+
+.text-lapis {
+  color: rgb(var(--accent-blue-bright));
+}
+
+.text-gold {
+  color: rgb(var(--accent-gold-glow));
+}
+
+/* Background utilities */
+.bg-clay-gradient {
+  background: linear-gradient(135deg,
+    rgb(var(--surface)) 0%,
+    rgb(var(--surface-elevated)) 100%);
+}
+
+.bg-lapis-subtle {
+  background: rgba(74, 111, 165, 0.1);
+}
+
+.bg-gold-subtle {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+/* Border utilities */
+.border-clay {
+  border-color: rgba(193, 154, 107, 0.3);
+}
+
+.border-lapis {
+  border-color: rgba(74, 111, 165, 0.4);
+}
+
+.border-gold {
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+/* Semantic state classes */
+.state-success {
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: rgb(var(--accent-gold-glow));
+}
+
+.state-info {
+  background: rgba(74, 111, 165, 0.15);
+  border: 1px solid rgba(74, 111, 165, 0.3);
+  color: rgb(var(--accent-blue-bright));
+}
+
+.state-warning {
+  background: rgba(255, 154, 86, 0.15);
+  border: 1px solid rgba(255, 154, 86, 0.3);
+  color: rgb(var(--accent-gold-ember));
+}
+
+.state-error {
+  background: rgba(204, 102, 102, 0.15);
+  border: 1px solid rgba(204, 102, 102, 0.3);
+  color: rgb(204, 120, 120);
+}
+
+/* === ACCESSIBILITY === */
+/* Focus states with strong contrast */
+*:focus-visible {
+  outline: 2px solid rgb(var(--accent-blue-bright));
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgb(var(--accent-gold-glow));
+  outline-offset: 2px;
+}
+
+/* Skip to main content link */
+.skip-to-main {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 999;
+  padding: 1rem 2rem;
+  background: rgb(var(--accent-gold));
+  color: black;
+  text-decoration: none;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.skip-to-main:focus {
+  left: 0;
 }
