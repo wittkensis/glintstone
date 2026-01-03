@@ -702,7 +702,7 @@ screens can focus on user-type-specific workflows.
 
 ## Recommendation
 
-[@Claude this recommendation sounds good, let's go with it.]
+~~[@Claude this recommendation sounds good, let's go with it.]~~
 
 **Selected Approach: Hybrid - User Journey Flows (Primary) + Capability Layers (Secondary)**
 
