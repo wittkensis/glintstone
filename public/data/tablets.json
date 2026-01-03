@@ -6,8 +6,8 @@
     "period": "Ur III",
     "genre": "Administrative",
     "images": {
-      "obverse": "/images/tablets/tablet-001-obverse.jpg",
-      "reverse": "/images/tablets/tablet-001-reverse.jpg"
+      "obverse": "/images/tablets/authentic/P005377.jpg",
+      "reverse": "/images/tablets/authentic/P005377.jpg"
     },
     "transcription_status": "untranscribed"
   },
@@ -18,8 +18,8 @@
     "period": "Old Babylonian",
     "genre": "Legal Document",
     "images": {
-      "obverse": "/images/tablets/tablet-002-obverse.jpg",
-      "reverse": "/images/tablets/tablet-002-reverse.jpg"
+      "obverse": "/images/tablets/authentic/P010012.jpg",
+      "reverse": "/images/tablets/authentic/P010012.jpg"
     },
     "transcription_status": "in_progress"
   },
@@ -30,8 +30,8 @@
     "period": "Neo-Assyrian",
     "genre": "Royal Inscription",
     "images": {
-      "obverse": "/images/tablets/tablet-003-obverse.jpg",
-      "reverse": "/images/tablets/tablet-003-reverse.jpg"
+      "obverse": "/images/tablets/authentic/P001251.jpg",
+      "reverse": "/images/tablets/authentic/P001251.jpg"
     },
     "transcription_status": "verified"
   },
@@ -54,8 +54,8 @@
     "period": "Old Babylonian",
     "genre": "Literary Work",
     "images": {
-      "obverse": "/images/tablets/tablet-005-obverse.jpg",
-      "reverse": "/images/tablets/tablet-005-reverse.jpg"
+      "obverse": "/images/tablets/authentic/P003512.jpg",
+      "reverse": "/images/tablets/authentic/P003512.jpg"
     },
     "transcription_status": "verified"
   },
