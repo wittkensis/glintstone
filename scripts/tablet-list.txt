@@ -1,0 +1,18 @@
+# Glintstone Tablet Collection
+# One P-number per line. Lines starting with # are comments.
+
+# Current Collection
+P005377
+P010012
+P001251
+P002878
+P003512
+P212322
+P254202
+P346222
+P448739
+
+# Additional tablets to consider:
+# P254173  # Ur III administrative
+# P100046  # Old Babylonian letter
+# P313880  # Neo-Assyrian

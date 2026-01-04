@@ -1,0 +1,284 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Glintstone Cuneiform Tablet Metadata Schema",
+  "description": "Complete metadata schema for cuneiform tablet images in the Glintstone project",
+  "type": "object",
+  "required": ["id", "cdliUrl"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^P\\d+$",
+      "description": "CDLI P-number identifier (e.g., P005377)"
+    },
+    "cdliUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Full URL to the tablet's page on CDLI"
+    },
+    "downloadedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the image was downloaded"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the metadata was last updated"
+    },
+    "fileSize": {
+      "type": "number",
+      "description": "Size of the image file in bytes"
+    },
+    "period": {
+      "type": ["string", "null"],
+      "description": "Historical period (e.g., 'Ur III (ca. 2100-2000 BC)', 'Old Babylonian (ca. 1900-1600 BC)')",
+      "examples": [
+        "Uruk IV-III (ca. 3400-3000 BC)",
+        "Early Dynastic I-II (ca. 2900-2700 BC)",
+        "Ur III (ca. 2100-2000 BC)",
+        "Old Babylonian (ca. 1900-1600 BC)",
+        "Neo-Assyrian (ca. 911-612 BC)"
+      ]
+    },
+    "genre": {
+      "type": ["string", "null"],
+      "description": "Document type/genre",
+      "enum": [
+        null,
+        "Administrative",
+        "Legal",
+        "Letter",
+        "Literary",
+        "Lexical",
+        "Mathematical",
+        "Astronomical",
+        "Medical",
+        "Omen",
+        "Ritual",
+        "Royal/Monumental",
+        "School",
+        "Unknown"
+      ]
+    },
+    "collection": {
+      "type": ["string", "null"],
+      "description": "Name of the collection that holds the tablet"
+    },
+    "museum": {
+      "type": ["string", "null"],
+      "description": "Museum or institution that houses the tablet"
+    },
+    "accessionNumber": {
+      "type": ["string", "null"],
+      "description": "Museum accession or catalogue number"
+    },
+    "dimensions": {
+      "type": ["string", "null"],
+      "description": "Physical dimensions of the tablet (e.g., '5.2 x 3.8 x 1.9 cm')"
+    },
+    "material": {
+      "type": ["string", "null"],
+      "description": "Material the tablet is made from (usually 'clay')",
+      "default": "clay"
+    },
+    "language": {
+      "type": ["string", "null"],
+      "description": "Primary language(s) of the text",
+      "examples": [
+        "Sumerian",
+        "Akkadian",
+        "Sumerian & Akkadian",
+        "Elamite",
+        "Hittite",
+        "Hurrian"
+      ]
+    },
+    "provenience": {
+      "type": ["string", "null"],
+      "description": "Archaeological findspot or place of origin (e.g., 'Nippur', 'Ur', 'Girsu')"
+    },
+    "excavationNumber": {
+      "type": ["string", "null"],
+      "description": "Field excavation number if known"
+    },
+    "description": {
+      "type": ["string", "null"],
+      "description": "Brief description of the tablet's content and significance"
+    },
+    "translations": {
+      "type": "array",
+      "description": "Available translations of the tablet text",
+      "items": {
+        "type": "object",
+        "required": ["language", "text"],
+        "properties": {
+          "language": {
+            "type": "string",
+            "description": "ISO 639-1 language code (e.g., 'en', 'de', 'fr')"
+          },
+          "text": {
+            "type": "string",
+            "description": "Translated text"
+          },
+          "author": {
+            "type": "string",
+            "description": "Translator name"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of translation"
+          },
+          "source": {
+            "type": "string",
+            "description": "Publication or source of the translation"
+          }
+        }
+      },
+      "default": []
+    },
+    "transcriptions": {
+      "type": "array",
+      "description": "Cuneiform transcriptions in various formats",
+      "items": {
+        "type": "object",
+        "required": ["format", "text"],
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": ["atf", "unicode", "ascii", "normalized"],
+            "description": "Format of the transcription (ATF, Unicode cuneiform, ASCII transliteration, etc.)"
+          },
+          "text": {
+            "type": "string",
+            "description": "The transcribed text"
+          },
+          "author": {
+            "type": "string",
+            "description": "Transcriber name"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of transcription"
+          },
+          "source": {
+            "type": "string",
+            "description": "Publication or source"
+          }
+        }
+      },
+      "default": []
+    },
+    "tags": {
+      "type": "array",
+      "description": "Custom tags for categorization and search",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "examples": [
+        ["administrative", "economic", "barley"],
+        ["literary", "sumerian", "gilgamesh"],
+        ["school", "lexical", "training"]
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or observations",
+      "default": ""
+    },
+    "imageQuality": {
+      "type": ["string", "null"],
+      "enum": [null, "excellent", "good", "fair", "poor"],
+      "description": "Quality assessment of the image"
+    },
+    "preservationState": {
+      "type": ["string", "null"],
+      "enum": [null, "complete", "nearly-complete", "fragmentary", "heavily-damaged"],
+      "description": "Physical preservation state of the tablet"
+    },
+    "relatedTablets": {
+      "type": "array",
+      "description": "P-numbers of related tablets (joins, duplicates, etc.)",
+      "items": {
+        "type": "string",
+        "pattern": "^P\\d+$"
+      },
+      "default": []
+    },
+    "bibliography": {
+      "type": "array",
+      "description": "Published references and citations",
+      "items": {
+        "type": "object",
+        "properties": {
+          "citation": {
+            "type": "string",
+            "description": "Full bibliographic citation"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to the publication if available online"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["primary", "secondary", "catalog"],
+            "description": "Type of publication"
+          }
+        }
+      },
+      "default": []
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "id": "P005377",
+      "cdliUrl": "https://cdli.earth/P005377",
+      "downloadedAt": "2026-01-03T12:00:00Z",
+      "updatedAt": "2026-01-03T14:30:00Z",
+      "fileSize": 499390,
+      "period": "Ur III (ca. 2100-2000 BC)",
+      "genre": "Administrative",
+      "collection": "Ur Excavations",
+      "museum": "British Museum",
+      "accessionNumber": "BM 106445",
+      "dimensions": "5.2 x 3.8 x 1.9 cm",
+      "material": "clay",
+      "language": "Sumerian",
+      "provenience": "Ur",
+      "excavationNumber": "U 1234",
+      "description": "Administrative tablet recording grain disbursements",
+      "translations": [
+        {
+          "language": "en",
+          "text": "10 gur barley, disbursed to Ur-Nammu...",
+          "author": "Modern Scholar",
+          "date": "2020-05-15",
+          "source": "Academic Publication"
+        }
+      ],
+      "transcriptions": [
+        {
+          "format": "atf",
+          "text": "1. 10(gesz2) 5(u) 2(asz) sze gur\n2. ur-{d}namma\n3. szu ba-ti",
+          "author": "CDLI",
+          "date": "2015-03-10"
+        }
+      ],
+      "tags": ["grain", "disbursement", "economic", "ur-nammu"],
+      "notes": "Well-preserved example of Ur III administrative practice",
+      "imageQuality": "excellent",
+      "preservationState": "complete",
+      "relatedTablets": ["P005378", "P005379"],
+      "bibliography": [
+        {
+          "citation": "Legrain, L. 1947. UET III, no. 1234.",
+          "type": "primary"
+        }
+      ]
+    }
+  ]
+}
