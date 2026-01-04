@@ -22,6 +22,13 @@ See [.claude-feedback-protocol.md](.claude-feedback-protocol.md) for full detail
 - **Archive old iterations**: Move superseded versions to `archive/` with clear demo/phase labels
 - **Remove redundant files**: If an MD file was converted to HTML, remove the MD version
 
+### App vs. Spec Separation (Critical Principle)
+- **App files change like clay**: Source code (`/src`), assets (`/public`), build output (`/dist`) evolve fluidly
+- **Spec files capture iterations**: Strategy docs, PRDs, and agent instructions should be versioned to show evolution
+- **Git commits provide history**: Reference commits when archiving to maintain historical integrity
+- **Specs folder for process docs**: All agentic instructions, PRDs, and strategy documents live in `/specs`
+- **Never mix concerns**: App code should not contain strategy docs; specs should not contain runtime code
+
 ### Output Quality Standards
 - **Avoid tackiness**: No floating decorative unicode characters, no excessive hover effects on non-interactive elements
 - **Be purposeful and elegant, not gaudy and chaotic**
@@ -42,21 +49,29 @@ See [.claude-feedback-protocol.md](.claude-feedback-protocol.md) for full detail
 
 ### Project Structure Standards
 ```
-/src                     # Application source code
-/public                  # Static assets (images, data, fonts)
-/docs
-  /discovery            # Research and discovery reports
-  /phase3               # Current phase UX specs (HTML)
-  /landing-page-options # Alternative approaches (HTML)
-/archive                # Previous demo iterations
-  /Demo 1               # First demo attempt
-  /Demo 2               # Second demo iteration
-  /Agent Drafts         # Early agent definitions
-  /capstone            # Course materials
-/scripts               # Utility scripts (tablet downloads, etc.)
+# === APP FILES (change like clay) ===
+/src                     # Application source code (React/TypeScript)
+/public                  # Static assets for dev (images, data, fonts)
+/dist                    # Vite production build output (gitignored)
+
+# === SPEC FILES (capture iterations) ===
+/specs                   # All process/strategy documentation
+  /discovery            # Research reports and findings
+  /ux                   # UX specs and component designs (HTML)
+  /prds                 # Product requirement documents
+  /landing-options      # Alternative landing page approaches
 /.claude
   /agents              # Agent definitions
   /plans               # Planning documents
+
+# === TABLET PIPELINE ===
+/tablet-pipeline        # CDLI download/validation/organization scripts
+
+# === HISTORICAL ARCHIVE ===
+/archive                # Previous demo iterations (reference only)
+  /Demo 1               # First demo attempt
+  /Demo 2               # Second demo iteration
+  /capstone            # Course materials
 ```
 
 ### Tablet Image Sourcing
