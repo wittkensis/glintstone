@@ -3,6 +3,7 @@
 ## Workflow
 - Commit and push origin to main after every key task.
 - **ALWAYS check for unresolved feedback** before starting work (see Feedback Protocol below).
+- **Update PROJECT-TIMELINE.md** after significant changes (see Timeline Maintenance below).
 
 ## Feedback Protocol
 When starting a session or task:
@@ -98,3 +99,38 @@ See [.claude-feedback-protocol.md](.claude-feedback-protocol.md) for full detail
 ### Primary KPIs (for real adoption later)
 - Academics: Number of newly transcribed artifacts
 - Hobbyists: Number of contributions per hour
+
+---
+
+## Timeline Maintenance
+
+The project timeline (`specs/PROJECT-TIMELINE.md`) is the living record of key decisions, feedback, and evolution. Update it after:
+
+1. **Significant user feedback** - Capture verbatim quotes that shape decisions
+2. **Structural changes** - New folders, renamed files, reorganizations
+3. **Design decisions** - When choosing between options or establishing principles
+4. **New agents or processes** - Document their purpose and first use
+5. **Major feature completions** - Summarize what was built and why
+
+**Update format:**
+- Prepend new entries (newest first, after the header section)
+- Include date and descriptive heading
+- Reference relevant commit hashes
+- Note which agents were involved
+- Capture the "why" not just the "what"
+
+**Example entry:**
+```markdown
+## January 4, 2026 - Expert Demo Implementation
+
+### User Request
+> "Flesh out the Expert demo experience"
+
+**Decisions Made:**
+- Focus on review queue workflow
+- Show ATF export capability
+- Demonstrate confidence scoring
+
+**Agents Involved:** `ux-architect`, `eng-frontend`
+**Commits:** `abc1234`, `def5678`
+```
