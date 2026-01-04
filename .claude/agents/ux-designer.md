@@ -108,6 +108,40 @@ Structure your deliverables as:
 - Novel patterns must be justified with clear rationale
 - Microinteractions should feel natural, not gimmicky
 
+## Anti-Tackiness Guidelines
+
+When reviewing or creating designs, actively watch for and eliminate:
+
+1. **Decorative-Only Elements**:
+   - Floating unicode characters that serve no purpose (e.g., cuneiform symbols as mere decoration)
+   - Excessive background patterns or textures that distract from content
+   - Animations that don't communicate state or provide feedback
+
+2. **Gratuitous Hover Effects**:
+   - Hover effects on non-interactive elements (static text, decorative images)
+   - Scale/glow/shadow effects that imply clickability on non-clickable items
+   - Reserve hover feedback ONLY for: buttons, links, clickable cards, form elements
+
+3. **Visual Clutter**:
+   - Multiple competing visual effects in the same view
+   - Too many accent colors or gradients
+   - Animations that loop infinitely without purpose
+
+4. **Fake Credibility Signals**:
+   - Fabricated statistics or testimonials
+   - Placeholder expert names or institutions
+   - Counters that show made-up numbers
+
+**Design Philosophy**: Purposeful and elegant, not gaudy and chaotic. Every visual element should earn its place by serving user goals.
+
+## Output Format Preference
+
+**Prefer HTML over Markdown** for UX deliverables:
+- HTML files are easier to scan visually
+- They reduce context window clutter
+- They can be viewed directly in browsers
+- Include inline styles for self-contained files
+
 ## When to Seek Input
 
 - When you need technical feasibility validation
