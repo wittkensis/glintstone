@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glintstone - What Stories Have Been Waiting 3,000 Years?</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f1419;
+            color: #e8e6e3;
+            line-height: 1.6;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 16px;
+            font-weight: 600;
+            color: #d4af37;
+            letter-spacing: 3px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        /* Hero with Clear CTA */
+        .hero {
+            padding: 60px 40px 80px;
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-family: 'Georgia', serif;
+            font-size: clamp(32px, 5vw, 48px);
+            font-weight: 400;
+            line-height: 1.3;
+            margin-bottom: 24px;
+        }
+
+        .hero-sub {
+            font-size: 18px;
+            color: #999;
+            max-width: 550px;
+            margin: 0 auto 32px;
+        }
+
+        .hero-cta {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: #d4af37;
+            color: #0f1419;
+            padding: 14px 32px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 6px;
+        }
+
+        .btn-outline {
+            display: inline-block;
+            border: 1px solid #4a6fa5;
+            color: #4a6fa5;
+            padding: 14px 32px;
+            text-decoration: none;
+            font-size: 15px;
+            border-radius: 6px;
+        }
+
+        /* Progress Card - Gamification Element */
+        .progress-section {
+            padding: 0 40px 60px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .progress-card {
+            background: #1a1f28;
+            border-radius: 12px;
+            padding: 32px 40px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .progress-label {
+            font-size: 13px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .progress-note {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .progress-bar-container {
+            background: #0f1419;
+            border-radius: 6px;
+            height: 32px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4a6fa5 0%, #d4af37 100%);
+            width: 3%;
+            border-radius: 6px;
+        }
+
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #2a3040;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-value.gold { color: #d4af37; }
+        .stat-value.blue { color: #4a6fa5; }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* Mystery Questions - From Option 5 */
+        .questions-section {
+            padding: 80px 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .question-block {
+            margin-bottom: 60px;
+            padding-bottom: 60px;
+            border-bottom: 1px solid #1a1f28;
+        }
+
+        .question-block:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .question {
+            font-family: 'Georgia', serif;
+            font-size: clamp(22px, 3.5vw, 30px);
+            color: #d4af37;
+            margin-bottom: 24px;
+            line-height: 1.4;
+        }
+
+        .answer {
+            font-size: 16px;
+            color: #999;
+            max-width: 650px;
+        }
+
+        .answer p {
+            margin-bottom: 16px;
+        }
+
+        .answer p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Discovery Grid */
+        .discovery-grid {
+            padding: 80px 40px;
+            background: #1a1f28;
+        }
+
+        .discovery-inner {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .section-header h2 {
+            font-size: 26px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            color: #888;
+            font-size: 15px;
+        }
+
+        .discoveries {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .discovery-card {
+            background: #0f1419;
+            padding: 28px;
+            border-radius: 8px;
+        }
+
+        .discovery-type {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            color: #4a6fa5;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .discovery-card h3 {
+            font-size: 17px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        .discovery-card p {
+            font-size: 14px;
+            color: #888;
+        }
+
+        /* How It Works - From Option 2 */
+        .how-it-works {
+            padding: 80px 40px;
+        }
+
+        .steps-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+
+        .step {
+            background: #1a1f28;
+            border-radius: 8px;
+            padding: 28px;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #4a6fa5;
+            color: #fff;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .step h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .step p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        /* Roadmap - Gamification Element */
+        .roadmap {
+            padding: 80px 40px;
+            background: linear-gradient(180deg, #0f1419 0%, #1a1f28 50%, #0f1419 100%);
+        }
+
+        .roadmap-inner {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .milestone-track {
+            position: relative;
+            padding-left: 28px;
+        }
+
+        .milestone-track::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #2a3040;
+        }
+
+        .milestone {
+            position: relative;
+            padding-bottom: 32px;
+        }
+
+        .milestone:last-child {
+            padding-bottom: 0;
+        }
+
+        .milestone::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2a3040;
+        }
+
+        .milestone.reached::before {
+            background: #d4af37;
+        }
+
+        .milestone.current::before {
+            background: #4a6fa5;
+            box-shadow: 0 0 0 4px rgba(74, 111, 165, 0.25);
+        }
+
+        .milestone-phase {
+            font-size: 12px;
+            color: #d4af37;
+            margin-bottom: 4px;
+        }
+
+        .milestone h4 {
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        .milestone p {
+            font-size: 14px;
+            color: #888;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            padding: 80px 40px;
+        }
+
+        .faq-inner {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .faq-item {
+            background: #1a1f28;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .faq-item h4 {
+            color: #d4af37;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .faq-item p {
+            color: #999;
+            font-size: 14px;
+        }
+
+        /* Final CTA */
+        .cta-section {
+            padding: 100px 40px;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-family: 'Georgia', serif;
+            font-size: 32px;
+            font-weight: 400;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            color: #888;
+            font-size: 18px;
+            margin-bottom: 32px;
+        }
+
+        .footer {
+            padding: 40px;
+            text-align: center;
+            color: #555;
+            font-size: 13px;
+            border-top: 1px solid #1a1f28;
+        }
+
+        /* Quote */
+        .quote-section {
+            padding: 60px 40px;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .quote {
+            font-family: 'Georgia', serif;
+            font-size: 20px;
+            font-style: italic;
+            color: #b8b5b0;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .quote-attribution {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="logo">GLINTSTONE</div>
+        <div class="nav-links">
+            <a href="#">How It Works</a>
+            <a href="#">About</a>
+            <a href="#">For Researchers</a>
+        </div>
+    </nav>
+
+    <!-- Hero with Clear CTA (Option 2 style) + Mystery Hook (Option 5) -->
+    <section class="hero">
+        <h1>What stories have been waiting 3,000 years to be read?</h1>
+        <p class="hero-sub">
+            Half a million ancient tablets sit in museums worldwide.
+            Most have never been transcribed. Help us change that.
+        </p>
+        <div class="hero-cta">
+            <a href="#" class="btn-primary">Start Contributing</a>
+            <a href="#" class="btn-outline">Watch How It Works</a>
+        </div>
+    </section>
+
+    <!-- Progress Card (Option 4 gamification) -->
+    <section class="progress-section">
+        <div class="progress-card">
+            <div class="progress-header">
+                <div class="progress-label">Global Transcription Progress</div>
+                <div class="progress-note">At current pace: centuries remaining</div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar"></div>
+            </div>
+            <div class="progress-stats">
+                <div class="stat-item">
+                    <div class="stat-value gold">500K+</div>
+                    <div class="stat-label">Tablets in collections</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value blue">~200</div>
+                    <div class="stat-label">Active specialists</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">3,000+</div>
+                    <div class="stat-label">Years of history</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mystery Questions (Option 5) -->
+    <section class="questions-section">
+        <div class="question-block">
+            <div class="question">What if there's a lost chapter of Gilgamesh in a museum drawer?</div>
+            <div class="answer">
+                <p>
+                    The Epic of Gilgamesh was pieced together from dozens of tablets
+                    found across different sites over more than a century. The most
+                    recent major fragment was discovered in 2015.
+                </p>
+                <p>There could be more. We won't know until we look.</p>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question">What observations did Babylonian astronomers record that we've never seen?</div>
+            <div class="answer">
+                <p>
+                    Ancient Mesopotamians tracked celestial events for centuries. Their
+                    records include observations of comets, eclipses, and planetary movements
+                    that modern astronomers use to calibrate historical chronologies.
+                </p>
+                <p>Thousands of astronomical texts remain unread.</p>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question">Whose letter home never got answered?</div>
+            <div class="answer">
+                <p>
+                    Among the tablets are personal letters: merchants writing to family,
+                    soldiers to loved ones, children to parents. Complaints, requests,
+                    expressions of worry.
+                </p>
+                <p>These voices from the past are as human as anything written today.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- What Tablets Contain -->
+    <section class="discovery-grid">
+        <div class="discovery-inner">
+            <div class="section-header">
+                <h2>What These Tablets Might Contain</h2>
+                <p>Categories of content found in cuneiform archives</p>
+            </div>
+            <div class="discoveries">
+                <div class="discovery-card">
+                    <div class="discovery-type">Literary</div>
+                    <h3>Unknown texts and variants</h3>
+                    <p>Poems, myths, and stories with no known copies or different versions.</p>
+                </div>
+                <div class="discovery-card">
+                    <div class="discovery-type">Scientific</div>
+                    <h3>Medical and astronomical records</h3>
+                    <p>Treatments, observations, and calculations revealing ancient knowledge.</p>
+                </div>
+                <div class="discovery-card">
+                    <div class="discovery-type">Historical</div>
+                    <h3>Royal and administrative records</h3>
+                    <p>Accounts of events and decisions that fill gaps in history.</p>
+                </div>
+                <div class="discovery-card">
+                    <div class="discovery-type">Personal</div>
+                    <h3>Letters and private documents</h3>
+                    <p>The unfiltered voices of ordinary people and their daily lives.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works (Option 2 clarity) -->
+    <section class="how-it-works">
+        <div class="steps-container">
+            <div class="section-header">
+                <h2>How It Works</h2>
+                <p>No ancient language skills needed. Just your eyes.</p>
+            </div>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>AI does the first pass</h3>
+                    <p>Machine learning identifies and suggests readings for individual signs.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>You verify visually</h3>
+                    <p>Compare suggestions against tablet images. Pattern matching, not translation.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Consensus builds confidence</h3>
+                    <p>Multiple contributors verify each sign. Agreement creates reliability.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>Scholars validate</h3>
+                    <p>Experts review transcriptions and unlock the meaning.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quote -->
+    <section class="quote-section">
+        <blockquote class="quote">
+            "Every tablet we transcribe is a voice from the past finally being heard.
+            We can't know which ones hold the discoveries until we read them."
+        </blockquote>
+        <div class="quote-attribution">Feedback from academic consultation</div>
+    </section>
+
+    <!-- Roadmap (Option 4 milestones) -->
+    <section class="roadmap">
+        <div class="roadmap-inner">
+            <div class="section-header">
+                <h2>The Path Forward</h2>
+                <p>Where we are and where we're going</p>
+            </div>
+            <div class="milestone-track">
+                <div class="milestone reached">
+                    <div class="milestone-phase">Phase 1</div>
+                    <h4>Platform Development</h4>
+                    <p>AI transcription engine and contributor interface</p>
+                </div>
+                <div class="milestone current">
+                    <div class="milestone-phase">Phase 2 - Current</div>
+                    <h4>Pilot Programs</h4>
+                    <p>Validating methodology with academic institutions</p>
+                </div>
+                <div class="milestone">
+                    <div class="milestone-phase">Phase 3</div>
+                    <h4>Public Launch</h4>
+                    <p>Open platform for contributors worldwide</p>
+                </div>
+                <div class="milestone">
+                    <div class="milestone-phase">Phase 4</div>
+                    <h4>Museum Partnerships</h4>
+                    <p>Direct integration with major collection databases</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ (Option 2 practicality) -->
+    <section class="faq-section">
+        <div class="faq-inner">
+            <div class="section-header">
+                <h2>You Really Don't Need Expertise</h2>
+            </div>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h4>I don't know any ancient languages</h4>
+                    <p>You don't need to. You're doing visual pattern matching, not translation.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>What if I make mistakes?</h4>
+                    <p>Everyone does. Each sign gets multiple readings, and statistical methods identify consensus.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>How much time does it take?</h4>
+                    <p>As little as you want. One sign takes seconds. Every contribution helps.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>How can my work be useful?</h4>
+                    <p>Crowd consensus is powerful. When many agree independently, that's strong evidence.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="cta-section">
+        <h2>Ancient voices await</h2>
+        <p>Help us find out what they have to say.</p>
+        <a href="#" class="btn-primary">Join the Search</a>
+    </section>
+
+    <footer class="footer">
+        <p>Glintstone - Crowdsourced Cuneiform Discovery</p>
+    </footer>
+</body>
+</html>
