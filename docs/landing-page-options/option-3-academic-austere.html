@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glintstone - AI-Assisted Cuneiform Transcription</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #0f1419;
+            color: #c8c5c0;
+            line-height: 1.8;
+            font-size: 17px;
+        }
+
+        .header {
+            padding: 32px 40px;
+            border-bottom: 1px solid #1a1f28;
+        }
+
+        .header-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .logo {
+            font-size: 15px;
+            letter-spacing: 4px;
+            color: #d4af37;
+            text-transform: uppercase;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .main {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 80px 40px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: normal;
+            margin-bottom: 40px;
+            line-height: 1.4;
+            color: #e8e6e3;
+        }
+
+        .abstract {
+            padding: 32px 0;
+            border-top: 1px solid #2a3040;
+            border-bottom: 1px solid #2a3040;
+            margin-bottom: 48px;
+        }
+
+        .abstract-label {
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        p {
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: normal;
+            color: #d4af37;
+            margin-top: 48px;
+            margin-bottom: 24px;
+        }
+
+        .methodology {
+            background: #1a1f28;
+            padding: 32px;
+            margin: 48px 0;
+        }
+
+        .methodology h3 {
+            font-size: 14px;
+            font-weight: normal;
+            color: #d4af37;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .methodology ol {
+            padding-left: 24px;
+        }
+
+        .methodology li {
+            margin-bottom: 12px;
+            color: #999;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 32px 0;
+            font-size: 15px;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px 0;
+            border-bottom: 1px solid #2a3040;
+            color: #888;
+            font-weight: normal;
+            font-size: 13px;
+        }
+
+        .data-table td {
+            padding: 12px 0;
+            border-bottom: 1px solid #1a1f28;
+        }
+
+        .data-table td:last-child {
+            text-align: right;
+            color: #d4af37;
+        }
+
+        .consultation {
+            background: #1a1f28;
+            padding: 24px 32px;
+            margin: 48px 0;
+            border-left: 2px solid #4a6fa5;
+        }
+
+        .consultation p {
+            font-style: italic;
+            margin-bottom: 12px;
+            color: #b8b5b0;
+        }
+
+        .consultation cite {
+            font-size: 13px;
+            color: #666;
+            font-style: normal;
+        }
+
+        .principles {
+            margin: 48px 0;
+        }
+
+        .principle {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            gap: 24px;
+            padding: 24px 0;
+            border-bottom: 1px solid #1a1f28;
+        }
+
+        .principle-label {
+            font-size: 13px;
+            color: #4a6fa5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .principle-text {
+            color: #999;
+        }
+
+        .cta-section {
+            margin-top: 80px;
+            padding-top: 48px;
+            border-top: 1px solid #2a3040;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            color: #e8e6e3;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            color: #888;
+            margin-bottom: 32px;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: transparent;
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            padding: 14px 40px;
+            text-decoration: none;
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: inherit;
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            color: #4a6fa5;
+            padding: 14px 40px;
+            text-decoration: none;
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        .footer {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 48px 40px;
+            border-top: 1px solid #1a1f28;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .footer h4 {
+            font-size: 11px;
+            font-weight: normal;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            color: #888;
+        }
+
+        .footer ul {
+            list-style: none;
+        }
+
+        .footer li {
+            margin-bottom: 8px;
+        }
+
+        .footer a {
+            color: #666;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">Glintstone</div>
+            <nav class="nav-links">
+                <a href="#">Methodology</a>
+                <a href="#">Documentation</a>
+                <a href="#">Publications</a>
+                <a href="#">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <h1>AI-Assisted Cuneiform Transcription: A Tool for Accelerating Scholarly Work</h1>
+
+        <div class="abstract">
+            <div class="abstract-label">Overview</div>
+            <p>
+                Glintstone is a transcription assistance platform designed to help
+                Assyriologists and institutions process cuneiform tablet collections
+                more efficiently. It combines machine learning for initial sign recognition
+                with structured human verification, maintaining scholarly standards
+                while addressing the scale of untranscribed material.
+            </p>
+        </div>
+
+        <h2>The Scale Challenge</h2>
+        <p>
+            Museum collections worldwide hold an estimated 500,000 or more cuneiform
+            tablets spanning over three millennia of Mesopotamian civilization. The
+            current population of active Assyriologists numbers approximately 200.
+        </p>
+        <p>
+            This represents a structural imbalance between available material and
+            scholarly capacity. Many tablets in major collections have never been
+            fully transcribed, and acquisition of new material continues to outpace
+            processing.
+        </p>
+
+        <table class="data-table">
+            <tr>
+                <th>Metric</th>
+                <th>Estimate</th>
+            </tr>
+            <tr>
+                <td>Tablets in museum collections</td>
+                <td>500,000+</td>
+            </tr>
+            <tr>
+                <td>Active Assyriologists worldwide</td>
+                <td>~200</td>
+            </tr>
+            <tr>
+                <td>Time span represented</td>
+                <td>3,400+ years</td>
+            </tr>
+            <tr>
+                <td>Primary script variants</td>
+                <td>Multiple periods and regions</td>
+            </tr>
+        </table>
+
+        <h2>Methodology</h2>
+        <p>
+            The platform operates on a hybrid model: machine learning handles
+            initial sign identification, producing candidate readings that are
+            then subject to human verification. This approach is designed to
+            reduce time spent on mechanical aspects of transcription while
+            preserving expert judgment for interpretation.
+        </p>
+
+        <div class="methodology">
+            <h3>Workflow Structure</h3>
+            <ol>
+                <li>High-resolution tablet imaging with standardized protocols</li>
+                <li>ML-based sign segmentation and preliminary identification</li>
+                <li>Crowdsourced visual verification of sign shapes</li>
+                <li>Statistical consensus generation with confidence metrics</li>
+                <li>Expert review and correction of machine-generated transcriptions</li>
+                <li>Integration with existing databases (CDLI, ORACC, etc.)</li>
+            </ol>
+        </div>
+
+        <div class="consultation">
+            <p>
+                "The bottleneck has never been a lack of interesting material.
+                It's that transcription is painstaking work, and there simply
+                aren't enough of us. If a tool can handle the initial pass
+                reliably, that changes what's possible."
+            </p>
+            <cite>Feedback from academic consultation</cite>
+        </div>
+
+        <h2>Principles</h2>
+
+        <div class="principles">
+            <div class="principle">
+                <div class="principle-label">Transparency</div>
+                <div class="principle-text">
+                    All transcription confidence levels are visible. Machine-generated
+                    content is clearly marked and distinguished from expert-verified readings.
+                </div>
+            </div>
+            <div class="principle">
+                <div class="principle-label">Interoperability</div>
+                <div class="principle-text">
+                    Output follows established conventions and integrates with existing
+                    digital Assyriology infrastructure including CDLI and ORACC.
+                </div>
+            </div>
+            <div class="principle">
+                <div class="principle-label">Scholarly Control</div>
+                <div class="principle-text">
+                    Expert oversight at every stage. Crowdsourced contributions inform
+                    but do not replace scholarly judgment. Attribution preserved throughout.
+                </div>
+            </div>
+            <div class="principle">
+                <div class="principle-label">Data Governance</div>
+                <div class="principle-text">
+                    Institutional partners retain control over their collections.
+                    Clear data sharing agreements. Respect for existing publication rights.
+                </div>
+            </div>
+        </div>
+
+        <h2>Current Status</h2>
+        <p>
+            Glintstone is in active development, with pilot programs planned in
+            consultation with academic institutions and museum collections. We
+            are seeking partnerships with Assyriologists and institutions interested
+            in participating in validation studies.
+        </p>
+
+        <section class="cta-section">
+            <h2>Collaborate With Us</h2>
+            <p>
+                We welcome discussion with scholars and institutions about
+                potential partnerships and pilot programs.
+            </p>
+            <a href="#" class="btn-primary">Contact for Collaboration</a>
+            <a href="#" class="btn-secondary">View Technical Documentation</a>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div>
+            <h4>Resources</h4>
+            <ul>
+                <li><a href="#">Technical Documentation</a></li>
+                <li><a href="#">API Reference</a></li>
+                <li><a href="#">Data Standards</a></li>
+                <li><a href="#">Publications</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4>Contact</h4>
+            <ul>
+                <li><a href="#">Academic Partnerships</a></li>
+                <li><a href="#">Institutional Collaboration</a></li>
+                <li><a href="#">Technical Inquiries</a></li>
+            </ul>
+        </div>
+    </footer>
+</body>
+</html>

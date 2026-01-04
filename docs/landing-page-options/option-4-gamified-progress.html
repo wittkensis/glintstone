@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glintstone - 500,000 Tablets. One Mission.</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f1419;
+            color: #e8e6e3;
+            line-height: 1.6;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 600;
+            color: #d4af37;
+            letter-spacing: 3px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 60px 40px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+
+        .hero h1 span {
+            color: #d4af37;
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: #888;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .progress-section {
+            padding: 60px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .progress-card {
+            background: #1a1f28;
+            border-radius: 16px;
+            padding: 48px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 24px;
+        }
+
+        .progress-label {
+            font-size: 14px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .progress-numbers {
+            text-align: right;
+        }
+
+        .progress-current {
+            font-size: 14px;
+            color: #d4af37;
+        }
+
+        .progress-bar-container {
+            background: #0f1419;
+            border-radius: 8px;
+            height: 48px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4a6fa5 0%, #d4af37 100%);
+            width: 3%;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #fff;
+            border-radius: 2px;
+        }
+
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            margin-top: 32px;
+            padding-top: 32px;
+            border-top: 1px solid #2a3040;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-value.gold {
+            color: #d4af37;
+        }
+
+        .stat-value.blue {
+            color: #4a6fa5;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .the-gap {
+            padding: 60px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .gap-visual {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr;
+            gap: 24px;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .gap-side {
+            background: #1a1f28;
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .gap-number {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .gap-number.tablets {
+            color: #d4af37;
+        }
+
+        .gap-number.people {
+            color: #4a6fa5;
+        }
+
+        .gap-label {
+            font-size: 14px;
+            color: #888;
+            margin-top: 12px;
+        }
+
+        .gap-vs {
+            font-size: 14px;
+            color: #555;
+            text-align: center;
+        }
+
+        .gap-explanation {
+            text-align: center;
+            color: #888;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .contribute-section {
+            padding: 60px 40px;
+            background: #1a1f28;
+        }
+
+        .contribute-inner {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 48px;
+        }
+
+        .contribution-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+
+        .contrib-card {
+            background: #0f1419;
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid #2a3040;
+        }
+
+        .contrib-icon {
+            width: 48px;
+            height: 48px;
+            background: #2a3040;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .contrib-card h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .contrib-card p {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 16px;
+        }
+
+        .contrib-impact {
+            font-size: 13px;
+            color: #4a6fa5;
+        }
+
+        .milestones {
+            padding: 60px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .milestone-track {
+            position: relative;
+            padding-left: 32px;
+        }
+
+        .milestone-track::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #2a3040;
+        }
+
+        .milestone {
+            position: relative;
+            padding-bottom: 40px;
+        }
+
+        .milestone::before {
+            content: '';
+            position: absolute;
+            left: -28px;
+            top: 4px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #2a3040;
+            border: 2px solid #0f1419;
+        }
+
+        .milestone.reached::before {
+            background: #d4af37;
+        }
+
+        .milestone.current::before {
+            background: #4a6fa5;
+            box-shadow: 0 0 0 4px rgba(74, 111, 165, 0.3);
+        }
+
+        .milestone-content h4 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .milestone-content p {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .milestone-number {
+            font-size: 13px;
+            color: #d4af37;
+            margin-bottom: 4px;
+        }
+
+        .cta-section {
+            padding: 80px 40px;
+            text-align: center;
+            background: linear-gradient(180deg, #0f1419 0%, #1a1f28 100%);
+        }
+
+        .cta-section h2 {
+            font-size: 36px;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            color: #888;
+            font-size: 18px;
+            margin-bottom: 32px;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: #d4af37;
+            color: #0f1419;
+            padding: 16px 48px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .live-counter {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #1a1f28;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #888;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #4a6fa5;
+            border-radius: 50%;
+        }
+
+        .footer {
+            padding: 40px;
+            text-align: center;
+            color: #555;
+            font-size: 13px;
+            border-top: 1px solid #1a1f28;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="logo">GLINTSTONE</div>
+    </nav>
+
+    <section class="hero">
+        <h1><span>500,000</span> tablets.<br>One mission.</h1>
+        <p>Help decode the world's largest collection of unread ancient texts</p>
+    </section>
+
+    <section class="progress-section">
+        <div class="progress-card">
+            <div class="progress-header">
+                <div class="progress-label">Global Transcription Progress</div>
+                <div class="progress-numbers">
+                    <div class="progress-current">Work remaining: hundreds of years at current pace</div>
+                </div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar"></div>
+            </div>
+
+            <div class="progress-stats">
+                <div class="stat-item">
+                    <div class="stat-value gold">500K+</div>
+                    <div class="stat-label">Tablets in collections</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value blue">~200</div>
+                    <div class="stat-label">Active specialists</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">3,000+</div>
+                    <div class="stat-label">Years of history</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="the-gap">
+        <div class="gap-visual">
+            <div class="gap-side">
+                <div class="gap-number tablets">500K</div>
+                <div class="gap-label">tablets waiting</div>
+            </div>
+            <div class="gap-vs">vs</div>
+            <div class="gap-side">
+                <div class="gap-number people">200</div>
+                <div class="gap-label">specialists worldwide</div>
+            </div>
+        </div>
+        <p class="gap-explanation">
+            Museums hold the earliest written records of human civilization.
+            Tax records, love letters, epic poetry, medical texts.
+            Most have never been transcribed. We aim to change that.
+        </p>
+    </section>
+
+    <section class="contribute-section">
+        <div class="contribute-inner">
+            <h2 class="section-title">How You Can Help</h2>
+
+            <div class="contribution-types">
+                <div class="contrib-card">
+                    <div class="contrib-icon">I</div>
+                    <h3>Verify Signs</h3>
+                    <p>
+                        Compare AI-suggested readings against tablet images.
+                        No expertise needed, just your eyes.
+                    </p>
+                    <div class="contrib-impact">5 min = dozens of signs verified</div>
+                </div>
+                <div class="contrib-card">
+                    <div class="contrib-icon">II</div>
+                    <h3>Review Transcriptions</h3>
+                    <p>
+                        For those with language background: review
+                        complete transcriptions for accuracy.
+                    </p>
+                    <div class="contrib-impact">Intermediate skill level</div>
+                </div>
+                <div class="contrib-card">
+                    <div class="contrib-icon">III</div>
+                    <h3>Expert Validation</h3>
+                    <p>
+                        Assyriologists: validate consensus transcriptions
+                        and contribute to the scholarly record.
+                    </p>
+                    <div class="contrib-impact">For credentialed scholars</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="milestones">
+        <h2 class="section-title">The Path Forward</h2>
+
+        <div class="milestone-track">
+            <div class="milestone reached">
+                <div class="milestone-content">
+                    <div class="milestone-number">Phase 1</div>
+                    <h4>Platform Development</h4>
+                    <p>Building the AI transcription engine and contributor interface</p>
+                </div>
+            </div>
+            <div class="milestone current">
+                <div class="milestone-content">
+                    <div class="milestone-number">Phase 2 - Current</div>
+                    <h4>Pilot Programs</h4>
+                    <p>Working with academic institutions to validate methodology</p>
+                </div>
+            </div>
+            <div class="milestone">
+                <div class="milestone-content">
+                    <div class="milestone-number">Phase 3</div>
+                    <h4>Public Launch</h4>
+                    <p>Open platform for contributors worldwide</p>
+                </div>
+            </div>
+            <div class="milestone">
+                <div class="milestone-content">
+                    <div class="milestone-number">Phase 4</div>
+                    <h4>Museum Partnerships</h4>
+                    <p>Direct integration with major collection databases</p>
+                </div>
+            </div>
+            <div class="milestone">
+                <div class="milestone-content">
+                    <div class="milestone-number">Long-term Goal</div>
+                    <h4>Complete the Archive</h4>
+                    <p>A fully transcribed record of Mesopotamian texts</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <h2>Your contribution could be the key</h2>
+        <p>Join the effort to unlock ancient wisdom</p>
+        <a href="#" class="btn-primary">Start Contributing</a>
+        <div class="live-counter">
+            <span class="live-dot"></span>
+            <span>Join early access</span>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>Glintstone - AI-Powered Cuneiform Transcription</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glintstone - What Secrets Are Waiting?</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background-color: #0f1419;
+            color: #e8e6e3;
+            line-height: 1.7;
+        }
+
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .logo {
+            font-family: -apple-system, sans-serif;
+            font-size: 14px;
+            letter-spacing: 6px;
+            color: #d4af37;
+            text-transform: uppercase;
+            margin-bottom: 80px;
+        }
+
+        .hero h1 {
+            font-size: clamp(32px, 5vw, 52px);
+            font-weight: 400;
+            max-width: 700px;
+            line-height: 1.3;
+            margin-bottom: 32px;
+        }
+
+        .hero-sub {
+            font-size: 20px;
+            color: #888;
+            max-width: 500px;
+            margin-bottom: 60px;
+        }
+
+        .scroll-hint {
+            color: #4a6fa5;
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+
+        .questions-section {
+            padding: 100px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .question-block {
+            margin-bottom: 80px;
+            padding-bottom: 80px;
+            border-bottom: 1px solid #1a1f28;
+        }
+
+        .question-block:last-child {
+            border-bottom: none;
+        }
+
+        .question {
+            font-size: clamp(24px, 4vw, 36px);
+            color: #d4af37;
+            margin-bottom: 32px;
+            line-height: 1.3;
+        }
+
+        .answer {
+            font-size: 18px;
+            color: #999;
+            max-width: 700px;
+        }
+
+        .answer p {
+            margin-bottom: 20px;
+        }
+
+        .discovery-grid {
+            padding: 80px 40px;
+            background: #1a1f28;
+        }
+
+        .discovery-inner {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .discovery-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .discovery-header h2 {
+            font-size: 28px;
+            font-weight: 400;
+            margin-bottom: 16px;
+        }
+
+        .discovery-header p {
+            color: #888;
+        }
+
+        .discoveries {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .discovery-card {
+            background: #0f1419;
+            padding: 32px;
+            border-radius: 4px;
+        }
+
+        .discovery-type {
+            font-family: -apple-system, sans-serif;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: #4a6fa5;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .discovery-card h3 {
+            font-size: 20px;
+            font-weight: 400;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        .discovery-card p {
+            font-size: 15px;
+            color: #888;
+        }
+
+        .the-problem {
+            padding: 100px 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .the-problem h2 {
+            font-size: 32px;
+            font-weight: 400;
+            margin-bottom: 40px;
+        }
+
+        .problem-stats {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .problem-stat {
+            text-align: center;
+        }
+
+        .problem-number {
+            font-size: 48px;
+            color: #d4af37;
+            font-weight: 300;
+        }
+
+        .problem-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .problem-text {
+            font-size: 18px;
+            color: #888;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .approach {
+            padding: 80px 40px;
+            background: linear-gradient(180deg, #0f1419 0%, #1a1f28 50%, #0f1419 100%);
+        }
+
+        .approach-inner {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .approach h2 {
+            font-size: 28px;
+            font-weight: 400;
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .approach-steps {
+            display: grid;
+            gap: 32px;
+        }
+
+        .approach-step {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .step-marker {
+            width: 48px;
+            height: 48px;
+            border: 1px solid #4a6fa5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4a6fa5;
+            font-size: 18px;
+        }
+
+        .step-content h3 {
+            font-size: 18px;
+            font-weight: 400;
+            margin-bottom: 8px;
+            color: #e8e6e3;
+        }
+
+        .step-content p {
+            color: #888;
+            font-size: 15px;
+        }
+
+        .cta-section {
+            padding: 120px 40px;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 36px;
+            font-weight: 400;
+            margin-bottom: 24px;
+        }
+
+        .cta-section p {
+            font-size: 18px;
+            color: #888;
+            margin-bottom: 48px;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: #d4af37;
+            color: #0f1419;
+            padding: 18px 48px;
+            text-decoration: none;
+            font-family: -apple-system, sans-serif;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .btn-text {
+            display: block;
+            margin-top: 24px;
+            color: #4a6fa5;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .footer {
+            padding: 40px;
+            text-align: center;
+            color: #555;
+            font-size: 13px;
+            border-top: 1px solid #1a1f28;
+        }
+
+        .quote-section {
+            padding: 80px 40px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .quote {
+            font-size: 24px;
+            font-style: italic;
+            color: #b8b5b0;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .quote-attribution {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <div class="logo">Glintstone</div>
+        <h1>What stories have been waiting 3,000 years to be read?</h1>
+        <p class="hero-sub">
+            Half a million ancient tablets sit in museums worldwide.
+            Most have never been transcribed.
+        </p>
+        <div class="scroll-hint">Hidden mysteries. Crowdsourced discovery.</div>
+    </section>
+
+    <section class="questions-section">
+        <div class="question-block">
+            <div class="question">What if there's a lost chapter of Gilgamesh in a museum drawer?</div>
+            <div class="answer">
+                <p>
+                    The Epic of Gilgamesh was pieced together from dozens of tablets found
+                    across different sites over more than a century. New fragments are still
+                    being identified. The most recent major addition was discovered in 2015.
+                </p>
+                <p>
+                    There could be more. We won't know until we look.
+                </p>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question">What observations did Babylonian astronomers record that we've never seen?</div>
+            <div class="answer">
+                <p>
+                    Ancient Mesopotamians tracked celestial events for centuries. Their records
+                    include observations of comets, eclipses, and planetary movements that
+                    modern astronomers use to calibrate historical chronologies.
+                </p>
+                <p>
+                    Thousands of astronomical texts remain unread in collections.
+                </p>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question">Whose letter home never got answered?</div>
+            <div class="answer">
+                <p>
+                    Among the tablets are personal letters: merchants writing to family,
+                    soldiers to loved ones, children to parents. Complaints about business
+                    partners, requests for supplies, expressions of worry.
+                </p>
+                <p>
+                    These voices from the past are as human as anything written today.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="discovery-grid">
+        <div class="discovery-inner">
+            <div class="discovery-header">
+                <h2>What These Tablets Might Contain</h2>
+                <p>Categories of content found in cuneiform archives</p>
+            </div>
+
+            <div class="discoveries">
+                <div class="discovery-card">
+                    <div class="discovery-type">Literary</div>
+                    <h3>Unknown texts and variants</h3>
+                    <p>
+                        Poems, myths, and stories that may have no known copies,
+                        or versions that differ from standard texts.
+                    </p>
+                </div>
+                <div class="discovery-card">
+                    <div class="discovery-type">Scientific</div>
+                    <h3>Medical and astronomical records</h3>
+                    <p>
+                        Treatments, observations, and calculations that reveal
+                        ancient understanding of the natural world.
+                    </p>
+                </div>
+                <div class="discovery-card">
+                    <div class="discovery-type">Historical</div>
+                    <h3>Royal and administrative records</h3>
+                    <p>
+                        Accounts of events, decisions, and daily operations
+                        that fill gaps in our historical knowledge.
+                    </p>
+                </div>
+                <div class="discovery-card">
+                    <div class="discovery-type">Personal</div>
+                    <h3>Letters and private documents</h3>
+                    <p>
+                        The unfiltered voices of ordinary people: their concerns,
+                        relationships, and daily lives.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="quote-section">
+        <blockquote class="quote">
+            "Every tablet we transcribe is a voice from the past finally being heard.
+            We can't know which ones hold the discoveries until we read them."
+        </blockquote>
+        <div class="quote-attribution">Feedback from academic consultation</div>
+    </section>
+
+    <section class="the-problem">
+        <h2>Why They Remain Unread</h2>
+
+        <div class="problem-stats">
+            <div class="problem-stat">
+                <div class="problem-number">500K+</div>
+                <div class="problem-label">tablets in collections</div>
+            </div>
+            <div class="problem-stat">
+                <div class="problem-number">~200</div>
+                <div class="problem-label">active specialists</div>
+            </div>
+        </div>
+
+        <p class="problem-text">
+            Transcribing cuneiform is painstaking work requiring specialized expertise.
+            At the current pace, processing the full backlog would take centuries.
+            Most tablets have sat untouched for decades.
+        </p>
+    </section>
+
+    <section class="approach">
+        <div class="approach-inner">
+            <h2>A New Path Forward</h2>
+
+            <div class="approach-steps">
+                <div class="approach-step">
+                    <div class="step-marker">1</div>
+                    <div class="step-content">
+                        <h3>AI does the first pass</h3>
+                        <p>
+                            Machine learning identifies and suggests readings for
+                            individual signs, handling the mechanical work.
+                        </p>
+                    </div>
+                </div>
+                <div class="approach-step">
+                    <div class="step-marker">2</div>
+                    <div class="step-content">
+                        <h3>Contributors verify visually</h3>
+                        <p>
+                            Anyone can compare suggested readings against tablet images.
+                            No expertise required - just pattern matching.
+                        </p>
+                    </div>
+                </div>
+                <div class="approach-step">
+                    <div class="step-marker">3</div>
+                    <div class="step-content">
+                        <h3>Consensus builds confidence</h3>
+                        <p>
+                            Multiple independent verifications create reliable readings.
+                            Statistical methods identify when agreement is strong.
+                        </p>
+                    </div>
+                </div>
+                <div class="approach-step">
+                    <div class="step-marker">4</div>
+                    <div class="step-content">
+                        <h3>Scholars validate and interpret</h3>
+                        <p>
+                            Experts review transcriptions, correct errors, and unlock
+                            the meaning. The hard work remains scholarly.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <h2>Ancient voices await</h2>
+        <p>Help us find out what they have to say.</p>
+        <a href="#" class="btn-primary">Join the Search</a>
+        <a href="#" class="btn-text">Learn more about how it works</a>
+    </section>
+
+    <footer class="footer">
+        <p>Glintstone - Crowdsourced Cuneiform Discovery</p>
+    </footer>
+</body>
+</html>

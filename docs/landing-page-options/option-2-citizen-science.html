@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glintstone - Help Decode Ancient Tablets</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f1419;
+            color: #e8e6e3;
+            line-height: 1.6;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav-logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #d4af37;
+            letter-spacing: 2px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .hero {
+            padding: 80px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+        }
+
+        .hero-content h1 {
+            font-size: 44px;
+            font-weight: 600;
+            line-height: 1.2;
+            margin-bottom: 24px;
+        }
+
+        .hero-content h1 span {
+            color: #d4af37;
+        }
+
+        .hero-content p {
+            font-size: 18px;
+            color: #999;
+            margin-bottom: 32px;
+        }
+
+        .hero-visual {
+            background: #1a1f28;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .tablet-preview {
+            background: #252b36;
+            border-radius: 8px;
+            padding: 32px;
+            margin-bottom: 24px;
+            font-family: monospace;
+            font-size: 24px;
+            letter-spacing: 8px;
+            color: #d4af37;
+        }
+
+        .preview-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: #d4af37;
+            color: #0f1419;
+            padding: 14px 32px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 6px;
+            margin-right: 16px;
+        }
+
+        .btn-outline {
+            display: inline-block;
+            border: 1px solid #4a6fa5;
+            color: #4a6fa5;
+            padding: 14px 32px;
+            text-decoration: none;
+            font-size: 15px;
+            border-radius: 6px;
+        }
+
+        .how-it-works {
+            background: #1a1f28;
+            padding: 80px 40px;
+        }
+
+        .section-inner {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-header h2 {
+            font-size: 32px;
+            margin-bottom: 16px;
+        }
+
+        .section-header p {
+            color: #888;
+            font-size: 16px;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 32px;
+        }
+
+        .step {
+            background: #0f1419;
+            border-radius: 8px;
+            padding: 32px;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #4a6fa5;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .step h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .step p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .no-expertise {
+            padding: 80px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .no-expertise h2 {
+            font-size: 28px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .faq-item {
+            background: #1a1f28;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .faq-item h4 {
+            color: #d4af37;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .faq-item p {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .the-challenge {
+            padding: 80px 40px;
+            background: linear-gradient(180deg, #0f1419 0%, #1a1f28 100%);
+        }
+
+        .challenge-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .challenge-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .challenge-stats {
+            text-align: center;
+        }
+
+        .big-number {
+            font-size: 64px;
+            font-weight: 700;
+            color: #d4af37;
+            line-height: 1;
+        }
+
+        .big-number-label {
+            font-size: 14px;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        .stat-divider {
+            height: 1px;
+            background: #2a3040;
+            margin: 24px 0;
+        }
+
+        .challenge-text h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .challenge-text p {
+            color: #999;
+            margin-bottom: 16px;
+        }
+
+        .partners {
+            padding: 60px 40px;
+            border-top: 1px solid #1a1f28;
+        }
+
+        .partners-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .partners-label {
+            font-size: 12px;
+            color: #666;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        .partners-list {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 32px;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .cta-section {
+            padding: 80px 40px;
+            text-align: center;
+            background: #1a1f28;
+        }
+
+        .cta-section h2 {
+            font-size: 36px;
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            color: #888;
+            margin-bottom: 32px;
+            font-size: 18px;
+        }
+
+        .footer {
+            padding: 40px;
+            text-align: center;
+            color: #555;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-logo">GLINTSTONE</div>
+        <div class="nav-links">
+            <a href="#">How It Works</a>
+            <a href="#">About</a>
+            <a href="#">For Researchers</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Help decode <span>ancient history</span> - no expertise required</h1>
+            <p>
+                Join thousands of contributors transcribing 3,000-year-old
+                cuneiform tablets. Our AI guides you through each sign.
+            </p>
+            <a href="#" class="btn-primary">Start Contributing</a>
+            <a href="#" class="btn-outline">Watch Demo</a>
+        </div>
+        <div class="hero-visual">
+            <div class="tablet-preview">
+                <span style="opacity: 0.4;">?</span>
+                <span style="opacity: 0.6;">?</span>
+                <span style="opacity: 0.8;">?</span>
+                <span>?</span>
+            </div>
+            <div class="preview-label">
+                AI suggests signs. You verify. Scholars review.
+            </div>
+        </div>
+    </section>
+
+    <section class="how-it-works">
+        <div class="section-inner">
+            <div class="section-header">
+                <h2>How It Works</h2>
+                <p>No ancient language skills needed. Just your eyes and attention.</p>
+            </div>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>View a tablet fragment</h3>
+                    <p>
+                        We show you a small section of a tablet image,
+                        focused on one or a few cuneiform signs.
+                    </p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Compare AI suggestions</h3>
+                    <p>
+                        Our AI proposes possible readings. You compare
+                        the shapes visually - like a matching game.
+                    </p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Vote on the best match</h3>
+                    <p>
+                        Select the option that looks most like what you see.
+                        Multiple contributors verify each sign.
+                    </p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>Experts validate</h3>
+                    <p>
+                        Assyriologists review consensus transcriptions,
+                        ensuring accuracy while working more efficiently.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="no-expertise">
+        <h2>You really don't need expertise</h2>
+
+        <div class="faq-grid">
+            <div class="faq-item">
+                <h4>I don't know any ancient languages</h4>
+                <p>
+                    You don't need to. You're doing visual pattern matching,
+                    not translation. If a sign looks like a bird footprint,
+                    you can recognize that.
+                </p>
+            </div>
+            <div class="faq-item">
+                <h4>How can my work be useful?</h4>
+                <p>
+                    Crowd consensus is powerful. When many people independently
+                    agree on what a sign looks like, that's strong evidence.
+                    Experts review the results.
+                </p>
+            </div>
+            <div class="faq-item">
+                <h4>What if I make mistakes?</h4>
+                <p>
+                    Everyone does. The system is designed for it. Each sign gets
+                    multiple independent readings, and statistical methods
+                    identify reliable consensus.
+                </p>
+            </div>
+            <div class="faq-item">
+                <h4>How much time does it take?</h4>
+                <p>
+                    As little or as much as you want. One sign takes seconds.
+                    Some people do five minutes a day, others spend hours.
+                    Every contribution helps.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="the-challenge">
+        <div class="challenge-grid">
+            <div class="challenge-stats">
+                <div class="big-number">500K+</div>
+                <div class="big-number-label">tablets in museums worldwide</div>
+                <div class="stat-divider"></div>
+                <div class="big-number" style="font-size: 48px;">~200</div>
+                <div class="big-number-label">active Assyriologists</div>
+            </div>
+            <div class="challenge-text">
+                <h2>The backlog problem</h2>
+                <p>
+                    Museums hold over half a million cuneiform tablets - the earliest
+                    records of human civilization. Everything from royal decrees to
+                    shopping lists to love letters.
+                </p>
+                <p>
+                    There are only about 200 people in the world actively transcribing
+                    them. At current rates, processing the full collection would take
+                    centuries.
+                </p>
+                <p>
+                    Glintstone uses AI to do the initial heavy lifting, but human eyes
+                    are still essential for verification. That's where you come in.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="partners">
+        <div class="partners-inner">
+            <div class="partners-label">Developed in consultation with</div>
+            <div class="partners-list">
+                <span>University Collections</span>
+                <span>Museum Archives</span>
+                <span>Digital Humanities Labs</span>
+                <span>Assyriology Departments</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <h2>Every sign tells a story</h2>
+        <p>Help unlock it.</p>
+        <a href="#" class="btn-primary">Get Started - It's Free</a>
+    </section>
+
+    <footer class="footer">
+        <p>Glintstone - Crowdsourced Cuneiform Transcription</p>
+    </footer>
+</body>
+</html>

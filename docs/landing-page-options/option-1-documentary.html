@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glintstone - Decipher 3,000 Years of Human History</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background-color: #0f1419;
+            color: #e8e6e3;
+            line-height: 1.7;
+        }
+
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .chapter-marker {
+            color: #d4af37;
+            font-size: 12px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: clamp(36px, 6vw, 56px);
+            font-weight: 400;
+            line-height: 1.2;
+            margin-bottom: 40px;
+            color: #fff;
+        }
+
+        .lede {
+            font-size: 22px;
+            color: #b8b5b0;
+            margin-bottom: 60px;
+            max-width: 680px;
+        }
+
+        .divider {
+            width: 80px;
+            height: 1px;
+            background: #d4af37;
+            margin: 60px 0;
+        }
+
+        .section {
+            padding: 80px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            color: #d4af37;
+            font-size: 12px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 32px;
+        }
+
+        .narrative {
+            font-size: 20px;
+            color: #b8b5b0;
+            margin-bottom: 32px;
+        }
+
+        .highlight-block {
+            background: #1a1f28;
+            border-left: 3px solid #d4af37;
+            padding: 32px 40px;
+            margin: 48px 0;
+        }
+
+        .highlight-block p {
+            font-size: 18px;
+            color: #e8e6e3;
+            font-style: italic;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin: 60px 0;
+            padding: 40px 0;
+            border-top: 1px solid #2a3040;
+            border-bottom: 1px solid #2a3040;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 14px;
+            color: #d4af37;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .timeline {
+            margin: 60px 0;
+        }
+
+        .timeline-item {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 40px;
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid #1a1f28;
+        }
+
+        .timeline-date {
+            color: #d4af37;
+            font-size: 14px;
+        }
+
+        .timeline-content {
+            color: #b8b5b0;
+        }
+
+        .call-to-action {
+            background: #1a1f28;
+            padding: 80px 40px;
+            text-align: center;
+        }
+
+        .cta-inner {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .cta-title {
+            font-size: 32px;
+            color: #fff;
+            margin-bottom: 24px;
+        }
+
+        .cta-text {
+            color: #b8b5b0;
+            margin-bottom: 40px;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: #d4af37;
+            color: #0f1419;
+            padding: 16px 40px;
+            text-decoration: none;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: inherit;
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            border: 1px solid #4a6fa5;
+            color: #4a6fa5;
+            padding: 16px 40px;
+            text-decoration: none;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-left: 16px;
+        }
+
+        .footer {
+            padding: 40px;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .logo {
+            font-size: 18px;
+            letter-spacing: 6px;
+            color: #d4af37;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <div class="logo">Glintstone</div>
+        <div class="chapter-marker">The Unread Archive</div>
+        <h1>Beneath museum glass, half a million voices wait in silence</h1>
+        <p class="lede">
+            Ancient Mesopotamians recorded their laws, their loves, their recipes,
+            and their fears on clay tablets. Most have never been read by modern eyes.
+        </p>
+    </section>
+
+    <div class="divider" style="margin: 0 auto;"></div>
+
+    <section class="section">
+        <div class="section-title">The Scale of What Remains</div>
+        <p class="narrative">
+            More than 500,000 cuneiform tablets sit in museum collections around the world.
+            They represent the earliest chapters of written human history, spanning over
+            three millennia of Mesopotamian civilization.
+        </p>
+        <p class="narrative">
+            There are approximately 200 active Assyriologists working today. At the current
+            pace of academic scholarship, processing this backlog would take centuries.
+        </p>
+
+        <div class="stats-row">
+            <div class="stat">
+                <div class="stat-number">500,000+</div>
+                <div class="stat-label">Tablets in collections</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">~200</div>
+                <div class="stat-label">Active specialists worldwide</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">3,000+</div>
+                <div class="stat-label">Years of history</div>
+            </div>
+        </div>
+
+        <div class="highlight-block">
+            <p>
+                "We may be sitting on records of lost astronomical observations,
+                unknown literary works, or details of daily life that could reshape
+                our understanding of the ancient world."
+            </p>
+            <p style="margin-top: 16px; font-style: normal; font-size: 13px; color: #888;">
+                Feedback from academic consultation
+            </p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-title">What These Tablets Contain</div>
+
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-date">Administrative</div>
+                <div class="timeline-content">
+                    Tax records, inventories, worker rosters, and trade accounts
+                    that reveal the economics of ancient empires
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">Literary</div>
+                <div class="timeline-content">
+                    Epic poetry, hymns, proverbs, and stories including versions
+                    of texts that predate the Hebrew Bible
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">Scientific</div>
+                <div class="timeline-content">
+                    Medical treatments, astronomical observations, and mathematical
+                    calculations that influenced later civilizations
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">Personal</div>
+                <div class="timeline-content">
+                    Letters between family members, marriage contracts,
+                    and complaints to authorities that humanize the ancient world
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-title">A New Approach</div>
+        <p class="narrative">
+            Glintstone combines artificial intelligence with human expertise to accelerate
+            cuneiform transcription. Machine learning handles initial sign recognition,
+            while contributors verify and refine the results.
+        </p>
+        <p class="narrative">
+            This is not a replacement for scholarly work. It is a tool to help
+            scholars and institutions process what would otherwise remain unread
+            for generations.
+        </p>
+    </section>
+
+    <section class="call-to-action">
+        <div class="cta-inner">
+            <h2 class="cta-title">Ancient voices await</h2>
+            <p class="cta-text">
+                Join the effort to unlock 3,000 years of human history.
+            </p>
+            <a href="#" class="btn-primary">Begin Contributing</a>
+            <a href="#" class="btn-secondary">Learn More</a>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>Glintstone - AI-Powered Cuneiform Transcription</p>
+        <p style="margin-top: 8px;">
+            A collaboration between technologists, scholars, and cultural institutions
+        </p>
+    </footer>
+</body>
+</html>
