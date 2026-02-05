@@ -6,8 +6,9 @@
 
 // Configuration
 define('THUMBNAIL_SIZE', 200);
-define('THUMBNAIL_DIR', dirname(__DIR__) . '/cache/thumbnails');
-define('LOCAL_IMAGE_DIR', dirname(__DIR__) . '/images/photo');
+define('CDLI_BASE', '/Volumes/Portable Storage/CUNEIFORM/CDLI/images');
+define('THUMBNAIL_DIR', CDLI_BASE . '/thumbnails');
+define('LOCAL_IMAGE_DIR', CDLI_BASE);
 
 // Ensure thumbnail directory exists
 if (!is_dir(THUMBNAIL_DIR)) {

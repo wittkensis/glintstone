@@ -29,8 +29,8 @@ $composites = getComposites($pNumber);
 $pageTitle = $tablet['p_number'];
 
 // Calculate image path - prefer local, fall back to CDLI
-$localImagePath = "/images/photo/{$pNumber}.jpg";
-$localImageExists = file_exists(dirname(__DIR__) . "/images/photo/{$pNumber}.jpg");
+$localImagePath = "/images/{$pNumber}.jpg";
+$localImageExists = file_exists(dirname(__DIR__) . "/images/{$pNumber}.jpg");
 $cdliImageUrl = "https://cdli.ucla.edu/dl/photo/{$pNumber}.jpg";
 $cdliLineartUrl = "https://cdli.ucla.edu/dl/lineart/{$pNumber}.jpg";
 
