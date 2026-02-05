@@ -1,0 +1,74 @@
+# Glintstone Project .gitignore
+
+# Large data files (use git-lfs or external storage)
+*.tar.gz
+*.zip
+*.pkl
+*.pth
+*.ckpt
+*.h5
+*.pt
+
+# Raw data directories (too large for git)
+CDLI/images/
+CDLI/atf/
+ORACC/*/extracted/
+ORACC/*/*.zip
+ML_MODELS/deepscribe/artifacts/
+ML_MODELS/deepscribe/deepscribe_weights.tar.gz
+ML_MODELS/ebl_ocr/*.tar.gz
+ML_MODELS/ebl_ocr/*/
+ML_MODELS/akkademia/raw_data/
+ML_MODELS/akkademia/akkadian/output/*.pkl
+ML_MODELS/akkademia/trans_result*/
+ML_MODELS/akkademia/not_divided_by_three_dots_result*/
+ML_MODELS/akkademia/dist/
+ML_MODELS/akkademia/build/
+ePSD2/unicode/DerivedName.txt
+
+# Keep small metadata files
+!CDLI/catalogue/*.json
+!CDLI/manifest.json
+!ORACC/*/glossaries/
+!ORACC/*/json/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+.eggs/
+
+# PHP
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+_logs/*.log
+*.log
+
+# Database (local development)
+app/*.db
+app/*.sqlite
+
+# Environment
+.env
+.env.local
+
+# Temporary
+_progress/*.tmp
+*.tmp
