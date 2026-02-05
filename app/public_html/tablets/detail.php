@@ -427,7 +427,7 @@ function updateImageSource(source) {
     }
 }
 
-// Add loaded class when image loads
+// Add loaded class when image loads and trigger thumbnail caching
 document.addEventListener('DOMContentLoaded', function() {
     const img = document.querySelector('.image-container img');
     if (img) {
@@ -435,9 +435,30 @@ document.addEventListener('DOMContentLoaded', function() {
         img.onload = function() {
             this.classList.remove('loading');
             this.classList.add('loaded');
+
+            // Trigger thumbnail generation in background if image loaded from CDLI
+            if (this.src.includes('cdli.ucla.edu')) {
+                cacheThumbnail();
+            }
         };
     }
 });
+
+// Cache thumbnail in background when viewing from CDLI
+function cacheThumbnail() {
+    const pNumber = '<?= htmlspecialchars($pNumber) ?>';
+    // Prefetch thumbnail to cache it for list views
+    const thumbnailUrl = `/api/thumbnail.php?p=${pNumber}&size=200`;
+    fetch(thumbnailUrl, { method: 'GET' })
+        .then(response => {
+            if (response.ok) {
+                console.log('Thumbnail cached for', pNumber);
+            }
+        })
+        .catch(() => {
+            // Silent fail - thumbnail caching is non-critical
+        });
+}
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -92,31 +92,42 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="tablet-grid">
                     <?php foreach ($results as $tablet): ?>
                     <a href="detail.php?p=<?= urlencode($tablet['p_number']) ?>" class="tablet-card">
-                        <div class="tablet-header">
-                            <span class="p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
-                            <span class="quality-score" title="Quality Score">
-                                <?= round(($tablet['quality_score'] ?? 0) * 100) ?>%
-                            </span>
+                        <div class="tablet-thumbnail">
+                            <img src="/api/thumbnail.php?p=<?= urlencode($tablet['p_number']) ?>&size=200"
+                                 alt="<?= htmlspecialchars($tablet['designation'] ?? $tablet['p_number']) ?>"
+                                 loading="lazy"
+                                 onerror="this.parentElement.classList.add('no-image')">
+                            <div class="thumbnail-placeholder">
+                                <span class="cuneiform-icon">𒀭</span>
+                            </div>
                         </div>
-                        <div class="tablet-designation">
-                            <?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?>
-                        </div>
-                        <div class="tablet-meta">
-                            <?php if ($tablet['museum_no']): ?>
-                                <span><?= htmlspecialchars($tablet['museum_no']) ?></span>
-                            <?php endif; ?>
-                            <?php if ($tablet['provenience']): ?>
-                                <span><?= htmlspecialchars($tablet['provenience']) ?></span>
-                            <?php endif; ?>
-                            <?php if ($tablet['period']): ?>
-                                <span><?= htmlspecialchars($tablet['period']) ?></span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="pipeline-status">
-                            <span class="status-dot <?= $tablet['has_image'] ? 'complete' : 'missing' ?>" title="Image"></span>
-                            <span class="status-dot <?= $tablet['has_atf'] ? 'complete' : 'missing' ?>" title="ATF"></span>
-                            <span class="status-dot <?= $tablet['has_lemmas'] ? 'complete' : 'missing' ?>" title="Lemmas"></span>
-                            <span class="status-dot missing" title="Translation"></span>
+                        <div class="tablet-info">
+                            <div class="tablet-header">
+                                <span class="p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
+                                <span class="quality-score" title="Quality Score">
+                                    <?= round(($tablet['quality_score'] ?? 0) * 100) ?>%
+                                </span>
+                            </div>
+                            <div class="tablet-designation">
+                                <?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?>
+                            </div>
+                            <div class="tablet-meta">
+                                <?php if ($tablet['museum_no']): ?>
+                                    <span><?= htmlspecialchars($tablet['museum_no']) ?></span>
+                                <?php endif; ?>
+                                <?php if ($tablet['provenience']): ?>
+                                    <span><?= htmlspecialchars($tablet['provenience']) ?></span>
+                                <?php endif; ?>
+                                <?php if ($tablet['period']): ?>
+                                    <span><?= htmlspecialchars($tablet['period']) ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="pipeline-status">
+                                <span class="status-dot <?= $tablet['has_image'] ? 'complete' : 'missing' ?>" title="Image"></span>
+                                <span class="status-dot <?= $tablet['has_atf'] ? 'complete' : 'missing' ?>" title="ATF"></span>
+                                <span class="status-dot <?= $tablet['has_lemmas'] ? 'complete' : 'missing' ?>" title="Lemmas"></span>
+                                <span class="status-dot missing" title="Translation"></span>
+                            </div>
                         </div>
                     </a>
                     <?php endforeach; ?>
@@ -251,6 +262,87 @@ require_once __DIR__ . '/../includes/header.php';
 
 .search-tips li:last-child {
     border-bottom: none;
+}
+
+/* Thumbnail styles */
+.tablet-thumbnail {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    background: var(--color-surface);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    overflow: hidden;
+}
+
+.tablet-thumbnail img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.tablet-card:hover .tablet-thumbnail img {
+    transform: scale(1.05);
+}
+
+.thumbnail-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    z-index: -1;
+}
+
+.thumbnail-placeholder .cuneiform-icon {
+    font-family: 'Noto Sans Cuneiform', serif;
+    font-size: 3rem;
+    color: var(--color-border);
+    opacity: 0.5;
+}
+
+.tablet-thumbnail.no-image img {
+    display: none;
+}
+
+.tablet-thumbnail.no-image .thumbnail-placeholder {
+    z-index: 1;
+}
+
+.tablet-info {
+    padding: var(--space-3);
+}
+
+.tablet-card {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+.tablet-card .tablet-header,
+.tablet-card .tablet-designation,
+.tablet-card .tablet-meta {
+    padding: 0;
+}
+
+.tablet-card .tablet-header {
+    margin-bottom: var(--space-2);
+}
+
+.tablet-card .tablet-meta {
+    margin-top: var(--space-2);
+}
+
+.tablet-card .pipeline-status {
+    margin-top: var(--space-2);
 }
 </style>
 

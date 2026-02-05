@@ -62,28 +62,39 @@ $stats = [
             while ($tablet = $tablets->fetchArray(SQLITE3_ASSOC)):
             ?>
             <a href="/tablets/detail.php?p=<?= urlencode($tablet['p_number']) ?>" class="tablet-card">
-                <div class="tablet-header">
-                    <span class="p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
-                    <span class="quality-score" title="Quality Score">
-                        <?= round(($tablet['quality_score'] ?? 0) * 100) ?>%
-                    </span>
+                <div class="tablet-thumbnail">
+                    <img src="/api/thumbnail.php?p=<?= urlencode($tablet['p_number']) ?>&size=200"
+                         alt="<?= htmlspecialchars($tablet['designation'] ?? $tablet['p_number']) ?>"
+                         loading="lazy"
+                         onerror="this.parentElement.classList.add('no-image')">
+                    <div class="thumbnail-placeholder">
+                        <span class="cuneiform-icon">𒀭</span>
+                    </div>
                 </div>
-                <div class="tablet-designation">
-                    <?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?>
-                </div>
-                <div class="tablet-meta">
-                    <?php if ($tablet['museum_no']): ?>
-                        <span><?= htmlspecialchars($tablet['museum_no']) ?></span>
-                    <?php endif; ?>
-                    <?php if ($tablet['material']): ?>
-                        <span><?= htmlspecialchars($tablet['material']) ?></span>
-                    <?php endif; ?>
-                </div>
-                <div class="pipeline-status">
-                    <span class="status-dot <?= $tablet['has_image'] ? 'complete' : 'missing' ?>" title="Image"></span>
-                    <span class="status-dot <?= $tablet['has_atf'] ? 'complete' : 'missing' ?>" title="ATF"></span>
-                    <span class="status-dot missing" title="Lemmas"></span>
-                    <span class="status-dot missing" title="Translation"></span>
+                <div class="tablet-info">
+                    <div class="tablet-header">
+                        <span class="p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
+                        <span class="quality-score" title="Quality Score">
+                            <?= round(($tablet['quality_score'] ?? 0) * 100) ?>%
+                        </span>
+                    </div>
+                    <div class="tablet-designation">
+                        <?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?>
+                    </div>
+                    <div class="tablet-meta">
+                        <?php if ($tablet['museum_no']): ?>
+                            <span><?= htmlspecialchars($tablet['museum_no']) ?></span>
+                        <?php endif; ?>
+                        <?php if ($tablet['material']): ?>
+                            <span><?= htmlspecialchars($tablet['material']) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="pipeline-status">
+                        <span class="status-dot <?= $tablet['has_image'] ? 'complete' : 'missing' ?>" title="Image"></span>
+                        <span class="status-dot <?= $tablet['has_atf'] ? 'complete' : 'missing' ?>" title="ATF"></span>
+                        <span class="status-dot missing" title="Lemmas"></span>
+                        <span class="status-dot missing" title="Translation"></span>
+                    </div>
                 </div>
             </a>
             <?php endwhile; ?>

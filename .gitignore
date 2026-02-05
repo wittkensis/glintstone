@@ -72,3 +72,6 @@ app/*.sqlite
 # Temporary
 _progress/*.tmp
 *.tmp
+
+# Cache (thumbnails, etc.)
+app/public_html/cache/

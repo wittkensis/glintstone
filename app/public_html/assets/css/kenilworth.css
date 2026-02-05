@@ -669,3 +669,88 @@ a:hover {
 .atf-word:hover {
     background: rgba(201, 169, 98, 0.2);
 }
+
+/* ==========================================================================
+   Thumbnail Component
+   ========================================================================== */
+
+.tablet-thumbnail {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%; /* 1:1 aspect ratio */
+    background: var(--color-surface);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    overflow: hidden;
+}
+
+.tablet-thumbnail img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.tablet-card:hover .tablet-thumbnail img {
+    transform: scale(1.05);
+}
+
+.thumbnail-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    z-index: -1;
+}
+
+.thumbnail-placeholder .cuneiform-icon {
+    font-family: 'Noto Sans Cuneiform', serif;
+    font-size: 3rem;
+    color: var(--color-border);
+    opacity: 0.5;
+}
+
+.tablet-thumbnail.no-image img {
+    display: none;
+}
+
+.tablet-thumbnail.no-image .thumbnail-placeholder {
+    z-index: 1;
+}
+
+.tablet-info {
+    padding: var(--space-3);
+}
+
+/* Updated tablet-card for thumbnail layout */
+.tablet-card {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+.tablet-card .tablet-header {
+    padding: 0;
+    margin-bottom: var(--space-2);
+}
+
+.tablet-card .tablet-designation {
+    padding: 0;
+}
+
+.tablet-card .tablet-meta {
+    padding: 0;
+    margin-top: var(--space-2);
+}
+
+.tablet-card .pipeline-status {
+    margin-top: var(--space-2);
+}
