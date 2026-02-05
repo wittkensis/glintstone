@@ -28,9 +28,15 @@ $composites = getComposites($pNumber);
 
 $pageTitle = $tablet['p_number'];
 
-// Calculate image path
-$imagePath = "/images/photo/{$pNumber}.jpg";
-$imageExists = file_exists(dirname(__DIR__) . "/images/photo/{$pNumber}.jpg");
+// Calculate image path - prefer local, fall back to CDLI
+$localImagePath = "/images/photo/{$pNumber}.jpg";
+$localImageExists = file_exists(dirname(__DIR__) . "/images/photo/{$pNumber}.jpg");
+$cdliImageUrl = "https://cdli.ucla.edu/dl/photo/{$pNumber}.jpg";
+$cdliLineartUrl = "https://cdli.ucla.edu/dl/lineart/{$pNumber}.jpg";
+
+// Use local if available, otherwise CDLI
+$imagePath = $localImageExists ? $localImagePath : $cdliImageUrl;
+$imageSource = $localImageExists ? 'Local (CDLI)' : 'CDLI (Remote)';
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -105,16 +111,23 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Image Panel -->
         <section class="tablet-image">
             <h3>1. Image</h3>
-            <?php if ($imageExists): ?>
-                <img src="<?= $imagePath ?>" alt="<?= htmlspecialchars($tablet['designation']) ?>"
-                     onerror="this.src='/assets/img/no-image.svg'">
-                <p class="image-source">Source: CDLI</p>
-            <?php else: ?>
-                <div class="no-image">
-                    <p>No image available</p>
-                    <button class="btn btn-secondary" disabled>Upload Image</button>
-                </div>
-            <?php endif; ?>
+            <div class="image-container">
+                <img src="<?= htmlspecialchars($imagePath) ?>"
+                     alt="<?= htmlspecialchars($tablet['designation']) ?>"
+                     data-local="<?= htmlspecialchars($localImagePath) ?>"
+                     data-cdli-photo="<?= htmlspecialchars($cdliImageUrl) ?>"
+                     data-cdli-lineart="<?= htmlspecialchars($cdliLineartUrl) ?>"
+                     onerror="handleImageError(this)"
+                     loading="lazy">
+                <div class="image-loading">Loading image...</div>
+            </div>
+            <p class="image-source">Source: <?= $imageSource ?></p>
+            <div class="image-options">
+                <button class="btn btn-small" onclick="switchImage('photo')">Photo</button>
+                <button class="btn btn-small btn-secondary" onclick="switchImage('lineart')">Line Art</button>
+                <a href="https://cdli.ucla.edu/search/archival_view.php?ObjectID=<?= urlencode($pNumber) ?>"
+                   target="_blank" class="btn btn-small btn-secondary">View on CDLI</a>
+            </div>
         </section>
 
         <!-- Text Panel -->
@@ -302,6 +315,129 @@ foreach ($lines as $line) {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Image container */
+.image-container {
+    position: relative;
+    min-height: 200px;
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.image-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.image-container img.loading {
+    opacity: 0;
+}
+
+.image-container img.loaded {
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.image-container img.error {
+    display: none;
+}
+
+.image-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.image-container img.loaded + .image-loading {
+    display: none;
+}
+
+.image-options {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.btn-small {
+    padding: var(--space-1) var(--space-3);
+    font-size: 0.75rem;
+}
+
+.image-error {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--color-text-muted);
+}
 </style>
+
+<script>
+// Image error handling with fallback chain
+let currentImageType = 'photo';
+
+function handleImageError(img) {
+    const cdliPhoto = img.dataset.cdliPhoto;
+    const cdliLineart = img.dataset.cdliLineart;
+    const currentSrc = img.src;
+
+    // Try fallback chain: local -> cdli photo -> cdli lineart -> error
+    if (currentSrc !== cdliPhoto && currentImageType === 'photo') {
+        img.src = cdliPhoto;
+        updateImageSource('CDLI (Remote)');
+    } else if (currentSrc !== cdliLineart) {
+        img.src = cdliLineart;
+        currentImageType = 'lineart';
+        updateImageSource('CDLI Line Art');
+    } else {
+        // All sources failed
+        img.classList.add('error');
+        img.parentElement.innerHTML = `
+            <div class="image-error">
+                <p>No image available from CDLI</p>
+                <a href="https://cdli.ucla.edu/search/archival_view.php?ObjectID=${img.alt}"
+                   target="_blank" class="btn btn-secondary">Check CDLI directly</a>
+            </div>
+        `;
+    }
+}
+
+function switchImage(type) {
+    const img = document.querySelector('.image-container img');
+    if (!img) return;
+
+    currentImageType = type;
+    if (type === 'photo') {
+        img.src = img.dataset.cdliPhoto;
+        updateImageSource('CDLI Photo');
+    } else {
+        img.src = img.dataset.cdliLineart;
+        updateImageSource('CDLI Line Art');
+    }
+}
+
+function updateImageSource(source) {
+    const sourceEl = document.querySelector('.image-source');
+    if (sourceEl) {
+        sourceEl.textContent = 'Source: ' + source;
+    }
+}
+
+// Add loaded class when image loads
+document.addEventListener('DOMContentLoaded', function() {
+    const img = document.querySelector('.image-container img');
+    if (img) {
+        img.classList.add('loading');
+        img.onload = function() {
+            this.classList.remove('loading');
+            this.classList.add('loaded');
+        };
+    }
+});
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
