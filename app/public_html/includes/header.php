@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/assets/css/components/empty-states.css">
     <link rel="stylesheet" href="/assets/css/components/icons.css">
     <link rel="stylesheet" href="/assets/css/components/buttons.css">
+    <link rel="stylesheet" href="/assets/css/components/search-dropdown.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Cuneiform&display=swap" rel="stylesheet">
@@ -29,23 +30,22 @@
                 </a>
             </div>
 
+            <div class="header-search">
+                <form action="/tablets/search.php" method="GET">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <input type="text" name="q" placeholder="Search tablets, signs, dictionary..." aria-label="Search" aria-expanded="false" autocomplete="off">
+                </form>
+            </div>
+
             <nav class="header-nav">
                 <a href="/tablets/list.php" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/tablets/') !== false) echo 'active'; ?>">Tablets</a>
                 <a href="/collections/" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/collections/') !== false) echo 'active'; ?>">Collections</a>
                 <a href="/signs/" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/signs/') !== false) echo 'active'; ?>">Signs</a>
-                <a href="/dictionary/" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/dictionary/') !== false) echo 'active'; ?>">Dictionary</a>
+                <a href="/library/" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/library/') !== false) echo 'active'; ?>">Library</a>
             </nav>
-
-            <div class="header-right">
-                <div class="header-search">
-                    <form action="/tablets/search.php" method="GET">
-                        <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/>
-                            <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                        </svg>
-                        <input type="text" name="q" placeholder="Search tablets..." aria-label="Search">
-                    </form>
-                </div>
-            </div>
         </div>
     </header>
+    <script src="/assets/js/search.js"></script>
