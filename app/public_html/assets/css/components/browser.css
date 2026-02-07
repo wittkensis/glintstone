@@ -1,0 +1,182 @@
+/**
+ * Tablet Browser Styles
+ * Full-page browser for selecting and adding tablets to collections
+ */
+
+.browser-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Browser Header */
+.browser-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4, 24px);
+    background: var(--color-bg-elevated, #2a2a2a);
+    border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+}
+
+.browser-title h1 {
+    margin: 0 0 var(--space-1, 6px) 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text, #e8e8e8);
+}
+
+.browser-title .subtitle {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted, #a0a0a0);
+}
+
+/* Selection Controls */
+.selection-controls {
+    display: flex;
+    gap: var(--space-3, 16px);
+    align-items: center;
+    padding: var(--space-3, 16px) 0;
+    margin-bottom: var(--space-3, 16px);
+    border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+}
+
+.selection-count {
+    margin-left: auto;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-muted, #a0a0a0);
+}
+
+/* Results Info */
+.results-info {
+    margin-bottom: var(--space-3, 16px);
+    font-size: 0.875rem;
+    color: var(--color-text-muted, #a0a0a0);
+}
+
+/* Bulk Actions Bar (sticky bottom) */
+.bulk-actions {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 16px);
+    padding: var(--space-4, 24px);
+    background: var(--color-bg-elevated, #2a2a2a);
+    border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+.bulk-count {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text, #e8e8e8);
+}
+
+#add-to-collection-btn {
+    margin-left: auto;
+}
+
+#add-to-collection-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Button Styles */
+.btn-ghost {
+    padding: var(--space-2, 12px) var(--space-3, 16px);
+    background: transparent;
+    color: var(--color-text-muted, #a0a0a0);
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+    border-radius: var(--radius-md, 8px);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-ghost:hover {
+    background: var(--color-bg-subtle, #222222);
+    color: var(--color-text, #e8e8e8);
+    border-color: var(--color-accent, #6b8e6b);
+}
+
+/* Tablet Grid in Browser */
+.browser-page .tablet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-4, 24px);
+    margin-bottom: var(--space-6, 48px);
+}
+
+/* Make sure selectable cards work well in browser */
+.browser-page .tablet-card.selectable {
+    cursor: pointer;
+}
+
+.browser-page .tablet-card.selectable:hover {
+    transform: translateY(-1px);
+}
+
+/* Active Filters in Browser */
+.browser-page .active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2, 12px);
+    margin-bottom: var(--space-3, 16px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .browser-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3, 16px);
+    }
+
+    .browser-title h1 {
+        font-size: 1.25rem;
+    }
+
+    .selection-controls {
+        flex-wrap: wrap;
+    }
+
+    .bulk-actions {
+        flex-wrap: wrap;
+        padding: var(--space-3, 16px);
+    }
+
+    .bulk-count {
+        width: 100%;
+        text-align: center;
+        margin-bottom: var(--space-2, 12px);
+    }
+
+    #add-to-collection-btn {
+        margin-left: 0;
+        flex: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .browser-page .tablet-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: var(--space-3, 16px);
+    }
+
+    .selection-controls {
+        font-size: 0.8125rem;
+    }
+
+    .bulk-actions {
+        gap: var(--space-2, 12px);
+    }
+}
