@@ -201,6 +201,8 @@ require_once __DIR__ . '/../includes/header.php';
 <link rel="stylesheet" href="/assets/css/components/atf-viewer-core.css">
 <link rel="stylesheet" href="/assets/css/components/atf-content.css">
 <link rel="stylesheet" href="/assets/css/components/knowledge-sidebar-compact.css">
+<link rel="stylesheet" href="/assets/css/components/word-detail.css">
+<link rel="stylesheet" href="/assets/css/components/educational-help.css">
 <link rel="stylesheet" href="/assets/css/components/atf-parallel.css">
 
 <!-- Zoombox Components -->
@@ -466,7 +468,6 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- ATF Content -->
             <?php if ($inscription && $inscription['atf']): ?>
                 <div class="atf-viewer-container" id="atf-viewer" data-p-number="<?= htmlspecialchars($pNumber) ?>"></div>
-                <p class="atf-source">Source: <?= htmlspecialchars($tablet['atf_source'] ?? 'CDLI') ?></p>
             <?php else: ?>
                 <!-- Viewer Toggle (only for tablets without ATF) -->
                 <button class="viewer-toggle" aria-label="Toggle viewer size" title="Expand/collapse tablet image">
@@ -487,5 +488,11 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <script src="/assets/js/zoombox.js"></script>
+<!-- Shared Library Modules -->
+<script src="/assets/js/modules/educational-help.js"></script>
+<script src="/assets/js/modules/word-detail-renderer.js"></script>
+<!-- ATF Viewer -->
 <script src="/assets/js/atf-viewer.js"></script>
+<!-- Library Integration -->
+<script src="/assets/js/atf-viewer-integration.js"></script>
 <script src="/assets/js/tablet-detail.js"></script>
