@@ -1,0 +1,301 @@
+/**
+ * KPI Dashboard Component Styles
+ * Metrics grid, progress bars, and collapsible details
+ */
+
+.kpi-dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4);
+}
+
+/* Primary Metrics Grid */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.kpi-card {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.kpi-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    line-height: 1.1;
+    margin-bottom: var(--space-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.kpi-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-1);
+}
+
+.kpi-sublabel {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+/* Pipeline Progress Visualization */
+.pipeline-progress {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+}
+
+.pipeline-heading {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2) 0;
+}
+
+.pipeline-description {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-5) 0;
+}
+
+.pipeline-bars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.pipeline-row {
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.pipeline-row-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.9rem;
+    color: var(--color-text);
+}
+
+.pipeline-icon {
+    font-size: 1.25rem;
+}
+
+.pipeline-name {
+    font-weight: 500;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+    position: relative;
+    height: 24px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-accent), var(--color-accent-hover));
+    border-radius: var(--radius-sm);
+    transition: width 0.6s ease;
+    min-width: 2px; /* Ensure bar is visible even at low percentages */
+}
+
+.pipeline-row-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 100px;
+}
+
+.stat-count {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-percent {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Collapsible Details */
+.kpi-details {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.kpi-details-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    font-weight: 500;
+    color: var(--color-text);
+    transition: background 0.2s ease;
+}
+
+.kpi-details-toggle:hover {
+    background: var(--color-surface);
+}
+
+.kpi-details-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.toggle-icon {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    transition: transform 0.2s ease;
+}
+
+.kpi-details[open] .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.kpi-details-content {
+    padding: 0 var(--space-5) var(--space-5) var(--space-5);
+    border-top: 1px solid var(--color-border);
+}
+
+.kpi-details-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+    margin-top: var(--space-5);
+}
+
+.kpi-detail-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-3) 0;
+}
+
+.detail-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.9rem;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    color: var(--color-text);
+    flex: 1;
+}
+
+.detail-value {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+
+.kpi-details-footer {
+    margin-top: var(--space-5);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--color-border);
+}
+
+.kpi-footer-note {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    text-align: center;
+}
+
+.kpi-footer-note strong {
+    color: var(--color-accent);
+    font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .kpi-details-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .pipeline-row {
+        grid-template-columns: 140px 1fr auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .kpi-dashboard {
+        padding: var(--space-5) var(--space-3);
+    }
+
+    .kpi-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-3);
+    }
+
+    .kpi-value {
+        font-size: 2rem;
+    }
+
+    .pipeline-row {
+        grid-template-columns: 1fr;
+        gap: var(--space-2);
+    }
+
+    .pipeline-row-label {
+        justify-content: space-between;
+    }
+
+    .pipeline-row-stat {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        min-width: auto;
+    }
+
+    .kpi-details-grid {
+        grid-template-columns: 1fr;
+    }
+}

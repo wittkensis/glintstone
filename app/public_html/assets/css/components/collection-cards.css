@@ -40,6 +40,7 @@
 
 /* Collection Card */
 .collection-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     background: var(--color-bg-elevated, #2a2a2a);
@@ -111,6 +112,21 @@
     opacity: 0.3;
 }
 
+.cover-thumb__fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-subtle, #222222);
+}
+
+.cover-thumb__fallback .cuneiform-icon {
+    font-size: 2rem;
+    color: var(--color-text-subtle, #4a4a4a);
+    opacity: 0.3;
+}
+
 /* Collection Metadata */
 .collection-meta {
     padding: var(--space-4, 24px);
@@ -149,6 +165,37 @@
 
 .collection-stats .stat {
     font-size: 0.8125rem;
+    color: var(--color-text-subtle, #707070);
+    font-weight: 500;
+}
+
+/* Composite-specific styles */
+.collection-card--composite {
+    border-color: var(--color-warning, #e8a64d);
+}
+
+.collection-card--composite:hover {
+    border-color: var(--color-warning, #e8a64d);
+    box-shadow: 0 8px 24px rgba(232, 166, 77, 0.2);
+}
+
+.composite-badge {
+    display: inline-block;
+    padding: var(--space-1, 6px) var(--space-2, 12px);
+    background: var(--color-warning, #e8a64d);
+    color: var(--color-bg, #1a1a1a);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: var(--radius-sm, 4px);
+    margin-bottom: var(--space-2, 12px);
+}
+
+.collection-id {
+    margin: 0;
+    font-size: 0.8rem;
+    font-family: var(--font-mono, monospace);
     color: var(--color-text-subtle, #707070);
     font-weight: 500;
 }
@@ -205,4 +252,60 @@
     .collection-meta {
         padding: var(--space-3, 16px);
     }
+}
+
+/* Smart Collection Styles */
+.smart-collection-card {
+    border: 1px solid rgba(201, 169, 98, 0.3);
+    background: linear-gradient(135deg, var(--color-bg-elevated) 0%, rgba(201, 169, 98, 0.05) 100%);
+}
+
+.smart-collection-card:hover {
+    border-color: rgba(201, 169, 98, 0.5);
+}
+
+/* Smart Badge */
+.smart-badge {
+    position: absolute;
+    top: var(--space-2, 12px);
+    right: var(--space-2, 12px);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1, 6px);
+    padding: var(--space-1, 6px) var(--space-2, 12px);
+    background: rgba(201, 169, 98, 0.2);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(201, 169, 98, 0.4);
+    border-radius: var(--radius-sm, 4px);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-accent, #c9a962);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.smart-badge-icon {
+    font-size: 0.875rem;
+}
+
+/* Collection Icon in Name */
+.collection-icon {
+    display: inline-block;
+    margin-right: var(--space-1, 6px);
+    font-size: 1.125rem;
+    vertical-align: middle;
+}
+
+/* Smart Collection Stats - Auto-updating indicator */
+.stat-auto {
+    color: var(--color-accent, #c9a962);
+    font-weight: 500;
+    font-size: 0.8rem;
+}
+
+.stat-auto::before {
+    content: '•';
+    margin-right: var(--space-1, 6px);
+    color: var(--color-text-muted, #a0a0a0);
 }

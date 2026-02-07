@@ -71,6 +71,12 @@
     padding: var(--space-4);
 }
 
+/* Smaller glosses in parallel mode to fit narrower columns */
+.atf-viewer--mode-parallel .atf-word__gloss {
+    font-size: 0.65em;
+    padding: 1px 4px;
+}
+
 /* ==========================================================================
    Responsive
    ========================================================================== */

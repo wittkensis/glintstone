@@ -303,3 +303,13 @@
     color: var(--color-text-subtle);
     line-height: 1.4;
 }
+
+/* Always-visible filter sections (used with $alwaysShowSearch in filter-sidebar.php) */
+.filter-section.always-visible .filter-section-header {
+    display: none;
+}
+
+.filter-section.always-visible .filter-content {
+    display: block !important;
+    padding-top: 0;
+}

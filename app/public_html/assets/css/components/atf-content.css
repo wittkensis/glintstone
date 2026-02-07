@@ -31,6 +31,11 @@
     color: var(--color-text-muted);
 }
 
+/* Hide glosses in raw mode */
+.atf-viewer--mode-raw .atf-word__gloss {
+    display: none;
+}
+
 /* ==========================================================================
    Column Layout
    ========================================================================== */
@@ -94,6 +99,7 @@
 .atf-line__content {
     flex: 1;
     min-width: 0;
+    line-height: 2.6; /* Increased to accommodate interlinear glosses */
 }
 
 /* State markers */

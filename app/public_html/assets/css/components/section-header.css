@@ -1,0 +1,73 @@
+/**
+ * Section Header Component
+ * Headers with descriptions and statistics for page sections
+ */
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.section-header__content h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2) 0;
+}
+
+.section-description {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    max-width: 80ch;
+    margin: 0;
+}
+
+.section-stats {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.stat-badge {
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+    white-space: nowrap;
+}
+
+/* Section spacing */
+.collections-section,
+.composites-section {
+    margin-bottom: var(--space-8);
+}
+
+.composites-section {
+    margin-top: var(--space-8);
+    padding-top: var(--space-8);
+    border-top: 2px solid var(--color-border);
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+
+    .section-stats {
+        align-self: flex-start;
+    }
+
+    .section-description {
+        max-width: 100%;
+    }
+}
