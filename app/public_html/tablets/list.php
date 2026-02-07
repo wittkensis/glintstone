@@ -404,48 +404,7 @@ require_once __DIR__ . '/../includes/header.php';
 
         <div class="tablet-grid">
             <?php while ($tablet = $tablets->fetchArray(SQLITE3_ASSOC)): ?>
-            <?php $langAbbr = getLanguageAbbreviation($tablet['language']); ?>
-            <a href="detail.php?p=<?= urlencode($tablet['p_number']) ?>" class="tablet-card">
-                <!-- Pipeline Status Bar -->
-                <div class="card-pipeline-bar">
-                    <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('image', $tablet) ?>" title="Image"></span>
-                    <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('signs', $tablet) ?>" title="Sign Detection"></span>
-                    <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('transliteration', $tablet) ?>" title="Transliteration"></span>
-                    <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('lemmas', $tablet) ?>" title="Lemmas"></span>
-                    <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('translation', $tablet) ?>" title="Translation"></span>
-                </div>
-
-                <!-- Language Badge -->
-                <?php if ($langAbbr): ?>
-                <span class="lang-badge" title="<?= htmlspecialchars($tablet['language']) ?>"><?= $langAbbr ?></span>
-                <?php endif; ?>
-
-                <!-- Full-card Image -->
-                <div class="card-image">
-                    <img src="/api/thumbnail.php?p=<?= urlencode($tablet['p_number']) ?>&size=200"
-                         alt="<?= htmlspecialchars($tablet['designation'] ?? $tablet['p_number']) ?>"
-                         loading="lazy"
-                         onerror="this.parentElement.classList.add('no-image')">
-                    <div class="card-placeholder">
-                        <span class="cuneiform-icon">𒀭</span>
-                    </div>
-                </div>
-
-                <!-- Overlay Info Panel -->
-                <div class="card-overlay">
-                    <span class="card-p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
-                    <?php if ($tablet['period']): ?>
-                    <span class="meta-period"><?= htmlspecialchars(truncateText($tablet['period'], 25)) ?></span>
-                    <?php endif; ?>
-                    <?php if ($tablet['provenience']): ?>
-                    <span class="meta-site"><?= htmlspecialchars(truncateText($tablet['provenience'], 20)) ?></span>
-                    <?php endif; ?>
-                    <?php if ($tablet['genre']): ?>
-                    <span class="meta-genre"><?= htmlspecialchars(truncateText($tablet['genre'], 20)) ?></span>
-                    <?php endif; ?>
-                    <div class="card-designation"><?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?></div>
-                </div>
-            </a>
+                <?php include __DIR__ . '/../includes/components/tablet-card.php'; ?>
             <?php endwhile; ?>
         </div>
 
