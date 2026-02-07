@@ -15,6 +15,7 @@ $periods = isset($_GET['period']) ? (is_array($_GET['period']) ? $_GET['period']
 $sites = isset($_GET['site']) ? (is_array($_GET['site']) ? $_GET['site'] : [$_GET['site']]) : [];
 $genres = isset($_GET['genre']) ? (is_array($_GET['genre']) ? $_GET['genre'] : [$_GET['genre']]) : [];
 $pipeline = $_GET['pipeline'] ?? null;
+$search = trim($_GET['search'] ?? '');
 
 $page = max(1, intval($_GET['page'] ?? 1));
 $perPage = 24;
@@ -117,10 +118,19 @@ if ($pipeline) {
     }
 }
 
+// Search filter - searches designation and transliteration text
+if (!empty($search)) {
+    $where[] = "(a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+    $params[':search'] = '%' . $search . '%';
+}
+
 $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
+// Add JOIN with inscriptions table if search is present
+$inscriptionJoin = !empty($search) ? "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1" : "";
+
 // Get total count
-$countSql = "SELECT COUNT(*) FROM artifacts a LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number $whereClause";
+$countSql = "SELECT COUNT(DISTINCT a.p_number) FROM artifacts a LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number $inscriptionJoin $whereClause";
 $stmt = $db->prepare($countSql);
 foreach ($params as $key => $val) {
     $stmt->bindValue($key, $val);
@@ -130,9 +140,10 @@ $totalPages = ceil($totalCount / $perPage);
 
 // Get tablets
 $sql = "
-    SELECT a.*, ps.has_image, ps.has_atf, ps.has_lemmas, ps.has_translation, ps.has_sign_annotations, ps.lemma_coverage
+    SELECT DISTINCT a.*, ps.has_image, ps.has_atf, ps.has_lemmas, ps.has_translation, ps.has_sign_annotations, ps.lemma_coverage
     FROM artifacts a
     LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+    $inscriptionJoin
     $whereClause
     ORDER BY a.p_number
     LIMIT :limit OFFSET :offset
@@ -147,6 +158,9 @@ $tablets = $stmt->execute();
 
 // Get all active filters for display
 $activeFilters = [];
+if (!empty($search)) {
+    $activeFilters[] = ['type' => 'search', 'value' => $search, 'label' => "Search: \"$search\""];
+}
 foreach ($languages as $lang) {
     $activeFilters[] = ['type' => 'lang', 'value' => $lang, 'label' => $lang];
 }
