@@ -21,9 +21,44 @@ $clearAllUrl = $clearAllUrl ?? $_SERVER['PHP_SELF'];
 <aside class="filter-sidebar">
     <div class="filter-header">
         <h2>Filters</h2>
-        <?php if (!empty($activeFilters)): ?>
+        <?php if (!empty($activeFilters) || !empty($_GET['search'])): ?>
         <a href="<?= htmlspecialchars($clearAllUrl) ?>" class="clear-all">Clear all</a>
         <?php endif; ?>
+    </div>
+
+    <!-- Search Filter -->
+    <div class="filter-section" data-filter="search">
+        <button class="filter-section-header" aria-expanded="true">
+            <span class="filter-title">Search</span>
+            <span class="filter-toggle">−</span>
+        </button>
+        <div class="filter-content">
+            <form method="GET" action="<?= htmlspecialchars($_SERVER['PHP_SELF']) ?>" class="search-form">
+                <!-- Preserve existing GET parameters -->
+                <?php foreach ($_GET as $key => $value): ?>
+                    <?php if ($key !== 'search' && $key !== 'page'): ?>
+                        <?php if (is_array($value)): ?>
+                            <?php foreach ($value as $v): ?>
+                                <input type="hidden" name="<?= htmlspecialchars($key) ?>[]" value="<?= htmlspecialchars($v) ?>">
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <input type="hidden" name="<?= htmlspecialchars($key) ?>" value="<?= htmlspecialchars($value) ?>">
+                        <?php endif; ?>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+
+                <div class="search-input-wrapper">
+                    <input type="text"
+                           name="search"
+                           id="search-input"
+                           class="search-input"
+                           value="<?= htmlspecialchars($_GET['search'] ?? '') ?>"
+                           placeholder="Search tablets by keyword or text...">
+                    <button type="submit" class="search-submit">Search</button>
+                </div>
+                <p class="search-help">Searches designation and transliteration text</p>
+            </form>
+        </div>
     </div>
 
     <!-- Language Filter -->
