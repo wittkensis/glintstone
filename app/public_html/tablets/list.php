@@ -21,11 +21,28 @@ $page = max(1, intval($_GET['page'] ?? 1));
 $perPage = 24;
 $offset = ($page - 1) * $perPage;
 
-// Load filter stats
-$languageStats = getLanguageStats();
-$periodStats = getPeriodStats();
-$provenienceStats = getProvenienceStats();
-$genreStats = getGenreStats();
+// Load filter stats (use filtered versions if any filters are active)
+$hasActiveFilters = !empty($languages) || !empty($periods) || !empty($sites) || !empty($genres) || !empty($pipeline) || !empty($search);
+
+if ($hasActiveFilters) {
+    $filterContext = [
+        'languages' => $languages,
+        'periods' => $periods,
+        'sites' => $sites,
+        'genres' => $genres,
+        'pipeline' => $pipeline,
+        'search' => $search
+    ];
+    $languageStats = getFilteredLanguageStats($filterContext);
+    $periodStats = getFilteredPeriodStats($filterContext);
+    $provenienceStats = getFilteredProvenienceStats($filterContext);
+    $genreStats = getFilteredGenreStats($filterContext);
+} else {
+    $languageStats = getLanguageStats();
+    $periodStats = getPeriodStats();
+    $provenienceStats = getProvenienceStats();
+    $genreStats = getGenreStats();
+}
 
 // Build query
 $db = getDB();

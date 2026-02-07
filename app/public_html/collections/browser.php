@@ -159,11 +159,28 @@ $stmt->bindValue(':limit', $tabletsPerPage, SQLITE3_INTEGER);
 $stmt->bindValue(':offset', $offset, SQLITE3_INTEGER);
 $tablets = $stmt->execute();
 
-// Get filter stats
-$languageStats = getLanguageStats();
-$periodStats = getPeriodStats();
-$provenienceStats = getProvenienceStats();
-$genreStats = getGenreStats();
+// Get filter stats (use filtered versions if any filters are active)
+$hasActiveFilters = !empty($languages) || !empty($periods) || !empty($sites) || !empty($genres) || !empty($pipeline) || !empty($search);
+
+if ($hasActiveFilters) {
+    $filterContext = [
+        'languages' => $languages,
+        'periods' => $periods,
+        'sites' => $sites,
+        'genres' => $genres,
+        'pipeline' => $pipeline,
+        'search' => $search
+    ];
+    $languageStats = getFilteredLanguageStats($filterContext);
+    $periodStats = getFilteredPeriodStats($filterContext);
+    $provenienceStats = getFilteredProvenienceStats($filterContext);
+    $genreStats = getFilteredGenreStats($filterContext);
+} else {
+    $languageStats = getLanguageStats();
+    $periodStats = getPeriodStats();
+    $provenienceStats = getProvenienceStats();
+    $genreStats = getGenreStats();
+}
 
 $pageTitle = 'Add Tablets to ' . htmlspecialchars($collection['name']);
 

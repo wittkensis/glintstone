@@ -406,6 +406,512 @@ function getGenreStats(): array {
 }
 
 /**
+ * Get filter-aware language stats
+ * Counts are updated based on currently active filters
+ */
+function getFilteredLanguageStats(array $filters): array {
+    $db = getDB();
+
+    // Build WHERE clause from filters (exclude language filter)
+    $where = [];
+    $params = [];
+
+    // Period filter
+    if (!empty($filters['periods'])) {
+        $periodConditions = [];
+        foreach ($filters['periods'] as $i => $period) {
+            $periodConditions[] = "a.period = :period{$i}";
+            $params[":period{$i}"] = $period;
+        }
+        $where[] = '(' . implode(' OR ', $periodConditions) . ')';
+    }
+
+    // Site filter
+    if (!empty($filters['sites'])) {
+        $siteConditions = [];
+        foreach ($filters['sites'] as $i => $site) {
+            $siteConditions[] = "a.provenience LIKE :site{$i}";
+            $params[":site{$i}"] = '%' . $site . '%';
+        }
+        $where[] = '(' . implode(' OR ', $siteConditions) . ')';
+    }
+
+    // Genre filter
+    if (!empty($filters['genres'])) {
+        $genreConditions = [];
+        foreach ($filters['genres'] as $i => $genre) {
+            $genreConditions[] = "a.genre LIKE :genre{$i}";
+            $params[":genre{$i}"] = '%' . $genre . '%';
+        }
+        $where[] = '(' . implode(' OR ', $genreConditions) . ')';
+    }
+
+    // Pipeline filter
+    if (!empty($filters['pipeline'])) {
+        switch ($filters['pipeline']) {
+            case 'complete':
+                $where[] = "ps.has_image = 1 AND ps.has_atf = 1 AND ps.has_lemmas = 1 AND ps.has_translation = 1";
+                break;
+            case 'has_image':
+                $where[] = "ps.has_image = 1";
+                break;
+            case 'has_translation':
+                $where[] = "ps.has_translation = 1";
+                break;
+            case 'any_digitization':
+                $where[] = "(ps.has_atf = 1 OR ps.has_sign_annotations = 1)";
+                break;
+            case 'human_transcription':
+                $where[] = "ps.has_atf = 1";
+                break;
+            case 'machine_ocr':
+                $where[] = "ps.has_sign_annotations = 1";
+                break;
+            case 'no_digitization':
+                $where[] = "(ps.has_atf IS NULL OR ps.has_atf = 0) AND (ps.has_sign_annotations IS NULL OR ps.has_sign_annotations = 0)";
+                break;
+        }
+    }
+
+    // Search filter
+    $inscriptionJoin = "";
+    if (!empty($filters['search'])) {
+        $inscriptionJoin = "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1";
+        $where[] = "(a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+        $params[':search'] = '%' . $filters['search'] . '%';
+    }
+
+    $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    // Query with joins to get counts and grouping info
+    $sql = "
+        SELECT ls.language, ls.root_language, COUNT(DISTINCT a.p_number) as tablet_count
+        FROM language_stats ls
+        INNER JOIN artifacts a ON a.language LIKE '%' || ls.language || '%'
+        LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+        $inscriptionJoin
+        $whereClause
+        GROUP BY ls.language, ls.root_language
+        HAVING tablet_count > 0
+        ORDER BY tablet_count DESC
+    ";
+
+    $stmt = $db->prepare($sql);
+    foreach ($params as $key => $val) {
+        $stmt->bindValue($key, $val);
+    }
+    $result = $stmt->execute();
+
+    // Group by root language
+    $grouped = [];
+    $rootTotals = [];
+
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $root = $row['root_language'];
+        if (!isset($grouped[$root])) {
+            $grouped[$root] = [];
+            $rootTotals[$root] = 0;
+        }
+        $grouped[$root][] = [
+            'value' => $row['language'],
+            'count' => (int)$row['tablet_count']
+        ];
+        $rootTotals[$root] += (int)$row['tablet_count'];
+    }
+
+    // Sort roots by total count
+    arsort($rootTotals);
+
+    $stats = [];
+    foreach ($rootTotals as $root => $total) {
+        $stats[] = [
+            'group' => $root,
+            'total' => $total,
+            'items' => $grouped[$root]
+        ];
+    }
+
+    return $stats;
+}
+
+/**
+ * Get filter-aware period stats
+ */
+function getFilteredPeriodStats(array $filters): array {
+    $db = getDB();
+
+    // Build WHERE clause (exclude period filter)
+    $where = [];
+    $params = [];
+
+    // Language filter
+    if (!empty($filters['languages'])) {
+        $langConditions = [];
+        foreach ($filters['languages'] as $i => $lang) {
+            $langConditions[] = "a.language LIKE :lang{$i}";
+            $params[":lang{$i}"] = '%' . $lang . '%';
+        }
+        $where[] = '(' . implode(' OR ', $langConditions) . ')';
+    }
+
+    // Site filter
+    if (!empty($filters['sites'])) {
+        $siteConditions = [];
+        foreach ($filters['sites'] as $i => $site) {
+            $siteConditions[] = "a.provenience LIKE :site{$i}";
+            $params[":site{$i}"] = '%' . $site . '%';
+        }
+        $where[] = '(' . implode(' OR ', $siteConditions) . ')';
+    }
+
+    // Genre filter
+    if (!empty($filters['genres'])) {
+        $genreConditions = [];
+        foreach ($filters['genres'] as $i => $genre) {
+            $genreConditions[] = "a.genre LIKE :genre{$i}";
+            $params[":genre{$i}"] = '%' . $genre . '%';
+        }
+        $where[] = '(' . implode(' OR ', $genreConditions) . ')';
+    }
+
+    // Pipeline filter
+    if (!empty($filters['pipeline'])) {
+        switch ($filters['pipeline']) {
+            case 'complete':
+                $where[] = "ps.has_image = 1 AND ps.has_atf = 1 AND ps.has_lemmas = 1 AND ps.has_translation = 1";
+                break;
+            case 'has_image':
+                $where[] = "ps.has_image = 1";
+                break;
+            case 'has_translation':
+                $where[] = "ps.has_translation = 1";
+                break;
+            case 'any_digitization':
+                $where[] = "(ps.has_atf = 1 OR ps.has_sign_annotations = 1)";
+                break;
+            case 'human_transcription':
+                $where[] = "ps.has_atf = 1";
+                break;
+            case 'machine_ocr':
+                $where[] = "ps.has_sign_annotations = 1";
+                break;
+            case 'no_digitization':
+                $where[] = "(ps.has_atf IS NULL OR ps.has_atf = 0) AND (ps.has_sign_annotations IS NULL OR ps.has_sign_annotations = 0)";
+                break;
+        }
+    }
+
+    // Search filter
+    $inscriptionJoin = "";
+    if (!empty($filters['search'])) {
+        $inscriptionJoin = "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1";
+        $where[] = "(a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+        $params[':search'] = '%' . $filters['search'] . '%';
+    }
+
+    $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    $sql = "
+        SELECT ps_tbl.period, ps_tbl.period_group, ps_tbl.sort_order, COUNT(DISTINCT a.p_number) as tablet_count
+        FROM period_stats ps_tbl
+        INNER JOIN artifacts a ON a.period = ps_tbl.period
+        LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+        $inscriptionJoin
+        $whereClause
+        GROUP BY ps_tbl.period, ps_tbl.period_group, ps_tbl.sort_order
+        HAVING tablet_count > 0
+        ORDER BY ps_tbl.sort_order ASC, tablet_count DESC
+    ";
+
+    $stmt = $db->prepare($sql);
+    foreach ($params as $key => $val) {
+        $stmt->bindValue($key, $val);
+    }
+    $result = $stmt->execute();
+
+    $grouped = [];
+    $rootTotals = [];
+    $rootOrder = [];
+
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $group = $row['period_group'];
+        if (!isset($grouped[$group])) {
+            $grouped[$group] = [];
+            $rootTotals[$group] = 0;
+            $rootOrder[$group] = (int)$row['sort_order'];
+        }
+        $grouped[$group][] = [
+            'value' => $row['period'],
+            'count' => (int)$row['tablet_count']
+        ];
+        $rootTotals[$group] += (int)$row['tablet_count'];
+    }
+
+    asort($rootOrder);
+
+    $stats = [];
+    foreach ($rootOrder as $group => $order) {
+        $stats[] = [
+            'group' => $group,
+            'total' => $rootTotals[$group],
+            'items' => $grouped[$group]
+        ];
+    }
+
+    return $stats;
+}
+
+/**
+ * Get filter-aware provenience stats
+ */
+function getFilteredProvenienceStats(array $filters): array {
+    $db = getDB();
+
+    // Build WHERE clause (exclude site filter)
+    $where = [];
+    $params = [];
+
+    // Language filter
+    if (!empty($filters['languages'])) {
+        $langConditions = [];
+        foreach ($filters['languages'] as $i => $lang) {
+            $langConditions[] = "a.language LIKE :lang{$i}";
+            $params[":lang{$i}"] = '%' . $lang . '%';
+        }
+        $where[] = '(' . implode(' OR ', $langConditions) . ')';
+    }
+
+    // Period filter
+    if (!empty($filters['periods'])) {
+        $periodConditions = [];
+        foreach ($filters['periods'] as $i => $period) {
+            $periodConditions[] = "a.period = :period{$i}";
+            $params[":period{$i}"] = $period;
+        }
+        $where[] = '(' . implode(' OR ', $periodConditions) . ')';
+    }
+
+    // Genre filter
+    if (!empty($filters['genres'])) {
+        $genreConditions = [];
+        foreach ($filters['genres'] as $i => $genre) {
+            $genreConditions[] = "a.genre LIKE :genre{$i}";
+            $params[":genre{$i}"] = '%' . $genre . '%';
+        }
+        $where[] = '(' . implode(' OR ', $genreConditions) . ')';
+    }
+
+    // Pipeline filter
+    if (!empty($filters['pipeline'])) {
+        switch ($filters['pipeline']) {
+            case 'complete':
+                $where[] = "ps.has_image = 1 AND ps.has_atf = 1 AND ps.has_lemmas = 1 AND ps.has_translation = 1";
+                break;
+            case 'has_image':
+                $where[] = "ps.has_image = 1";
+                break;
+            case 'has_translation':
+                $where[] = "ps.has_translation = 1";
+                break;
+            case 'any_digitization':
+                $where[] = "(ps.has_atf = 1 OR ps.has_sign_annotations = 1)";
+                break;
+            case 'human_transcription':
+                $where[] = "ps.has_atf = 1";
+                break;
+            case 'machine_ocr':
+                $where[] = "ps.has_sign_annotations = 1";
+                break;
+            case 'no_digitization':
+                $where[] = "(ps.has_atf IS NULL OR ps.has_atf = 0) AND (ps.has_sign_annotations IS NULL OR ps.has_sign_annotations = 0)";
+                break;
+        }
+    }
+
+    // Search filter
+    $inscriptionJoin = "";
+    if (!empty($filters['search'])) {
+        $inscriptionJoin = "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1";
+        $where[] = "(a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+        $params[':search'] = '%' . $filters['search'] . '%';
+    }
+
+    $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    $sql = "
+        SELECT prov_stats.provenience, prov_stats.region, COUNT(DISTINCT a.p_number) as tablet_count
+        FROM provenience_stats prov_stats
+        INNER JOIN artifacts a ON a.provenience LIKE '%' || prov_stats.provenience || '%'
+        LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+        $inscriptionJoin
+        $whereClause
+        GROUP BY prov_stats.provenience, prov_stats.region
+        HAVING tablet_count > 0
+        ORDER BY tablet_count DESC
+    ";
+
+    $stmt = $db->prepare($sql);
+    foreach ($params as $key => $val) {
+        $stmt->bindValue($key, $val);
+    }
+    $result = $stmt->execute();
+
+    $grouped = [];
+    $rootTotals = [];
+
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $region = $row['region'];
+        if (!isset($grouped[$region])) {
+            $grouped[$region] = [];
+            $rootTotals[$region] = 0;
+        }
+        $grouped[$region][] = [
+            'value' => $row['provenience'],
+            'count' => (int)$row['tablet_count']
+        ];
+        $rootTotals[$region] += (int)$row['tablet_count'];
+    }
+
+    arsort($rootTotals);
+
+    $stats = [];
+    foreach ($rootTotals as $region => $total) {
+        $stats[] = [
+            'group' => $region,
+            'total' => $total,
+            'items' => $grouped[$region]
+        ];
+    }
+
+    return $stats;
+}
+
+/**
+ * Get filter-aware genre stats
+ */
+function getFilteredGenreStats(array $filters): array {
+    $db = getDB();
+
+    // Build WHERE clause (exclude genre filter)
+    $where = [];
+    $params = [];
+
+    // Language filter
+    if (!empty($filters['languages'])) {
+        $langConditions = [];
+        foreach ($filters['languages'] as $i => $lang) {
+            $langConditions[] = "a.language LIKE :lang{$i}";
+            $params[":lang{$i}"] = '%' . $lang . '%';
+        }
+        $where[] = '(' . implode(' OR ', $langConditions) . ')';
+    }
+
+    // Period filter
+    if (!empty($filters['periods'])) {
+        $periodConditions = [];
+        foreach ($filters['periods'] as $i => $period) {
+            $periodConditions[] = "a.period = :period{$i}";
+            $params[":period{$i}"] = $period;
+        }
+        $where[] = '(' . implode(' OR ', $periodConditions) . ')';
+    }
+
+    // Site filter
+    if (!empty($filters['sites'])) {
+        $siteConditions = [];
+        foreach ($filters['sites'] as $i => $site) {
+            $siteConditions[] = "a.provenience LIKE :site{$i}";
+            $params[":site{$i}"] = '%' . $site . '%';
+        }
+        $where[] = '(' . implode(' OR ', $siteConditions) . ')';
+    }
+
+    // Pipeline filter
+    if (!empty($filters['pipeline'])) {
+        switch ($filters['pipeline']) {
+            case 'complete':
+                $where[] = "ps.has_image = 1 AND ps.has_atf = 1 AND ps.has_lemmas = 1 AND ps.has_translation = 1";
+                break;
+            case 'has_image':
+                $where[] = "ps.has_image = 1";
+                break;
+            case 'has_translation':
+                $where[] = "ps.has_translation = 1";
+                break;
+            case 'any_digitization':
+                $where[] = "(ps.has_atf = 1 OR ps.has_sign_annotations = 1)";
+                break;
+            case 'human_transcription':
+                $where[] = "ps.has_atf = 1";
+                break;
+            case 'machine_ocr':
+                $where[] = "ps.has_sign_annotations = 1";
+                break;
+            case 'no_digitization':
+                $where[] = "(ps.has_atf IS NULL OR ps.has_atf = 0) AND (ps.has_sign_annotations IS NULL OR ps.has_sign_annotations = 0)";
+                break;
+        }
+    }
+
+    // Search filter
+    $inscriptionJoin = "";
+    if (!empty($filters['search'])) {
+        $inscriptionJoin = "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1";
+        $where[] = "(a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+        $params[':search'] = '%' . $filters['search'] . '%';
+    }
+
+    $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    $sql = "
+        SELECT gs.genre, gs.category, COUNT(DISTINCT a.p_number) as tablet_count
+        FROM genre_stats gs
+        INNER JOIN artifacts a ON a.genre LIKE '%' || gs.genre || '%'
+        LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+        $inscriptionJoin
+        $whereClause
+        GROUP BY gs.genre, gs.category
+        HAVING tablet_count > 0
+        ORDER BY tablet_count DESC
+    ";
+
+    $stmt = $db->prepare($sql);
+    foreach ($params as $key => $val) {
+        $stmt->bindValue($key, $val);
+    }
+    $result = $stmt->execute();
+
+    $grouped = [];
+    $rootTotals = [];
+
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $cat = $row['category'];
+        if (!isset($grouped[$cat])) {
+            $grouped[$cat] = [];
+            $rootTotals[$cat] = 0;
+        }
+        $grouped[$cat][] = [
+            'value' => $row['genre'],
+            'count' => (int)$row['tablet_count']
+        ];
+        $rootTotals[$cat] += (int)$row['tablet_count'];
+    }
+
+    arsort($rootTotals);
+
+    $stats = [];
+    foreach ($rootTotals as $cat => $total) {
+        $stats[] = [
+            'group' => $cat,
+            'total' => $total,
+            'items' => $grouped[$cat]
+        ];
+    }
+
+    return $stats;
+}
+
+/**
  * Get writable database connection (for write operations)
  */
 function getWritableDB(): SQLite3 {
