@@ -23,7 +23,7 @@ if (empty($sign_id)) {
 }
 
 try {
-    $db = get_db();
+    $db = getDB();
 
     // Main sign data
     $stmt = $db->prepare("

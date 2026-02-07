@@ -22,7 +22,7 @@ $limit = isset($_GET['limit']) ? min((int)$_GET['limit'], 200) : 50;
 $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 
 try {
-    $db = get_db();
+    $db = getDB();
 
     // Build WHERE clause
     $where_clauses = [];

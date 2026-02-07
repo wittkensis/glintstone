@@ -26,7 +26,7 @@ if (empty($entry_id)) {
 }
 
 try {
-    $db = get_db();
+    $db = getDB();
 
     // Main entry data
     $stmt = $db->prepare("

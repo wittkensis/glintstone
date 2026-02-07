@@ -25,7 +25,7 @@ $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $offset = ($page - 1) * $per_page;
 
 // Build query
-$db = get_db();
+$db = getDB();
 $where_clauses = [];
 $bind_params = [];
 
