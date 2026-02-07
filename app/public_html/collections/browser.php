@@ -180,9 +180,15 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="browser-header">
         <div class="browser-title">
             <h1>Add Tablets to <?= htmlspecialchars($collection['name']) ?></h1>
-            <p class="subtitle">Select tablets to add to your collection</p>
         </div>
-        <a href="/collections/detail.php?id=<?= $collectionId ?>" class="btn-secondary">Close</a>
+
+        <div class="header-controls">
+            <button type="button" id="select-all" class="btn-ghost">Select All</button>
+            <button type="button" id="clear-selection" class="btn-ghost">Clear Selection</button>
+            <span class="selection-count">0 selected</span>
+            <button type="submit" form="add-tablets-form" id="add-to-collection-btn" class="btn-primary" disabled>Add to Collection</button>
+            <a href="/collections/detail.php?id=<?= $collectionId ?>" class="btn-secondary">Cancel</a>
+        </div>
     </div>
 
     <div class="page-with-sidebar">
@@ -193,13 +199,6 @@ require_once __DIR__ . '/../includes/header.php';
         ?>
 
         <div class="main-content">
-            <!-- Selection Controls -->
-            <div class="selection-controls">
-                <button type="button" id="select-all" class="btn-ghost">Select All</button>
-                <button type="button" id="clear-selection" class="btn-ghost">Clear Selection</button>
-                <span class="selection-count">0 selected</span>
-            </div>
-
             <!-- Active Filters -->
             <?php if (!empty($activeFilters)): ?>
             <div class="active-filters">
@@ -249,13 +248,6 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php endif; ?>
                 </nav>
                 <?php endif; ?>
-
-                <!-- Bulk Action Bar (sticky bottom) -->
-                <div class="bulk-actions">
-                    <span class="bulk-count"><span id="bulk-count">0</span> tablets selected</span>
-                    <button type="submit" id="add-to-collection-btn" class="btn-primary" disabled>Add to Collection</button>
-                    <a href="/collections/detail.php?id=<?= $collectionId ?>" class="btn-ghost">Cancel</a>
-                </div>
             </form>
         </div>
     </div>
