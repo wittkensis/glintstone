@@ -404,3 +404,254 @@ function getGenreStats(): array {
 
     return $stats;
 }
+
+/**
+ * Get writable database connection (for write operations)
+ */
+function getWritableDB(): SQLite3 {
+    $db = new SQLite3(DB_PATH, SQLITE3_OPEN_READWRITE);
+    $db->enableExceptions(true);
+    return $db;
+}
+
+/**
+ * Get all collections with tablet counts
+ */
+function getCollections(): array {
+    $db = getDB();
+    $result = $db->query("
+        SELECT
+            c.collection_id,
+            c.name,
+            c.description,
+            c.created_at,
+            c.updated_at,
+            COUNT(cm.p_number) as tablet_count
+        FROM collections c
+        LEFT JOIN collection_members cm ON c.collection_id = cm.collection_id
+        GROUP BY c.collection_id
+        ORDER BY c.created_at DESC
+    ");
+
+    $collections = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $collections[] = [
+            'collection_id' => (int)$row['collection_id'],
+            'name' => $row['name'],
+            'description' => $row['description'],
+            'created_at' => $row['created_at'],
+            'updated_at' => $row['updated_at'],
+            'tablet_count' => (int)$row['tablet_count']
+        ];
+    }
+    return $collections;
+}
+
+/**
+ * Get single collection by ID
+ */
+function getCollection(int $collectionId): ?array {
+    $db = getDB();
+    $stmt = $db->prepare("
+        SELECT
+            c.collection_id,
+            c.name,
+            c.description,
+            c.created_at,
+            c.updated_at,
+            COUNT(cm.p_number) as tablet_count
+        FROM collections c
+        LEFT JOIN collection_members cm ON c.collection_id = cm.collection_id
+        WHERE c.collection_id = :id
+        GROUP BY c.collection_id
+    ");
+    $stmt->bindValue(':id', $collectionId, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+
+    if (!$row) {
+        return null;
+    }
+
+    return [
+        'collection_id' => (int)$row['collection_id'],
+        'name' => $row['name'],
+        'description' => $row['description'],
+        'created_at' => $row['created_at'],
+        'updated_at' => $row['updated_at'],
+        'tablet_count' => (int)$row['tablet_count']
+    ];
+}
+
+/**
+ * Get tablets in a collection with full metadata
+ */
+function getCollectionTablets(int $collectionId, int $limit = 24, int $offset = 0): array {
+    $db = getDB();
+    $stmt = $db->prepare("
+        SELECT
+            a.*,
+            ps.has_image,
+            ps.has_ocr,
+            ps.ocr_confidence,
+            ps.has_atf,
+            ps.atf_source,
+            ps.has_lemmas,
+            ps.lemma_coverage,
+            ps.has_translation,
+            ps.has_sign_annotations,
+            ps.quality_score,
+            cm.added_at
+        FROM collection_members cm
+        JOIN artifacts a ON cm.p_number = a.p_number
+        LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+        WHERE cm.collection_id = :collection_id
+        ORDER BY cm.added_at DESC
+        LIMIT :limit OFFSET :offset
+    ");
+    $stmt->bindValue(':collection_id', $collectionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
+    $stmt->bindValue(':offset', $offset, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+
+    $tablets = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $tablets[] = $row;
+    }
+    return $tablets;
+}
+
+/**
+ * Get count of tablets in collection
+ */
+function getCollectionTabletCount(int $collectionId): int {
+    $db = getDB();
+    $stmt = $db->prepare("
+        SELECT COUNT(*) as count
+        FROM collection_members
+        WHERE collection_id = :collection_id
+    ");
+    $stmt->bindValue(':collection_id', $collectionId, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    return (int)$row['count'];
+}
+
+/**
+ * Create new collection
+ * Returns the new collection ID
+ */
+function createCollection(string $name, string $description = ''): int {
+    $db = getWritableDB();
+    $stmt = $db->prepare("
+        INSERT INTO collections (name, description)
+        VALUES (:name, :description)
+    ");
+    $stmt->bindValue(':name', $name, SQLITE3_TEXT);
+    $stmt->bindValue(':description', $description, SQLITE3_TEXT);
+    $stmt->execute();
+    return (int)$db->lastInsertRowID();
+}
+
+/**
+ * Update collection metadata
+ */
+function updateCollection(int $collectionId, string $name, string $description): bool {
+    $db = getWritableDB();
+    $stmt = $db->prepare("
+        UPDATE collections
+        SET name = :name,
+            description = :description,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE collection_id = :id
+    ");
+    $stmt->bindValue(':id', $collectionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':name', $name, SQLITE3_TEXT);
+    $stmt->bindValue(':description', $description, SQLITE3_TEXT);
+    return (bool)$stmt->execute();
+}
+
+/**
+ * Delete collection
+ */
+function deleteCollection(int $collectionId): bool {
+    $db = getWritableDB();
+    $stmt = $db->prepare("DELETE FROM collections WHERE collection_id = :id");
+    $stmt->bindValue(':id', $collectionId, SQLITE3_INTEGER);
+    return (bool)$stmt->execute();
+}
+
+/**
+ * Add tablet to collection
+ * Returns true on success, false if already exists
+ */
+function addTabletToCollection(int $collectionId, string $pNumber): bool {
+    $db = getWritableDB();
+    try {
+        $stmt = $db->prepare("
+            INSERT INTO collection_members (collection_id, p_number)
+            VALUES (:collection_id, :p_number)
+        ");
+        $stmt->bindValue(':collection_id', $collectionId, SQLITE3_INTEGER);
+        $stmt->bindValue(':p_number', $pNumber, SQLITE3_TEXT);
+        return (bool)$stmt->execute();
+    } catch (Exception $e) {
+        // Already exists or other error
+        return false;
+    }
+}
+
+/**
+ * Remove tablet from collection
+ */
+function removeTabletFromCollection(int $collectionId, string $pNumber): bool {
+    $db = getWritableDB();
+    $stmt = $db->prepare("
+        DELETE FROM collection_members
+        WHERE collection_id = :collection_id AND p_number = :p_number
+    ");
+    $stmt->bindValue(':collection_id', $collectionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':p_number', $pNumber, SQLITE3_TEXT);
+    return (bool)$stmt->execute();
+}
+
+/**
+ * Check if tablet is in collection
+ */
+function isTabletInCollection(int $collectionId, string $pNumber): bool {
+    $db = getDB();
+    $stmt = $db->prepare("
+        SELECT COUNT(*) as count
+        FROM collection_members
+        WHERE collection_id = :collection_id AND p_number = :p_number
+    ");
+    $stmt->bindValue(':collection_id', $collectionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':p_number', $pNumber, SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+    return (int)$row['count'] > 0;
+}
+
+/**
+ * Get first N tablet thumbnails for collection preview
+ */
+function getCollectionPreviewTablets(int $collectionId, int $limit = 4): array {
+    $db = getDB();
+    $stmt = $db->prepare("
+        SELECT a.p_number, a.designation
+        FROM collection_members cm
+        JOIN artifacts a ON cm.p_number = a.p_number
+        WHERE cm.collection_id = :collection_id
+        ORDER BY cm.added_at DESC
+        LIMIT :limit
+    ");
+    $stmt->bindValue(':collection_id', $collectionId, SQLITE3_INTEGER);
+    $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+
+    $tablets = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $tablets[] = $row;
+    }
+    return $tablets;
+}
