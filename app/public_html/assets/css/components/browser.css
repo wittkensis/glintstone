@@ -9,6 +9,12 @@
     flex-direction: column;
 }
 
+/* Remove max-width constraint for full-width display */
+.browser-page .page-with-sidebar {
+    max-width: none;
+    padding: var(--space-4, 24px) var(--space-6, 48px);
+}
+
 /* Browser Header */
 .browser-header {
     display: flex;
