@@ -1,0 +1,208 @@
+/**
+ * Collection Card Styles
+ * Visual cards for displaying collections with preview thumbnails
+ */
+
+.collections-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-6, 48px) var(--space-4, 24px);
+}
+
+.page-header {
+    margin-bottom: var(--space-6, 48px);
+}
+
+.page-header h1 {
+    margin: 0 0 var(--space-2, 12px) 0;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--color-text, #e8e8e8);
+}
+
+.page-header .subtitle {
+    margin: 0 0 var(--space-4, 24px) 0;
+    font-size: 1rem;
+    color: var(--color-text-muted, #a0a0a0);
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--space-3, 16px);
+}
+
+/* Collection Grid */
+.collection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-4, 24px);
+}
+
+/* Collection Card */
+.collection-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg-elevated, #2a2a2a);
+    border-radius: var(--radius-lg, 12px);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+}
+
+.collection-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    border-color: var(--color-accent, #6b8e6b);
+}
+
+/* Preview Grid (2x2 tablet thumbnails) */
+.collection-cover {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+    background: var(--color-bg, #1a1a1a);
+    overflow: hidden;
+}
+
+.cover-thumb {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--color-bg-subtle, #222222);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.cover-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.collection-card:hover .cover-thumb img {
+    transform: scale(1.05);
+}
+
+.cover-thumb.empty {
+    background: var(--color-bg-subtle, #222222);
+}
+
+.cover-thumb.empty .cuneiform-icon {
+    font-size: 2rem;
+    color: var(--color-text-subtle, #4a4a4a);
+    opacity: 0.3;
+}
+
+.cover-thumb.no-image .cuneiform-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: var(--color-text-subtle, #4a4a4a);
+    opacity: 0.3;
+}
+
+/* Collection Metadata */
+.collection-meta {
+    padding: var(--space-4, 24px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 12px);
+    flex-grow: 1;
+}
+
+.collection-name {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text, #e8e8e8);
+    line-height: 1.4;
+}
+
+.collection-description {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--color-text-muted, #a0a0a0);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.collection-stats {
+    display: flex;
+    gap: var(--space-3, 16px);
+    margin-top: auto;
+    padding-top: var(--space-2, 12px);
+    border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+}
+
+.collection-stats .stat {
+    font-size: 0.8125rem;
+    color: var(--color-text-subtle, #707070);
+    font-weight: 500;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: var(--space-8, 64px) var(--space-4, 24px);
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: var(--space-4, 24px);
+    opacity: 0.5;
+}
+
+.empty-state h2 {
+    margin: 0 0 var(--space-3, 16px) 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text, #e8e8e8);
+}
+
+.empty-state p {
+    margin: 0 0 var(--space-4, 24px) 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--color-text-muted, #a0a0a0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .collection-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: var(--space-3, 16px);
+    }
+
+    .collections-page {
+        padding: var(--space-4, 24px) var(--space-3, 16px);
+    }
+}
+
+@media (max-width: 480px) {
+    .collection-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .collection-meta {
+        padding: var(--space-3, 16px);
+    }
+}
