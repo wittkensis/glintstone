@@ -30,9 +30,15 @@ $periods = isset($_GET['period']) ? (is_array($_GET['period']) ? $_GET['period']
 $sites = isset($_GET['site']) ? (is_array($_GET['site']) ? $_GET['site'] : [$_GET['site']]) : [];
 $genres = isset($_GET['genre']) ? (is_array($_GET['genre']) ? $_GET['genre'] : [$_GET['genre']]) : [];
 $pipeline = $_GET['pipeline'] ?? null;
+$search = trim($_GET['search'] ?? '');
 
 // Build active filters array
+$activeFilters = [];
+if (!empty($search)) {
+    $activeFilters[] = ['type' => 'search', 'value' => $search];
+}
 $activeFilters = array_merge(
+    $activeFilters,
     array_map(fn($v) => ['type' => 'lang', 'value' => $v], $languages),
     array_map(fn($v) => ['type' => 'period', 'value' => $v], $periods),
     array_map(fn($v) => ['type' => 'site', 'value' => $v], $sites),
@@ -49,11 +55,16 @@ $offset = ($page - 1) * $tabletsPerPage;
 
 // Build SQL query with filters
 $db = getDB();
-$sql = "SELECT a.*, ps.has_image, ps.has_ocr, ps.ocr_confidence, ps.has_atf,
+
+// Add LEFT JOIN with inscriptions if search is present
+$inscriptionJoin = !empty($search) ? "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1" : "";
+
+$sql = "SELECT DISTINCT a.*, ps.has_image, ps.has_ocr, ps.ocr_confidence, ps.has_atf,
                ps.atf_source, ps.has_lemmas, ps.lemma_coverage, ps.has_translation,
                ps.has_sign_annotations, ps.quality_score
         FROM artifacts a
         LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+        $inscriptionJoin
         WHERE 1=1";
 
 $params = [];
@@ -119,6 +130,12 @@ if ($pipeline) {
             $sql .= " AND (ps.has_atf = 0 OR ps.has_atf IS NULL) AND (ps.has_sign_annotations = 0 OR ps.has_sign_annotations IS NULL)";
             break;
     }
+}
+
+// Search filter - searches designation and transliteration text
+if (!empty($search)) {
+    $sql .= " AND (a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+    $params[':search'] = '%' . $search . '%';
 }
 
 // Get total count
