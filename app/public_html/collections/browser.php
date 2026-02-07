@@ -48,9 +48,10 @@ if ($pipeline) {
     $activeFilters[] = ['type' => 'pipeline', 'value' => $pipeline];
 }
 
-// Pagination
+// Pagination with configurable per-page (default 24, max 200)
 $page = max(1, (int)($_GET['page'] ?? 1));
-$tabletsPerPage = 24;
+$perPage = isset($_GET['per_page']) ? min(200, max(12, (int)$_GET['per_page'])) : 24;
+$tabletsPerPage = $perPage;
 $offset = ($page - 1) * $tabletsPerPage;
 
 // Build SQL query with filters
@@ -211,9 +212,22 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
             <?php endif; ?>
 
-            <!-- Results Count -->
-            <div class="results-info">
-                Showing <?= number_format($totalTablets) ?> tablets
+            <!-- Results Count and Per-Page Selector -->
+            <div class="results-toolbar">
+                <div class="results-info">
+                    Showing <?= number_format($totalTablets) ?> tablets
+                </div>
+                <div class="per-page-selector">
+                    <label for="per-page">Show:</label>
+                    <select id="per-page" name="per_page" onchange="updatePerPage(this.value)">
+                        <option value="12" <?= $perPage === 12 ? 'selected' : '' ?>>12</option>
+                        <option value="24" <?= $perPage === 24 ? 'selected' : '' ?>>24</option>
+                        <option value="48" <?= $perPage === 48 ? 'selected' : '' ?>>48</option>
+                        <option value="96" <?= $perPage === 96 ? 'selected' : '' ?>>96</option>
+                        <option value="200" <?= $perPage === 200 ? 'selected' : '' ?>>200</option>
+                    </select>
+                    <span class="per-page-label">per page</span>
+                </div>
             </div>
 
             <!-- Tablet Grid with Selection -->
@@ -252,6 +266,18 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     </div>
 </main>
+
+<script>
+/**
+ * Update per-page parameter and reload
+ */
+function updatePerPage(perPage) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('per_page', perPage);
+    url.searchParams.set('page', '1'); // Reset to first page when changing per-page
+    window.location.href = url.toString();
+}
+</script>
 
 <script src="/assets/js/filters.js"></script>
 <script src="/assets/js/tablet-browser.js"></script>
