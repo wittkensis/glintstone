@@ -242,3 +242,64 @@
 .filter-group-content::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-subtle);
 }
+
+/* Search Filter Styles */
+.search-form {
+    width: 100%;
+}
+
+.search-input-wrapper {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.search-input {
+    flex: 1;
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: var(--color-surface);
+}
+
+.search-input::placeholder {
+    color: var(--color-text-subtle);
+}
+
+.search-submit {
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-accent);
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--color-bg);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.search-submit:hover {
+    background: var(--color-accent-hover, var(--color-accent));
+    filter: brightness(1.1);
+}
+
+.search-submit:active {
+    transform: scale(0.98);
+}
+
+.search-help {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    line-height: 1.4;
+}
