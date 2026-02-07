@@ -10,10 +10,13 @@
 *.pt
 
 # Raw data directories (too large for git)
-CDLI/images/
-CDLI/atf/
-ORACC/*/extracted/
-ORACC/*/*.zip
+downloads/CDLI/images/
+downloads/CDLI/atf/
+downloads/ORACC/*/extracted/
+downloads/ORACC/*/*.zip
+downloads/eBL/
+downloads/ePSD2/unicode/DerivedName.txt
+downloads/CAD/pdfs/
 ML_MODELS/deepscribe/artifacts/
 ML_MODELS/deepscribe/deepscribe_weights.tar.gz
 ML_MODELS/ebl_ocr/*.tar.gz
@@ -24,13 +27,16 @@ ML_MODELS/akkademia/trans_result*/
 ML_MODELS/akkademia/not_divided_by_three_dots_result*/
 ML_MODELS/akkademia/dist/
 ML_MODELS/akkademia/build/
-ePSD2/unicode/DerivedName.txt
 
 # Keep small metadata files
-!CDLI/catalogue/*.json
-!CDLI/manifest.json
-!ORACC/*/glossaries/
-!ORACC/*/json/
+!downloads/CDLI/catalogue/*.json
+!downloads/CDLI/manifest.json
+!downloads/ORACC/*/glossaries/
+!downloads/ORACC/*/json/
+
+# Database and images (managed separately)
+database/glintstone.db
+database/images/
 
 # Python
 __pycache__/
@@ -61,7 +67,7 @@ Thumbs.db
 _logs/*.log
 *.log
 
-# Database (local development)
+# Database (local development - legacy)
 app/*.db
 app/*.sqlite
 

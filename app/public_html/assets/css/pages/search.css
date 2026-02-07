@@ -1,0 +1,115 @@
+/* Search Page Styles */
+
+.search-header {
+    margin-bottom: var(--space-6);
+}
+
+.search-form {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    max-width: 600px;
+}
+
+.search-input {
+    flex: 1;
+    padding: var(--space-3);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: 1rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.search-submit {
+    padding: var(--space-3) var(--space-6);
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.search-submit:hover {
+    opacity: 0.9;
+}
+
+.search-results-header {
+    margin-bottom: var(--space-4);
+}
+
+.search-results-count {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.search-result {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    transition: border-color 0.2s;
+}
+
+.search-result:hover {
+    border-color: var(--color-accent);
+}
+
+.result-title {
+    margin-bottom: var(--space-2);
+}
+
+.result-title a {
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.result-title a:hover {
+    color: var(--color-accent);
+}
+
+.result-meta {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-bottom: var(--space-2);
+}
+
+.result-snippet {
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+.result-snippet mark {
+    background: var(--color-accent-muted);
+    color: var(--color-text);
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+.no-results {
+    text-align: center;
+    padding: var(--space-8);
+    color: var(--color-text-muted);
+}
+
+.no-results h2 {
+    margin-bottom: var(--space-4);
+}
+
+.no-results p {
+    font-size: 0.9rem;
+}

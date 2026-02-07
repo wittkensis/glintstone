@@ -1,0 +1,244 @@
+/**
+ * Filter Sidebar Component
+ * Filter panel with sections, groups, and options for tablet list
+ * Dependencies: CSS variables from core.css
+ */
+
+/* Page layout with sidebar */
+.page-with-sidebar {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--space-6);
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-6);
+    min-height: calc(100vh - 80px);
+}
+
+/* Filter Sidebar */
+.filter-sidebar {
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    padding: var(--space-4);
+    height: fit-content;
+    position: sticky;
+    top: calc(80px + var(--space-4));
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.filter-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.clear-all {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.clear-all:hover {
+    color: var(--color-accent);
+}
+
+/* Filter Sections */
+.filter-section {
+    margin-bottom: var(--space-2);
+}
+
+.filter-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: var(--space-3) 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.filter-section-header:hover {
+    color: var(--color-accent);
+}
+
+.filter-toggle {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    font-weight: 300;
+}
+
+.filter-content {
+    padding: var(--space-2) 0;
+}
+
+.filter-content[hidden] {
+    display: none;
+}
+
+/* Filter Groups (within sections) */
+.filter-group {
+    margin-bottom: var(--space-1);
+}
+
+.filter-group-header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: var(--space-2) var(--space-2);
+    background: var(--color-bg-subtle);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--color-text);
+    font-size: 0.85rem;
+    text-align: left;
+    gap: var(--space-2);
+}
+
+.filter-group-header:hover {
+    background: var(--color-surface);
+}
+
+.group-name {
+    flex: 1;
+}
+
+.group-count {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+}
+
+.group-toggle {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    width: 1rem;
+    text-align: center;
+}
+
+.filter-group-content {
+    display: none;
+    padding: var(--space-2) 0 var(--space-2) var(--space-4);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.filter-group[data-expanded="true"] .filter-group-content {
+    display: block;
+}
+
+.filter-group[data-expanded="true"] .group-toggle {
+    transform: rotate(45deg);
+}
+
+/* Filter Options */
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--color-text);
+}
+
+.filter-option:hover {
+    color: var(--color-accent);
+}
+
+.filter-option input[type="checkbox"],
+.filter-option input[type="radio"] {
+    accent-color: var(--color-accent);
+    cursor: pointer;
+}
+
+.option-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.option-count {
+    color: var(--color-text-subtle);
+    font-size: 0.7rem;
+}
+
+/* Filter Subsection (for grouped options like Text Digitization) */
+.filter-subsection {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+.subsection-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-2);
+}
+
+/* Show More Button */
+.show-more {
+    display: block;
+    width: 100%;
+    padding: var(--space-2);
+    margin-top: var(--space-2);
+    background: none;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-align: center;
+}
+
+.show-more:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.more-items[hidden] {
+    display: none;
+}
+
+/* Scrollbar styling for filter sidebar */
+.filter-sidebar::-webkit-scrollbar,
+.filter-group-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filter-sidebar::-webkit-scrollbar-track,
+.filter-group-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.filter-sidebar::-webkit-scrollbar-thumb,
+.filter-group-content::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+}
+
+.filter-sidebar::-webkit-scrollbar-thumb:hover,
+.filter-group-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-subtle);
+}

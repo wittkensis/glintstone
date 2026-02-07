@@ -1,0 +1,276 @@
+/**
+ * Pipeline Component
+ * Pipeline status visualization for tablet processing stages
+ * Dependencies: CSS variables from core.css
+ */
+
+/* ==========================================================================
+   Pipeline Track Component
+   ========================================================================== */
+
+/* Pipeline Track - unified container */
+.pipeline-track {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: var(--space-6);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+/* Pipeline Segment */
+.pipeline-segment {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--color-border);
+}
+
+.pipeline-segment:last-child {
+    border-right: none;
+}
+
+/* Status bar at top - forms continuous bar */
+.segment-bar {
+    height: 4px;
+    background: var(--color-border);
+    transition: background var(--transition-normal);
+}
+
+.pipeline-segment[data-status="complete"] .segment-bar {
+    background: var(--color-success);
+}
+
+.pipeline-segment[data-status="partial"] .segment-bar,
+.pipeline-segment[data-status="inferred"] .segment-bar {
+    background: var(--color-warning);
+}
+
+.pipeline-segment[data-status="skipped"] .segment-bar {
+    background: var(--color-text-subtle);
+}
+
+/* Segment body */
+.segment-body {
+    padding: var(--space-2) var(--space-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+    min-height: 95px;
+}
+
+.segment-icon {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-1);
+    opacity: 0.6;
+}
+
+.segment-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.pipeline-segment[data-status="complete"] .segment-icon {
+    color: var(--color-success);
+    opacity: 1;
+}
+
+.pipeline-segment[data-status="partial"] .segment-icon,
+.pipeline-segment[data-status="inferred"] .segment-icon {
+    color: var(--color-warning);
+    opacity: 1;
+}
+
+.pipeline-segment[data-status="skipped"] .segment-icon {
+    color: var(--color-text-subtle);
+    opacity: 0.8;
+}
+
+.segment-title {
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-1);
+}
+
+.segment-status {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    margin-bottom: 2px;
+}
+
+.segment-status.complete {
+    background: rgba(107, 142, 107, 0.15);
+    color: var(--color-success);
+}
+
+.segment-status.partial,
+.segment-status.inferred {
+    background: rgba(201, 169, 98, 0.15);
+    color: var(--color-warning);
+}
+
+.segment-status.missing {
+    background: rgba(184, 92, 92, 0.1);
+    color: var(--color-error);
+}
+
+.segment-status.skipped {
+    background: rgba(160, 160, 160, 0.1);
+    color: var(--color-text-subtle);
+}
+
+.segment-source {
+    font-size: 0.5625rem;
+    color: var(--color-text-subtle);
+    font-style: italic;
+    line-height: 1.2;
+}
+
+.segment-next {
+    font-size: 0.5625rem;
+    color: var(--color-text-muted);
+    margin-top: auto;
+    font-style: italic;
+    line-height: 1.2;
+}
+
+/* ==========================================================================
+   Substages
+   ========================================================================== */
+
+.segment-substages {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+    width: 100%;
+    margin-top: var(--space-2);
+}
+
+.substage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--space-2);
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    min-height: 60px;
+}
+
+.substage[data-status="complete"] {
+    border-color: rgba(107, 142, 107, 0.4);
+}
+
+.substage[data-status="inferred"] {
+    border-color: rgba(201, 169, 98, 0.4);
+}
+
+.substage[data-status="missing"] {
+    opacity: 0.6;
+    border-color: transparent;
+}
+
+.substage-label {
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+}
+
+.substage-status {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.substage-status.complete {
+    color: var(--color-success);
+}
+
+.substage-status.inferred {
+    color: var(--color-warning);
+}
+
+.substage-status.missing {
+    color: var(--color-text-subtle);
+}
+
+.substage-source {
+    font-size: 0.5625rem;
+    color: var(--color-text-subtle);
+    font-style: italic;
+    text-align: center;
+}
+
+.substage-hint {
+    font-size: 0.5625rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+    text-align: center;
+}
+
+/* ==========================================================================
+   Pipeline Status Dots (Card view)
+   ========================================================================== */
+
+.pipeline-status {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-border);
+}
+
+.status-dot.complete {
+    background: var(--color-success);
+}
+
+.status-dot.partial {
+    background: var(--color-warning);
+}
+
+.status-dot.missing {
+    background: var(--color-error);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .pipeline-track {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .pipeline-segment {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .pipeline-segment:last-child {
+        border-bottom: none;
+    }
+
+    .segment-body {
+        min-height: auto;
+        padding: var(--space-3);
+    }
+
+    .segment-substages {
+        grid-template-columns: 1fr 1fr;
+    }
+}

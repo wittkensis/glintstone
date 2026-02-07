@@ -14,6 +14,7 @@ from datetime import datetime
 
 # Base paths
 BASE_DIR = Path("/Volumes/Portable Storage/CUNEIFORM")
+DOWNLOADS_DIR = BASE_DIR / "downloads"
 ORACC_BASE = "http://oracc.museum.upenn.edu"
 
 # Glossary sources - project and languages
@@ -98,7 +99,7 @@ def download_project_glossaries(project: str, languages: list, description: str)
     print(f"Project: {project} - {description}")
     print(f"{'='*60}")
 
-    output_dir = BASE_DIR / "ORACC" / project / "glossaries"
+    output_dir = DOWNLOADS_DIR / "ORACC" / project / "glossaries"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     results = {"success": [], "failed": []}
@@ -118,7 +119,7 @@ def download_epsd2_main():
     print("Downloading ePSD2 Main Dictionary")
     print(f"{'='*60}")
 
-    output_dir = BASE_DIR / "ePSD2" / "dictionary"
+    output_dir = DOWNLOADS_DIR / "ePSD2" / "dictionary"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Try to get the main dictionary files

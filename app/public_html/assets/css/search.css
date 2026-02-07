@@ -1,0 +1,136 @@
+/**
+ * Search Page Styles
+ * Dependencies: CSS variables from core.css
+ */
+
+/* ==========================================================================
+   Search Header
+   ========================================================================== */
+
+.search-header {
+    margin-bottom: var(--space-8);
+}
+
+.search-form {
+    margin-top: var(--space-4);
+}
+
+.search-box-large {
+    display: flex;
+    gap: var(--space-2);
+    max-width: 600px;
+}
+
+.search-box-large input {
+    flex: 1;
+    padding: var(--space-3) var(--space-4);
+    font-size: 1.125rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+}
+
+.search-box-large input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.search-box-large button {
+    padding: var(--space-3) var(--space-6);
+    font-size: 1rem;
+}
+
+/* ==========================================================================
+   Results
+   ========================================================================== */
+
+.results-count {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-6);
+}
+
+.no-results {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: var(--space-8);
+}
+
+/* ==========================================================================
+   Glossary Matches
+   ========================================================================== */
+
+.glossary-matches {
+    margin-bottom: var(--space-8);
+    padding: var(--space-4);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.glossary-matches h3 {
+    margin-bottom: var(--space-4);
+    font-size: 1rem;
+}
+
+.glossary-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.glossary-match {
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+}
+
+.glossary-match .guide {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.glossary-match .lang {
+    color: var(--color-accent);
+    font-size: 0.75rem;
+    margin-left: var(--space-2);
+}
+
+/* ==========================================================================
+   Tablet Results
+   ========================================================================== */
+
+.tablet-results h3 {
+    margin-bottom: var(--space-4);
+}
+
+/* ==========================================================================
+   Search Tips
+   ========================================================================== */
+
+.search-tips {
+    max-width: 600px;
+    padding: var(--space-6);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.search-tips h3 {
+    margin-bottom: var(--space-4);
+}
+
+.search-tips ul {
+    list-style: none;
+    padding: 0;
+}
+
+.search-tips li {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.search-tips li:last-child {
+    border-bottom: none;
+}

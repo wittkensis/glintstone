@@ -6,9 +6,10 @@
 
 // Configuration
 define('THUMBNAIL_SIZE', 200);
-define('CDLI_BASE', '/Volumes/Portable Storage/CUNEIFORM/CDLI/images');
-define('THUMBNAIL_DIR', CDLI_BASE . '/thumbnails');
-define('LOCAL_IMAGE_DIR', CDLI_BASE);
+define('DATABASE_ROOT', dirname(__DIR__, 3) . '/database');
+define('IMAGE_DIR', DATABASE_ROOT . '/images');
+define('THUMBNAIL_DIR', IMAGE_DIR . '/thumbnails');
+define('LOCAL_IMAGE_DIR', IMAGE_DIR);
 
 // Ensure thumbnail directory exists
 if (!is_dir(THUMBNAIL_DIR)) {
@@ -48,9 +49,9 @@ if (file_exists($localPath)) {
     $sourceType = 'local';
 }
 
-// 2. Try CDLI photo
+// 2. Try CDLI photo (cdli.earth is the current domain)
 if (!$sourceImage) {
-    $cdliUrl = "https://cdli.ucla.edu/dl/photo/{$pNumber}.jpg";
+    $cdliUrl = "https://cdli.earth/dl/photo/{$pNumber}.jpg";
     $sourceImage = fetchRemoteImage($cdliUrl);
     if ($sourceImage) {
         $sourceType = 'cdli-photo';
@@ -59,7 +60,7 @@ if (!$sourceImage) {
 
 // 3. Try CDLI lineart
 if (!$sourceImage) {
-    $cdliLineartUrl = "https://cdli.ucla.edu/dl/lineart/{$pNumber}.jpg";
+    $cdliLineartUrl = "https://cdli.earth/dl/lineart/{$pNumber}.jpg";
     $sourceImage = fetchRemoteImage($cdliLineartUrl);
     if ($sourceImage) {
         $sourceType = 'cdli-lineart';
@@ -80,6 +81,11 @@ $thumbnail = generateSquareThumbnail($sourceImage, $size, $sourceType !== 'local
 if ($thumbnail) {
     // Save to cache
     imagejpeg($thumbnail, $thumbnailPath, 85);
+
+    // Update pipeline_status if we got image from CDLI
+    if (str_starts_with($sourceType, 'cdli')) {
+        updateImageStatus($pNumber, $sourceType);
+    }
 
     // Output
     header('Content-Type: image/jpeg');
@@ -166,7 +172,7 @@ function generateSquareThumbnail(string $sourcePath, int $size, bool $isTemp = f
     // Create thumbnail
     $thumbnail = imagecreatetruecolor($size, $size);
 
-    // Set background color (dark, matches Kenilworth theme)
+    // Set background color (dark theme)
     $bgColor = imagecolorallocate($thumbnail, 30, 30, 35);
     imagefill($thumbnail, 0, 0, $bgColor);
 
@@ -186,4 +192,34 @@ function generateSquareThumbnail(string $sourcePath, int $size, bool $isTemp = f
     imagedestroy($source);
 
     return $thumbnail;
+}
+
+/**
+ * Update pipeline_status to mark image as available
+ */
+function updateImageStatus(string $pNumber, string $source): void {
+    try {
+        $dbPath = DATABASE_ROOT . '/glintstone.db';
+        $db = new SQLite3($dbPath, SQLITE3_OPEN_READWRITE);
+
+        // Update or insert pipeline status
+        $db->exec("
+            INSERT INTO pipeline_status (p_number, has_image)
+            VALUES ('$pNumber', 1)
+            ON CONFLICT(p_number) DO UPDATE SET
+                has_image = 1,
+                quality_score = (
+                    1 * 0.2 +
+                    COALESCE(has_atf, 0) * 0.3 +
+                    COALESCE(has_lemmas, 0) * 0.25 +
+                    COALESCE(has_translation, 0) * 0.25
+                ),
+                last_updated = CURRENT_TIMESTAMP
+        ");
+
+        $db->close();
+    } catch (Exception $e) {
+        // Silently fail - thumbnail still works even if DB update fails
+        error_log("Failed to update image status for $pNumber: " . $e->getMessage());
+    }
 }

@@ -1,0 +1,1387 @@
+/**
+ * Tablet Detail Page Styles
+ * Page-specific styles for the tablet detail view
+ * Dependencies: CSS variables from core.css
+ */
+
+/* ==========================================================================
+   Compact Header
+   ========================================================================== */
+
+.tablet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-3);
+}
+
+.tablet-header__main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex: 1;
+    min-width: 0;
+}
+
+.tablet-header__identity {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.tablet-header__pnumber {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.tablet-header__sep {
+    color: var(--color-text-subtle);
+    font-weight: 300;
+}
+
+.tablet-header__designation {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tablet-header__badges {
+    display: flex;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.language-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-radius: var(--radius-sm);
+}
+
+/* Actions Menu */
+.tablet-header__actions {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.actions-menu {
+    position: relative;
+}
+
+.actions-menu__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.actions-menu__trigger:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+}
+
+.actions-menu__dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    min-width: 160px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    overflow: hidden;
+}
+
+.actions-menu:hover .actions-menu__dropdown,
+.actions-menu:focus-within .actions-menu__dropdown {
+    display: block;
+}
+
+.actions-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.8125rem;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: background var(--transition-fast);
+}
+
+.actions-menu__item:hover {
+    background: var(--color-surface);
+}
+
+.actions-menu__item svg {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+/* Composite Toggle Button */
+/* Composite Toggle - now uses .btn.btn--icon-left.btn--toggle */
+
+/* Add margin adjustment for composite toggle specifically */
+.tablet-header .btn.btn--toggle {
+    margin-right: var(--space-2);
+}
+
+/* ==========================================================================
+   Composite Panel
+   ========================================================================== */
+
+/* Composite panel - part of grid layout with dynamic height */
+.composite-panel {
+    display: flex;
+    max-height: 0;
+    width: 100%;
+    min-width: 0;
+    background: #0f0f0f;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 1;
+}
+
+.composite-panel.is-open {
+    max-height: 500px; /* Large enough for any content */
+}
+
+/* Fixed header on left */
+.composite-panel__header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: var(--space-3) var(--space-4);
+    border-right: 1px solid var(--color-border);
+    flex-shrink: 0;
+    width: 200px;
+}
+
+.composite-panel__title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+    line-height: 1.3;
+}
+
+.composite-panel__count {
+    font-size: 0.65rem;
+    color: var(--color-text-subtle);
+}
+
+/* Horizontal scrolling list */
+.composite-panel__list {
+    display: flex;
+    gap: 0.5rem;
+    padding: var(--space-2) var(--space-2);
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+
+    /* Hide scrollbars */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.composite-panel__list::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Opera */
+}
+
+.composite-panel__loading {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    padding: var(--space-2);
+}
+
+/* Tablet item in composite list - matches ATF composite item styling */
+.composite-tablet-item {
+    display: flex;
+    gap: var(--space-2);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: transparent;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.composite-tablet-item:hover {
+    background: var(--color-bg-subtle);
+}
+
+.composite-tablet-item.is-current {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.composite-tablet-item.is-current:hover {
+    background: var(--color-accent);
+}
+
+/* Thumbnail */
+.composite-tablet-item__thumbnail {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background: var(--color-bg-elevated);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    position: relative;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__thumbnail {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.composite-tablet-item__thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.composite-tablet-item__placeholder {
+    position: absolute;
+    color: var(--color-text-subtle);
+    font-size: 1.5rem;
+    font-family: 'Noto Sans Cuneiform', serif;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Info section */
+.composite-tablet-item__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+.composite-tablet-item__pnumber {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.2;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__pnumber {
+    color: var(--color-bg);
+}
+
+.composite-tablet-item__designation {
+    font-size: 0.6rem;
+    color: var(--color-text-subtle);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__designation {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ==========================================================================
+   Metadata Display
+   ========================================================================== */
+
+.tablet-meta {
+    margin-bottom: var(--space-4);
+}
+
+.tablet-meta__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3) var(--space-6);
+    margin: 0;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tablet-meta__row dt {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tablet-meta__row dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+
+.meta-name {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.meta-code {
+    color: var(--color-text-muted);
+    font-size: 0.875em;
+    margin-left: var(--space-1);
+}
+
+/* More details toggle - inline with metadata */
+.tablet-meta__toggle {
+    font-size: 0.6875rem;
+    color: var(--color-text-subtle);
+    cursor: pointer;
+    user-select: none;
+    padding: var(--space-1) 0;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.tablet-meta__toggle:hover {
+    color: var(--color-text-muted);
+}
+
+.tablet-meta__toggle-icon {
+    transition: transform 0.15s ease;
+}
+
+.tablet-meta__toggle[aria-expanded="true"] .tablet-meta__toggle-icon {
+    transform: rotate(90deg);
+}
+
+/* Secondary metadata row */
+.tablet-meta__secondary {
+    display: none;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+.tablet-meta__secondary.is-open {
+    display: flex;
+}
+
+/* ==========================================================================
+   Chevron Pipeline
+   ========================================================================== */
+
+.pipeline-chevron {
+    --pipeline-height: 44px;
+    --chevron-size: 14px;
+    display: flex;
+    margin-bottom: var(--space-4);
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    height: var(--pipeline-height);
+}
+
+.pipeline-chevron__step {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--space-3);
+    padding-left: calc(var(--chevron-size) + var(--space-2));
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    height: var(--pipeline-height);
+}
+
+.pipeline-chevron__step:first-child {
+    padding-left: var(--space-3);
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.pipeline-chevron__step:last-child {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Chevron arrow shape - use calc for perfect alignment */
+.pipeline-chevron__step::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: calc(-1 * var(--chevron-size));
+    width: 0;
+    height: 0;
+    border-top: calc(var(--pipeline-height) / 2) solid transparent;
+    border-bottom: calc(var(--pipeline-height) / 2) solid transparent;
+    border-left: var(--chevron-size) solid var(--color-surface);
+    z-index: 2;
+}
+
+.pipeline-chevron__step:last-child::after {
+    display: none;
+}
+
+/* Chevron notch on left side */
+.pipeline-chevron__step::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-top: calc(var(--pipeline-height) / 2) solid transparent;
+    border-bottom: calc(var(--pipeline-height) / 2) solid transparent;
+    border-left: var(--chevron-size) solid var(--color-bg);
+    z-index: 1;
+}
+
+.pipeline-chevron__step:first-child::before {
+    display: none;
+}
+
+.pipeline-chevron__label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.pipeline-chevron__status {
+    font-size: 0.5625rem;
+    font-weight: 400;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+/* Status colors - high contrast between states */
+.pipeline-chevron__step--complete {
+    background: rgba(92, 160, 92, 0.35);
+    color: #7dc47d;
+}
+.pipeline-chevron__step--complete::after {
+    border-left-color: rgba(92, 160, 92, 0.35);
+}
+
+.pipeline-chevron__step--partial,
+.pipeline-chevron__step--inferred {
+    background: rgba(201, 169, 98, 0.3);
+    color: var(--color-warning);
+}
+.pipeline-chevron__step--partial::after,
+.pipeline-chevron__step--inferred::after {
+    border-left-color: rgba(201, 169, 98, 0.3);
+}
+
+.pipeline-chevron__step--skipped {
+    background: rgba(90, 90, 95, 0.4);
+    color: #888;
+}
+.pipeline-chevron__step--skipped::after {
+    border-left-color: rgba(90, 90, 95, 0.4);
+}
+
+.pipeline-chevron__step--missing {
+    background: rgba(184, 92, 92, 0.25);
+    color: #d47878;
+}
+.pipeline-chevron__step--missing::after {
+    border-left-color: rgba(184, 92, 92, 0.25);
+}
+
+/* ==========================================================================
+   Compact Pipeline (for thumbnails/cards)
+   ========================================================================== */
+
+.pipeline-mini {
+    display: flex;
+    gap: 2px;
+}
+
+.pipeline-mini__step {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--color-border);
+}
+
+.pipeline-mini__step--complete {
+    background: var(--color-success);
+}
+
+.pipeline-mini__step--partial,
+.pipeline-mini__step--inferred {
+    background: var(--color-warning);
+}
+
+.pipeline-mini__step--skipped {
+    background: var(--color-text-subtle);
+}
+
+.pipeline-mini__step--missing {
+    background: var(--color-error);
+}
+
+/* ==========================================================================
+   Quality Bar
+   ========================================================================== */
+
+.quality-bar {
+    margin-top: var(--space-4);
+}
+
+.quality-bar label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--color-surface);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--color-accent);
+    transition: width 0.3s;
+}
+
+/* ==========================================================================
+   Image & Text Sections
+   ========================================================================== */
+
+.tablet-text h3,
+.tablet-image h3 {
+    margin-bottom: var(--space-4);
+}
+
+.image-source,
+.atf-source {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    margin-top: var(--space-2);
+}
+
+/* ==========================================================================
+   ATF Word Styling
+   ========================================================================== */
+
+/* ATF word styling */
+.atf-word {
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background-color 0.15s, color 0.15s;
+    font-weight: normal; /* Reset if using <b> element */
+}
+
+/* Reset em/code styling in ATF display */
+.atf-display em,
+.atf-display code {
+    font-style: normal;
+    font-family: inherit;
+    background: none;
+}
+
+.atf-word:hover {
+    background: var(--color-surface);
+}
+
+/* Words with definitions - visually distinct */
+.atf-word.has-definition {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+}
+
+.atf-word.has-definition:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    text-decoration: none;
+}
+
+/* Words without definitions - more muted */
+.atf-word.no-definition {
+    color: var(--color-text-muted);
+}
+
+.atf-word.no-definition:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+/* ==========================================================================
+   Glossary Popup
+   ========================================================================== */
+
+/* Glossary popup */
+.glossary-popup {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    min-width: 200px;
+    max-width: 320px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    font-size: 0.875rem;
+}
+
+.glossary-popup .popup-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.glossary-popup .popup-header strong {
+    color: var(--color-accent);
+}
+
+.popup-pos {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    background: var(--color-surface);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+}
+
+.popup-definition {
+    color: var(--color-text);
+    line-height: 1.4;
+}
+
+.popup-citation {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-2);
+    font-style: italic;
+}
+
+.popup-more {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    margin-top: var(--space-2);
+}
+
+.popup-loading,
+.popup-empty,
+.popup-error {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   No Content States
+   ========================================================================== */
+
+.no-image,
+.no-atf {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    padding: var(--space-8);
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    position: relative;
+    z-index: 1;
+}
+
+/* Allow clicks through to the toggle button */
+.no-atf > * {
+    pointer-events: auto;
+}
+
+.no-atf {
+    pointer-events: none;
+}
+
+.contribute-buttons {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: center;
+    margin-top: var(--space-4);
+}
+
+/* ==========================================================================
+   OCR Explanation Box
+   ========================================================================== */
+
+/* OCR explanation when no ATF */
+.ocr-explanation {
+    margin-bottom: var(--space-4);
+    text-align: left;
+}
+
+.ocr-info-box {
+    background: rgba(201, 169, 98, 0.1);
+    border: 1px solid rgba(201, 169, 98, 0.3);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+}
+
+.ocr-info-box h4 {
+    margin: 0 0 var(--space-2) 0;
+    color: var(--color-accent);
+    font-size: 0.95rem;
+}
+
+.ocr-info-box > p {
+    margin: 0;
+    color: var(--color-text);
+    line-height: 1.5;
+}
+
+.ocr-info-box details {
+    margin-top: var(--space-3);
+}
+
+.ocr-info-box summary {
+    cursor: pointer;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.ocr-info-box summary:hover {
+    color: var(--color-text);
+}
+
+.ocr-details {
+    margin-top: var(--space-3);
+    padding-left: var(--space-3);
+    border-left: 2px solid var(--color-border);
+}
+
+.ocr-details p {
+    margin: 0 0 var(--space-2) 0;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+.ocr-details p:last-child {
+    margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+    background: var(--color-bg-subtle);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Composites Section
+   ========================================================================== */
+
+.composites-section {
+    margin-top: var(--space-8);
+}
+
+.composite-list {
+    list-style: none;
+    padding: 0;
+}
+
+.composite-list li {
+    padding: var(--space-3);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-2);
+}
+
+.q-number {
+    font-family: var(--font-mono);
+    color: var(--color-success);
+    margin-right: var(--space-4);
+}
+
+/* ==========================================================================
+   Image Options
+   ========================================================================== */
+
+/* Image options toolbar */
+.image-options {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.btn-small {
+    padding: var(--space-1) var(--space-3);
+    font-size: 0.75rem;
+}
+
+/* Annotation toggle button */
+.annotation-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.annotation-toggle:has(input:checked) {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-color: var(--color-accent);
+}
+
+.annotation-toggle input {
+    display: none;
+}
+
+.annotation-badge {
+    font-size: 0.65rem;
+    background: var(--color-success);
+    color: var(--color-bg);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    margin-left: var(--space-2);
+}
+
+.annotation-toggle:has(input:checked) .annotation-badge {
+    background: var(--color-bg);
+    color: var(--color-accent);
+}
+
+.annotation-source-badge {
+    font-size: 0.65rem;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    padding: 1px 4px;
+    border-radius: 2px;
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-family: var(--font-mono);
+}
+
+/* ==========================================================================
+   Translation Section
+   ========================================================================== */
+
+/* Translation section */
+.translation-section {
+    margin-top: var(--space-8);
+}
+
+.translation-section h3 {
+    margin-bottom: var(--space-4);
+}
+
+.translation-block {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.translation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.translation-lang {
+    font-weight: 600;
+    color: var(--color-accent);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.translation-source {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+}
+
+.translation-text {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--color-text);
+}
+
+.no-translation {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .tablet-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
+
+    .tablet-header__main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+        width: 100%;
+    }
+
+    .tablet-header__identity {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .tablet-header__sep {
+        display: none;
+    }
+
+    .tablet-header__designation {
+        font-size: 0.875rem;
+    }
+
+    .tablet-header__actions {
+        position: absolute;
+        top: var(--space-4);
+        right: var(--space-4);
+    }
+
+    .tablet-meta__row {
+        gap: var(--space-2) var(--space-4);
+    }
+
+    /* Chevron pipeline - hide labels on small screens */
+    .pipeline-chevron__step {
+        padding: var(--space-1) var(--space-2);
+        padding-left: var(--space-3);
+        min-height: 32px;
+    }
+
+    .pipeline-chevron__step:first-child {
+        padding-left: var(--space-2);
+    }
+
+    .pipeline-chevron__label {
+        font-size: 0.5625rem;
+    }
+
+    .pipeline-chevron__status {
+        display: none;
+    }
+
+    .pipeline-chevron__step::after {
+        right: -8px;
+        border-top-width: 16px;
+        border-bottom-width: 16px;
+        border-left-width: 8px;
+    }
+
+    .pipeline-chevron__step::before {
+        border-top-width: 16px;
+        border-bottom-width: 16px;
+        border-left-width: 8px;
+    }
+}
+
+/* ==========================================================================
+   Full-Page Immersive Layout
+   ========================================================================== */
+
+/* Site header height - adjust if needed */
+:root {
+    --site-header-height: 71px;
+}
+
+/* Prevent body overflow on tablet detail pages */
+body:has(.tablet-detail-page) {
+    overflow-x: hidden;
+    height: 100vh;
+}
+
+/* Page wrapper uses CSS Grid for pure CSS layout (2 rows) */
+.tablet-detail-page {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: calc(100vh - var(--site-header-height));
+    max-height: calc(100vh - var(--site-header-height));
+    overflow: hidden;
+}
+
+/* Main container holds composite panel (full width) + inner content (constrained) */
+.tablet-detail-page > .container {
+    width: 100%;
+    padding: 0;
+    background: var(--color-bg);
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    overflow-x: hidden;
+}
+
+/* Inner container constrains header/meta width */
+.container-inner {
+    max-width: 1000px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Full-page viewer fills remaining grid space */
+.tablet-detail-fullpage {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0; /* Important: prevents grid item from expanding beyond allocated space */
+    background: var(--color-bg);
+    z-index: 10;
+}
+
+/* Ensure container doesn't expand beyond grid row */
+.tablet-detail-page > .container {
+    min-height: 0;
+}
+
+/* Viewer container - flexbox for dynamic sizing */
+.tablet-detail-viewer {
+    display: flex;
+    flex: 1;
+    position: relative;
+}
+
+/* Viewer panel - dynamic width based on state */
+.viewer-panel {
+    position: relative;
+    flex-shrink: 0;
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Gradient overlay - indicates content is "below surface" when collapsed */
+.viewer-panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to right,
+        rgba(0, 0, 0, 0.8) 0%,
+        rgba(0, 0, 0, 0.6) 50%,
+        rgba(0, 0, 0, 0.8) 100%
+    );
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsed state: 100px thumbnail sidebar alongside ATF */
+.tablet-detail-viewer[data-state="collapsed"] .viewer-panel {
+    width: 100px;
+}
+
+/* Show overlay when collapsed - image is "beneath surface" */
+.tablet-detail-viewer[data-state="collapsed"] .viewer-panel::after {
+    opacity: 1;
+}
+
+/* Expanded state: 50% width */
+.tablet-detail-viewer[data-state="expanded"] .viewer-panel {
+    width: 50%;
+}
+
+/* Image section fills viewer panel */
+.tablet-detail-viewer .tablet-image {
+    position: relative; /* For absolute positioning of toggle button */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-4);
+    background: var(--color-surface);
+}
+
+/* Collapsed state: remove padding, non-interactive thumbnail view */
+.tablet-detail-viewer[data-state="collapsed"] .tablet-image {
+    padding: 0;
+    pointer-events: none; /* Disable interactions in collapsed state */
+}
+
+/* Expanded state: remove padding (Google Maps style) */
+.tablet-detail-viewer[data-state="expanded"] .tablet-image {
+    padding: 0;
+    pointer-events: auto; /* Re-enable interactions in expanded state */
+}
+
+/* Zoombox fills available space */
+.tablet-detail-viewer .zoombox {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.tablet-detail-viewer .zoombox__viewport {
+    height: auto !important; /* Override 500px fixed height */
+    flex: 1;
+    border-radius: 0;
+    background: #000;
+}
+
+/* Image source/options positioning */
+.tablet-detail-viewer .image-source,
+.tablet-detail-viewer .image-options {
+    flex-shrink: 0;
+    padding: var(--space-2) var(--space-4);
+}
+
+/* Hide image source/options in both collapsed and expanded states */
+.tablet-detail-viewer[data-state="collapsed"] .image-source,
+.tablet-detail-viewer[data-state="collapsed"] .image-options,
+.tablet-detail-viewer[data-state="expanded"] .image-source,
+.tablet-detail-viewer[data-state="expanded"] .image-options {
+    display: none;
+}
+
+/* Hide zoombox controls and minimap in collapsed state */
+.tablet-detail-viewer[data-state="collapsed"] .zoombox__controls,
+.tablet-detail-viewer[data-state="collapsed"] .zoombox__minimap-container {
+    display: none;
+}
+
+/* Collapsed state: fit thumbnail to width, maintain aspect ratio */
+.tablet-detail-viewer[data-state="collapsed"] .zoombox__viewport {
+    cursor: default; /* Remove grab cursor */
+}
+
+.tablet-detail-viewer[data-state="collapsed"] .zoombox__image {
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
+}
+
+/* Icon toggle based on aria-expanded attribute on button */
+.viewer-toggle .viewer-toggle__icon-expand,
+.viewer-toggle .viewer-toggle__icon-collapse {
+    display: none !important;
+}
+
+/* Show expand when collapsed (aria-expanded="false") */
+.viewer-toggle[aria-expanded="false"] .viewer-toggle__icon-expand {
+    display: block !important;
+}
+
+/* Show collapse when expanded (aria-expanded="true") */
+.viewer-toggle[aria-expanded="true"] .viewer-toggle__icon-collapse {
+    display: block !important;
+}
+
+/* ATF panel fills remaining space */
+.atf-panel {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: #0f0f0f; /* Much darker than var(--color-bg) #1a1a1a */
+    overflow: hidden;
+    position: relative;
+}
+
+/* Standalone viewer toggle (for tablets without ATF) */
+.atf-panel > .viewer-toggle {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    cursor: pointer;
+    pointer-events: auto;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* Hide standalone toggle when ATF viewer is present */
+.atf-panel:has(.atf-viewer) > .viewer-toggle {
+    display: none;
+}
+
+.atf-panel > .viewer-toggle:hover {
+    background: var(--color-surface);
+    border-color: var(--color-border-hover);
+}
+
+.atf-panel > .viewer-toggle .viewer-toggle__icon-expand,
+.atf-panel > .viewer-toggle .viewer-toggle__icon-collapse {
+    display: none !important;
+}
+
+.atf-panel > .viewer-toggle[aria-expanded="false"] .viewer-toggle__icon-expand {
+    display: block !important;
+}
+
+.atf-panel > .viewer-toggle[aria-expanded="true"] .viewer-toggle__icon-collapse {
+    display: block !important;
+}
+
+/* ATF viewer fills panel */
+.atf-panel .atf-viewer-container {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+.atf-panel .atf-viewer {
+    flex: 1;
+    border: none;
+    border-radius: 0;
+    background: #0f0f0f;
+}
+
+.atf-panel .atf-content {
+    background: #0f0f0f;
+}
+
+.atf-panel .no-atf {
+    background: #0f0f0f;
+}
+
+/* ATF source note - positioned relative to ATF viewer main, not entire panel */
+.atf-viewer__main .atf-source {
+    padding: var(--space-2);
+    border: 1px solid #202020;
+    background: #0a0a0a;
+    display: inline-block;
+    position: absolute;
+    border-radius: var(--radius-md);
+    bottom: var(--space-2);
+    right: var(--space-2);
+    z-index: 10;
+}
+
+/* Dictionary/Composite panels - adjust for dark bg */
+.atf-panel .atf-dictionary {
+    background: #141414;
+    border-left: 1px solid #202020;
+}
+
+.atf-panel .atf-composite-panel {
+    background: #141414;
+    border-right: 1px solid #202020;
+}
+
+/* Mobile: Stack vertically */
+@media (max-width: 768px) {
+    .tablet-detail-viewer {
+        flex-direction: column;
+    }
+
+    .tablet-detail-viewer[data-state="collapsed"] .viewer-panel,
+    .tablet-detail-viewer[data-state="expanded"] .viewer-panel {
+        width: 100%;
+        height: 50vh;
+    }
+
+    .atf-panel {
+        flex: 1;
+        border-right: none;
+        border-top: 1px solid var(--color-border);
+    }
+}
+
+/* Print: Restore contained layout */
+@media print {
+    .tablet-detail-fullpage {
+        height: auto;
+    }
+
+    .tablet-detail-viewer {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .viewer-panel {
+        width: 100% !important;
+    }
+
+    .viewer-toggle {
+        display: none;
+    }
+}

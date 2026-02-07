@@ -1,0 +1,16 @@
+{
+  "last_p_number": "P372306",
+  "tablets_processed": 135254,
+  "started_at": "2026-02-05T00:24:13.834409",
+  "completed": true,
+  "last_updated": "2026-02-05T00:24:16.496535",
+  "stats": {
+    "processed": 135254,
+    "inscriptions_inserted": 0,
+    "inscriptions_updated": 102,
+    "artifacts_created": 33448,
+    "composites_found": 3777,
+    "skipped": 135152
+  },
+  "error_count": 0
+}

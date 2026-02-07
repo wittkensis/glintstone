@@ -1,0 +1,168 @@
+/**
+ * Icon System Styles
+ * Standardized styling for SVG icons and icon buttons
+ * Dependencies: CSS variables from core.css
+ */
+
+/* ==========================================================================
+   Base Icon Styles
+   ========================================================================== */
+
+svg[aria-hidden="true"] {
+    display: inline-block;
+    vertical-align: middle;
+    fill: currentColor;
+}
+
+/* Icon sizes */
+.icon-sm {
+    width: 16px;
+    height: 16px;
+}
+
+.icon-md {
+    width: 24px;
+    height: 24px;
+}
+
+.icon-lg {
+    width: 32px;
+    height: 32px;
+}
+
+/* ==========================================================================
+   Icon Buttons
+   ========================================================================== */
+
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 40px;
+    min-height: 40px;
+}
+
+.icon-btn svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.icon-btn:hover {
+    background: var(--color-surface);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.icon-btn:active {
+    transform: scale(0.95);
+}
+
+.icon-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* Icon button variants */
+.icon-btn-ghost {
+    border-color: transparent;
+}
+
+.icon-btn-ghost:hover {
+    background: var(--color-surface);
+    border-color: transparent;
+}
+
+.icon-btn-primary {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: white;
+}
+
+.icon-btn-primary:hover {
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+    color: white;
+}
+
+/* Icon button sizes */
+.icon-btn-sm {
+    min-width: 32px;
+    min-height: 32px;
+    padding: var(--space-1);
+}
+
+.icon-btn-sm svg {
+    width: 16px;
+    height: 16px;
+}
+
+.icon-btn-lg {
+    min-width: 48px;
+    min-height: 48px;
+    padding: var(--space-3);
+}
+
+.icon-btn-lg svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* ==========================================================================
+   Icon Groups
+   ========================================================================== */
+
+.icon-group {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.icon-group .icon-btn {
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Screen Reader Only
+   ========================================================================== */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* ==========================================================================
+   Accessibility
+   ========================================================================== */
+
+/* Ensure icons have sufficient contrast */
+@media (prefers-contrast: high) {
+    .icon-btn {
+        border-width: 2px;
+    }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .icon-btn {
+        transition: none;
+    }
+
+    .icon-btn:active {
+        transform: none;
+    }
+}

@@ -51,6 +51,7 @@ except ImportError:
 # =============================================================================
 
 BASE_DIR = Path("/Volumes/Portable Storage/CUNEIFORM")
+DOWNLOADS_DIR = BASE_DIR / "downloads"
 PROGRESS_FILE = BASE_DIR / "_progress" / "download_state.json"
 CHECKSUM_FILE = BASE_DIR / "_progress" / "checksums.json"
 ERROR_LOG = BASE_DIR / "_progress" / "errors.log"
@@ -373,7 +374,7 @@ def download_cdli_metadata(
     logger.info("CDLI Metadata (Git Repository)")
     logger.info("=" * 60)
 
-    dest_dir = BASE_DIR / "CDLI" / "metadata"
+    dest_dir = DOWNLOADS_DIR / "CDLI" / "metadata"
     state = progress.get_source_state("cdli_metadata")
 
     if state.get("status") == "complete":
@@ -438,7 +439,7 @@ def download_cdli_catalogue(
     logger.info(f"CDLI Catalogue (limit: {limit} records)")
     logger.info("=" * 60)
 
-    catalogue_dir = BASE_DIR / "CDLI" / "catalogue"
+    catalogue_dir = DOWNLOADS_DIR / "CDLI" / "catalogue"
     catalogue_dir.mkdir(parents=True, exist_ok=True)
 
     state = progress.get_source_state("cdli_catalogue")
@@ -531,20 +532,20 @@ def download_cdli_images(
     logger.info(f"CDLI Images (limit: {limit})")
     logger.info("=" * 60)
 
-    images_dir = BASE_DIR / "CDLI" / "images"
+    images_dir = DOWNLOADS_DIR / "CDLI" / "images"
     state = progress.get_source_state("cdli_images")
 
     # Get list of P-numbers from metadata
     p_numbers = []
 
     # Try ATF file first (most reliable source with 135K+ P-numbers)
-    atf_file = BASE_DIR / "CDLI" / "metadata" / "cdliatf_unblocked.atf"
+    atf_file = DOWNLOADS_DIR / "CDLI" / "metadata" / "cdliatf_unblocked.atf"
     if atf_file.exists():
         logger.info("Extracting P-numbers from ATF file...")
         p_numbers = extract_p_numbers_from_atf(atf_file, limit)
     else:
         # Try JSON catalogue as fallback
-        json_catalogue_dir = BASE_DIR / "CDLI" / "catalogue"
+        json_catalogue_dir = DOWNLOADS_DIR / "CDLI" / "catalogue"
         if json_catalogue_dir.exists() and list(json_catalogue_dir.glob("batch-*.json")):
             logger.info("Using JSON catalogue for P-numbers...")
             p_numbers = extract_p_numbers_from_json(json_catalogue_dir, limit)
@@ -737,7 +738,7 @@ def download_oracc_projects(
     logger.info("ORACC Projects")
     logger.info("=" * 60)
 
-    projects_dir = BASE_DIR / "ORACC" / "projects"
+    projects_dir = DOWNLOADS_DIR / "ORACC" / "projects"
     state = progress.get_source_state("oracc_projects")
 
     # Fetch project list
@@ -857,7 +858,7 @@ def download_ebl_dataset(
     logger.info("eBL (Electronic Babylonian Literature)")
     logger.info("=" * 60)
 
-    ebl_dir = BASE_DIR / "eBL"
+    ebl_dir = DOWNLOADS_DIR / "eBL"
     state = progress.get_source_state("ebl")
 
     if state.get("status") == "complete":
@@ -929,7 +930,7 @@ def download_cad_pdfs(
     logger.info("CAD (Chicago Assyrian Dictionary)")
     logger.info("=" * 60)
 
-    cad_dir = BASE_DIR / "CAD" / "pdfs"
+    cad_dir = DOWNLOADS_DIR / "CAD" / "pdfs"
     state = progress.get_source_state("cad")
 
     if state.get("status") == "complete":

@@ -1,0 +1,127 @@
+/**
+ * ATF Words Component
+ * Interactive word highlighting, definitions, and cuneiform typography
+ * Dependencies: CSS variables from core.css
+ */
+
+/* ==========================================================================
+   ATF Word Interaction
+   ========================================================================== */
+
+.atf-word {
+    cursor: pointer;
+    border-radius: 2px;
+    padding: 0 1px;
+    transition: background-color 0.15s, color 0.15s;
+    font-weight: normal;
+}
+
+/* Reset em/code styling in ATF display */
+.atf-display em,
+.atf-display code {
+    font-style: normal;
+    font-family: inherit;
+    background: none;
+}
+
+.atf-word:hover {
+    background: var(--color-surface);
+}
+
+/* ==========================================================================
+   Definition States
+   ========================================================================== */
+
+/* Words with definitions - visually distinct */
+.atf-word--has-definition,
+.atf-word.has-definition {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+}
+
+.atf-word--has-definition:hover,
+.atf-word.has-definition:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    text-decoration: none;
+}
+
+/* Words without definitions - urgent action needed */
+.atf-word--no-definition,
+.atf-word.no-definition {
+    color: var(--color-warning, #e8a64d);
+    text-decoration: underline;
+    text-decoration-style: wavy;
+    text-decoration-color: var(--color-warning, #e8a64d);
+    text-underline-offset: 3px;
+}
+
+.atf-word--no-definition:hover,
+.atf-word.no-definition:hover {
+    background: var(--color-warning, #e8a64d);
+    color: var(--color-bg);
+    text-decoration: none;
+}
+
+/* ==========================================================================
+   Determinatives
+   ========================================================================== */
+
+.atf-det {
+    font-size: 0.7em;
+    vertical-align: super;
+    line-height: 0;
+    font-weight: 600;
+    margin-right: -1px;
+}
+
+.atf-det--divine {
+    color: var(--color-accent);
+}
+
+.atf-det--place {
+    color: var(--color-success);
+}
+
+.atf-det--male,
+.atf-det--female {
+    color: var(--color-text-subtle);
+}
+
+.atf-det--suffix {
+    vertical-align: sub;
+    margin-left: -1px;
+    margin-right: 0;
+}
+
+/* ==========================================================================
+   Logograms
+   ========================================================================== */
+
+.atf-logo {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--color-text);
+}
+
+/* ==========================================================================
+   Damage Indicators (Superscript)
+   ========================================================================== */
+
+.atf-markers {
+    font-size: 0.7em;
+    line-height: 0;
+    margin-left: 1px;
+}
+
+/* Color markers based on word state */
+.atf-word--damaged .atf-markers,
+.atf-word--uncertain .atf-markers {
+    color: var(--color-warning);
+}
+
+.atf-word--corrected .atf-markers {
+    color: var(--color-success);
+}

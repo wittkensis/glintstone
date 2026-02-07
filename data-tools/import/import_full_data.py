@@ -12,7 +12,8 @@ import hashlib
 import sys
 
 BASE_DIR = Path("/Volumes/Portable Storage/CUNEIFORM")
-DB_PATH = BASE_DIR / "app" / "glintstone.db"
+DOWNLOADS_DIR = BASE_DIR / "downloads"
+DB_PATH = BASE_DIR / "database" / "glintstone.db"
 SCHEMA_PATH = BASE_DIR / "app" / "sql" / "schema.sql"
 
 # Track statistics
@@ -99,7 +100,7 @@ def import_all_glossaries(conn):
 
     # Find all glossary files
     glossary_files = []
-    for gloss_file in BASE_DIR.glob("ORACC/**/gloss-*.json"):
+    for gloss_file in DOWNLOADS_DIR.glob("ORACC/**/gloss-*.json"):
         # Skip duplicates (prefer extracted over json folder)
         if "/json/" in str(gloss_file) and "/extracted/" in str(gloss_file).replace("/json/", "/extracted/"):
             continue
@@ -196,7 +197,7 @@ def import_dcclt_catalogue(conn):
     print("IMPORTING DCCLT CATALOGUE")
     print("=" * 60)
 
-    catalogue_path = BASE_DIR / "ORACC/dcclt/extracted/dcclt/catalogue.json"
+    catalogue_path = DOWNLOADS_DIR / "ORACC/dcclt/extracted/dcclt/catalogue.json"
 
     with open(catalogue_path, 'r') as f:
         data = json.load(f)
@@ -240,7 +241,7 @@ def import_cdli_catalogue(conn):
     print("IMPORTING CDLI CATALOGUE")
     print("=" * 60)
 
-    catalog_path = BASE_DIR / "CDLI/catalogue/batch-00000.json"
+    catalog_path = DOWNLOADS_DIR / "CDLI/catalogue/batch-00000.json"
 
     with open(catalog_path, 'r') as f:
         data = json.load(f)
@@ -325,7 +326,7 @@ def import_corpus_texts(conn):
     print("IMPORTING CORPUS TEXTS (with lemmatization)")
     print("=" * 60)
 
-    corpus_dir = BASE_DIR / "ORACC/dcclt/extracted/dcclt/corpusjson"
+    corpus_dir = DOWNLOADS_DIR / "ORACC/dcclt/extracted/dcclt/corpusjson"
     corpus_files = list(corpus_dir.glob("P*.json"))
 
     print(f"  Found {len(corpus_files):,} corpus files")
@@ -425,7 +426,7 @@ def import_ogsl_signs(conn):
     print("IMPORTING OGSL SIGN LIST")
     print("=" * 60)
 
-    ogsl_path = BASE_DIR / "ORACC/ogsl/json/ogsl/ogsl-sl.json"
+    ogsl_path = DOWNLOADS_DIR / "ORACC/ogsl/json/ogsl/ogsl-sl.json"
 
     with open(ogsl_path, 'r') as f:
         data = json.load(f)
@@ -500,14 +501,19 @@ def update_pipeline_status(conn):
         lemma_count = cursor.fetchone()[0]
         has_lemmas = 1 if lemma_count > 0 else 0
 
-        # Calculate quality score
-        quality_score = (has_image * 20 + has_atf * 30 + has_lemmas * 30) / 100.0
+        # OCR status: treat tablets with ATF as "transcribed" (human OCR)
+        has_ocr = has_atf
+        ocr_confidence = 0.95 if has_ocr else None
+        ocr_model = 'human_transcription' if has_ocr else None
+
+        # Calculate quality score (5 stages, 20% each)
+        quality_score = (has_image * 20 + has_ocr * 20 + has_atf * 20 + has_lemmas * 20) / 100.0
 
         cursor.execute('''
             INSERT OR REPLACE INTO pipeline_status
-            (p_number, has_image, has_atf, has_lemmas, quality_score)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (p_number, has_image, has_atf, has_lemmas, quality_score))
+            (p_number, has_image, has_ocr, ocr_confidence, ocr_model, has_atf, has_lemmas, quality_score)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (p_number, has_image, has_ocr, ocr_confidence, ocr_model, has_atf, has_lemmas, quality_score))
         updated += 1
 
     conn.commit()

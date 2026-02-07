@@ -1,37 +1,126 @@
 <?php
 /**
- * Tablet list page
+ * Tablet list page with left sidebar filters
  */
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/helpers/display.php';
+require_once __DIR__ . '/../includes/helpers/filters.php';
 
 $pageTitle = 'Tablets';
 
-// Get filter parameters
-$language = $_GET['lang'] ?? null;
-$material = $_GET['material'] ?? null;
+// Get filter parameters (support multiple selections via arrays)
+$languages = isset($_GET['lang']) ? (is_array($_GET['lang']) ? $_GET['lang'] : [$_GET['lang']]) : [];
+$periods = isset($_GET['period']) ? (is_array($_GET['period']) ? $_GET['period'] : [$_GET['period']]) : [];
+$sites = isset($_GET['site']) ? (is_array($_GET['site']) ? $_GET['site'] : [$_GET['site']]) : [];
+$genres = isset($_GET['genre']) ? (is_array($_GET['genre']) ? $_GET['genre'] : [$_GET['genre']]) : [];
+$pipeline = $_GET['pipeline'] ?? null;
+
 $page = max(1, intval($_GET['page'] ?? 1));
 $perPage = 24;
 $offset = ($page - 1) * $perPage;
+
+// Load filter stats
+$languageStats = getLanguageStats();
+$periodStats = getPeriodStats();
+$provenienceStats = getProvenienceStats();
+$genreStats = getGenreStats();
 
 // Build query
 $db = getDB();
 $where = [];
 $params = [];
 
-if ($language) {
-    $where[] = "a.language = :lang";
-    $params[':lang'] = $language;
+// Language filter - use LIKE for each selected language
+if (!empty($languages)) {
+    $langConditions = [];
+    foreach ($languages as $i => $lang) {
+        $langConditions[] = "a.language LIKE :lang{$i}";
+        $params[":lang{$i}"] = '%' . $lang . '%';
+    }
+    $where[] = '(' . implode(' OR ', $langConditions) . ')';
 }
-if ($material) {
-    $where[] = "a.material = :material";
-    $params[':material'] = $material;
+
+// Period filter
+if (!empty($periods)) {
+    $periodConditions = [];
+    foreach ($periods as $i => $period) {
+        $periodConditions[] = "a.period = :period{$i}";
+        $params[":period{$i}"] = $period;
+    }
+    $where[] = '(' . implode(' OR ', $periodConditions) . ')';
+}
+
+// Provenience filter - use LIKE to match partial site names
+if (!empty($sites)) {
+    $siteConditions = [];
+    foreach ($sites as $i => $site) {
+        $siteConditions[] = "a.provenience LIKE :site{$i}";
+        $params[":site{$i}"] = '%' . $site . '%';
+    }
+    $where[] = '(' . implode(' OR ', $siteConditions) . ')';
+}
+
+// Genre filter - use LIKE to catch variations
+if (!empty($genres)) {
+    $genreConditions = [];
+    foreach ($genres as $i => $genre) {
+        $genreConditions[] = "a.genre LIKE :genre{$i}";
+        $params[":genre{$i}"] = '%' . $genre . '%';
+    }
+    $where[] = '(' . implode(' OR ', $genreConditions) . ')';
+}
+
+// Pipeline status filters
+if ($pipeline) {
+    switch ($pipeline) {
+        case 'complete':
+            $where[] = "ps.has_image = 1 AND ps.has_atf = 1 AND ps.has_lemmas = 1 AND ps.has_translation = 1";
+            break;
+        case 'has_image':
+            $where[] = "ps.has_image = 1";
+            break;
+        case 'has_atf':
+            $where[] = "ps.has_atf = 1";
+            break;
+        case 'has_lemmas':
+            $where[] = "ps.has_lemmas = 1";
+            break;
+        case 'has_translation':
+            $where[] = "ps.has_translation = 1";
+            break;
+        case 'missing_image':
+            $where[] = "(ps.has_image IS NULL OR ps.has_image = 0)";
+            break;
+        case 'missing_atf':
+            $where[] = "(ps.has_atf IS NULL OR ps.has_atf = 0)";
+            break;
+        case 'missing_lemmas':
+            $where[] = "(ps.has_lemmas IS NULL OR ps.has_lemmas = 0)";
+            break;
+        case 'missing_translation':
+            $where[] = "(ps.has_translation IS NULL OR ps.has_translation = 0)";
+            break;
+        // Text digitization filters
+        case 'human_transcription':
+            $where[] = "ps.has_atf = 1";
+            break;
+        case 'machine_ocr':
+            $where[] = "ps.has_sign_annotations = 1";
+            break;
+        case 'any_digitization':
+            $where[] = "(ps.has_atf = 1 OR ps.has_sign_annotations = 1)";
+            break;
+        case 'no_digitization':
+            $where[] = "(ps.has_atf IS NULL OR ps.has_atf = 0) AND (ps.has_sign_annotations IS NULL OR ps.has_sign_annotations = 0)";
+            break;
+    }
 }
 
 $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
 // Get total count
-$countSql = "SELECT COUNT(*) FROM artifacts a $whereClause";
+$countSql = "SELECT COUNT(*) FROM artifacts a LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number $whereClause";
 $stmt = $db->prepare($countSql);
 foreach ($params as $key => $val) {
     $stmt->bindValue($key, $val);
@@ -41,7 +130,7 @@ $totalPages = ceil($totalCount / $perPage);
 
 // Get tablets
 $sql = "
-    SELECT a.*, ps.quality_score, ps.has_image, ps.has_atf, ps.has_lemmas, ps.has_translation
+    SELECT a.*, ps.has_image, ps.has_atf, ps.has_lemmas, ps.has_translation, ps.has_sign_annotations, ps.lemma_coverage
     FROM artifacts a
     LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
     $whereClause
@@ -56,204 +145,330 @@ $stmt->bindValue(':limit', $perPage, SQLITE3_INTEGER);
 $stmt->bindValue(':offset', $offset, SQLITE3_INTEGER);
 $tablets = $stmt->execute();
 
+// Get all active filters for display
+$activeFilters = [];
+foreach ($languages as $lang) {
+    $activeFilters[] = ['type' => 'lang', 'value' => $lang, 'label' => $lang];
+}
+foreach ($periods as $period) {
+    $activeFilters[] = ['type' => 'period', 'value' => $period, 'label' => $period];
+}
+foreach ($sites as $site) {
+    $activeFilters[] = ['type' => 'site', 'value' => $site, 'label' => $site];
+}
+foreach ($genres as $genre) {
+    $activeFilters[] = ['type' => 'genre', 'value' => $genre, 'label' => $genre];
+}
+
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
-<main class="container">
-    <div class="page-header">
-        <h1>Tablets</h1>
-        <p class="subtitle"><?= number_format($totalCount) ?> tablets in database</p>
-    </div>
+<!-- Filter Components -->
+<link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
+<link rel="stylesheet" href="/assets/css/components/filter-active.css">
+<link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
+<link rel="stylesheet" href="/assets/css/components/pagination.css">
 
-    <div class="filters">
-        <form method="GET" class="filter-form">
-            <select name="lang" onchange="this.form.submit()">
-                <option value="">All Languages</option>
-                <option value="Sumerian" <?= $language === 'Sumerian' ? 'selected' : '' ?>>Sumerian</option>
-                <option value="Akkadian" <?= $language === 'Akkadian' ? 'selected' : '' ?>>Akkadian</option>
-                <option value="undetermined" <?= $language === 'undetermined' ? 'selected' : '' ?>>Undetermined</option>
-            </select>
-            <select name="material" onchange="this.form.submit()">
-                <option value="">All Materials</option>
-                <option value="clay" <?= $material === 'clay' ? 'selected' : '' ?>>Clay</option>
-                <option value="stone" <?= $material === 'stone' ? 'selected' : '' ?>>Stone</option>
-            </select>
-        </form>
-    </div>
+<main class="page-with-sidebar">
+    <aside class="filter-sidebar">
+        <div class="filter-header">
+            <h2>Filters</h2>
+            <?php if (!empty($activeFilters)): ?>
+            <a href="list.php" class="clear-all">Clear all</a>
+            <?php endif; ?>
+        </div>
 
-    <div class="tablet-grid">
-        <?php while ($tablet = $tablets->fetchArray(SQLITE3_ASSOC)): ?>
-        <a href="detail.php?p=<?= urlencode($tablet['p_number']) ?>" class="tablet-card">
-            <div class="tablet-thumbnail">
-                <img src="/api/thumbnail.php?p=<?= urlencode($tablet['p_number']) ?>&size=200"
-                     alt="<?= htmlspecialchars($tablet['designation'] ?? $tablet['p_number']) ?>"
-                     loading="lazy"
-                     onerror="this.parentElement.classList.add('no-image')">
-                <div class="thumbnail-placeholder">
-                    <span class="cuneiform-icon">𒀭</span>
+        <!-- Language Filter -->
+        <div class="filter-section" data-filter="language">
+            <button class="filter-section-header" aria-expanded="true">
+                <span class="filter-title">Language</span>
+                <span class="filter-toggle">−</span>
+            </button>
+            <div class="filter-content">
+                <?php foreach ($languageStats as $group): ?>
+                <div class="filter-group" data-group="<?= htmlspecialchars($group['group']) ?>">
+                    <button class="filter-group-header" aria-expanded="false">
+                        <span class="group-name"><?= htmlspecialchars($group['group']) ?></span>
+                        <span class="group-count"><?= number_format($group['total']) ?></span>
+                        <span class="group-toggle">+</span>
+                    </button>
+                    <div class="filter-group-content">
+                        <?php foreach ($group['items'] as $item): ?>
+                        <label class="filter-option">
+                            <input type="checkbox"
+                                   name="lang[]"
+                                   value="<?= htmlspecialchars($item['value']) ?>"
+                                   <?= isFilterActive('lang', $item['value']) ? 'checked' : '' ?>
+                                   data-url-add="<?= htmlspecialchars(buildFilterUrl(['lang' => $item['value']])) ?>"
+                                   data-url-remove="<?= htmlspecialchars(buildFilterUrl([], ['lang' => $item['value']])) ?>">
+                            <span class="option-label"><?= htmlspecialchars($item['value']) ?></span>
+                            <span class="option-count"><?= number_format($item['count']) ?></span>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Period Filter -->
+        <div class="filter-section" data-filter="period">
+            <button class="filter-section-header" aria-expanded="false">
+                <span class="filter-title">Period</span>
+                <span class="filter-toggle">+</span>
+            </button>
+            <div class="filter-content" hidden>
+                <?php foreach ($periodStats as $group): ?>
+                <div class="filter-group" data-group="<?= htmlspecialchars($group['group']) ?>">
+                    <button class="filter-group-header" aria-expanded="false">
+                        <span class="group-name"><?= htmlspecialchars($group['group']) ?></span>
+                        <span class="group-count"><?= number_format($group['total']) ?></span>
+                        <span class="group-toggle">+</span>
+                    </button>
+                    <div class="filter-group-content">
+                        <?php foreach ($group['items'] as $item): ?>
+                        <label class="filter-option">
+                            <input type="checkbox"
+                                   name="period[]"
+                                   value="<?= htmlspecialchars($item['value']) ?>"
+                                   <?= isFilterActive('period', $item['value']) ? 'checked' : '' ?>
+                                   data-url-add="<?= htmlspecialchars(buildFilterUrl(['period' => $item['value']])) ?>"
+                                   data-url-remove="<?= htmlspecialchars(buildFilterUrl([], ['period' => $item['value']])) ?>">
+                            <span class="option-label"><?= htmlspecialchars($item['value']) ?></span>
+                            <span class="option-count"><?= number_format($item['count']) ?></span>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Provenience/Site Filter -->
+        <div class="filter-section" data-filter="site">
+            <button class="filter-section-header" aria-expanded="false">
+                <span class="filter-title">Discovery Site</span>
+                <span class="filter-toggle">+</span>
+            </button>
+            <div class="filter-content" hidden>
+                <?php foreach ($provenienceStats as $group): ?>
+                <div class="filter-group" data-group="<?= htmlspecialchars($group['group']) ?>">
+                    <button class="filter-group-header" aria-expanded="false">
+                        <span class="group-name"><?= htmlspecialchars($group['group']) ?></span>
+                        <span class="group-count"><?= number_format($group['total']) ?></span>
+                        <span class="group-toggle">+</span>
+                    </button>
+                    <div class="filter-group-content">
+                        <?php foreach (array_slice($group['items'], 0, 20) as $item): ?>
+                        <label class="filter-option">
+                            <input type="checkbox"
+                                   name="site[]"
+                                   value="<?= htmlspecialchars($item['value']) ?>"
+                                   <?= isFilterActive('site', $item['value']) ? 'checked' : '' ?>
+                                   data-url-add="<?= htmlspecialchars(buildFilterUrl(['site' => $item['value']])) ?>"
+                                   data-url-remove="<?= htmlspecialchars(buildFilterUrl([], ['site' => $item['value']])) ?>">
+                            <span class="option-label"><?= htmlspecialchars($item['value']) ?></span>
+                            <span class="option-count"><?= number_format($item['count']) ?></span>
+                        </label>
+                        <?php endforeach; ?>
+                        <?php if (count($group['items']) > 20): ?>
+                        <button class="show-more" data-group="<?= htmlspecialchars($group['group']) ?>">
+                            Show <?= count($group['items']) - 20 ?> more...
+                        </button>
+                        <div class="more-items" hidden>
+                            <?php foreach (array_slice($group['items'], 20) as $item): ?>
+                            <label class="filter-option">
+                                <input type="checkbox"
+                                       name="site[]"
+                                       value="<?= htmlspecialchars($item['value']) ?>"
+                                       <?= isFilterActive('site', $item['value']) ? 'checked' : '' ?>
+                                       data-url-add="<?= htmlspecialchars(buildFilterUrl(['site' => $item['value']])) ?>"
+                                       data-url-remove="<?= htmlspecialchars(buildFilterUrl([], ['site' => $item['value']])) ?>">
+                                <span class="option-label"><?= htmlspecialchars($item['value']) ?></span>
+                                <span class="option-count"><?= number_format($item['count']) ?></span>
+                            </label>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Genre Filter -->
+        <div class="filter-section" data-filter="genre">
+            <button class="filter-section-header" aria-expanded="false">
+                <span class="filter-title">Genre</span>
+                <span class="filter-toggle">+</span>
+            </button>
+            <div class="filter-content" hidden>
+                <?php foreach ($genreStats as $group): ?>
+                <div class="filter-group" data-group="<?= htmlspecialchars($group['group']) ?>">
+                    <button class="filter-group-header" aria-expanded="false">
+                        <span class="group-name"><?= htmlspecialchars($group['group']) ?></span>
+                        <span class="group-count"><?= number_format($group['total']) ?></span>
+                        <span class="group-toggle">+</span>
+                    </button>
+                    <div class="filter-group-content">
+                        <?php foreach ($group['items'] as $item): ?>
+                        <label class="filter-option">
+                            <input type="checkbox"
+                                   name="genre[]"
+                                   value="<?= htmlspecialchars($item['value']) ?>"
+                                   <?= isFilterActive('genre', $item['value']) ? 'checked' : '' ?>
+                                   data-url-add="<?= htmlspecialchars(buildFilterUrl(['genre' => $item['value']])) ?>"
+                                   data-url-remove="<?= htmlspecialchars(buildFilterUrl([], ['genre' => $item['value']])) ?>">
+                            <span class="option-label"><?= htmlspecialchars($item['value']) ?></span>
+                            <span class="option-count"><?= number_format($item['count']) ?></span>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Pipeline Status Filter -->
+        <div class="filter-section" data-filter="pipeline">
+            <button class="filter-section-header" aria-expanded="false">
+                <span class="filter-title">Data Status</span>
+                <span class="filter-toggle">+</span>
+            </button>
+            <div class="filter-content" hidden>
+                <div class="filter-group-content" style="display: block;">
+                    <label class="filter-option">
+                        <input type="radio" name="pipeline" value="" <?= !$pipeline ? 'checked' : '' ?>>
+                        <span class="option-label">All</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="pipeline" value="complete" <?= $pipeline === 'complete' ? 'checked' : '' ?>>
+                        <span class="option-label">Complete (all data)</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="pipeline" value="has_image" <?= $pipeline === 'has_image' ? 'checked' : '' ?>>
+                        <span class="option-label">Has Image</span>
+                    </label>
+                    <label class="filter-option">
+                        <input type="radio" name="pipeline" value="has_translation" <?= $pipeline === 'has_translation' ? 'checked' : '' ?>>
+                        <span class="option-label">Has Translation</span>
+                    </label>
+
+                    <div class="filter-subsection">
+                        <span class="subsection-label">Text Digitization</span>
+                        <label class="filter-option">
+                            <input type="radio" name="pipeline" value="any_digitization" <?= $pipeline === 'any_digitization' ? 'checked' : '' ?>>
+                            <span class="option-label">Any Digitization</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="pipeline" value="human_transcription" <?= $pipeline === 'human_transcription' ? 'checked' : '' ?>>
+                            <span class="option-label">Human Transcription (ATF)</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="pipeline" value="machine_ocr" <?= $pipeline === 'machine_ocr' ? 'checked' : '' ?>>
+                            <span class="option-label">Machine OCR (Sign Detection)</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="pipeline" value="no_digitization" <?= $pipeline === 'no_digitization' ? 'checked' : '' ?>>
+                            <span class="option-label">No Digitization</span>
+                        </label>
+                    </div>
                 </div>
             </div>
-            <div class="tablet-info">
-                <div class="tablet-header">
-                    <span class="p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
-                    <span class="quality-score" title="Quality Score">
-                        <?= round(($tablet['quality_score'] ?? 0) * 100) ?>%
-                    </span>
-                </div>
-                <div class="tablet-designation">
-                    <?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?>
-                </div>
-                <div class="tablet-meta">
-                    <?php if ($tablet['museum_no']): ?>
-                        <span><?= htmlspecialchars($tablet['museum_no']) ?></span>
-                    <?php endif; ?>
-                    <?php if ($tablet['material']): ?>
-                        <span><?= htmlspecialchars($tablet['material']) ?></span>
-                    <?php endif; ?>
-                </div>
-                <div class="pipeline-status">
-                    <span class="status-dot <?= $tablet['has_image'] ? 'complete' : 'missing' ?>" title="Image"></span>
-                    <span class="status-dot <?= $tablet['has_atf'] ? 'complete' : 'missing' ?>" title="ATF"></span>
-                    <span class="status-dot <?= $tablet['has_lemmas'] ? 'complete' : 'missing' ?>" title="Lemmas"></span>
-                    <span class="status-dot <?= $tablet['has_translation'] ? 'complete' : 'missing' ?>" title="Translation"></span>
-                </div>
-            </div>
-        </a>
-        <?php endwhile; ?>
-    </div>
+        </div>
+    </aside>
 
-    <?php if ($totalPages > 1): ?>
-    <nav class="pagination">
-        <?php if ($page > 1): ?>
-            <a href="?page=<?= $page - 1 ?>&lang=<?= urlencode($language ?? '') ?>&material=<?= urlencode($material ?? '') ?>" class="btn">Previous</a>
+    <div class="main-content">
+        <div class="page-header">
+            <h1>Tablets</h1>
+            <p class="subtitle">
+                <?php if (!empty($activeFilters)): ?>
+                Showing <?= number_format($totalCount) ?> tablets
+                <?php else: ?>
+                <?= number_format($totalCount) ?> tablets in database
+                <?php endif; ?>
+            </p>
+        </div>
+
+        <?php if (!empty($activeFilters)): ?>
+        <div class="active-filters">
+            <?php foreach ($activeFilters as $filter): ?>
+            <a href="<?= htmlspecialchars(buildFilterUrl([], [$filter['type'] => $filter['value']])) ?>"
+               class="filter-chip">
+                <?= htmlspecialchars($filter['label']) ?>
+                <span class="chip-remove">×</span>
+            </a>
+            <?php endforeach; ?>
+        </div>
         <?php endif; ?>
-        <span class="page-info">Page <?= $page ?> of <?= $totalPages ?></span>
-        <?php if ($page < $totalPages): ?>
-            <a href="?page=<?= $page + 1 ?>&lang=<?= urlencode($language ?? '') ?>&material=<?= urlencode($material ?? '') ?>" class="btn">Next</a>
+
+        <div class="tablet-grid">
+            <?php while ($tablet = $tablets->fetchArray(SQLITE3_ASSOC)): ?>
+            <?php $langAbbr = getLanguageAbbreviation($tablet['language']); ?>
+            <a href="detail.php?p=<?= urlencode($tablet['p_number']) ?>" class="tablet-card">
+                <!-- Pipeline Status Bar -->
+                <div class="card-pipeline-bar">
+                    <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('image', $tablet) ?>" title="Image"></span>
+                    <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('signs', $tablet) ?>" title="Sign Detection"></span>
+                    <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('transliteration', $tablet) ?>" title="Transliteration"></span>
+                    <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('lemmas', $tablet) ?>" title="Lemmas"></span>
+                    <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('translation', $tablet) ?>" title="Translation"></span>
+                </div>
+
+                <!-- Language Badge -->
+                <?php if ($langAbbr): ?>
+                <span class="lang-badge" title="<?= htmlspecialchars($tablet['language']) ?>"><?= $langAbbr ?></span>
+                <?php endif; ?>
+
+                <!-- Full-card Image -->
+                <div class="card-image">
+                    <img src="/api/thumbnail.php?p=<?= urlencode($tablet['p_number']) ?>&size=200"
+                         alt="<?= htmlspecialchars($tablet['designation'] ?? $tablet['p_number']) ?>"
+                         loading="lazy"
+                         onerror="this.parentElement.classList.add('no-image')">
+                    <div class="card-placeholder">
+                        <span class="cuneiform-icon">𒀭</span>
+                    </div>
+                </div>
+
+                <!-- Overlay Info Panel -->
+                <div class="card-overlay">
+                    <span class="card-p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
+                    <?php if ($tablet['period']): ?>
+                    <span class="meta-period"><?= htmlspecialchars(truncateText($tablet['period'], 25)) ?></span>
+                    <?php endif; ?>
+                    <?php if ($tablet['provenience']): ?>
+                    <span class="meta-site"><?= htmlspecialchars(truncateText($tablet['provenience'], 20)) ?></span>
+                    <?php endif; ?>
+                    <?php if ($tablet['genre']): ?>
+                    <span class="meta-genre"><?= htmlspecialchars(truncateText($tablet['genre'], 20)) ?></span>
+                    <?php endif; ?>
+                    <div class="card-designation"><?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?></div>
+                </div>
+            </a>
+            <?php endwhile; ?>
+        </div>
+
+        <?php if ($totalPages > 1): ?>
+        <nav class="pagination">
+            <?php
+            // Build pagination URL preserving filters
+            $paginationParams = $_GET;
+            unset($paginationParams['page']);
+            $baseUrl = '?' . http_build_query($paginationParams) . (empty($paginationParams) ? '' : '&');
+            ?>
+            <?php if ($page > 1): ?>
+                <a href="<?= $baseUrl ?>page=<?= $page - 1 ?>" class="btn">Previous</a>
+            <?php endif; ?>
+            <span class="page-info">Page <?= $page ?> of <?= number_format($totalPages) ?></span>
+            <?php if ($page < $totalPages): ?>
+                <a href="<?= $baseUrl ?>page=<?= $page + 1 ?>" class="btn">Next</a>
+            <?php endif; ?>
+        </nav>
         <?php endif; ?>
-    </nav>
-    <?php endif; ?>
+    </div>
 </main>
 
-<style>
-.page-header {
-    margin-bottom: var(--space-6);
-}
-
-.subtitle {
-    color: var(--color-text-muted);
-}
-
-.filters {
-    margin-bottom: var(--space-6);
-}
-
-.filter-form {
-    display: flex;
-    gap: var(--space-4);
-}
-
-.filter-form select {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--space-2) var(--space-4);
-    color: var(--color-text);
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: var(--space-4);
-    margin-top: var(--space-8);
-}
-
-.page-info {
-    color: var(--color-text-muted);
-}
-
-/* Thumbnail styles */
-.tablet-thumbnail {
-    position: relative;
-    width: 100%;
-    padding-bottom: 100%; /* 1:1 aspect ratio */
-    background: var(--color-surface);
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
-    overflow: hidden;
-}
-
-.tablet-thumbnail img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.tablet-card:hover .tablet-thumbnail img {
-    transform: scale(1.05);
-}
-
-.thumbnail-placeholder {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-surface);
-    z-index: -1;
-}
-
-.thumbnail-placeholder .cuneiform-icon {
-    font-family: 'Noto Sans Cuneiform', serif;
-    font-size: 3rem;
-    color: var(--color-border);
-    opacity: 0.5;
-}
-
-.tablet-thumbnail.no-image img {
-    display: none;
-}
-
-.tablet-thumbnail.no-image .thumbnail-placeholder {
-    z-index: 1;
-}
-
-.tablet-info {
-    padding: var(--space-3);
-}
-
-/* Update tablet-card for thumbnail layout */
-.tablet-card {
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    overflow: hidden;
-}
-
-.tablet-card .tablet-header {
-    padding: 0;
-    margin-bottom: var(--space-2);
-}
-
-.tablet-card .tablet-designation {
-    padding: 0;
-}
-
-.tablet-card .tablet-meta {
-    padding: 0;
-    margin-top: var(--space-2);
-}
-
-.tablet-card .pipeline-status {
-    margin-top: var(--space-2);
-}
-</style>
+<script src="/assets/js/filters.js"></script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

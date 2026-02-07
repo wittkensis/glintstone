@@ -1,0 +1,171 @@
+/**
+ * Popup Component
+ * Modal dialogs, sign info, and glossary results
+ * Dependencies: CSS variables from core.css
+ */
+
+/* ==========================================================================
+   Popup Container
+   ========================================================================== */
+
+.popup {
+    position: fixed;
+    width: 320px;
+    max-height: 400px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.popup.hidden {
+    display: none;
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.popup-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.popup-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+
+.popup-close:hover {
+    color: var(--color-text);
+}
+
+.popup-content {
+    padding: var(--space-4);
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+.popup-error {
+    color: var(--color-error);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   Sign Info
+   ========================================================================== */
+
+.sign-info {
+    text-align: center;
+}
+
+.sign-display {
+    font-family: 'Noto Sans Cuneiform', serif;
+    font-size: 3rem;
+    margin-bottom: var(--space-4);
+    color: var(--color-accent);
+}
+
+.sign-details {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-2) var(--space-4);
+    text-align: left;
+    font-size: 0.875rem;
+}
+
+.sign-details dt {
+    color: var(--color-text-muted);
+}
+
+.sign-details dd {
+    font-family: var(--font-mono);
+    margin: 0;
+}
+
+.sign-values {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+    text-align: left;
+}
+
+.value-list {
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+}
+
+/* ==========================================================================
+   Glossary Results
+   ========================================================================== */
+
+.glossary-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.glossary-entry {
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+}
+
+.entry-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.entry-head .pos {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+}
+
+.entry-head .lang {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.guide-word {
+    color: var(--color-text-muted);
+    font-style: italic;
+    margin-top: var(--space-1);
+}
+
+.occurrence-count {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    margin-top: var(--space-1);
+}
+
+/* ==========================================================================
+   ATF Word Interaction
+   ========================================================================== */
+
+.atf-word {
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.15s;
+}
+
+.atf-word:hover {
+    background: rgba(201, 169, 98, 0.2);
+}

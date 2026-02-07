@@ -1,0 +1,578 @@
+/* Filter Sidebar Styles for Tablet List */
+
+/* Page layout with sidebar */
+.page-with-sidebar {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--space-6);
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-6);
+    min-height: calc(100vh - 80px);
+}
+
+/* Filter Sidebar */
+.filter-sidebar {
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    padding: var(--space-4);
+    height: fit-content;
+    position: sticky;
+    top: calc(80px + var(--space-4));
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.filter-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.clear-all {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.clear-all:hover {
+    color: var(--color-accent);
+}
+
+/* Filter Sections */
+.filter-section {
+    margin-bottom: var(--space-2);
+}
+
+.filter-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: var(--space-3) 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.filter-section-header:hover {
+    color: var(--color-accent);
+}
+
+.filter-toggle {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    font-weight: 300;
+}
+
+.filter-content {
+    padding: var(--space-2) 0;
+}
+
+.filter-content[hidden] {
+    display: none;
+}
+
+/* Filter Groups (within sections) */
+.filter-group {
+    margin-bottom: var(--space-1);
+}
+
+.filter-group-header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: var(--space-2) var(--space-2);
+    background: var(--color-bg-subtle);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--color-text);
+    font-size: 0.85rem;
+    text-align: left;
+    gap: var(--space-2);
+}
+
+.filter-group-header:hover {
+    background: var(--color-surface);
+}
+
+.group-name {
+    flex: 1;
+}
+
+.group-count {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+}
+
+.group-toggle {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    width: 1rem;
+    text-align: center;
+}
+
+.filter-group-content {
+    display: none;
+    padding: var(--space-2) 0 var(--space-2) var(--space-4);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.filter-group[data-expanded="true"] .filter-group-content {
+    display: block;
+}
+
+.filter-group[data-expanded="true"] .group-toggle {
+    transform: rotate(45deg);
+}
+
+/* Filter Options */
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--color-text);
+}
+
+.filter-option:hover {
+    color: var(--color-accent);
+}
+
+.filter-option input[type="checkbox"],
+.filter-option input[type="radio"] {
+    accent-color: var(--color-accent);
+    cursor: pointer;
+}
+
+.option-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.option-count {
+    color: var(--color-text-subtle);
+    font-size: 0.7rem;
+}
+
+/* Filter Subsection (for grouped options like Text Digitization) */
+.filter-subsection {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+.subsection-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-2);
+}
+
+/* Show More Button */
+.show-more {
+    display: block;
+    width: 100%;
+    padding: var(--space-2);
+    margin-top: var(--space-2);
+    background: none;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-align: center;
+}
+
+.show-more:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.more-items[hidden] {
+    display: none;
+}
+
+/* Main Content Area */
+.main-content {
+    min-width: 0;
+}
+
+.main-content .page-header {
+    margin-bottom: var(--space-6);
+}
+
+.main-content .subtitle {
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* Active Filters (chips) */
+.active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-accent-muted);
+    color: var(--color-text);
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    transition: background 0.2s;
+}
+
+.filter-chip:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.chip-remove {
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.filter-chip:hover .chip-remove {
+    opacity: 1;
+}
+
+/* Tablet Grid - adjusted for sidebar layout */
+.main-content .tablet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-4);
+}
+
+/* ==========================================================================
+   Tablet Card - Overlay Layout
+   ========================================================================== */
+
+.tablet-card {
+    position: relative;
+    display: block;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--color-text);
+    background: var(--color-surface);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tablet-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Full-card image */
+.card-image {
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg-subtle);
+}
+
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.tablet-card:hover .card-image img {
+    transform: scale(1.05);
+}
+
+/* Placeholder for missing images */
+.card-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: -1;
+}
+
+.card-placeholder .cuneiform-icon {
+    font-family: var(--font-cuneiform);
+    font-size: 3.5rem;
+    color: var(--color-border);
+    opacity: 0.4;
+}
+
+.card-image.no-image img {
+    display: none;
+}
+
+.card-image.no-image .card-placeholder {
+    z-index: 1;
+}
+
+/* ==========================================================================
+   Pipeline Status Bar (top edge)
+   ========================================================================== */
+
+.card-pipeline-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    display: flex;
+    gap: 1px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.pipeline-segment {
+    flex: 1;
+    background: var(--color-border);
+    transition: background 0.2s;
+}
+
+.pipeline-segment[data-status="complete"] {
+    background: var(--color-success);
+}
+
+.pipeline-segment[data-status="partial"],
+.pipeline-segment[data-status="inferred"] {
+    background: var(--color-warning);
+}
+
+.pipeline-segment[data-status="skipped"] {
+    background: var(--color-text-subtle);
+}
+
+.pipeline-segment[data-status="missing"] {
+    background: var(--color-error);
+    opacity: 0.6;
+}
+
+/* ==========================================================================
+   Language Badge (top-right corner)
+   ========================================================================== */
+
+.lang-badge {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    padding: 2px 6px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: rgba(0, 0, 0, 0.6);
+    color: var(--color-text);
+    border-radius: var(--radius-sm);
+    z-index: 10;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* ==========================================================================
+   Overlay Info Panel (frosted glass effect)
+   ========================================================================== */
+
+.card-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-2) var(--space-3);
+
+    /* Frosted glass effect */
+    background: rgba(26, 26, 26, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    /* Subtle top border */
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+    z-index: 5;
+}
+
+/* P-number - subtle, top of overlay */
+.card-p-number {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+    margin-bottom: 2px;
+}
+
+/* Period - accent color, prominent */
+.card-overlay .meta-period {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Site/provenience */
+.meta-site {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Genre */
+.meta-genre {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--color-text-subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+/* Designation - main text */
+.card-designation {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+    margin-top: 2px;
+}
+
+/* ==========================================================================
+   Hover Enhancement
+   ========================================================================== */
+
+.tablet-card:hover .card-overlay {
+    background: rgba(26, 26, 26, 0.9);
+}
+
+.tablet-card:hover .card-p-number {
+    color: var(--color-text);
+}
+
+/* ==========================================================================
+   Fallback for browsers without backdrop-filter
+   ========================================================================== */
+
+@supports not (backdrop-filter: blur(8px)) {
+    .card-overlay {
+        background: rgba(26, 26, 26, 0.95);
+    }
+
+    .lang-badge {
+        background: rgba(0, 0, 0, 0.9);
+    }
+}
+
+/* ==========================================================================
+   Responsive adjustments
+   ========================================================================== */
+
+@media (max-width: 480px) {
+    .main-content .tablet-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    .card-overlay {
+        padding: var(--space-2);
+    }
+
+    .card-designation {
+        font-size: 0.75rem;
+    }
+
+    .lang-badge {
+        font-size: 0.6rem;
+        padding: 1px 4px;
+    }
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-4);
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
+}
+
+.pagination .btn {
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.pagination .btn:hover {
+    background: var(--color-bg-subtle);
+    border-color: var(--color-accent);
+}
+
+.page-info {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+/* Scrollbar styling for filter sidebar */
+.filter-sidebar::-webkit-scrollbar,
+.filter-group-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filter-sidebar::-webkit-scrollbar-track,
+.filter-group-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.filter-sidebar::-webkit-scrollbar-thumb,
+.filter-group-content::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+}
+
+.filter-sidebar::-webkit-scrollbar-thumb:hover,
+.filter-group-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-subtle);
+}

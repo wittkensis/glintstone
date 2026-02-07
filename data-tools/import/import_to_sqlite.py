@@ -9,7 +9,8 @@ from pathlib import Path
 from datetime import datetime
 
 BASE_DIR = Path("/Volumes/Portable Storage/CUNEIFORM")
-DB_PATH = BASE_DIR / "app" / "glintstone.db"
+DOWNLOADS_DIR = BASE_DIR / "downloads"
+DB_PATH = BASE_DIR / "database" / "glintstone.db"
 SCHEMA_PATH = BASE_DIR / "app" / "sql" / "schema.sql"
 
 def create_database():
@@ -29,7 +30,7 @@ def import_cdli_catalog(conn):
     """Import CDLI catalog data."""
     print("\nImporting CDLI catalog...")
 
-    catalog_path = BASE_DIR / "CDLI/catalogue/batch-00000.json"
+    catalog_path = DOWNLOADS_DIR / "CDLI/catalogue/batch-00000.json"
     with open(catalog_path, 'r') as f:
         data = json.load(f)
 
@@ -135,7 +136,7 @@ def import_ogsl_signs(conn):
     """Import OGSL sign list."""
     print("\nImporting OGSL sign list...")
 
-    ogsl_path = BASE_DIR / "ORACC/ogsl/json/ogsl/ogsl-sl.json"
+    ogsl_path = DOWNLOADS_DIR / "ORACC/ogsl/json/ogsl/ogsl-sl.json"
     with open(ogsl_path, 'r') as f:
         data = json.load(f)
 
@@ -185,7 +186,7 @@ def import_glossaries(conn):
     """Import DCCLT glossaries."""
     print("\nImporting glossaries...")
 
-    gloss_dir = BASE_DIR / "ORACC/dcclt/extracted/dcclt"
+    gloss_dir = DOWNLOADS_DIR / "ORACC/dcclt/extracted/dcclt"
     cursor = conn.cursor()
 
     glossary_files = [

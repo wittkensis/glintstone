@@ -1,0 +1,16 @@
+{
+  "last_row": 353283,
+  "csv_checksum": "46b9ec2404f4a342",
+  "started_at": "2026-02-05T00:24:02.015026",
+  "completed": true,
+  "total_rows": 353283,
+  "last_updated": "2026-02-05T00:24:07.976457",
+  "stats": {
+    "processed": 353283,
+    "inserted": 353283,
+    "updated": 0,
+    "skipped_no_id": 0,
+    "elamite_count": 2888,
+    "errors": []
+  }
+}

@@ -1,0 +1,325 @@
+/**
+ * Zoombox Component - Cuneiform Tablet Image Viewer
+ *
+ * BEM naming: .zoombox, .zoombox__*, .zoombox--*
+ * Dependencies: CSS variables from core.css
+ */
+
+/* ==========================================================================
+   Container
+   ========================================================================== */
+
+.zoombox {
+    position: relative;
+    width: 100%;
+}
+
+/* ==========================================================================
+   Viewport - Fixed height, clips zoomed content
+   ========================================================================== */
+
+.zoombox__viewport {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    overflow: hidden;
+    background: var(--color-bg);
+    border-radius: var(--radius-md);
+    cursor: grab;
+}
+
+.zoombox__viewport:active,
+.zoombox__viewport.is-dragging {
+    cursor: grabbing;
+}
+
+.zoombox__viewport.is-zoomed {
+    cursor: move;
+}
+
+/* ==========================================================================
+   Transform Layer - Gets scaled and translated
+   ========================================================================== */
+
+.zoombox__transform {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+    transition: transform 0.15s ease-out;
+}
+
+.zoombox__transform.is-dragging {
+    transition: none;
+}
+
+/* ==========================================================================
+   Image
+   ========================================================================== */
+
+.zoombox__image {
+    display: block;
+    max-width: none;
+    pointer-events: none;
+    user-select: none;
+}
+
+.zoombox__image.is-loading {
+    opacity: 0;
+}
+
+.zoombox__image.is-loaded {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.zoombox__image.is-error {
+    display: none;
+}
+
+/* ==========================================================================
+   Loading & Placeholder States
+   ========================================================================== */
+
+.zoombox__loading,
+.zoombox__placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    z-index: 5;
+}
+
+.zoombox__loading {
+    display: none;
+}
+
+.zoombox__placeholder {
+    display: none;
+    padding: var(--space-6);
+}
+
+.zoombox.is-loading .zoombox__loading {
+    display: block;
+}
+
+.zoombox.is-placeholder .zoombox__placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.zoombox__placeholder-icon {
+    font-family: var(--font-cuneiform);
+    font-size: 3rem;
+    color: var(--color-border);
+    opacity: 0.5;
+}
+
+/* ==========================================================================
+   Zoom Controls (top-left)
+   ========================================================================== */
+
+.zoombox__controls {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: rgba(30, 30, 35, 0.95);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+    padding: var(--space-2);
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.zoombox__controls.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ==========================================================================
+   Minimap Container (top-right)
+   ========================================================================== */
+
+.zoombox__minimap-container {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    width: 100px;
+    background: rgba(30, 30, 35, 0.95);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+    z-index: 20;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.zoombox__minimap-container.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.zoombox__minimap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    background: #000;
+}
+
+.zoombox__minimap-canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.zoombox__minimap-viewport {
+    position: absolute;
+    border: 2px solid var(--color-accent);
+    background: rgba(201, 169, 98, 0.2);
+    pointer-events: auto;
+    cursor: move;
+    box-sizing: border-box;
+    display: none;
+}
+
+.zoombox.is-zoomed .zoombox__minimap-viewport {
+    display: block;
+}
+
+.zoombox__btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.zoombox__btn:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.zoombox__btn:active {
+    transform: scale(0.95);
+}
+
+.zoombox__btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.zoombox__btn:disabled:hover {
+    background: transparent;
+    color: var(--color-text);
+}
+
+.zoombox__btn--reset {
+    font-size: 0.875rem;
+}
+
+/* ==========================================================================
+   Overlay Container - For OCR annotations
+   ========================================================================== */
+
+.zoombox__overlays {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    /* Width/height set via JS to match image natural dimensions */
+}
+
+.zoombox__overlays.is-active {
+    pointer-events: auto;
+}
+
+/* ==========================================================================
+   Overlay Box - Individual annotation
+   ========================================================================== */
+
+.zoombox__overlay-box {
+    position: absolute;
+    border: 2px solid var(--color-accent);
+    background: rgba(201, 169, 98, 0.15);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    box-sizing: border-box;
+}
+
+.zoombox__overlay-box:hover {
+    background: rgba(201, 169, 98, 0.35);
+    border-color: var(--color-text);
+}
+
+.zoombox__overlay-box.is-highlighted {
+    background: rgba(201, 169, 98, 0.5);
+    border-color: #fff;
+    z-index: 10;
+}
+
+/* Hover popup only when zoomed past threshold */
+.zoombox__overlays.is-hover-enabled .zoombox__overlay-box:hover {
+    z-index: 15;
+}
+
+/* ==========================================================================
+   Responsive - Touch devices
+   ========================================================================== */
+
+@media (pointer: coarse) {
+    .zoombox__btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1.25rem;
+    }
+
+    .zoombox__minimap-container {
+        width: 110px;
+    }
+}
+
+/* ==========================================================================
+   Responsive - Small screens
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .zoombox__viewport {
+        height: 350px;
+    }
+
+    .zoombox__controls {
+        padding: var(--space-1);
+    }
+
+    .zoombox__minimap-container {
+        width: 80px;
+    }
+
+    .zoombox__btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.875rem;
+    }
+}

@@ -1,0 +1,157 @@
+/**
+ * Tablet Sections Component
+ * Quality bar, image sections, buttons, composites list, and image options
+ * Dependencies: CSS variables from core.css
+ */
+
+/* ==========================================================================
+   Quality Bar
+   ========================================================================== */
+
+.quality-bar {
+    margin-top: var(--space-4);
+}
+
+.quality-bar label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--color-surface);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--color-accent);
+    transition: width 0.3s;
+}
+
+/* ==========================================================================
+   Image & Text Sections
+   ========================================================================== */
+
+.tablet-text h3,
+.tablet-image h3 {
+    margin-bottom: var(--space-4);
+}
+
+.image-source,
+.atf-source {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    margin-top: var(--space-2);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+    background: var(--color-bg-subtle);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Composites Section
+   ========================================================================== */
+
+.composites-section {
+    margin-top: var(--space-8);
+}
+
+.composite-list {
+    list-style: none;
+    padding: 0;
+}
+
+.composite-list li {
+    padding: var(--space-3);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-2);
+}
+
+.q-number {
+    font-family: var(--font-mono);
+    color: var(--color-success);
+    margin-right: var(--space-4);
+}
+
+/* ==========================================================================
+   Image Options
+   ========================================================================== */
+
+/* Image options toolbar */
+.image-options {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.btn-small {
+    padding: var(--space-1) var(--space-3);
+    font-size: 0.75rem;
+}
+
+/* Annotation toggle button */
+.annotation-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.annotation-toggle:has(input:checked) {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-color: var(--color-accent);
+}
+
+.annotation-toggle input {
+    display: none;
+}
+
+.annotation-badge {
+    font-size: 0.65rem;
+    background: var(--color-success);
+    color: var(--color-bg);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    margin-left: var(--space-2);
+}
+
+.annotation-toggle:has(input:checked) .annotation-badge {
+    background: var(--color-bg);
+    color: var(--color-accent);
+}
+
+.annotation-source-badge {
+    font-size: 0.65rem;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    padding: 1px 4px;
+    border-radius: 2px;
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-family: var(--font-mono);
+}

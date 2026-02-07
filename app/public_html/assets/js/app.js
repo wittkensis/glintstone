@@ -168,6 +168,9 @@ function initATFInteraction() {
     const atfDisplay = document.querySelector('.atf-display');
     if (!atfDisplay) return;
 
+    // Skip if already processed (detail.php uses DOM-based wrapAtfWordsInSpans)
+    if (atfDisplay.querySelector('.atf-word')) return;
+
     // Process ATF content to wrap words in spans
     const lines = atfDisplay.innerHTML.split('\n');
     const processedLines = lines.map(line => {

@@ -1,0 +1,228 @@
+/**
+ * Tablet Metadata Component
+ * Metadata display and chevron pipeline visualization
+ * Dependencies: CSS variables from core.css
+ */
+
+/* ==========================================================================
+   Metadata Display
+   ========================================================================== */
+
+.tablet-meta {
+    margin-bottom: var(--space-4);
+}
+
+.tablet-meta__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3) var(--space-6);
+    margin: 0;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tablet-meta__row dt {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tablet-meta__row dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+
+.meta-name {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.meta-code {
+    color: var(--color-text-muted);
+    font-size: 0.875em;
+    margin-left: var(--space-1);
+}
+
+/* More details toggle - inline with metadata */
+.tablet-meta__toggle {
+    font-size: 0.6875rem;
+    color: var(--color-text-subtle);
+    cursor: pointer;
+    user-select: none;
+    padding: var(--space-1) 0;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.tablet-meta__toggle:hover {
+    color: var(--color-text-muted);
+}
+
+.tablet-meta__toggle-icon {
+    transition: transform 0.15s ease;
+}
+
+.tablet-meta__toggle[aria-expanded="true"] .tablet-meta__toggle-icon {
+    transform: rotate(90deg);
+}
+
+/* Secondary metadata row */
+.tablet-meta__secondary {
+    display: none;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+.tablet-meta__secondary.is-open {
+    display: flex;
+}
+
+.tablet-meta__secondary dt {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tablet-meta__secondary dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+
+/* ==========================================================================
+   Chevron Pipeline
+   ========================================================================== */
+
+.pipeline-chevron {
+    --pipeline-height: 44px;
+    --chevron-size: 14px;
+    display: flex;
+    margin-bottom: var(--space-4);
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    height: var(--pipeline-height);
+}
+
+.pipeline-chevron__step {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--space-3);
+    padding-left: calc(var(--chevron-size) + var(--space-2));
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    height: var(--pipeline-height);
+}
+
+.pipeline-chevron__step:first-child {
+    padding-left: var(--space-3);
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.pipeline-chevron__step:last-child {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Chevron arrow shape - use calc for perfect alignment */
+.pipeline-chevron__step::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: calc(-1 * var(--chevron-size));
+    width: 0;
+    height: 0;
+    border-top: calc(var(--pipeline-height) / 2) solid transparent;
+    border-bottom: calc(var(--pipeline-height) / 2) solid transparent;
+    border-left: var(--chevron-size) solid var(--color-surface);
+    z-index: 2;
+}
+
+.pipeline-chevron__step:last-child::after {
+    display: none;
+}
+
+/* Chevron notch on left side */
+.pipeline-chevron__step::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-top: calc(var(--pipeline-height) / 2) solid transparent;
+    border-bottom: calc(var(--pipeline-height) / 2) solid transparent;
+    border-left: var(--chevron-size) solid var(--color-bg);
+    z-index: 1;
+}
+
+.pipeline-chevron__step:first-child::before {
+    display: none;
+}
+
+.pipeline-chevron__label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.pipeline-chevron__status {
+    font-size: 0.5625rem;
+    font-weight: 400;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+/* Status colors - high contrast between states */
+.pipeline-chevron__step--complete {
+    background: rgba(92, 160, 92, 0.35);
+    color: #7dc47d;
+}
+.pipeline-chevron__step--complete::after {
+    border-left-color: rgba(92, 160, 92, 0.35);
+}
+
+.pipeline-chevron__step--partial,
+.pipeline-chevron__step--inferred {
+    background: rgba(201, 169, 98, 0.3);
+    color: var(--color-warning);
+}
+.pipeline-chevron__step--partial::after,
+.pipeline-chevron__step--inferred::after {
+    border-left-color: rgba(201, 169, 98, 0.3);
+}
+
+.pipeline-chevron__step--skipped {
+    background: rgba(90, 90, 95, 0.4);
+    color: #888;
+}
+.pipeline-chevron__step--skipped::after {
+    border-left-color: rgba(90, 90, 95, 0.4);
+}
+
+.pipeline-chevron__step--missing {
+    background: rgba(184, 92, 92, 0.25);
+    color: #d47878;
+}
+.pipeline-chevron__step--missing::after {
+    border-left-color: rgba(184, 92, 92, 0.25);
+}

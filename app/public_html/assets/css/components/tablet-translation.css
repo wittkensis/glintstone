@@ -1,0 +1,135 @@
+/**
+ * Tablet Translation Component
+ * Translation display with language headers and sources
+ * Dependencies: CSS variables from core.css
+ */
+
+/* ==========================================================================
+   Translation Section
+   ========================================================================== */
+
+/* Translation section */
+.translation-section {
+    margin-top: var(--space-8);
+}
+
+.translation-section h3 {
+    margin-bottom: var(--space-4);
+}
+
+.translation-block {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.translation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.translation-lang {
+    font-weight: 600;
+    color: var(--color-accent);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.translation-source {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+}
+
+.translation-text {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--color-text);
+}
+
+.no-translation {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .tablet-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
+
+    .tablet-header__main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+        width: 100%;
+    }
+
+    .tablet-header__identity {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .tablet-header__sep {
+        display: none;
+    }
+
+    .tablet-header__designation {
+        font-size: 0.875rem;
+    }
+
+    .tablet-header__actions {
+        position: absolute;
+        top: var(--space-4);
+        right: var(--space-4);
+    }
+
+    .tablet-meta__row {
+        gap: var(--space-2) var(--space-4);
+    }
+
+    /* Chevron pipeline - hide labels on small screens */
+    .pipeline-chevron__step {
+        padding: var(--space-1) var(--space-2);
+        padding-left: var(--space-3);
+        min-height: 32px;
+    }
+
+    .pipeline-chevron__step:first-child {
+        padding-left: var(--space-2);
+    }
+
+    .pipeline-chevron__label {
+        font-size: 0.5625rem;
+    }
+
+    .pipeline-chevron__status {
+        display: none;
+    }
+
+    .pipeline-chevron__step::after {
+        right: -8px;
+        border-top-width: 16px;
+        border-bottom-width: 16px;
+        border-left-width: 8px;
+    }
+
+    .pipeline-chevron__step::before {
+        border-top-width: 16px;
+        border-bottom-width: 16px;
+        border-left-width: 8px;
+    }
+}

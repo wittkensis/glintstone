@@ -10,6 +10,7 @@ from pathlib import Path
 from datetime import datetime
 
 BASE_DIR = Path("/Volumes/Portable Storage/CUNEIFORM")
+DOWNLOADS_DIR = BASE_DIR / "downloads"
 
 def get_file_size(path: Path) -> str:
     """Get human-readable file size."""
@@ -61,11 +62,11 @@ def main():
     print("\n## CDLI (Cuneiform Digital Library Initiative)")
     print("-" * 50)
 
-    catalog_path = BASE_DIR / "CDLI/catalogue/batch-00000.json"
+    catalog_path = DOWNLOADS_DIR / "CDLI/catalogue/batch-00000.json"
     valid, count = check_json_valid(catalog_path)
     print(f"  Catalog: {get_file_size(catalog_path)} - {count} tablets" if valid else "  Catalog: INVALID")
 
-    images_dir = BASE_DIR / "CDLI/images/photo"
+    images_dir = DOWNLOADS_DIR / "CDLI/images/photo"
     image_count = count_files(images_dir, "*.jpg") + count_files(images_dir, "*.JPG")
     print(f"  Images: {image_count} photos")
 
@@ -74,7 +75,7 @@ def main():
     print("-" * 50)
 
     # DCCLT
-    dcclt_gloss_dir = BASE_DIR / "ORACC/dcclt/extracted/dcclt"
+    dcclt_gloss_dir = DOWNLOADS_DIR / "ORACC/dcclt/extracted/dcclt"
     if dcclt_gloss_dir.exists():
         sux_valid, sux_count = check_json_valid(dcclt_gloss_dir / "gloss-sux.json")
         akk_valid, akk_count = check_json_valid(dcclt_gloss_dir / "gloss-akk.json")
@@ -92,7 +93,7 @@ def main():
         print("  DCCLT: Not extracted - check glossaries folder")
 
     # OGSL Sign List
-    ogsl_path = BASE_DIR / "ORACC/ogsl/json/ogsl/ogsl-sl.json"
+    ogsl_path = DOWNLOADS_DIR / "ORACC/ogsl/json/ogsl/ogsl-sl.json"
     ogsl_valid, ogsl_count = check_json_valid(ogsl_path)
     print(f"  OGSL Sign List: {get_file_size(ogsl_path)} - {ogsl_count} signs" if ogsl_valid else "  OGSL: INVALID")
 
@@ -125,7 +126,7 @@ def main():
     print("\n## ePSD2 (Pennsylvania Sumerian Dictionary)")
     print("-" * 50)
 
-    epsd_unicode = BASE_DIR / "ePSD2/unicode"
+    epsd_unicode = DOWNLOADS_DIR / "ePSD2/unicode"
     if epsd_unicode.exists():
         unicode_files = count_files(epsd_unicode, "*")
         print(f"  Unicode data files: {unicode_files}")

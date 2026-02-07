@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tar:*)",
+      "WebFetch(domain:zenodo.org)"
+    ]
+  }
+}
