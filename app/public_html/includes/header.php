@@ -9,7 +9,10 @@
     <link rel="stylesheet" href="/assets/css/core/reset.css">
     <link rel="stylesheet" href="/assets/css/core/typography.css">
     <link rel="stylesheet" href="/assets/css/core/utilities.css">
-    <link rel="stylesheet" href="/assets/css/layout/site.css">
+    <link rel="stylesheet" href="/assets/css/layout/header.css">
+    <link rel="stylesheet" href="/assets/css/layout/footer.css">
+    <link rel="stylesheet" href="/assets/css/layout/containers.css">
+    <link rel="stylesheet" href="/assets/css/layout/page-header.css">
     <link rel="stylesheet" href="/assets/css/components/cards.css">
     <link rel="stylesheet" href="/assets/css/components/pipeline.css">
     <link rel="stylesheet" href="/assets/css/components/popup.css">

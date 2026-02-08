@@ -1,0 +1,35 @@
+/**
+ * Page Header
+ * Standard page header pattern with title, subtitle, and actions
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   Page Header
+   ========================================================================== */
+
+.page-header {
+    margin-bottom: var(--space-6);
+}
+
+.page-header h1 {
+    margin: 0 0 var(--space-2) 0;
+    font-size: 2rem;
+}
+
+.page-header .subtitle {
+    margin: 0 0 var(--space-4) 0;
+    font-size: 1rem;
+    color: var(--color-text-muted);
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.page-header p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 1.125rem;
+}
