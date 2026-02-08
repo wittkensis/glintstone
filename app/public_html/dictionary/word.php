@@ -34,7 +34,7 @@ if (empty($entry_id)) {
     <link rel="stylesheet" href="/assets/css/components/educational-help.css">
 </head>
 <body>
-    <div class="library-word-detail">
+    <div class="dictionary-word-detail">
         <div class="word-detail-container" id="word-detail-container">
             <!-- Loading state -->
             <div class="loading-state">
@@ -44,7 +44,7 @@ if (empty($entry_id)) {
 
         <!-- Back to browse -->
         <div class="word-actions">
-            <a href="/library/" class="btn btn--secondary">← Back to Dictionary Browser</a>
+            <a href="/dictionary/" class="btn btn--secondary">← Back to Dictionary Browser</a>
         </div>
     </div>
 
@@ -58,7 +58,7 @@ if (empty($entry_id)) {
 
             try {
                 // Fetch word data from API
-                const response = await fetch(`/api/library/word-detail.php?entry_id=${encodeURIComponent(entryId)}`);
+                const response = await fetch(`/api/dictionary/word-detail.php?entry_id=${encodeURIComponent(entryId)}`);
 
                 if (!response.ok) {
                     throw new Error('Failed to load entry');
@@ -88,7 +88,7 @@ if (empty($entry_id)) {
                     <div class="error-state">
                         <h2>Error loading entry</h2>
                         <p>${error.message}</p>
-                        <a href="/library/" class="btn">Return to browser</a>
+                        <a href="/dictionary/" class="btn">Return to browser</a>
                     </div>
                 `;
             }
