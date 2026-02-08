@@ -1,9 +1,9 @@
 /**
- * ATF Viewer Library Integration
+ * ATF Viewer Dictionary Integration
  *
- * This file extends the ATF Viewer with library browser integration:
+ * This file extends the ATF Viewer with dictionary browser integration:
  * - Uses shared WordDetailRenderer for dictionary content
- * - Adds "View in Library" links
+ * - Adds "View in Dictionary" links
  * - Integrates with educational help system
  *
  * Usage: Include after atf-viewer.js and shared modules
@@ -35,7 +35,7 @@
             // If cached data has entry_id, fetch full detail from new API
             if (cachedData.entries && cachedData.entries.length > 0 && cachedData.entries[0].entry_id) {
                 const entryId = cachedData.entries[0].entry_id;
-                await this.loadWordDetailFromLibrary(entryId, word, cachedData);
+                await this.loadWordDetailFromDictionary(entryId, word, cachedData);
                 return;
             }
 
@@ -58,7 +58,7 @@
             // If we have an entry_id, fetch full detail
             if (data.entries && data.entries.length > 0 && data.entries[0].entry_id) {
                 const entryId = data.entries[0].entry_id;
-                await this.loadWordDetailFromLibrary(entryId, word, data);
+                await this.loadWordDetailFromDictionary(entryId, word, data);
             } else {
                 this.renderDictionaryContentLegacy(data, word);
             }
@@ -76,14 +76,14 @@
     /**
      * Load full word detail from library API
      */
-    ATFViewer.prototype.loadWordDetailFromLibrary = async function(entryId, word, fallbackData) {
+    ATFViewer.prototype.loadWordDetailFromDictionary = async function(entryId, word, fallbackData) {
         const sidebar = this.container.querySelector('.atf-knowledge-sidebar');
         const citationEl = sidebar.querySelector('.dictionary-word-header__citation');
         const dictContent = sidebar.querySelector('.dictionary-content');
 
         try {
             // Fetch from word-detail API
-            const response = await fetch(`/api/library/word-detail.php?entry_id=${encodeURIComponent(entryId)}`);
+            const response = await fetch(`/api/dictionary/word-detail.php?entry_id=${encodeURIComponent(entryId)}`);
             if (!response.ok) throw new Error('API error');
 
             const data = await response.json();
@@ -111,8 +111,8 @@
             const viewInLibraryBtn = document.createElement('div');
             viewInLibraryBtn.className = 'dictionary-library-link';
             viewInLibraryBtn.innerHTML = `
-                <a href="/library/word/${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
-                    View in Library →
+                <a href="/dictionary/word/${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
+                    View in Dictionary →
                 </a>
             `;
             container.appendChild(viewInLibraryBtn);
@@ -164,8 +164,8 @@
             const viewInLibraryBtn = document.createElement('div');
             viewInLibraryBtn.className = 'dictionary-library-link';
             viewInLibraryBtn.innerHTML = `
-                <a href="/library/word/${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
-                    View in Library →
+                <a href="/dictionary/word/${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
+                    View in Dictionary →
                 </a>
             `;
             dictContent.appendChild(viewInLibraryBtn);

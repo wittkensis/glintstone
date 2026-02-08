@@ -1,9 +1,9 @@
 /**
- * Library Browser Component
+ * Dictionary Browser Component
  * Dictionary and sign library browser layout and entry cards
  */
 
-.library-browser {
+.dictionary-browser {
     display: grid;
     grid-template-columns: 280px 1fr;
     gap: 2rem;
@@ -13,7 +13,7 @@
 }
 
 @media (max-width: 900px) {
-    .library-browser {
+    .dictionary-browser {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
@@ -24,21 +24,21 @@
 }
 
 /* Main Content Area */
-.library-main {
+.dictionary-main {
     min-width: 0; /* Prevent grid blowout */
 }
 
-.library-header {
+.dictionary-header {
     margin-bottom: 2rem;
 }
 
-.library-header h1 {
+.dictionary-header h1 {
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
     color: var(--color-text);
 }
 
-.library-description {
+.dictionary-description {
     font-size: 1.125rem;
     color: var(--color-text-secondary);
     margin: 0;

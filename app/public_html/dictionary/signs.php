@@ -1,6 +1,6 @@
 <?php
 /**
- * Library Signs Browser
+ * Sign Library Browser
  *
  * Visual grid for browsing cuneiform signs with:
  * - Search by sign_id or value
@@ -30,7 +30,7 @@ $api_params = [
     'offset' => $offset
 ];
 
-$api_url = '/api/library/signs-browse.php?' . http_build_query(array_filter($api_params));
+$api_url = '/api/dictionary/signs-browse.php?' . http_build_query(array_filter($api_params));
 ?>
 
 <!DOCTYPE html>
@@ -38,20 +38,20 @@ $api_url = '/api/library/signs-browse.php?' . http_build_query(array_filter($api
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Library - Cuneiform Library</title>
+    <title>Sign Library - Cuneiform Dictionary</title>
     <link rel="stylesheet" href="/assets/css/layout/site.css">
     <link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
     <link rel="stylesheet" href="/assets/css/components/sign-grid.css">
     <link rel="stylesheet" href="/assets/css/components/educational-help.css">
 </head>
 <body>
-    <div class="library-browser library-signs-browser">
+    <div class="dictionary-browser dictionary-signs-browser">
         <!-- Filter Sidebar -->
         <aside class="filter-sidebar">
             <div class="filter-header">
                 <h2>Filters</h2>
                 <?php if (!empty(array_filter([$search, $sign_type, $min_frequency]))): ?>
-                    <a href="/library/signs.php" class="clear-filters">Clear all</a>
+                    <a href="/dictionary/signs.php" class="clear-filters">Clear all</a>
                 <?php endif; ?>
             </div>
 
@@ -114,10 +114,10 @@ $api_url = '/api/library/signs-browse.php?' . http_build_query(array_filter($api
         </aside>
 
         <!-- Main Content -->
-        <main class="library-main">
-            <header class="library-header">
+        <main class="dictionary-main">
+            <header class="dictionary-header">
                 <h1>Sign Library</h1>
-                <p class="library-description">
+                <p class="dictionary-description">
                     Browse 3,300+ cuneiform signs with their values and usage
                 </p>
             </header>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Library Dictionary Browser
+ * Dictionary Browser
  *
  * Main landing page for browsing dictionary entries with:
  * - Search by word or meaning
@@ -108,11 +108,11 @@ $total_pages = ceil($total / $per_page);
     <title>Dictionary Browser - Cuneiform Library</title>
     <link rel="stylesheet" href="/assets/css/layout/site.css">
     <link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
-    <link rel="stylesheet" href="/assets/css/components/library-browser.css">
+    <link rel="stylesheet" href="/assets/css/components/dictionary-browser.css">
     <link rel="stylesheet" href="/assets/css/components/educational-help.css">
 </head>
 <body>
-    <div class="library-browser">
+    <div class="dictionary-browser">
         <!-- Filter Sidebar -->
         <aside class="filter-sidebar">
             <div class="filter-header">
@@ -200,10 +200,10 @@ $total_pages = ceil($total / $per_page);
         </aside>
 
         <!-- Main Content -->
-        <main class="library-main">
-            <header class="library-header">
+        <main class="dictionary-main">
+            <header class="dictionary-header">
                 <h1>Dictionary Browser</h1>
-                <p class="library-description">
+                <p class="dictionary-description">
                     Explore <?= number_format($total) ?> words from ancient Sumerian and Akkadian
                 </p>
             </header>
