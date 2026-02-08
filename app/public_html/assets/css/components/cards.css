@@ -1,142 +1,67 @@
 /**
- * Cards Component
- * Tablet cards, thumbnails, and grid layouts
- * Dependencies: CSS variables from core.css
+ * Cards - Base Component
+ * Purpose: Shared foundation for all card types in the application
+ * Used on: Homepage, collections, tablets list, dictionary
+ * Dependencies: core/tokens.css
+ *
+ * This provides the base .card class and .cards grid layout.
+ * Specific card types extend this foundation:
+ * - cards-tablet.css for tablet cards
+ * - cards-collection.css for collection cards
+ * - Dictionary/KPI cards inline in their respective components
  */
 
 /* ==========================================================================
-   Tablet Grid
+   Card Grid Layout
    ========================================================================== */
 
-.tablet-grid {
+.cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--space-4);
-    margin-bottom: var(--space-6);
+    gap: var(--space-6);
+    margin-top: var(--space-6);
 }
 
 /* ==========================================================================
-   Tablet Card
+   Base Card
    ========================================================================== */
 
-.tablet-card {
+.card {
     background: var(--color-bg-elevated);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    overflow: hidden;
-    color: var(--color-text);
-    transition: border-color 0.2s, transform 0.2s;
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    transition: border-color var(--transition-normal), transform var(--transition-normal);
 }
 
-.tablet-card:hover {
+.card:hover {
     border-color: var(--color-accent);
-    transform: translateY(-2px);
 }
 
-.tablet-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0;
-    margin-bottom: var(--space-2);
+.card h3 {
+    margin-bottom: var(--space-3);
+    font-size: 1.25rem;
 }
 
-.p-number {
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    color: var(--color-accent);
-}
-
-.quality-score {
-    font-size: 0.75rem;
+.card p {
     color: var(--color-text-muted);
-    background: var(--color-surface);
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
-}
-
-.tablet-designation {
-    font-weight: 500;
-    margin-bottom: var(--space-2);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 0;
-}
-
-.tablet-meta {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    padding: 0;
-    margin-top: var(--space-2);
-}
-
-.tablet-meta span:not(:last-child)::after {
-    content: " · ";
-}
-
-.tablet-info {
-    padding: var(--space-3);
-}
-
-.tablet-card .pipeline-status {
-    margin-top: var(--space-2);
+    line-height: 1.6;
 }
 
 /* ==========================================================================
-   Thumbnail Component
+   Card Modifiers
    ========================================================================== */
 
-.tablet-thumbnail {
-    position: relative;
-    width: 100%;
-    padding-bottom: 100%; /* 1:1 aspect ratio */
-    background: var(--color-surface);
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
-    overflow: hidden;
+/* Compact variant - reduced padding */
+.card--compact {
+    padding: var(--space-4);
 }
 
-.tablet-thumbnail img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
+/* Elevated variant - stronger shadow */
+.card--elevated {
+    box-shadow: var(--shadow-md);
 }
 
-.tablet-card:hover .tablet-thumbnail img {
-    transform: scale(1.05);
-}
-
-.thumbnail-placeholder {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-surface);
-    z-index: -1;
-}
-
-.thumbnail-placeholder .cuneiform-icon {
-    font-family: 'Noto Sans Cuneiform', serif;
-    font-size: 3rem;
-    color: var(--color-border);
-    opacity: 0.5;
-}
-
-.tablet-thumbnail.no-image img {
-    display: none;
-}
-
-.tablet-thumbnail.no-image .thumbnail-placeholder {
-    z-index: 1;
+.card--elevated:hover {
+    box-shadow: var(--shadow-lg);
 }
