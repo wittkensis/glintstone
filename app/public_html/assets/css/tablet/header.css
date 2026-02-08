@@ -1,8 +1,9 @@
-/* ⚠️ DELETE THIS FILE - Moved to tablet/header.css */
 /**
- * Tablet Header Component
- * Page header for tablet detail view with identity, badges, and actions
- * Dependencies: CSS variables from core.css
+ * Tablet Header
+ * Purpose: Page header for tablet detail view with identity, badges, and actions
+ * Used on: Tablet detail pages
+ * Dependencies: core/tokens.css
+ * JavaScript: None
  */
 
 /* ==========================================================================

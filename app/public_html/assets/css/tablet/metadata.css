@@ -1,8 +1,9 @@
-/* ⚠️ DELETE THIS FILE - Moved to tablet/metadata.css */
 /**
- * Tablet Metadata Component
- * Metadata display and chevron pipeline visualization
- * Dependencies: CSS variables from core.css
+ * Tablet Metadata
+ * Purpose: Metadata display and chevron pipeline visualization
+ * Used on: Tablet detail pages
+ * Dependencies: core/tokens.css
+ * JavaScript: None
  */
 
 /* ==========================================================================

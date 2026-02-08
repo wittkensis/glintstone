@@ -1,8 +1,10 @@
-/* ⚠️ DELETE THIS FILE - Moved to tablet/composite.css */
 /**
- * Composite Panel Component
- * Horizontal scrolling list of related tablet composites
- * Dependencies: CSS variables from core.css
+ * Tablet Composite Panel
+ * Purpose: Horizontal scrolling list of related tablet composites
+ * Used on: Tablet detail pages with composite relationships
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/composite.js
+ * Required classes for JS: .composite-panel, .is-open
  */
 
 /* ==========================================================================
