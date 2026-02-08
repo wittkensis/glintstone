@@ -14,14 +14,11 @@
 
 require_once __DIR__ . '/../includes/header.php';
 
-// Get entry_id from URL path
-$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$path_parts = explode('/', trim($path, '/'));
-$entry_id = end($path_parts);
+// Get entry_id from query parameter
+$entry_id = $_GET['id'] ?? null;
 
 if (empty($entry_id)) {
-    http_response_code(404);
-    echo '<h1>Entry not found</h1>';
+    header('Location: /dictionary/');
     exit;
 }
 ?>

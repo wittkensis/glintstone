@@ -254,7 +254,7 @@ class WordDetailRenderer {
     renderRelatedSection(title, words) {
         const wordsHtml = words.map(word => `
             <li>
-                <a href="/dictionary/word/${encodeURIComponent(word.entry_id)}" class="related-word">
+                <a href="/dictionary/word.php?id=${encodeURIComponent(word.entry_id)}" class="related-word">
                     <strong>${this.escapeHtml(word.headword)}</strong>
                     ${word.guide_word ? `<span class="guide-word">[${this.escapeHtml(word.guide_word)}]</span>` : ''}
                     <span class="badge badge--language">${this.getLanguageLabel(word.language).label}</span>

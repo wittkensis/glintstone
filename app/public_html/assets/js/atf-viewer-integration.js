@@ -111,7 +111,7 @@
             const viewInLibraryBtn = document.createElement('div');
             viewInLibraryBtn.className = 'dictionary-library-link';
             viewInLibraryBtn.innerHTML = `
-                <a href="/dictionary/word/${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
+                <a href="/dictionary/word.php?id=${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
                     View in Dictionary →
                 </a>
             `;
@@ -164,7 +164,7 @@
             const viewInLibraryBtn = document.createElement('div');
             viewInLibraryBtn.className = 'dictionary-library-link';
             viewInLibraryBtn.innerHTML = `
-                <a href="/dictionary/word/${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
+                <a href="/dictionary/word.php?id=${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
                     View in Dictionary →
                 </a>
             `;

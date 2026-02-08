@@ -103,6 +103,9 @@ $total_pages = ceil($total / $per_page);
 <!-- Filter Components -->
 <link rel="stylesheet" href="/assets/css/layout/filtered-list.css">
 <link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
+<link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
+<link rel="stylesheet" href="/assets/css/components/pagination.css">
+<link rel="stylesheet" href="/assets/css/components/dictionary-browser.css">
 <link rel="stylesheet" href="/assets/css/components/educational-help.css">
 
 <main class="filtered-list-page">
@@ -204,7 +207,7 @@ $total_pages = ceil($total / $per_page);
         <!-- Results Grid -->
         <div class="entries-grid">
             <?php foreach ($entries as $entry): ?>
-                <a href="/dictionary/word/<?= urlencode($entry['entry_id']) ?>" class="entry-card">
+                <a href="/dictionary/word.php?id=<?= urlencode($entry['entry_id']) ?>" class="entry-card">
                     <div class="entry-card__header">
                         <h3 class="entry-headword"><?= htmlspecialchars($entry['headword']) ?></h3>
                         <?php if ($entry['guide_word']): ?>
