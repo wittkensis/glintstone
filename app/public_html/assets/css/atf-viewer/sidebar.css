@@ -1,62 +1,16 @@
-/* ⚠️ DELETE THIS FILE - Merged into atf-viewer/sidebar.css */
 /**
- * Knowledge Sidebar - Compact & Clean Version
- * Redesigned for minimal footprint and modern aesthetic
- * Dependencies: CSS variables from core.css
+ * ATF Viewer Knowledge Sidebar
+ * Purpose: Dictionary browse mode, word detail, knowledge tabs content
+ * Used on: Tablet detail pages with ATF content
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/atf-viewer.js
+ * Required classes for JS: .knowledge-tab, .knowledge-tab--active, .knowledge-tab-content--active
  */
 
 /* ==========================================================================
-   Sidebar Container - Reduced Width
+   Knowledge Tabs
    ========================================================================== */
 
-.atf-knowledge-sidebar {
-    width: 280px; /* Down from 340px */
-    flex-shrink: 0;
-    border-left: 1px solid var(--color-border);
-    background: var(--color-bg);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    height: 100%; /* Fill parent height */
-}
-
-.atf-knowledge-sidebar--hidden {
-    display: none;
-}
-
-/* ==========================================================================
-   Header - Compact Tabs with Icons
-   ========================================================================== */
-
-.atf-knowledge-sidebar__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-2);
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
-}
-
-.atf-knowledge-sidebar__close {
-    padding: 4px;
-    background: transparent;
-    border: none;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: 1.125rem;
-    line-height: 1;
-    border-radius: var(--radius-sm);
-    flex-shrink: 0;
-    transition: all var(--transition-fast);
-}
-
-.atf-knowledge-sidebar__close:hover {
-    background: var(--color-bg-subtle);
-    color: var(--color-text);
-}
-
-/* Compact Icon-Based Tabs */
 .knowledge-tabs {
     display: flex;
     gap: 2px;
@@ -97,17 +51,7 @@
     border-bottom-color: var(--color-accent);
 }
 
-/* ==========================================================================
-   Tab Content Container
-   ========================================================================== */
-
-.atf-knowledge-sidebar__body {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    max-height: calc(100vh - 200px); /* Constrain to viewport height minus header/padding */
-}
-
+/* Tab Content Container */
 .knowledge-tab-content {
     display: none;
     height: 100%;
@@ -117,11 +61,11 @@
 .knowledge-tab-content--active {
     display: flex;
     flex-direction: column;
-    height: 100%; /* Required for flex children to scroll */
+    height: 100%;
 }
 
 /* ==========================================================================
-   Dictionary Browse Mode - Compact Layout
+   Dictionary Browse Mode
    ========================================================================== */
 
 .dictionary-browse {
@@ -129,8 +73,8 @@
     flex-direction: column;
     gap: 0;
     padding: 0;
-    flex: 1; /* Fill available space in flex parent */
-    min-height: 0; /* Required for flexbox scrolling */
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -140,7 +84,7 @@
     display: flex;
     align-items: center;
     border-bottom: 1px solid var(--color-border);
-    flex-shrink: 0; /* Don't shrink - fixed height */
+    flex-shrink: 0;
 }
 
 .dictionary-search__input {
@@ -194,19 +138,19 @@
     padding: 8px;
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
-    flex-shrink: 0; /* Don't shrink - fixed height */
+    flex-shrink: 0;
 }
 
 .dictionary-filter__language,
 .dictionary-filter__pos {
     flex: 1;
-    min-width: 0; /* Allow flex items to shrink below content size */
-    padding: 6px 8px; /* Reduced from 10px */
+    min-width: 0;
+    padding: 6px 8px;
     background: var(--color-bg);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     color: var(--color-text);
-    font-size: 0.7rem; /* Reduced from 0.75rem */
+    font-size: 0.7rem;
     cursor: pointer;
     transition: all var(--transition-fast);
     overflow: hidden;
@@ -228,7 +172,7 @@
     gap: 4px;
     padding: var(--space-2);
     background: var(--color-surface);
-    flex-shrink: 0; /* Don't shrink - fixed height */
+    flex-shrink: 0;
 }
 
 .dictionary-filter-chip {
@@ -264,7 +208,7 @@
 }
 
 /* ==========================================================================
-   Results List - Dense & Scannable
+   Results List
    ========================================================================== */
 
 .dictionary-results {
@@ -273,22 +217,19 @@
     flex-direction: column;
     gap: 0;
     min-height: 0;
-    overflow: hidden; /* Ensure child scroll works */
+    overflow: hidden;
 }
 
 .dictionary-results__list {
     flex: 1;
-    min-height: 0; /* Required for flex scrolling */
-    overflow-y: auto; /* Enable vertical scrolling */
+    min-height: 0;
+    overflow-y: auto;
     background: var(--color-bg);
-    /* Ensure scrolling area is properly sized */
     position: relative;
 }
 
-/* Compact Result Items */
 .dictionary-results__item {
     padding: 10px 12px;
-    /* border-bottom: 1px solid var(--color-border); */
     cursor: pointer;
     transition: background var(--transition-fast);
 }
@@ -328,9 +269,8 @@
     color: var(--color-danger);
 }
 
-/* Minimal Footer */
 .dictionary-results__footer {
-    flex-shrink: 0; /* Don't shrink - fixed height */
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -361,7 +301,7 @@
 }
 
 /* ==========================================================================
-   Word Detail View - Clean & Focused
+   Word Detail View
    ========================================================================== */
 
 .dictionary-word-detail {
@@ -373,7 +313,6 @@
     overflow-y: auto;
 }
 
-/* Refined Word Header - Full Width Back Button */
 .dictionary-word-header {
     border-bottom: 1px solid var(--color-border);
     background: var(--color-bg);
@@ -415,12 +354,39 @@
     line-height: 1.3;
 }
 
-/* Compact Content Section */
+.dictionary-word-header__title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+}
+
+.dictionary-word-header__word {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-accent);
+}
+
+.dictionary-word-header__meaning {
+    color: var(--color-text);
+    font-size: 0.9rem;
+}
+
+.dictionary-word-header__pos {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
 .dictionary-content {
     padding: 12px;
 }
 
-/* Prominent Definition */
 .dictionary-definition {
     padding: 16px 12px;
     margin-bottom: 16px;
@@ -435,7 +401,10 @@
     line-height: 1.5;
 }
 
-/* Condensed Field List */
+/* ==========================================================================
+   Dictionary Content - Fields & Forms
+   ========================================================================== */
+
 .atf-dictionary__fields {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -463,7 +432,70 @@
     line-height: 1.3;
 }
 
-/* Compact Variant Forms */
+/* Sign Form Section */
+.dictionary-sign-form {
+    margin-bottom: var(--space-4);
+    padding: var(--space-3);
+    background: var(--color-bg-elevated, rgba(255, 255, 255, 0.03));
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--color-warning, #e8a64d);
+}
+
+.dictionary-sign-form__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.dictionary-sign-form__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dictionary-sign-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.dictionary-sign-badge--logo {
+    background: var(--color-warning, #e8a64d);
+    color: var(--color-bg, #000);
+}
+
+.dictionary-sign-badge--phono {
+    background: var(--color-info, #4da6e8);
+    color: var(--color-bg, #000);
+}
+
+.dictionary-sign-form__text {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-2);
+    letter-spacing: 0.02em;
+}
+
+.dictionary-sign-form__explanation {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+}
+
+.dictionary-sign-form__explanation strong {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+/* Variant Forms */
 .atf-dictionary__variants {
     margin-bottom: 16px;
 }
@@ -502,7 +534,7 @@
     color: var(--color-text-subtle);
 }
 
-/* Minimal Entries Expander */
+/* All Entries Expander */
 .atf-dictionary__entries {
     border-top: 1px solid var(--color-border);
     padding-top: 12px;
@@ -567,6 +599,27 @@
     line-height: 1.4;
 }
 
+/* Line Translation */
+.atf-dictionary__translation {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+}
+
+.atf-dictionary__translation-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-2);
+}
+
+.atf-dictionary__translation-text {
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--color-text);
+    line-height: 1.5;
+}
+
 /* Empty States */
 .atf-dictionary__empty {
     padding: var(--space-6);
@@ -589,7 +642,7 @@
 }
 
 /* ==========================================================================
-   Placeholder for Empty Tabs - Minimal
+   Placeholder for Empty Tabs
    ========================================================================== */
 
 .knowledge-tab-placeholder {
@@ -624,17 +677,8 @@
 }
 
 /* ==========================================================================
-   Responsive Adjustments
+   Responsive
    ========================================================================== */
-
-@media (max-width: 900px) {
-    .atf-knowledge-sidebar {
-        width: 100%;
-        max-height: 50vh;
-        border-left: none;
-        border-top: 1px solid var(--color-border);
-    }
-}
 
 @media (max-width: 600px) {
     .knowledge-tabs {

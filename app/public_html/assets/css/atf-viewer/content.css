@@ -1,0 +1,232 @@
+/**
+ * ATF Viewer Content
+ * Purpose: Text content display, columns, lines, legend, state markers
+ * Used on: Tablet detail pages with ATF content
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/atf-viewer.js
+ * Required classes for JS: .atf-line, .atf-column, .atf-content
+ */
+
+/* ==========================================================================
+   Legend
+   ========================================================================== */
+
+.atf-legend {
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.75rem;
+}
+
+.atf-legend__items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+}
+
+.atf-legend__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-muted);
+}
+
+.atf-legend__swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.atf-legend__swatch--has-definition {
+    width: 10px;
+    height: 10px;
+    background: var(--color-accent);
+    border-radius: 50%;
+}
+
+.atf-legend__swatch--no-definition {
+    width: 10px;
+    height: 10px;
+    background: var(--color-text-muted);
+    border-radius: 50%;
+    opacity: 0.5;
+}
+
+.atf-legend__swatch--det-divine {
+    color: var(--color-accent);
+}
+
+.atf-legend__swatch--det-place {
+    color: var(--color-success);
+}
+
+.atf-legend__swatch--logogram {
+    font-family: var(--font-mono);
+    color: var(--color-text);
+    text-decoration: underline;
+}
+
+.atf-legend__swatch--damaged {
+    color: var(--color-warning);
+}
+
+.atf-legend__swatch--uncertain {
+    color: var(--color-warning);
+}
+
+.atf-legend__swatch--broken {
+    color: var(--color-text-subtle);
+}
+
+.atf-legend__swatch--translation {
+    color: var(--color-accent-muted);
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   Content Area
+   ========================================================================== */
+
+.atf-viewer__body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.atf-content {
+    height: 100%;
+    padding: var(--space-4);
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    line-height: 2;
+}
+
+/* Raw mode */
+.atf-viewer--mode-raw .atf-content {
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   Column Layout
+   ========================================================================== */
+
+.atf-columns {
+    display: flex;
+    gap: var(--space-6);
+}
+
+.atf-column {
+    flex: 1;
+    min-width: 0;
+}
+
+.atf-column__header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Single column - hide header */
+.atf-viewer--single-column .atf-column__header {
+    display: none;
+}
+
+/* ==========================================================================
+   Lines
+   ========================================================================== */
+
+.atf-line {
+    display: flex;
+    align-items: baseline;
+    padding: var(--space-1) 0;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+}
+
+.atf-line:hover {
+    background: var(--color-bg);
+}
+
+.atf-line__number {
+    width: 36px;
+    flex-shrink: 0;
+    color: var(--color-text-subtle);
+    font-size: 0.8em;
+    text-align: right;
+    padding-right: var(--space-3);
+    user-select: none;
+}
+
+.atf-line__number--prime::after {
+    content: "'";
+}
+
+.atf-line__content {
+    flex: 1;
+    min-width: 0;
+}
+
+/* State markers */
+.atf-state {
+    color: var(--color-text-subtle);
+    font-style: italic;
+    padding: var(--space-2) 0;
+    padding-left: 36px;
+    font-size: 0.85em;
+}
+
+/* Inline translations (from #tr.XX: in ATF) */
+.atf-line__translation {
+    margin-left: 36px;
+    margin-top: 2px;
+    margin-bottom: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    background: var(--color-bg);
+    border-left: 2px solid var(--color-accent-muted);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    font-style: italic;
+    font-family: var(--font-sans);
+}
+
+/* Composite references */
+.atf-composite {
+    display: block;
+    margin-left: 36px;
+    margin-top: -4px;
+    margin-bottom: var(--space-2);
+    color: var(--color-success);
+    font-size: 0.7rem;
+    opacity: 0.8;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.atf-composite:hover {
+    opacity: 1;
+    text-decoration-style: solid;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 600px) {
+    .atf-legend__items {
+        gap: var(--space-2) var(--space-4);
+    }
+}

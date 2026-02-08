@@ -1,0 +1,152 @@
+/**
+ * ATF Viewer Layout
+ * Purpose: Container structure, main panel, knowledge sidebar positioning
+ * Used on: Tablet detail pages with ATF content
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/atf-viewer.js
+ * Required classes for JS: .atf-viewer, .atf-viewer__main, .atf-knowledge-sidebar
+ */
+
+/* ==========================================================================
+   Container
+   ========================================================================== */
+
+.atf-viewer {
+    display: flex;
+    flex-direction: row;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+}
+
+.atf-viewer__main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.atf-viewer__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: var(--space-2);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* Viewer toggle button - positioned at start of header */
+.atf-viewer__header .viewer-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin-left: var(--space-2);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.atf-viewer__header .viewer-toggle:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+    border-color: var(--color-accent);
+}
+
+.atf-viewer__header .viewer-toggle svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ==========================================================================
+   Knowledge Sidebar (replaces Dictionary Panel)
+   ========================================================================== */
+
+.atf-knowledge-sidebar {
+    width: 340px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--color-border);
+    background: var(--color-bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.atf-knowledge-sidebar--hidden {
+    display: none;
+}
+
+/* Header with tabs */
+.atf-knowledge-sidebar__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.atf-knowledge-sidebar__close {
+    padding: var(--space-1);
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.atf-knowledge-sidebar__close:hover {
+    background: var(--color-bg-subtle);
+    color: var(--color-text);
+}
+
+/* Tab Content */
+.atf-knowledge-sidebar__body {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 900px) {
+    .atf-viewer__body {
+        flex-direction: column;
+    }
+
+    .atf-knowledge-sidebar {
+        width: 100%;
+        max-height: 50vh;
+        border-left: none;
+        border-top: 1px solid var(--color-border);
+    }
+}
+
+@media (max-width: 600px) {
+    .atf-viewer__header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+    }
+
+    .atf-viewer__header .viewer-toggle {
+        margin-left: 0;
+        align-self: flex-start;
+    }
+}
