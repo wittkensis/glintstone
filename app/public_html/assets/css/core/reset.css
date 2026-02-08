@@ -1,0 +1,27 @@
+/**
+ * Reset & Normalize
+ * Basic resets and box model normalization
+ * Dependencies: none
+ */
+
+/* ==========================================================================
+   Box Model
+   ========================================================================== */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Body Reset
+   ========================================================================== */
+
+body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    min-height: 100vh;
+}

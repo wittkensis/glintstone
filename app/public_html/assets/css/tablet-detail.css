@@ -599,8 +599,7 @@
     margin-bottom: var(--space-4);
 }
 
-.image-source,
-.atf-source {
+.image-source {
     font-size: 0.75rem;
     color: var(--color-text-subtle);
     margin-top: var(--space-2);
@@ -1321,19 +1320,6 @@ body:has(.tablet-detail-page) {
 
 .atf-panel .no-atf {
     background: #0f0f0f;
-}
-
-/* ATF source note - positioned relative to ATF viewer main, not entire panel */
-.atf-viewer__main .atf-source {
-    padding: var(--space-2);
-    border: 1px solid #202020;
-    background: #0a0a0a;
-    display: inline-block;
-    position: absolute;
-    border-radius: var(--radius-md);
-    bottom: var(--space-2);
-    right: var(--space-2);
-    z-index: 10;
 }
 
 /* Dictionary/Composite panels - adjust for dark bg */

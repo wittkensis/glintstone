@@ -9,28 +9,6 @@
     padding: var(--space-6, 48px) var(--space-4, 24px);
 }
 
-.page-header {
-    margin-bottom: var(--space-6, 48px);
-}
-
-.page-header h1 {
-    margin: 0 0 var(--space-2, 12px) 0;
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--color-text, #e8e8e8);
-}
-
-.page-header .subtitle {
-    margin: 0 0 var(--space-4, 24px) 0;
-    font-size: 1rem;
-    color: var(--color-text-muted, #a0a0a0);
-}
-
-.header-actions {
-    display: flex;
-    gap: var(--space-3, 16px);
-}
-
 /* Collection Grid */
 .collection-grid {
     display: grid;

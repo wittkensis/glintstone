@@ -1,0 +1,211 @@
+/**
+ * Progress Meter Component Styles
+ * Concentric rings visualization for digitization progress
+ */
+
+/* Container */
+.progress-meter {
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+/* SVG Container */
+.progress-rings {
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+}
+
+/* Background rings (track) */
+.ring-bg {
+    fill: none;
+    stroke: var(--color-surface);
+    stroke-width: 20;
+    transition: stroke 0.3s;
+}
+
+/* Progress rings (animated) */
+.ring-progress {
+    fill: none;
+    stroke-linecap: round;
+    stroke-width: 20;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: stroke-dashoffset 1.2s ease-out, stroke 0.3s;
+}
+
+/* Ring colors - Distinct colors for each metric */
+.ring-1 {
+    stroke: #6b8e6b; /* Green for Images */
+}
+
+.ring-2 {
+    stroke: #c9a962; /* Gold for Transliterations */
+}
+
+.ring-3 {
+    stroke: #7ba4c4; /* Blue for Translations */
+}
+
+/* Center Monument Typography */
+.monument-number {
+    font-family: var(--font-serif); /* Playfair Display */
+    font-size: 48px;
+    font-weight: 700;
+    fill: var(--color-text);
+    letter-spacing: -0.02em;
+}
+
+.monument-divider {
+    stroke: var(--color-border);
+    stroke-width: 2;
+}
+
+.monument-label {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 400;
+    fill: var(--color-text-muted);
+    letter-spacing: 0.02em;
+}
+
+/* Ring Labels (outside SVG) - Side by side */
+.ring-labels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+    width: 100%;
+    max-width: 800px;
+}
+
+.ring-label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    text-align: center;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.ring-label:hover {
+    background: var(--color-surface);
+    transform: translateY(-2px);
+}
+
+/* Color accents matching rings */
+.ring-label-1 {
+    border-top: 3px solid #6b8e6b;
+}
+
+.ring-label-2 {
+    border-top: 3px solid #c9a962;
+}
+
+.ring-label-3 {
+    border-top: 3px solid #7ba4c4;
+}
+
+.label-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.label-stat {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+    display: block;
+    margin: var(--space-1) 0;
+}
+
+.label-count {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    display: block;
+}
+
+/* Screen reader only content */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Responsive: Tablet */
+@media (max-width: 768px) {
+    .progress-meter {
+        gap: var(--space-6);
+    }
+
+    .progress-rings {
+        max-width: 500px;
+    }
+
+    .monument-number {
+        font-size: 42px;
+    }
+
+    .monument-label {
+        font-size: 14px;
+    }
+}
+
+/* Responsive: Mobile - Stack labels */
+@media (max-width: 640px) {
+    .progress-meter {
+        gap: var(--space-6);
+    }
+
+    .progress-rings {
+        max-width: 400px;
+    }
+
+    .monument-number {
+        font-size: 36px;
+    }
+
+    .monument-label {
+        font-size: 13px;
+    }
+
+    .ring-labels {
+        grid-template-columns: 1fr;
+        max-width: 100%;
+        gap: var(--space-3);
+    }
+
+    .label-stat {
+        font-size: 1.25rem;
+    }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .ring-progress {
+        transition: none;
+    }
+}
+
+/* Focus and accessibility */
+.ring-label:focus-within {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}

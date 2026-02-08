@@ -135,10 +135,28 @@ if ($pipeline) {
     }
 }
 
-// Search filter - searches designation and transliteration text
+// Search filter - searches p_number, designation, and transliteration text
+// Supports OR operator: "P000001 || P000025 || P010663"
 if (!empty($search)) {
-    $where[] = "(a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
-    $params[':search'] = '%' . $search . '%';
+    $searchTerms = array_map('trim', explode('||', $search));
+
+    if (count($searchTerms) > 1) {
+        // Multiple terms - build OR condition for each
+        $searchConditions = [];
+        foreach ($searchTerms as $i => $term) {
+            if (!empty($term)) {
+                $searchConditions[] = "(a.p_number LIKE :search{$i} OR a.designation LIKE :search{$i} OR i.transliteration_clean LIKE :search{$i})";
+                $params[":search{$i}"] = '%' . $term . '%';
+            }
+        }
+        if (!empty($searchConditions)) {
+            $where[] = "(" . implode(' OR ', $searchConditions) . ")";
+        }
+    } else {
+        // Single term - use simple search
+        $where[] = "(a.p_number LIKE :search OR a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+        $params[':search'] = '%' . $search . '%';
+    }
 }
 
 $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -195,15 +213,21 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <!-- Filter Components -->
+<link rel="stylesheet" href="/assets/css/layout/filtered-list.css">
+<link rel="stylesheet" href="/assets/css/components/chevron-filter.css">
 <link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
 <link rel="stylesheet" href="/assets/css/components/filter-active.css">
 <link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
 <link rel="stylesheet" href="/assets/css/components/pagination.css">
 
-<main class="page-with-sidebar">
+<main class="filtered-list-page">
+<div class="page-with-sidebar">
     <?php
     // Set up filter sidebar variables
     $clearAllUrl = 'list.php';
+    $showSidebarHeader = false; // Hide "Filters" header
+    $alwaysShowSearch = true;   // Search always visible
+    $showPipelineFilter = false; // Use horizontal chevron filter instead
     include __DIR__ . '/../includes/components/filter-sidebar.php';
     ?>
 
@@ -211,13 +235,24 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="page-header">
             <h1>Tablets</h1>
             <p class="subtitle">
-                <?php if (!empty($activeFilters)): ?>
                 Showing <?= number_format($totalCount) ?> tablets
-                <?php else: ?>
-                <?= number_format($totalCount) ?> tablets in database
-                <?php endif; ?>
             </p>
         </div>
+
+        <?php
+        // Configure pipeline chevron filter
+        $stages = [
+            ['label' => 'Image', 'value' => 'has_image'],
+            ['label' => 'Signs', 'value' => 'machine_ocr'],
+            ['label' => 'ATF', 'value' => 'has_atf'],
+            ['label' => 'Lemmas', 'value' => 'has_lemmas'],
+            ['label' => 'Translation', 'value' => 'has_translation']
+        ];
+        $currentValue = $pipeline ?? null;
+        $urlParam = 'pipeline';
+        $ariaLabel = 'Filter by pipeline stage';
+        include __DIR__ . '/../includes/components/chevron-filter.php';
+        ?>
 
         <?php if (!empty($activeFilters)): ?>
         <div class="active-filters">
@@ -255,6 +290,7 @@ require_once __DIR__ . '/../includes/header.php';
         </nav>
         <?php endif; ?>
     </div>
+</div>
 </main>
 
 <script src="/assets/js/filters.js"></script>

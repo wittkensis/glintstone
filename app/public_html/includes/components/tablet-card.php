@@ -40,15 +40,6 @@ $langAbbr = getLanguageAbbreviation($tablet['language']);
     </form>
     <?php endif; ?>
 
-    <!-- Pipeline Status Bar -->
-    <div class="card-pipeline-bar">
-        <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('image', $tablet) ?>" title="Image"></span>
-        <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('signs', $tablet) ?>" title="Sign Detection"></span>
-        <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('transliteration', $tablet) ?>" title="Transliteration"></span>
-        <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('lemmas', $tablet) ?>" title="Lemmas"></span>
-        <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('translation', $tablet) ?>" title="Translation"></span>
-    </div>
-
     <!-- Language Badge -->
     <?php if ($langAbbr): ?>
     <span class="lang-badge" title="<?= htmlspecialchars($tablet['language']) ?>"><?= $langAbbr ?></span>
@@ -67,6 +58,17 @@ $langAbbr = getLanguageAbbreviation($tablet['language']);
 
     <!-- Overlay Info Panel -->
     <div class="card-overlay">
+
+        <!-- Pipeline Status Bar -->
+        <div class="card-pipeline-bar">
+            <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('image', $tablet) ?>" title="Image"></span>
+            <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('signs', $tablet) ?>" title="Sign Detection"></span>
+            <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('transliteration', $tablet) ?>" title="Transliteration"></span>
+            <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('lemmas', $tablet) ?>" title="Lemmas"></span>
+            <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('translation', $tablet) ?>" title="Translation"></span>
+        </div>
+
+
         <span class="card-p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
         <?php if ($tablet['period']): ?>
         <span class="meta-period"><?= htmlspecialchars(truncateText($tablet['period'], 25)) ?></span>

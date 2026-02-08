@@ -24,9 +24,9 @@
     margin: 0 auto;
     padding: 0 var(--space-6);
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: var(--space-8);
+    gap: var(--space-6);
     height: 48px;
 }
 
@@ -58,16 +58,18 @@
     display: flex;
     align-items: center;
     gap: var(--space-1);
+    justify-self: end;
 }
 
 .nav-link {
     position: relative;
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-2);
     color: var(--folk-stone);
     text-decoration: none;
-    font-size: 0.875rem;
+    font-family: var(--font-serif);
+    font-size: 0.8rem;
     font-weight: 500;
-    letter-spacing: -0.005em;
+    letter-spacing: 0.03rem;
     transition: all var(--transition-normal);
     border-radius: var(--radius-md);
 }
@@ -93,14 +95,11 @@
 }
 
 /* Search */
-.header-right {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-}
-
 .header-search {
     position: relative;
+    width: 100%;
+    max-width: 500px;
+    justify-self: center;
 }
 
 .header-search form {
@@ -121,8 +120,8 @@
 }
 
 .header-search input {
-    width: 220px;
-    padding: 7px 12px 7px 34px;
+    width: 100%;
+    padding: 8px 14px 8px 36px;
     background: rgba(139, 126, 106, 0.08);
     border: 1px solid rgba(139, 126, 106, 0.2);
     border-radius: var(--radius-md);
@@ -164,13 +163,25 @@
    ========================================================================== */
 
 .page-header {
-    margin-bottom: var(--space-8);
+    margin-bottom: var(--space-6);
 }
 
 .page-header h1 {
     margin: 0 0 var(--space-2) 0;
     font-size: 2rem;
 }
+
+.page-header .subtitle {
+    margin: 0 0 var(--space-4, 24px) 0;
+    font-size: 1rem;
+    color: var(--color-text-muted, #a0a0a0);
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--space-3, 16px);
+}
+
 
 .page-header p {
     margin: 0;
@@ -272,30 +283,40 @@
 
 @media (max-width: 900px) {
     .header-inner {
-        grid-template-columns: auto 1fr auto;
-        gap: var(--space-4);
-        height: 48px;
-        padding: 0 var(--space-4);
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+        gap: var(--space-3);
+        height: auto;
+        padding: var(--space-3) var(--space-4);
+    }
+
+    .header-left {
+        grid-column: 1;
+        grid-row: 1;
     }
 
     .header-nav {
-        justify-content: center;
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+    }
+
+    .header-search {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        max-width: none;
     }
 
     .nav-link {
-        font-size: 0.8125rem;
-        padding: var(--space-2) var(--space-3);
-    }
-
-    .header-search input {
-        width: 180px;
+        font-size: 0.75rem;
+        padding: var(--space-2);
     }
 }
 
 @media (max-width: 768px) {
     .header-inner {
-        padding: 0 var(--space-3);
-        gap: var(--space-3);
+        padding: var(--space-2) var(--space-3);
+        gap: var(--space-2);
     }
 
     .logo svg {
@@ -307,9 +328,8 @@
     }
 
     .header-search input {
-        width: 160px;
         font-size: 0.8125rem;
-        padding: 6px 10px 6px 30px;
+        padding: 7px 12px 7px 32px;
     }
 
     .search-icon {
@@ -329,33 +349,38 @@
 
 @media (max-width: 580px) {
     .header-inner {
-        grid-template-columns: auto 1fr;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
         height: auto;
         padding: var(--space-2) var(--space-3);
         gap: var(--space-2);
     }
 
+    .header-left {
+        grid-column: 1;
+        grid-row: 1;
+        justify-self: center;
+    }
+
+    .header-search {
+        grid-column: 1;
+        grid-row: 2;
+        max-width: none;
+    }
+
     .header-nav {
-        order: 3;
-        grid-column: 1 / -1;
+        grid-column: 1;
+        grid-row: 3;
+        justify-self: stretch;
         justify-content: flex-start;
         gap: 0;
-        margin-top: var(--space-1);
     }
 
     .nav-link {
         flex: 1;
         text-align: center;
-        font-size: 0.8125rem;
+        font-size: 0.75rem;
         padding: var(--space-2);
-    }
-
-    .header-search {
-        justify-self: end;
-    }
-
-    .header-search input {
-        width: 140px;
     }
 }
 

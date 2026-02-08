@@ -1,107 +1,104 @@
 <?php
 /**
  * Glintstone - Collaborative Cuneiform Research Platform
- * Main entry point
+ * Homepage: Progress Meter & Featured Collections
  */
 
 require_once __DIR__ . '/includes/db.php';
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/includes/helpers/homepage.php';
+require_once __DIR__ . '/includes/helpers/collections.php';
 
-// Get some stats
-$db = getDB();
-$stats = [
-    'tablets' => $db->querySingle("SELECT COUNT(*) FROM artifacts"),
-    'signs' => $db->querySingle("SELECT COUNT(*) FROM signs"),
-    'glossary' => $db->querySingle("SELECT COUNT(*) FROM glossary_entries"),
-];
+$pageTitle = 'Home';
+
+// Fetch data for homepage
+$kpiData = getKPIMetrics();
+$featuredCollections = getRandomCollections(3);
+
+require_once __DIR__ . '/includes/header.php';
 ?>
 
-<main class="container">
-    <section class="hero">
-        <h1>Glintstone</h1>
-        <p class="tagline">Collaborative Cuneiform Research Platform</p>
+<!-- Homepage-specific CSS -->
+<link rel="stylesheet" href="/assets/css/components/progress-meter.css">
+<link rel="stylesheet" href="/assets/css/components/collection-cards.css">
+<link rel="stylesheet" href="/assets/css/pages/homepage.css">
+
+<main class="homepage-container">
+
+    <!-- Progress Meter Section -->
+    <section class="progress-meter-section">
+        <?php require __DIR__ . '/includes/components/progress-meter.php'; ?>
     </section>
 
-    <section class="stats-grid">
-        <div class="stat-card">
-            <span class="stat-number"><?= number_format($stats['tablets']) ?></span>
-            <span class="stat-label">Tablets</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-number"><?= number_format($stats['signs']) ?></span>
-            <span class="stat-label">Signs</span>
-        </div>
-        <div class="stat-card">
-            <span class="stat-number"><?= number_format($stats['glossary']) ?></span>
-            <span class="stat-label">Dictionary Entries</span>
-        </div>
-    </section>
+    <!-- Visual Separator -->
+    <div class="section-divider"></div>
 
-    <section class="quick-search">
-        <h2>Quick Search</h2>
-        <form action="/tablets/search.php" method="GET">
-            <div class="search-box">
-                <input type="text" name="q" placeholder="Search tablets, signs, or words..." autofocus>
-                <button type="submit">Search</button>
-            </div>
-        </form>
-    </section>
+    <!-- Featured Collections Section -->
+    <section class="featured-collections">
+        <header class="featured-collections-header">
+            <h2>Explore Collections</h2>
+            <p>Discover curated sets of tablets organized by theme, period, and scholarly interest</p>
+        </header>
 
-    <section class="recent-tablets">
-        <h2>Sample Tablets</h2>
-        <div class="tablet-grid">
-            <?php
-            $tablets = $db->query("
-                SELECT a.p_number, a.designation, a.museum_no, a.material, a.language,
-                       ps.quality_score, ps.has_image, ps.has_atf
-                FROM artifacts a
-                LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
-                ORDER BY a.p_number
-                LIMIT 6
-            ");
-            while ($tablet = $tablets->fetchArray(SQLITE3_ASSOC)):
-            ?>
-            <a href="/tablets/detail.php?p=<?= urlencode($tablet['p_number']) ?>" class="tablet-card">
-                <div class="tablet-thumbnail">
-                    <img src="/api/thumbnail.php?p=<?= urlencode($tablet['p_number']) ?>&size=200"
-                         alt="<?= htmlspecialchars($tablet['designation'] ?? $tablet['p_number']) ?>"
-                         loading="lazy"
-                         onerror="this.parentElement.classList.add('no-image')">
-                    <div class="thumbnail-placeholder">
-                        <span class="cuneiform-icon">𒀭</span>
-                    </div>
+        <?php if (!empty($featuredCollections)): ?>
+        <div class="collection-grid">
+            <?php foreach ($featuredCollections as $collection): ?>
+            <a href="/collections/detail.php?id=<?= $collection['collection_id'] ?>" class="collection-card">
+                <!-- 2x2 Preview Grid -->
+                <div class="collection-cover">
+                    <?php
+                    $displayedThumbs = 0;
+                    foreach ($collection['preview_tablets'] as $tablet):
+                        $displayedThumbs++;
+                    ?>
+                        <div class="cover-thumb">
+                            <img src="/api/thumbnail.php?p=<?= urlencode($tablet['p_number']) ?>&size=100"
+                                 alt="<?= htmlspecialchars($tablet['designation'] ?? $tablet['p_number']) ?>"
+                                 loading="lazy"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="cover-thumb__fallback" style="display:none;">
+                                <span class="cuneiform-icon">𒀭</span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+
+                    <?php
+                    // Fill empty slots with fallback icon
+                    $emptySlots = 4 - $displayedThumbs;
+                    for ($i = 0; $i < $emptySlots; $i++):
+                    ?>
+                        <div class="cover-thumb empty">
+                            <span class="cuneiform-icon">𒀭</span>
+                        </div>
+                    <?php endfor; ?>
                 </div>
-                <div class="tablet-info">
-                    <div class="tablet-header">
-                        <span class="p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
-                        <span class="quality-score" title="Quality Score">
-                            <?= round(($tablet['quality_score'] ?? 0) * 100) ?>%
+
+                <!-- Collection Metadata -->
+                <div class="collection-meta">
+                    <h3 class="collection-name"><?= htmlspecialchars($collection['name']) ?></h3>
+                    <?php if (!empty($collection['description'])): ?>
+                        <p class="collection-description">
+                            <?= htmlspecialchars(mb_substr($collection['description'], 0, 120)) ?>
+                            <?= mb_strlen($collection['description']) > 120 ? '...' : '' ?>
+                        </p>
+                    <?php endif; ?>
+                    <div class="collection-stats">
+                        <span class="stat">
+                            <?= number_format($collection['tablet_count']) ?>
+                            <?= $collection['tablet_count'] === 1 ? 'tablet' : 'tablets' ?>
                         </span>
-                    </div>
-                    <div class="tablet-designation">
-                        <?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?>
-                    </div>
-                    <div class="tablet-meta">
-                        <?php if ($tablet['museum_no']): ?>
-                            <span><?= htmlspecialchars($tablet['museum_no']) ?></span>
-                        <?php endif; ?>
-                        <?php if ($tablet['material']): ?>
-                            <span><?= htmlspecialchars($tablet['material']) ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <div class="pipeline-status">
-                        <span class="status-dot <?= $tablet['has_image'] ? 'complete' : 'missing' ?>" title="Image"></span>
-                        <span class="status-dot <?= $tablet['has_atf'] ? 'complete' : 'missing' ?>" title="ATF"></span>
-                        <span class="status-dot missing" title="Lemmas"></span>
-                        <span class="status-dot missing" title="Translation"></span>
                     </div>
                 </div>
             </a>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </div>
-        <div class="view-all">
-            <a href="/tablets/list.php" class="btn">View All Tablets</a>
+        <?php else: ?>
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <h3>No collections yet</h3>
+            <p>Collections will appear here once created.</p>
         </div>
+        <?php endif; ?>
     </section>
 </main>
 

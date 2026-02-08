@@ -32,13 +32,6 @@
     margin-bottom: var(--space-4, 24px);
 }
 
-.collection-title-section h1 {
-    margin: 0 0 var(--space-3, 16px) 0;
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--color-text, #e8e8e8);
-}
-
 .collection-description-full {
     margin: 0;
     font-size: 1rem;

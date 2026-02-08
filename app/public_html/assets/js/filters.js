@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCheckboxNavigation();
     initShowMoreButtons();
     initPipelineRadios();
+    initChevronFilter(); // Generic chevron filter for filtered-list-page layout
 });
 
 /**
@@ -139,6 +140,53 @@ function initPipelineRadios() {
             }
 
             window.location.href = '?' + params.toString();
+        });
+    });
+}
+
+/**
+ * Initialize chevron filter interactions
+ * Generic function for horizontal chevron-style filters
+ * Works with chevron-filter.php component
+ */
+function initChevronFilter() {
+    const filterSteps = document.querySelectorAll('.chevron-filter__step');
+
+    if (filterSteps.length === 0) {
+        return; // No chevron filter on this page
+    }
+
+    filterSteps.forEach(step => {
+        // Add keyboard navigation support
+        step.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                window.location.href = step.href;
+            }
+
+            // Arrow key navigation
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const steps = Array.from(filterSteps);
+                const currentIndex = steps.indexOf(step);
+
+                let nextIndex;
+                if (e.key === 'ArrowRight') {
+                    nextIndex = (currentIndex + 1) % steps.length;
+                } else {
+                    nextIndex = (currentIndex - 1 + steps.length) % steps.length;
+                }
+
+                steps[nextIndex].focus();
+            }
+        });
+
+        // Add visual feedback on click
+        step.addEventListener('click', (e) => {
+            step.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                step.style.transform = '';
+            }, 150);
         });
     });
 }

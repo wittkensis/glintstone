@@ -1,0 +1,15 @@
+# Image libraries
+CUNEIFORM_ImageLibrary_Mac/
+CUNEIFORM_ImageLibrary_Windows/
+
+# Logs and progress tracking
+_logs/
+_progress/
+
+# Models and data processing
+models/
+data-tools/
+downloads/
+
+# Image assets
+public_html/images/

@@ -13,25 +13,35 @@
  *
  * Optional variables:
  * @var string $clearAllUrl - URL for "Clear all" link (default: current page without query params)
+ * @var bool $showSidebarHeader - Show "Filters" header (default: true)
+ * @var bool $alwaysShowSearch - Search section always visible (default: false)
+ * @var bool $showPipelineFilter - Show pipeline filter section (default: true, set false when using chevron filter)
  */
 
 // Set defaults
 $clearAllUrl = $clearAllUrl ?? $_SERVER['PHP_SELF'];
+$showSidebarHeader = $showSidebarHeader ?? true;
+$alwaysShowSearch = $alwaysShowSearch ?? false;
+$showPipelineFilter = $showPipelineFilter ?? true;
 ?>
 <aside class="filter-sidebar">
+    <?php if ($showSidebarHeader): ?>
     <div class="filter-header">
         <h2>Filters</h2>
         <?php if (!empty($activeFilters) || !empty($_GET['search'])): ?>
         <a href="<?= htmlspecialchars($clearAllUrl) ?>" class="clear-all">Clear all</a>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <!-- Search Filter -->
-    <div class="filter-section" data-filter="search">
+    <div class="filter-section <?= $alwaysShowSearch ? 'always-visible' : '' ?>" data-filter="search">
+        <?php if (!$alwaysShowSearch): ?>
         <button class="filter-section-header" aria-expanded="true">
             <span class="filter-title">Search</span>
             <span class="filter-toggle">−</span>
         </button>
+        <?php endif; ?>
         <div class="filter-content">
             <form method="GET" action="<?= htmlspecialchars($_SERVER['PHP_SELF']) ?>" class="search-form">
                 <!-- Preserve existing GET parameters -->
@@ -56,7 +66,7 @@ $clearAllUrl = $clearAllUrl ?? $_SERVER['PHP_SELF'];
                            placeholder="Search tablets by keyword or text...">
                     <button type="submit" class="search-submit">Search</button>
                 </div>
-                <p class="search-help">Searches designation and transliteration text</p>
+                <p class="search-help">Searches P-number, designation, and transliteration text. Use || for multiple: P000001 || P000025</p>
             </form>
         </div>
     </div>
@@ -212,7 +222,8 @@ $clearAllUrl = $clearAllUrl ?? $_SERVER['PHP_SELF'];
         </div>
     </div>
 
-    <!-- Pipeline Status Filter -->
+    <!-- Pipeline Status Filter (hidden when using horizontal chevron filter) -->
+    <?php if ($showPipelineFilter): ?>
     <div class="filter-section" data-filter="pipeline">
         <button class="filter-section-header" aria-expanded="false">
             <span class="filter-title">Data Status</span>
@@ -259,4 +270,5 @@ $clearAllUrl = $clearAllUrl ?? $_SERVER['PHP_SELF'];
             </div>
         </div>
     </div>
+    <?php endif; ?>
 </aside>

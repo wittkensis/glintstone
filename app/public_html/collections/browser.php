@@ -133,10 +133,28 @@ if ($pipeline) {
     }
 }
 
-// Search filter - searches designation and transliteration text
+// Search filter - searches p_number, designation, and transliteration text
+// Supports OR operator: "P000001 || P000025 || P010663"
 if (!empty($search)) {
-    $sql .= " AND (a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
-    $params[':search'] = '%' . $search . '%';
+    $searchTerms = array_map('trim', explode('||', $search));
+
+    if (count($searchTerms) > 1) {
+        // Multiple terms - build OR condition for each
+        $searchConditions = [];
+        foreach ($searchTerms as $i => $term) {
+            if (!empty($term)) {
+                $searchConditions[] = "(a.p_number LIKE :search{$i} OR a.designation LIKE :search{$i} OR i.transliteration_clean LIKE :search{$i})";
+                $params[":search{$i}"] = '%' . $term . '%';
+            }
+        }
+        if (!empty($searchConditions)) {
+            $sql .= " AND (" . implode(' OR ', $searchConditions) . ")";
+        }
+    } else {
+        // Single term - use simple search
+        $sql .= " AND (a.p_number LIKE :search OR a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+        $params[':search'] = '%' . $search . '%';
+    }
 }
 
 // Get total count
@@ -160,22 +178,27 @@ $stmt->bindValue(':offset', $offset, SQLITE3_INTEGER);
 $tablets = $stmt->execute();
 
 // Get filter stats (use filtered versions if any filters are active)
-$hasActiveFilters = !empty($languages) || !empty($periods) || !empty($sites) || !empty($genres) || !empty($pipeline) || !empty($search);
+// NOTE: Skip expensive filtered stats when search is active to prevent timeouts
+$hasActiveFilters = !empty($languages) || !empty($periods) || !empty($sites) || !empty($genres) || !empty($pipeline);
+$hasSearch = !empty($search);
 
-if ($hasActiveFilters) {
+if ($hasActiveFilters && !$hasSearch) {
+    // Use filtered stats only when we have filters but NO search
     $filterContext = [
         'languages' => $languages,
         'periods' => $periods,
         'sites' => $sites,
         'genres' => $genres,
         'pipeline' => $pipeline,
-        'search' => $search
+        'search' => ''
     ];
     $languageStats = getFilteredLanguageStats($filterContext);
     $periodStats = getFilteredPeriodStats($filterContext);
     $provenienceStats = getFilteredProvenienceStats($filterContext);
     $genreStats = getFilteredGenreStats($filterContext);
 } else {
+    // Use base stats when no filters OR when search is active
+    // (filtered stats with search are too expensive due to inscription joins + LIKE patterns)
     $languageStats = getLanguageStats();
     $periodStats = getPeriodStats();
     $provenienceStats = getProvenienceStats();

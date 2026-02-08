@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= isset($pageTitle) ? htmlspecialchars($pageTitle) . ' - ' : '' ?>Glintstone</title>
-    <link rel="stylesheet" href="/assets/css/core.css">
+    <link rel="stylesheet" href="/assets/css/core/tokens.css">
+    <link rel="stylesheet" href="/assets/css/core/reset.css">
+    <link rel="stylesheet" href="/assets/css/core/typography.css">
+    <link rel="stylesheet" href="/assets/css/core/utilities.css">
     <link rel="stylesheet" href="/assets/css/layout/site.css">
     <link rel="stylesheet" href="/assets/css/components/cards.css">
     <link rel="stylesheet" href="/assets/css/components/pipeline.css">
@@ -17,7 +20,7 @@
     <link rel="stylesheet" href="/assets/css/components/search-dropdown.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Cuneiform&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Cuneiform&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="site-header">

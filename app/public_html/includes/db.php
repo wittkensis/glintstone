@@ -114,6 +114,188 @@ function getCompositeMetadata(string $qNumber): ?array {
 }
 
 /**
+ * Get all composites with tablet counts
+ */
+function getAllComposites(): array {
+    $db = getDB();
+    $stmt = $db->prepare("
+        SELECT
+            c.q_number,
+            c.designation,
+            c.artifact_comments,
+            COUNT(ac.p_number) as tablet_count
+        FROM composites c
+        LEFT JOIN artifact_composites ac ON c.q_number = ac.q_number
+        GROUP BY c.q_number
+        ORDER BY c.q_number ASC
+    ");
+    $result = $stmt->execute();
+
+    $composites = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $composites[] = $row;
+    }
+    return $composites;
+}
+
+/**
+ * Get preview tablets for a composite (first 4 for thumbnail grid)
+ */
+function getCompositePreviewTablets(string $qNumber, int $limit = 4): array {
+    $db = getDB();
+    $stmt = $db->prepare("
+        SELECT a.p_number, a.designation
+        FROM artifact_composites ac
+        JOIN artifacts a ON ac.p_number = a.p_number
+        WHERE ac.q_number = :q_number
+        ORDER BY a.p_number ASC
+        LIMIT :limit
+    ");
+    $stmt->bindValue(':q_number', $qNumber, SQLITE3_TEXT);
+    $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
+    $result = $stmt->execute();
+
+    $tablets = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $tablets[] = $row;
+    }
+    return $tablets;
+}
+
+/**
+ * Refresh aggregated metadata cache for a single composite
+ * Calculates period, provenience, genre from tablets and stores in cache columns
+ */
+function refreshCompositeMetadata(string $qNumber): bool {
+    $db = getDB();
+    $writeDb = getWritableDB();
+
+    // Calculate fresh aggregates
+    $stmt = $db->prepare("
+        SELECT
+            COUNT(DISTINCT ac.p_number) as exemplar_count,
+            GROUP_CONCAT(DISTINCT a.period) as periods,
+            GROUP_CONCAT(DISTINCT a.provenience) as proveniences,
+            GROUP_CONCAT(DISTINCT a.genre) as genres
+        FROM artifact_composites ac
+        LEFT JOIN artifacts a ON ac.p_number = a.p_number
+        WHERE ac.q_number = :q_number
+    ");
+    $stmt->bindValue(':q_number', $qNumber, SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $metadata = $result->fetchArray(SQLITE3_ASSOC);
+
+    if (!$metadata) {
+        return false;
+    }
+
+    // Update cache in composites table
+    $updateStmt = $writeDb->prepare("
+        UPDATE composites
+        SET periods_cache = :periods,
+            proveniences_cache = :proveniences,
+            genres_cache = :genres,
+            exemplar_count_cache = :count,
+            metadata_updated_at = CURRENT_TIMESTAMP
+        WHERE q_number = :q_number
+    ");
+    $updateStmt->bindValue(':periods', $metadata['periods'], SQLITE3_TEXT);
+    $updateStmt->bindValue(':proveniences', $metadata['proveniences'], SQLITE3_TEXT);
+    $updateStmt->bindValue(':genres', $metadata['genres'], SQLITE3_TEXT);
+    $updateStmt->bindValue(':count', (int)$metadata['exemplar_count'], SQLITE3_INTEGER);
+    $updateStmt->bindValue(':q_number', $qNumber, SQLITE3_TEXT);
+
+    return (bool)$updateStmt->execute();
+}
+
+/**
+ * Get all composites with metadata (cached or fresh)
+ * Uses cached metadata if available and exemplar count matches
+ * Automatically refreshes cache if stale or missing
+ */
+function getCompositesWithMetadata(): array {
+    $db = getDB();
+
+    // Get all composites with cached metadata
+    $stmt = $db->prepare("
+        SELECT
+            c.q_number,
+            c.designation,
+            c.periods_cache,
+            c.proveniences_cache,
+            c.genres_cache,
+            c.exemplar_count_cache,
+            COUNT(DISTINCT ac.p_number) as current_count
+        FROM composites c
+        LEFT JOIN artifact_composites ac ON c.q_number = ac.q_number
+        GROUP BY c.q_number
+        ORDER BY c.q_number ASC
+    ");
+    $result = $stmt->execute();
+
+    $composites = [];
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $currentCount = (int)$row['current_count'];
+        $cachedCount = (int)$row['exemplar_count_cache'];
+
+        // Check if cache is valid (exists and count matches)
+        $cacheValid = ($row['periods_cache'] !== null) && ($cachedCount === $currentCount);
+
+        // If cache is stale/missing, refresh it
+        if (!$cacheValid) {
+            refreshCompositeMetadata($row['q_number']);
+
+            // Re-fetch the updated cache
+            $refreshStmt = $db->prepare("
+                SELECT periods_cache, proveniences_cache, genres_cache, exemplar_count_cache
+                FROM composites
+                WHERE q_number = :q_number
+            ");
+            $refreshStmt->bindValue(':q_number', $row['q_number'], SQLITE3_TEXT);
+            $refreshResult = $refreshStmt->execute();
+            $refreshed = $refreshResult->fetchArray(SQLITE3_ASSOC);
+
+            if ($refreshed) {
+                $row['periods_cache'] = $refreshed['periods_cache'];
+                $row['proveniences_cache'] = $refreshed['proveniences_cache'];
+                $row['genres_cache'] = $refreshed['genres_cache'];
+                $row['exemplar_count_cache'] = $refreshed['exemplar_count_cache'];
+            }
+        }
+
+        // Split comma-separated values into arrays, filter empty values
+        $composites[] = [
+            'q_number' => $row['q_number'],
+            'designation' => $row['designation'],
+            'exemplar_count' => (int)$row['exemplar_count_cache'],
+            'periods' => $row['periods_cache'] ? array_filter(explode(',', $row['periods_cache'])) : [],
+            'proveniences' => $row['proveniences_cache'] ? array_filter(explode(',', $row['proveniences_cache'])) : [],
+            'genres' => $row['genres_cache'] ? array_filter(explode(',', $row['genres_cache'])) : []
+        ];
+    }
+
+    return $composites;
+}
+
+/**
+ * Refresh all composite metadata caches (utility function)
+ * Useful for initial population or batch maintenance
+ */
+function refreshAllCompositeMetadata(): int {
+    $db = getDB();
+    $result = $db->query("SELECT q_number FROM composites ORDER BY q_number ASC");
+
+    $refreshed = 0;
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        if (refreshCompositeMetadata($row['q_number'])) {
+            $refreshed++;
+        }
+    }
+
+    return $refreshed;
+}
+
+/**
  * Search glossary
  */
 function searchGlossary(string $term, ?string $language = null, int $limit = 20): array {
@@ -474,11 +656,29 @@ function getFilteredLanguageStats(array $filters): array {
     }
 
     // Search filter
+    // Supports OR operator: "P000001 || P000025 || P010663"
     $inscriptionJoin = "";
     if (!empty($filters['search'])) {
         $inscriptionJoin = "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1";
-        $where[] = "(a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
-        $params[':search'] = '%' . $filters['search'] . '%';
+        $searchTerms = array_map('trim', explode('||', $filters['search']));
+
+        if (count($searchTerms) > 1) {
+            // Multiple terms - build OR condition for each
+            $searchConditions = [];
+            foreach ($searchTerms as $i => $term) {
+                if (!empty($term)) {
+                    $searchConditions[] = "(a.p_number LIKE :search{$i} OR a.designation LIKE :search{$i} OR i.transliteration_clean LIKE :search{$i})";
+                    $params[":search{$i}"] = '%' . $term . '%';
+                }
+            }
+            if (!empty($searchConditions)) {
+                $where[] = "(" . implode(' OR ', $searchConditions) . ")";
+            }
+        } else {
+            // Single term - use simple search
+            $where[] = "(a.p_number LIKE :search OR a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
     }
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -602,11 +802,29 @@ function getFilteredPeriodStats(array $filters): array {
     }
 
     // Search filter
+    // Supports OR operator: "P000001 || P000025 || P010663"
     $inscriptionJoin = "";
     if (!empty($filters['search'])) {
         $inscriptionJoin = "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1";
-        $where[] = "(a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
-        $params[':search'] = '%' . $filters['search'] . '%';
+        $searchTerms = array_map('trim', explode('||', $filters['search']));
+
+        if (count($searchTerms) > 1) {
+            // Multiple terms - build OR condition for each
+            $searchConditions = [];
+            foreach ($searchTerms as $i => $term) {
+                if (!empty($term)) {
+                    $searchConditions[] = "(a.p_number LIKE :search{$i} OR a.designation LIKE :search{$i} OR i.transliteration_clean LIKE :search{$i})";
+                    $params[":search{$i}"] = '%' . $term . '%';
+                }
+            }
+            if (!empty($searchConditions)) {
+                $where[] = "(" . implode(' OR ', $searchConditions) . ")";
+            }
+        } else {
+            // Single term - use simple search
+            $where[] = "(a.p_number LIKE :search OR a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
     }
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -729,11 +947,29 @@ function getFilteredProvenienceStats(array $filters): array {
     }
 
     // Search filter
+    // Supports OR operator: "P000001 || P000025 || P010663"
     $inscriptionJoin = "";
     if (!empty($filters['search'])) {
         $inscriptionJoin = "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1";
-        $where[] = "(a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
-        $params[':search'] = '%' . $filters['search'] . '%';
+        $searchTerms = array_map('trim', explode('||', $filters['search']));
+
+        if (count($searchTerms) > 1) {
+            // Multiple terms - build OR condition for each
+            $searchConditions = [];
+            foreach ($searchTerms as $i => $term) {
+                if (!empty($term)) {
+                    $searchConditions[] = "(a.p_number LIKE :search{$i} OR a.designation LIKE :search{$i} OR i.transliteration_clean LIKE :search{$i})";
+                    $params[":search{$i}"] = '%' . $term . '%';
+                }
+            }
+            if (!empty($searchConditions)) {
+                $where[] = "(" . implode(' OR ', $searchConditions) . ")";
+            }
+        } else {
+            // Single term - use simple search
+            $where[] = "(a.p_number LIKE :search OR a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
     }
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -854,11 +1090,29 @@ function getFilteredGenreStats(array $filters): array {
     }
 
     // Search filter
+    // Supports OR operator: "P000001 || P000025 || P010663"
     $inscriptionJoin = "";
     if (!empty($filters['search'])) {
         $inscriptionJoin = "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1";
-        $where[] = "(a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
-        $params[':search'] = '%' . $filters['search'] . '%';
+        $searchTerms = array_map('trim', explode('||', $filters['search']));
+
+        if (count($searchTerms) > 1) {
+            // Multiple terms - build OR condition for each
+            $searchConditions = [];
+            foreach ($searchTerms as $i => $term) {
+                if (!empty($term)) {
+                    $searchConditions[] = "(a.p_number LIKE :search{$i} OR a.designation LIKE :search{$i} OR i.transliteration_clean LIKE :search{$i})";
+                    $params[":search{$i}"] = '%' . $term . '%';
+                }
+            }
+            if (!empty($searchConditions)) {
+                $where[] = "(" . implode(' OR ', $searchConditions) . ")";
+            }
+        } else {
+            // Single term - use simple search
+            $where[] = "(a.p_number LIKE :search OR a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
     }
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';

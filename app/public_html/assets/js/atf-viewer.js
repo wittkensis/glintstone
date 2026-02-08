@@ -54,6 +54,11 @@ class ATFViewer {
         this.selectedEntryId = null;
         this.dictionarySearchTimeout = null;
 
+        // Lemma data for interlinear glossing
+        this.lemmasData = {};  // Indexed by line_no and word_no
+        this.lemmasLoaded = false;
+        this.glossaryGlossCache = new Map();  // lookup → guide_word cache
+
         // Build initial structure
         this.render();
     }
@@ -85,6 +90,9 @@ class ATFViewer {
 
             // Check for translation
             await this.loadTranslation();
+
+            // Load lemmas for interlinear glossing
+            await this.loadLemmas();
 
             // Render content
             this.renderTabs();
@@ -132,6 +140,161 @@ class ATFViewer {
             const separateTranslationSection = document.querySelector('.translation-section');
             if (separateTranslationSection) {
                 separateTranslationSection.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Load lemma data for interlinear glossing
+     */
+    async loadLemmas() {
+        // Clear glossary cache on new tablet load
+        this.glossaryGlossCache.clear();
+
+        try {
+            const response = await fetch(`/api/lemmas.php?p=${this.pNumber}`);
+            if (response.ok) {
+                const result = await response.json();
+                this.lemmasData = result.lemmas || {};
+                this.lemmasLoaded = true;
+            }
+        } catch (err) {
+            console.log('ATFViewer: Lemmas not available for glossing');
+            this.lemmasLoaded = false;
+            this.lemmasData = {};
+        }
+    }
+
+    /**
+     * Get gloss (guide word) for a word using priority chain:
+     * 1. Lemma data (from lemmas table)
+     * 2. Glossary API fallback
+     * 3. Return null if neither available
+     */
+    async getWordGloss(lineNo, wordNo, lookup) {
+        // Priority 1: Check lemmas table
+        const lineNoStr = String(lineNo);
+        const wordNoStr = String(wordNo);
+
+        if (this.lemmasData[lineNoStr]?.[wordNoStr]?.gw) {
+            return this.lemmasData[lineNoStr][wordNoStr].gw;
+        }
+
+        // Priority 2: Fallback to glossary
+        if (!lookup || lookup.length < 2) return null;
+
+        // Check cache
+        if (this.glossaryGlossCache.has(lookup)) {
+            return this.glossaryGlossCache.get(lookup);
+        }
+
+        // Fetch from glossary API
+        try {
+            const response = await fetch(`/api/glossary.php?q=${encodeURIComponent(lookup)}&limit=1`);
+            const data = await response.json();
+
+            if (data.entries && data.entries.length > 0) {
+                const guideWord = data.entries[0].guide_word || null;
+                this.glossaryGlossCache.set(lookup, guideWord);
+                return guideWord;
+            }
+
+            // No definition found
+            this.glossaryGlossCache.set(lookup, null);
+            return null;
+        } catch (err) {
+            // Glossary lookup failed
+            return null;
+        }
+    }
+
+    /**
+     * Check if a line has an official translation (inline or external)
+     */
+    hasLineTranslation(surface, columnIdx, lineNumber) {
+        const column = surface.columns[columnIdx];
+        if (!column) return false;
+
+        // Check inline translations (#tr.XX: in ATF)
+        const line = column.lines.find(l => l.number === lineNumber);
+        if (line?.translations && Object.keys(line.translations).length > 0) {
+            return true;
+        }
+
+        // Check external translations (translations table)
+        if (!this.translationLines) return false;
+
+        const key = `${surface.name}_${column.number || 1}_${lineNumber}`;
+        return !!this.translationLines[key];
+    }
+
+    /**
+     * Attach interlinear glosses to all words
+     * Only shows glosses for lines without official translations
+     *
+     * NOTE: For large tablets (100+ lines), consider optimizing by:
+     * - Batching glossary API calls (collect all lookups, single request)
+     * - Using IntersectionObserver for lazy glossing of off-screen words
+     * - Debouncing gloss attachment after rapid mode switches
+     */
+    async attachWordGlosses() {
+        if (!this.data?.surfaces[this.currentSurface]) return;
+
+        const surface = this.data.surfaces[this.currentSurface];
+
+        // Get column elements (if multi-column layout)
+        const contentArea = this.container.querySelector('.atf-content');
+        const columnEls = contentArea.querySelectorAll('.atf-column');
+        const isSingleColumn = surface.columns.length === 1;
+
+        for (let colIdx = 0; colIdx < surface.columns.length; colIdx++) {
+            const column = surface.columns[colIdx];
+
+            // Get the correct column element to scope queries
+            const columnEl = isSingleColumn ? contentArea : columnEls[colIdx];
+            if (!columnEl) continue;
+
+            for (const line of column.lines) {
+                if (line.type !== 'content') continue;
+
+                // Skip lines with official translations
+                if (this.hasLineTranslation(surface, colIdx, line.number)) {
+                    continue;
+                }
+
+                // Query within the specific column to handle duplicate line numbers across columns
+                const lineEl = columnEl.querySelector(`.atf-line[data-line="${line.number}"]`);
+                if (!lineEl) continue;
+
+                // Convert line number: "1." → 0, "2." → 1, "1'." → 0
+                const lineNo = parseInt(line.number.replace(/[^0-9]/g, '')) - 1;
+
+                let wordNo = 0;
+                const wordEls = lineEl.querySelectorAll('.atf-word[data-lookup]');
+
+                for (const wordEl of wordEls) {
+                    const lookup = wordEl.dataset.lookup;
+                    if (!lookup) {
+                        wordNo++;
+                        continue;
+                    }
+
+                    const gloss = await this.getWordGloss(lineNo, wordNo, lookup);
+
+                    if (gloss) {
+                        // Only add if not already glossed
+                        if (!wordEl.querySelector('.atf-word__text')) {
+                            const originalHtml = wordEl.innerHTML;
+                            wordEl.innerHTML = `
+                                <span class="atf-word__text">${originalHtml}</span>
+                                <span class="atf-word__gloss">${this.escapeHtml(gloss)}</span>
+                            `;
+                            wordEl.classList.add('atf-word--glossed');
+                        }
+                    }
+
+                    wordNo++;
+                }
             }
         }
     }
@@ -502,6 +665,9 @@ class ATFViewer {
         if (this.mode === 'parallel' && this.hasTranslation) {
             this.renderTranslationColumn(surface);
         }
+
+        // Add interlinear glosses
+        this.attachWordGlosses();
     }
 
     /**
@@ -559,18 +725,20 @@ class ATFViewer {
 
             if (word.type === 'logogram') {
                 const lookup = word.lookup ? `data-lookup="${this.escapeHtml(word.lookup)}"` : '';
-                return `<span class="atf-word atf-logo" ${lookup}>${this.escapeHtml(word.text)}</span>`;
+                const surfaceForm = `data-surface-form="${this.escapeHtml(word.text)}"`;
+                return `<span class="atf-word atf-logo" ${lookup} ${surfaceForm}>${this.escapeHtml(word.text)}</span>`;
             }
 
             if (word.type === 'determinative') {
                 const detDisplay = word.detDisplay || `(${word.determinative})`;
                 const detClass = `atf-det atf-det--${word.detType}`;
                 const lookup = word.lookup ? `data-lookup="${this.escapeHtml(word.lookup)}"` : '';
+                const surfaceForm = `data-surface-form="${this.escapeHtml(word.text)}"`;
 
                 if (word.position === 'prefix') {
-                    return `<span class="${detClass}">${detDisplay}</span><span class="atf-word" ${lookup}>${this.escapeHtml(word.text)}</span>`;
+                    return `<span class="${detClass}">${detDisplay}</span><span class="atf-word" ${lookup} ${surfaceForm}>${this.escapeHtml(word.text)}</span>`;
                 } else {
-                    return `<span class="atf-word" ${lookup}>${this.escapeHtml(word.text)}</span><span class="${detClass} atf-det--suffix">${detDisplay}</span>`;
+                    return `<span class="atf-word" ${lookup} ${surfaceForm}>${this.escapeHtml(word.text)}</span><span class="${detClass} atf-det--suffix">${detDisplay}</span>`;
                 }
             }
 
@@ -581,6 +749,7 @@ class ATFViewer {
                 if (word.corrected) classes.push('atf-word--corrected');
 
                 const lookup = word.lookup ? `data-lookup="${this.escapeHtml(word.lookup)}"` : '';
+                const surfaceForm = `data-surface-form="${this.escapeHtml(word.text)}"`;
 
                 // Extract damage markers from end of text
                 const markerMatch = word.text.match(/([#?!]+)$/);
@@ -588,7 +757,7 @@ class ATFViewer {
                 const displayText = word.text.replace(/[#?!]+$/, '');
 
                 // Build HTML with markers as superscript
-                let html = `<span class="${classes.join(' ')}" ${lookup}>${this.escapeHtml(displayText)}`;
+                let html = `<span class="${classes.join(' ')}" ${lookup} ${surfaceForm}>${this.escapeHtml(displayText)}`;
                 if (markers) {
                     html += `<sup class="atf-markers">${this.escapeHtml(markers)}</sup>`;
                 }
@@ -672,8 +841,9 @@ class ATFViewer {
             el.addEventListener('click', (e) => {
                 e.preventDefault();
                 const lookup = el.dataset.lookup;
+                const surfaceForm = el.dataset.surfaceForm;
                 if (lookup) {
-                    this.showDictionary(lookup, el);
+                    this.showDictionary(lookup, surfaceForm);
                 }
             });
         });
@@ -728,8 +898,9 @@ class ATFViewer {
      * Show knowledge sidebar
      * @param {string} tab - Tab to activate ('dictionary', 'research', 'discussion', 'context')
      * @param {string} word - Optional word for dictionary tab
+     * @param {string} surfaceForm - Optional surface form (e.g., "TIM" before normalization)
      */
-    showKnowledgeSidebar(tab = null, word = null) {
+    showKnowledgeSidebar(tab = null, word = null, surfaceForm = null) {
         const sidebar = this.container.querySelector('.atf-knowledge-sidebar');
         const toggleBtn = this.container.querySelector('.atf-viewer__header .btn.btn--toggle');
 
@@ -747,6 +918,9 @@ class ATFViewer {
         if (tab) {
             this.setActiveKnowledgeTab(tab);
         }
+
+        // Store surface form for use in dictionary display
+        this.lastSurfaceForm = surfaceForm;
 
         // If word provided and dictionary tab, load definition
         if (word && (tab === 'dictionary' || this.activeKnowledgeTab === 'dictionary')) {
@@ -1083,8 +1257,8 @@ class ATFViewer {
     /**
      * Show dictionary panel for a word (backward compatibility wrapper)
      */
-    async showDictionary(word, targetEl) {
-        this.showKnowledgeSidebar('dictionary', word);
+    async showDictionary(word, surfaceForm) {
+        this.showKnowledgeSidebar('dictionary', word, surfaceForm);
     }
 
     /**
@@ -1129,6 +1303,11 @@ class ATFViewer {
                     <div class="dictionary-definition__text">${this.escapeHtml(entry.guide_word)}</div>
                 </div>
             `;
+        }
+
+        // Sign Form Section (if surface form differs from citation form)
+        if (this.lastSurfaceForm) {
+            html += this.renderSignFormSection(this.lastSurfaceForm, entry);
         }
 
         // Metadata Fields
@@ -1206,6 +1385,98 @@ class ATFViewer {
         }
 
         body.innerHTML = html;
+    }
+
+    /**
+     * Render sign form section showing connection between surface form and citation form
+     * @param {string} surfaceForm - Original sign form (e.g., "TIM")
+     * @param {object} entry - Dictionary entry
+     * @returns {string} HTML for sign form section
+     */
+    renderSignFormSection(surfaceForm, entry) {
+        const citationForm = entry.citation_form || entry.headword;
+
+        // Strip damage markers from surface form for comparison and display
+        const cleanSurfaceForm = surfaceForm.replace(/[#?!]+$/, '');
+        const cleanCitation = citationForm.toLowerCase();
+
+        // Don't show section if forms are identical (case-insensitive)
+        if (cleanSurfaceForm.toLowerCase() === cleanCitation) {
+            return '';
+        }
+
+        const signType = this.detectSignType(cleanSurfaceForm, entry);
+        const explanation = this.generateLinguisticExplanation(cleanSurfaceForm, entry, signType);
+
+        const badgeHtml = signType === 'logogram'
+            ? '<span class="dictionary-sign-badge dictionary-sign-badge--logo">Logogram</span>'
+            : signType === 'phonogram'
+            ? '<span class="dictionary-sign-badge dictionary-sign-badge--phono">Phonogram</span>'
+            : '';
+
+        return `
+            <div class="dictionary-sign-form">
+                <div class="dictionary-sign-form__header">
+                    <span class="dictionary-sign-form__label">Cuneiform Sign</span>
+                    ${badgeHtml}
+                </div>
+                <div class="dictionary-sign-form__text">${this.escapeHtml(cleanSurfaceForm)}</div>
+                <div class="dictionary-sign-form__explanation">${explanation}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Detect sign type based on surface form and entry data
+     * @param {string} surfaceForm - Original sign form
+     * @param {object} entry - Dictionary entry
+     * @returns {string} 'logogram', 'phonogram', or 'mixed'
+     */
+    detectSignType(surfaceForm, entry) {
+        // Uppercase = logogram (TIM, GAL, LUGAL)
+        const isUppercase = surfaceForm === surfaceForm.toUpperCase();
+
+        // Contains hyphens = syllabic/phonetic (min-na-bi)
+        const hasSyllabicMarkers = surfaceForm.includes('-');
+
+        if (isUppercase && !hasSyllabicMarkers) {
+            return 'logogram';
+        } else if (hasSyllabicMarkers) {
+            return 'phonogram';
+        } else {
+            return 'mixed';
+        }
+    }
+
+    /**
+     * Generate linguistic explanation of sign-word relationship
+     * @param {string} surfaceForm - Original sign form
+     * @param {object} entry - Dictionary entry
+     * @param {string} signType - Type of sign ('logogram', 'phonogram', 'mixed')
+     * @returns {string} HTML explanation
+     */
+    generateLinguisticExplanation(surfaceForm, entry, signType) {
+        const citationForm = entry.citation_form || entry.headword;
+        const guideWord = entry.guide_word;
+        const language = entry.language;
+
+        const langLabels = {
+            'akk': 'Akkadian',
+            'sux': 'Sumerian',
+            'qpc': 'Proto-Cuneiform',
+            'akk-x-stdbab': 'Standard Babylonian',
+            'akk-x-oldass': 'Old Assyrian',
+            'akk-x-neoass': 'Neo-Assyrian'
+        };
+        const langName = langLabels[language] || language;
+
+        if (signType === 'logogram') {
+            return `The cuneiform sign <strong>${this.escapeHtml(surfaceForm)}</strong> is a logographic writing of the ${langName} word <strong>${this.escapeHtml(citationForm)}</strong>, meaning "${this.escapeHtml(guideWord)}".`;
+        } else if (signType === 'phonogram') {
+            return `The syllabic spelling <strong>${this.escapeHtml(surfaceForm)}</strong> represents the ${langName} word <strong>${this.escapeHtml(citationForm)}</strong>, meaning "${this.escapeHtml(guideWord)}".`;
+        } else {
+            return `This form <strong>${this.escapeHtml(surfaceForm)}</strong> represents the ${langName} word <strong>${this.escapeHtml(citationForm)}</strong>, meaning "${this.escapeHtml(guideWord)}".`;
+        }
     }
 
     /**
