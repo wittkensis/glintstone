@@ -1,12 +1,9 @@
-/* ⚠️ DELETE THIS FILE - Replaced by components/filters-chevron.css */
 /**
  * Chevron Filter Component
- * Horizontal chevron-style navigation filter for status/stage filtering
- *
- * Based on tablet-detail.css pipeline design, adapted to be generic and reusable
- *
- * Use with chevron-filter.php component
- * Works with 3-7 stages (flexible configuration)
+ * Purpose: Horizontal chevron-style navigation filter for status/stage filtering
+ * Used on: Tablet detail (pipeline stages), any multi-stage process filtering
+ * Dependencies: core/tokens.css
+ * JavaScript: None (pure CSS component)
  *
  * Usage:
  * <nav class="chevron-filter">

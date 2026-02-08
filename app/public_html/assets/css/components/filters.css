@@ -1,22 +1,13 @@
-/* ⚠️ DELETE THIS FILE - Replaced by components/filters.css */
 /**
  * Filter Sidebar Component
- * Filter panel with sections, groups, and options for tablet list
- * Dependencies: CSS variables from core.css
+ * Purpose: Filter panel with collapsible sections, groups, and checkbox options
+ * Used on: Tablets list, Dictionary browser, any filtered list page
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/filters.js
+ * Required classes for JS: .filter-section-header, .filter-toggle, .filter-option, .filter-group-header
  */
 
-/* Page layout with sidebar */
-.page-with-sidebar {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: var(--space-6);
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: var(--space-6);
-    min-height: calc(100vh - 80px);
-}
-
-/* Filter Sidebar */
+/* Filter Sidebar Container */
 .filter-sidebar {
     background: var(--color-bg-elevated);
     border-radius: var(--radius-lg);
@@ -29,6 +20,7 @@
     overflow-y: auto;
 }
 
+/* Filter Header */
 .filter-header {
     display: flex;
     justify-content: space-between;
@@ -222,28 +214,6 @@
     display: none;
 }
 
-/* Scrollbar styling for filter sidebar */
-.filter-sidebar::-webkit-scrollbar,
-.filter-group-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-.filter-sidebar::-webkit-scrollbar-track,
-.filter-group-content::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.filter-sidebar::-webkit-scrollbar-thumb,
-.filter-group-content::-webkit-scrollbar-thumb {
-    background: var(--color-border);
-    border-radius: 3px;
-}
-
-.filter-sidebar::-webkit-scrollbar-thumb:hover,
-.filter-group-content::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text-subtle);
-}
-
 /* Search Filter Styles */
 .search-form {
     width: 100%;
@@ -313,4 +283,26 @@
 .filter-section.always-visible .filter-content {
     display: block !important;
     padding-top: 0;
+}
+
+/* Scrollbar styling for filter sidebar */
+.filter-sidebar::-webkit-scrollbar,
+.filter-group-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filter-sidebar::-webkit-scrollbar-track,
+.filter-group-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.filter-sidebar::-webkit-scrollbar-thumb,
+.filter-group-content::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+}
+
+.filter-sidebar::-webkit-scrollbar-thumb:hover,
+.filter-group-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-subtle);
 }

@@ -1,11 +1,12 @@
-/* ⚠️ DELETE THIS FILE - Replaced by components/filters-chips.css */
 /**
- * Active Filters Component
- * Filter chips showing currently applied filters
- * Dependencies: CSS variables from core.css
+ * Active Filter Chips Component
+ * Purpose: Display currently applied filters as removable chips
+ * Used on: Tablets list, Dictionary browser, any filtered list page with active filters
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/filters.js (for chip removal)
  */
 
-/* Main Content Area */
+/* Main Content Area (when used with filter sidebar) */
 .main-content {
     min-width: 0;
 }
@@ -19,7 +20,7 @@
     margin: 0;
 }
 
-/* Active Filters (chips) */
+/* Active Filters Container */
 .active-filters {
     display: flex;
     flex-wrap: wrap;
@@ -27,6 +28,7 @@
     margin-bottom: var(--space-4);
 }
 
+/* Filter Chip */
 .filter-chip {
     display: inline-flex;
     align-items: center;
