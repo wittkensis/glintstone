@@ -79,6 +79,6 @@ $langAbbr = getLanguageAbbreviation($tablet['language']);
         <?php if ($tablet['genre']): ?>
         <span class="meta-genre"><?= htmlspecialchars(truncateText($tablet['genre'], 20)) ?></span>
         <?php endif; ?>
-        <div class="card-designation"><?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?></div>
+        <!--<div class="card-designation"><?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?></div>-->
     </div>
 </a>
