@@ -3,7 +3,7 @@
  *
  * Shared module for rendering dictionary entry data in both:
  * - Knowledge Dictionary sidebar (compact mode)
- * - Library word detail page (full mode)
+ * - Dictionary word detail page (full mode)
  *
  * Ensures consistent field display and educational tooltips across contexts.
  */
@@ -12,7 +12,6 @@ class WordDetailRenderer {
     constructor(options = {}) {
         this.compact = options.compact ?? false; // true for sidebar
         this.showHelp = options.showHelp ?? true;
-        this.userLevel = options.userLevel ?? 'student'; // student, scholar, expert
         this.educationalContent = null; // Will be loaded from educational-content.php
     }
 
@@ -192,7 +191,7 @@ class WordDetailRenderer {
 
         const signsHtml = signs.map(sign => `
             <div class="sign-item">
-                <a href="/library/sign/${encodeURIComponent(sign.sign_id)}" class="sign-link">
+                <a href="/dictionary/sign/${encodeURIComponent(sign.sign_id)}" class="sign-link">
                     <span class="sign-cuneiform">${sign.utf8 || ''}</span>
                     <span class="sign-id">${this.escapeHtml(sign.sign_id)}</span>
                     <span class="sign-value">${this.escapeHtml(sign.sign_value)}</span>
@@ -255,7 +254,7 @@ class WordDetailRenderer {
     renderRelatedSection(title, words) {
         const wordsHtml = words.map(word => `
             <li>
-                <a href="/library/word/${encodeURIComponent(word.entry_id)}" class="related-word">
+                <a href="/dictionary/word/${encodeURIComponent(word.entry_id)}" class="related-word">
                     <strong>${this.escapeHtml(word.headword)}</strong>
                     ${word.guide_word ? `<span class="guide-word">[${this.escapeHtml(word.guide_word)}]</span>` : ''}
                     <span class="badge badge--language">${this.getLanguageLabel(word.language).label}</span>
@@ -326,15 +325,13 @@ class WordDetailRenderer {
     }
 
     /**
-     * Get help text for a field based on user level
+     * Get help text for a field
      */
     getHelpText(fieldKey) {
         if (!this.educationalContent || !this.educationalContent.field_help) return '';
 
         const helpData = this.educationalContent.field_help[fieldKey];
-        if (!helpData) return '';
-
-        return helpData[this.userLevel] || helpData.student || '';
+        return helpData || ''; // Simple string lookup (unified help system)
     }
 
     /**

@@ -95,15 +95,13 @@
             const container = document.createElement('div');
             container.className = 'word-detail-container compact';
 
-            // Get user level from educational help system (if available)
-            const userLevel = window.educationalHelp ? window.educationalHelp.userLevel : 'student';
+            // Get help visibility from educational help system (if available)
             const showHelp = window.educationalHelp ? window.educationalHelp.helpVisible : true;
 
             // Initialize renderer
             const renderer = new WordDetailRenderer({
                 compact: true,  // Compact mode for sidebar
-                showHelp: showHelp,
-                userLevel: userLevel
+                showHelp: showHelp
             });
 
             // Render word detail

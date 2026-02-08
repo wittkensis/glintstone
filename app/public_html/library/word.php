@@ -69,15 +69,13 @@ if (empty($entry_id)) {
 
                 const data = await response.json();
 
-                // Get user level from educational help system
-                const userLevel = educationalHelp.userLevel;
+                // Get help visibility from educational help system
                 const showHelp = educationalHelp.helpVisible;
 
                 // Render word detail
                 const renderer = new WordDetailRenderer({
                     compact: false,
-                    showHelp: showHelp,
-                    userLevel: userLevel
+                    showHelp: showHelp
                 });
 
                 await renderer.render(data, container);

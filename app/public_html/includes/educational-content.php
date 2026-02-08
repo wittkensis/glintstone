@@ -1,70 +1,51 @@
 <?php
 /**
- * Educational Content for Library Browser
- * Help text, tooltips, and explanations adapted by user level
+ * Educational Content for Dictionary Browser
  *
- * User Levels:
- * - student: Full explanations with examples and analogies
- * - scholar: Concise technical definitions
- * - expert: Minimal/no help text (tooltips hidden by default)
+ * Unified help system - one comprehensive explanation per field
+ * Serves all users (students, scholars, experts) through thoughtful design
  */
 
 return [
     /**
+     * Welcome Banner Content
+     * Shows in filter sidebar as collapsible section
+     */
+    'welcome' => [
+        'title' => 'How to Use the Dictionary',
+        'description' => 'Explore 21,000+ words from ancient Sumerian and Akkadian:',
+        'features' => [
+            'Search by ancient word form (e.g., "lugal") OR English meaning (e.g., "king")',
+            'Filter by language, grammar, or frequency',
+            'Click any word to see variants, meanings, and usage examples',
+            'Hover over ⓘ icons for explanations of linguistic terms'
+        ]
+    ],
+
+    /**
      * Field Help Text
-     * Used on word detail pages and throughout the library
+     * Full explanations shown to all users
      */
     'field_help' => [
-        'headword' => [
-            'student' => 'The <strong>headword</strong> is the standard dictionary form of the word. In Sumerian, this is the base form without grammatical suffixes. Think of it like looking up "go" instead of "going" in an English dictionary.',
-            'scholar' => 'Dictionary lemma in citation form.',
-            'expert' => null
-        ],
-        'citation_form' => [
-            'student' => 'The <strong>citation form</strong> (CF) is how scholars reference this word in publications. It\'s usually the same as the headword but may differ for verbs or irregular forms.',
-            'scholar' => 'Scholarly reference form (CF).',
-            'expert' => null
-        ],
-        'guide_word' => [
-            'student' => 'The <strong>guide word</strong> (GW) is the English meaning that helps you identify which word this is. Ancient languages often have multiple words spelled the same way (homonyms), so the guide word distinguishes them.<br><br>Example: "a" could mean "water" or "arm" depending on context. Guide words help: a[water] vs a[arm]',
-            'scholar' => 'English gloss used to disambiguate homonyms.',
-            'expert' => null
-        ],
-        'part_of_speech' => [
-            'student' => '<strong>Part of speech</strong> (POS) tells you how the word functions grammatically:<ul><li><strong>N</strong> = Noun (person, place, thing)</li><li><strong>V</strong> = Verb (action or state)</li><li><strong>AJ</strong> = Adjective (describes a noun)</li><li><strong>AV</strong> = Adverb (describes a verb)</li></ul><a href="/library/glossary#pos">See all POS codes</a>',
-            'scholar' => 'Grammatical category. See <a href="/library/glossary#pos">full POS list</a>.',
-            'expert' => null
-        ],
-        'language' => [
-            'student' => '<strong>Language codes:</strong><ul><li><strong>sux</strong> = Sumerian (non-Semitic, isolated language)</li><li><strong>akk</strong> = Akkadian (Semitic language)</li><li><strong>akk-x-stdbab</strong> = Standard Babylonian Akkadian</li><li><strong>akk-x-oldbab</strong> = Old Babylonian Akkadian</li></ul>Sumerian and Akkadian were both used in ancient Mesopotamia, often appearing together in bilingual texts.',
-            'scholar' => 'Language code per ORACC standard. See <a href="/library/glossary#languages">full list</a>.',
-            'expert' => null
-        ],
-        'frequency' => [
-            'student' => '<strong>Frequency</strong> (also called "icount" = instance count) shows how often this word appears in the ORACC corpus.<br><br>Higher frequency = more common word. This helps you:<ul><li>Prioritize learning common words first</li><li>Assess how well-attested a word is</li><li>Understand which words are typical vs rare</li></ul>Range: 1 (hapax legomenon - only once) to 1000+ (very common)',
-            'scholar' => 'Instance count in ORACC corpus. Higher = better attested.',
-            'expert' => null
-        ],
-        'variant_forms' => [
-            'student' => '<strong>Variant spellings</strong> occur because:<ul><li>Different time periods used different conventions</li><li>Different scribal schools had different practices</li><li>Grammatical suffixes change the word\'s form</li><li>Phonetic complements (extra signs) clarify pronunciation</li></ul>All variants map to the same base word (headword).',
-            'scholar' => 'Orthographic variants from corpus with frequency counts.',
-            'expert' => null
-        ],
-        'cuneiform_signs' => [
-            'student' => 'Cuneiform is a <strong>logosyllabic writing system</strong>:<ul><li><strong>Logographic</strong>: One sign = whole word (like "lugal" = king)</li><li><strong>Syllabic</strong>: Multiple signs spell out sounds (like "ka-la-am" = kalam)</li></ul>Click any sign to see all its possible readings and other words that use it.',
-            'scholar' => 'Sign breakdown with Unicode mappings. Click for OGSL details.',
-            'expert' => null
-        ],
-        'corpus_examples' => [
-            'student' => '<strong>Corpus examples</strong> show how this word appears in actual ancient tablets. Each example includes:<ul><li><strong>P-number</strong>: Unique tablet ID (e.g., P123456)</li><li><strong>Context</strong>: Period, genre, provenience</li><li><strong>Line reference</strong>: Where on the tablet (obv. i 3 = obverse, column 1, line 3)</li><li><strong>Transliteration</strong>: How the cuneiform is read</li><li><strong>Translation</strong>: English meaning</li></ul>',
-            'scholar' => 'Attestations from lemmatized corpus. Click P-number to view tablet.',
-            'expert' => null
-        ],
-        'meanings' => [
-            'student' => 'Many ancient words have <strong>multiple related meanings</strong> (called "polysemy"). The meaning depends on context. Each sense shows its usage percentage based on corpus analysis.',
-            'scholar' => 'Polysemic senses with usage frequencies when available.',
-            'expert' => null
-        ]
+        'headword' => 'The <strong>headword</strong> is the standard dictionary form of the word. In Sumerian, this is the base form without grammatical suffixes. Think of it like looking up "go" instead of "going" in an English dictionary.',
+
+        'citation_form' => 'The <strong>citation form</strong> (CF) is how scholars reference this word in publications. It\'s usually the same as the headword but may differ for verbs or irregular forms.',
+
+        'guide_word' => 'The <strong>guide word</strong> (GW) is the English meaning that helps you identify which word this is. Ancient languages often have multiple words spelled the same way (homonyms), so the guide word distinguishes them.<br><br>Example: "a" could mean "water" or "arm" depending on context. Guide words help: a[water] vs a[arm]',
+
+        'part_of_speech' => '<strong>Part of speech</strong> (POS) tells you how the word functions grammatically:<ul><li><strong>N</strong> = Noun (person, place, thing)</li><li><strong>V</strong> = Verb (action or state)</li><li><strong>AJ</strong> = Adjective (describes a noun)</li><li><strong>AV</strong> = Adverb (describes a verb)</li></ul><a href="/dictionary/glossary#pos">See all POS codes</a>',
+
+        'language' => '<strong>Language codes:</strong><ul><li><strong>sux</strong> = Sumerian (non-Semitic, isolated language)</li><li><strong>akk</strong> = Akkadian (Semitic language)</li><li><strong>akk-x-stdbab</strong> = Standard Babylonian Akkadian</li><li><strong>akk-x-oldbab</strong> = Old Babylonian Akkadian</li></ul>Sumerian and Akkadian were both used in ancient Mesopotamia, often appearing together in bilingual texts.',
+
+        'frequency' => '<strong>Frequency</strong> (also called "icount" = instance count) shows how often this word appears in the ORACC corpus.<br><br>Higher frequency = more common word. This helps you:<ul><li>Prioritize learning common words first</li><li>Assess how well-attested a word is</li><li>Understand which words are typical vs rare</li></ul>Range: 1 (hapax legomenon - only once) to 1000+ (very common)',
+
+        'variant_forms' => '<strong>Variant spellings</strong> occur because:<ul><li>Different time periods used different conventions</li><li>Different scribal schools had different practices</li><li>Grammatical suffixes change the word\'s form</li><li>Phonetic complements (extra signs) clarify pronunciation</li></ul>All variants map to the same base word (headword).',
+
+        'cuneiform_signs' => 'Cuneiform is a <strong>logosyllabic writing system</strong>:<ul><li><strong>Logographic</strong>: One sign = whole word (like "lugal" = king)</li><li><strong>Syllabic</strong>: Multiple signs spell out sounds (like "ka-la-am" = kalam)</li></ul>Click any sign to see all its possible readings and other words that use it.',
+
+        'corpus_examples' => '<strong>Corpus examples</strong> show how this word appears in actual ancient tablets. Each example includes:<ul><li><strong>P-number</strong>: Unique tablet ID (e.g., P123456)</li><li><strong>Context</strong>: Period, genre, provenience</li><li><strong>Line reference</strong>: Where on the tablet (obv. i 3 = obverse, column 1, line 3)</li><li><strong>Transliteration</strong>: How the cuneiform is read</li><li><strong>Translation</strong>: English meaning</li></ul>',
+
+        'meanings' => 'Many ancient words have <strong>multiple related meanings</strong> (called "polysemy"). The meaning depends on context. Each sense shows its usage percentage based on corpus analysis.'
     ],
 
     /**
@@ -262,21 +243,8 @@ return [
     ],
 
     /**
-     * Welcome Overlay Content
-     * First-time visitor introduction
-     */
-    'welcome_overlay' => [
-        'title' => 'Welcome to the Cuneiform Dictionary!',
-        'body' => 'This browser lets you explore 21,000+ words from ancient Sumerian and Akkadian languages.<br><br>• Search by ancient word form (e.g., "lugal") OR English meaning (e.g., "king")<br>• Filter by language, grammar, or frequency<br>• Click any word to see variants, meanings, and usage examples',
-        'buttons' => [
-            'tour' => 'Show guided tour',
-            'start' => 'Start browsing'
-        ]
-    ],
-
-    /**
      * Cuneiform Writing System Guide
-     * For /library/glossary page
+     * For /dictionary/glossary page
      */
     'cuneiform_basics' => [
         'logographic' => [

@@ -1,40 +1,21 @@
 /**
  * Educational Help System
  *
+ * Unified help system serving all users through comprehensive content.
+ *
  * Manages:
- * - User level preferences (student, scholar, expert)
  * - Help tooltip visibility
- * - First-time welcome overlay
+ * - Welcome banner in sidebar (collapsible)
  * - Context-sensitive help
  */
 
 class EducationalHelpSystem {
     constructor() {
-        this.storageKey = 'cuneiform_user_level';
         this.welcomeKey = 'cuneiform_welcome_shown';
+        this.welcomeCollapsedKey = 'cuneiform_welcome_collapsed';
         this.helpVisibilityKey = 'cuneiform_help_visible';
-        this.userLevel = this.loadUserLevel();
         this.helpVisible = this.loadHelpVisibility();
         this.educationalContent = null;
-    }
-
-    /**
-     * Load user level from localStorage
-     */
-    loadUserLevel() {
-        const stored = localStorage.getItem(this.storageKey);
-        return stored || 'student'; // Default to student
-    }
-
-    /**
-     * Save user level to localStorage
-     */
-    saveUserLevel(level) {
-        if (['student', 'scholar', 'expert'].includes(level)) {
-            this.userLevel = level;
-            localStorage.setItem(this.storageKey, level);
-            this.emit('levelChanged', level);
-        }
     }
 
     /**
@@ -83,119 +64,80 @@ class EducationalHelpSystem {
     }
 
     /**
-     * Check if welcome overlay should be shown
+     * Initialize welcome banner in filter sidebar
      */
-    shouldShowWelcome() {
-        return !localStorage.getItem(this.welcomeKey);
-    }
-
-    /**
-     * Mark welcome overlay as shown
-     */
-    markWelcomeShown() {
-        localStorage.setItem(this.welcomeKey, 'true');
-    }
-
-    /**
-     * Show welcome overlay
-     */
-    async showWelcomeOverlay() {
-        if (!this.shouldShowWelcome()) return;
+    async initWelcomeBanner() {
+        const sidebar = document.querySelector('.filter-sidebar');
+        if (!sidebar) return;
 
         await this.loadEducationalContent();
 
-        const overlay = this.createWelcomeOverlay();
-        document.body.appendChild(overlay);
+        const shown = localStorage.getItem(this.welcomeKey);
+        const collapsed = localStorage.getItem(this.welcomeCollapsedKey);
 
-        // Attach event listeners
-        overlay.querySelector('.welcome-close')?.addEventListener('click', () => {
-            this.dismissWelcome(overlay);
+        // Create and add banner to sidebar
+        const banner = this.createWelcomeBanner();
+        sidebar.insertBefore(banner, sidebar.firstChild);
+
+        // Set initial collapsed state
+        if (collapsed === 'true') {
+            banner.classList.add('collapsed');
+        }
+
+        // Add collapse/expand handler
+        const header = banner.querySelector('.banner-header');
+        const toggle = banner.querySelector('.collapse-toggle');
+
+        header.addEventListener('click', () => {
+            banner.classList.toggle('collapsed');
+            const isCollapsed = banner.classList.contains('collapsed');
+            localStorage.setItem(this.welcomeCollapsedKey, isCollapsed);
+            toggle.textContent = isCollapsed ? '+' : '−';
         });
 
-        overlay.querySelector('.welcome-start')?.addEventListener('click', () => {
-            this.dismissWelcome(overlay);
-        });
-
-        overlay.querySelector('.welcome-tour')?.addEventListener('click', () => {
-            this.dismissWelcome(overlay);
-            this.startGuidedTour();
-        });
-
-        // User level selection
-        overlay.querySelectorAll('.user-level-option').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const level = button.dataset.level;
-                this.saveUserLevel(level);
-                overlay.querySelectorAll('.user-level-option').forEach(btn => {
-                    btn.classList.remove('selected');
-                });
-                button.classList.add('selected');
-            });
-        });
+        // Mark as shown
+        if (!shown) {
+            localStorage.setItem(this.welcomeKey, 'true');
+        }
     }
 
     /**
-     * Create welcome overlay HTML
+     * Create welcome banner HTML for sidebar
      */
-    createWelcomeOverlay() {
-        const overlay = document.createElement('div');
-        overlay.className = 'educational-welcome-overlay';
-        overlay.innerHTML = `
-            <div class="welcome-modal">
-                <button class="welcome-close" aria-label="Close">&times;</button>
+    createWelcomeBanner() {
+        const content = this.educationalContent?.welcome || {
+            title: 'How to Use the Dictionary',
+            description: 'Explore 21,000+ words from ancient Sumerian and Akkadian:',
+            features: [
+                'Search by ancient word form OR English meaning',
+                'Filter by language, grammar, or frequency',
+                'Click any word for variants and examples',
+                'Hover ⓘ icons for explanations'
+            ]
+        };
 
-                <h1>Welcome to the Cuneiform Library!</h1>
+        const banner = document.createElement('section');
+        banner.className = 'getting-started-banner';
 
-                <p class="welcome-intro">
-                    This browser lets you explore 21,000+ words from ancient
-                    Sumerian and Akkadian languages, along with 3,300+ cuneiform signs.
-                </p>
+        const isCollapsed = localStorage.getItem(this.welcomeCollapsedKey) === 'true';
 
-                <div class="welcome-features">
-                    <ul>
-                        <li>Search by ancient word form (e.g., "lugal") OR English meaning (e.g., "king")</li>
-                        <li>Filter by language, grammar, or frequency</li>
-                        <li>Explore cuneiform signs and their values</li>
-                        <li>Navigate between bilingual equivalents (Sumerian ↔ Akkadian)</li>
-                        <li>See corpus examples from real ancient tablets</li>
-                    </ul>
-                </div>
-
-                <div class="user-level-selection">
-                    <h3>Choose your experience level:</h3>
-                    <div class="user-level-options">
-                        <button class="user-level-option selected" data-level="student">
-                            <strong>Student</strong>
-                            <span>Full explanations and examples</span>
-                        </button>
-                        <button class="user-level-option" data-level="scholar">
-                            <strong>Scholar</strong>
-                            <span>Concise technical definitions</span>
-                        </button>
-                        <button class="user-level-option" data-level="expert">
-                            <strong>Expert</strong>
-                            <span>Minimal help (toggle on demand)</span>
-                        </button>
-                    </div>
-                    <p class="level-note">You can change this anytime in settings</p>
-                </div>
-
-                <div class="welcome-actions">
-                    <button class="welcome-tour btn btn--secondary">Take guided tour</button>
-                    <button class="welcome-start btn btn--primary">Start browsing</button>
-                </div>
+        banner.innerHTML = `
+            <header class="banner-header">
+                <h3>
+                    <span class="icon">ℹ️</span>
+                    ${content.title}
+                </h3>
+                <button class="collapse-toggle" aria-label="Toggle guide">${isCollapsed ? '+' : '−'}</button>
+            </header>
+            <div class="banner-content">
+                <p>${content.description}</p>
+                <ul>
+                    ${content.features.map(f => `<li>${f}</li>`).join('')}
+                </ul>
             </div>
         `;
 
-        return overlay;
-    }
-
-    /**
-     * Dismiss welcome overlay
-     */
-    dismissWelcome(overlay) {
-        this.markWelcomeShown();
-        overlay.remove();
+        return banner;
     }
 
     /**
@@ -233,9 +175,7 @@ class EducationalHelpSystem {
         if (!this.educationalContent || !this.educationalContent.field_help) return '';
 
         const helpData = this.educationalContent.field_help[fieldKey];
-        if (!helpData) return '';
-
-        return helpData[this.userLevel] || helpData.student || '';
+        return helpData || ''; // Simple string lookup (no more user levels)
     }
 
     /**
@@ -245,9 +185,9 @@ class EducationalHelpSystem {
         // Update help elements based on visibility preference
         this.updateHelpElements();
 
-        // Show welcome overlay if first time
-        if (document.querySelector('.library-browser') || document.querySelector('.library-word-detail')) {
-            this.showWelcomeOverlay();
+        // Initialize welcome banner in sidebar (if on dictionary pages)
+        if (document.querySelector('.dictionary-browser') || document.querySelector('.dictionary-word-detail')) {
+            this.initWelcomeBanner();
         }
 
         // Add settings toggle to header if not present

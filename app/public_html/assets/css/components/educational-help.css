@@ -1,205 +1,116 @@
 /**
  * Educational Help Component
- * Welcome overlay, tooltips, and help system styling
+ * Sidebar banner, tooltips, and help system styling
  */
 
-/* Welcome Overlay */
-.educational-welcome-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
+/* Getting Started Banner in Sidebar */
+.getting-started-banner {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.banner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    cursor: pointer;
+    background: var(--color-surface-alt, var(--color-background));
+    transition: background 0.2s ease;
+}
+
+.banner-header:hover {
+    background: var(--color-surface);
+}
+
+.banner-header h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    padding: 2rem;
-    animation: fadeIn 0.3s ease;
+    gap: 0.5rem;
+    color: var(--color-text);
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+.banner-header .icon {
+    font-size: 1.125rem;
 }
 
-.welcome-modal {
-    background: var(--color-background);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    max-width: 700px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 2.5rem;
-    position: relative;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-@media (max-width: 768px) {
-    .welcome-modal {
-        padding: 1.5rem;
-        max-height: 95vh;
-    }
-}
-
-.welcome-close {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
+.collapse-toggle {
     background: none;
     border: none;
-    font-size: 2rem;
+    font-size: 1.2rem;
+    font-weight: bold;
     line-height: 1;
-    color: var(--color-text-secondary);
     cursor: pointer;
-    padding: 0.5rem;
-    transition: color 0.2s ease;
-}
-
-.welcome-close:hover,
-.welcome-close:focus {
-    color: var(--color-text);
-}
-
-.welcome-modal h1 {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    color: var(--color-text);
-}
-
-.welcome-intro {
-    font-size: 1.125rem;
     color: var(--color-text-secondary);
+    padding: 0.25rem;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.collapse-toggle:hover,
+.collapse-toggle:focus {
+    color: var(--color-text);
+}
+
+.banner-content {
+    padding: 1rem;
+    font-size: 0.85rem;
     line-height: 1.6;
-    margin-bottom: 1.5rem;
+    color: var(--color-text-secondary);
+    animation: slideDown 0.3s ease;
 }
 
-.welcome-features {
-    margin-bottom: 2rem;
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 500px;
+    }
 }
 
-.welcome-features ul {
-    list-style: none;
-    padding: 0;
+.getting-started-banner.collapsed .banner-content {
+    display: none;
+}
+
+.getting-started-banner.collapsed .collapse-toggle {
+    transform: rotate(0deg);
+}
+
+.banner-content p {
+    margin: 0 0 0.75rem 0;
+}
+
+.banner-content ul {
     margin: 0;
-}
-
-.welcome-features li {
-    padding: 0.75rem 0;
     padding-left: 1.5rem;
-    position: relative;
-    color: var(--color-text-secondary);
-    line-height: 1.6;
+    list-style: none;
 }
 
-.welcome-features li::before {
+.banner-content li {
+    margin-bottom: 0.5rem;
+    position: relative;
+    padding-left: 0;
+}
+
+.banner-content li::before {
     content: "→";
     position: absolute;
-    left: 0;
+    left: -1.25rem;
     color: var(--color-accent);
     font-weight: bold;
 }
 
-/* User Level Selection */
-.user-level-selection {
-    margin-bottom: 2rem;
-}
-
-.user-level-selection h3 {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-    color: var(--color-text);
-}
-
-.user-level-options {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.user-level-option {
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: 8px;
-    padding: 1.25rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    text-align: left;
-}
-
-.user-level-option:hover,
-.user-level-option:focus {
-    border-color: var(--color-accent);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.user-level-option.selected {
-    border-color: var(--color-accent);
-    background: var(--color-accent);
-    color: var(--color-background);
-}
-
-.user-level-option.selected span {
-    color: var(--color-background);
-    opacity: 0.9;
-}
-
-.user-level-option strong {
-    font-size: 1.125rem;
-    color: inherit;
-}
-
-.user-level-option span {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-}
-
-.level-note {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-    font-style: italic;
-    margin: 0;
-}
-
-/* Welcome Actions */
-.welcome-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-}
-
-@media (max-width: 600px) {
-    .welcome-actions {
-        flex-direction: column;
-    }
-}
-
-.welcome-actions .btn {
-    flex: 1;
-    min-width: 150px;
+.banner-content li:last-child {
+    margin-bottom: 0;
 }
 
 /* Help Settings Toggle (in header) */
@@ -255,10 +166,10 @@
     border-radius: 4px;
     font-size: 0.95rem;
     line-height: 1.6;
-    animation: slideDown 0.2s ease;
+    animation: slideIn 0.2s ease;
 }
 
-@keyframes slideDown {
+@keyframes slideIn {
     from {
         opacity: 0;
         transform: translateY(-10px);
