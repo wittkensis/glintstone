@@ -1,7 +1,10 @@
-/* ⚠️ DELETE THIS FILE - Renamed to search.css */
 /**
- * Search Dropdown Component
- * Typeahead search results dropdown with entity-specific styling
+ * Search Dropdown
+ * Purpose: Typeahead search results dropdown with entity-specific styling
+ * Used on: Global search in site header
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/search.js
+ * Required classes for JS: .search-dropdown, .is-open, .search-result, .is-selected
  */
 
 /* ==========================================================================
