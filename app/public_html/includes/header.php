@@ -43,7 +43,6 @@
             <nav class="header-nav">
                 <a href="/tablets/list.php" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/tablets/') !== false) echo 'active'; ?>">Tablets</a>
                 <a href="/collections/" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/collections/') !== false) echo 'active'; ?>">Collections</a>
-                <a href="/signs/" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/signs/') !== false) echo 'active'; ?>">Signs</a>
                 <a href="/dictionary/" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/dictionary/') !== false) echo 'active'; ?>">Dictionary</a>
             </nav>
         </div>
