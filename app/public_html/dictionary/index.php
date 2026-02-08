@@ -100,29 +100,23 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 $total_pages = ceil($total / $per_page);
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dictionary Browser - Cuneiform Library</title>
-    <link rel="stylesheet" href="/assets/css/layout/site.css">
-    <link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
-    <link rel="stylesheet" href="/assets/css/components/dictionary-browser.css">
-    <link rel="stylesheet" href="/assets/css/components/educational-help.css">
-</head>
-<body>
-    <div class="dictionary-browser">
-        <!-- Filter Sidebar -->
-        <aside class="filter-sidebar">
+<!-- Filter Components -->
+<link rel="stylesheet" href="/assets/css/layout/filtered-list.css">
+<link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
+<link rel="stylesheet" href="/assets/css/components/educational-help.css">
+
+<main class="filtered-list-page">
+<div class="page-with-sidebar">
+    <!-- Filter Sidebar -->
+    <aside class="filter-sidebar">
             <div class="filter-header">
                 <h2>Filters</h2>
                 <?php if (!empty(array_filter([$search, $language, $pos, $min_freq]))): ?>
-                    <a href="/library/" class="clear-filters">Clear all</a>
+                    <a href="/dictionary/" class="clear-filters">Clear all</a>
                 <?php endif; ?>
             </div>
 
-            <form method="GET" action="/library/" class="filter-form">
+            <form method="GET" action="/dictionary/" class="filter-form">
                 <!-- Search -->
                 <div class="filter-section">
                     <label for="search">Search</label>
@@ -199,88 +193,78 @@ $total_pages = ceil($total / $per_page);
             </form>
         </aside>
 
-        <!-- Main Content -->
-        <main class="dictionary-main">
-            <header class="dictionary-header">
-                <h1>Dictionary Browser</h1>
-                <p class="dictionary-description">
-                    Explore <?= number_format($total) ?> words from ancient Sumerian and Akkadian
-                </p>
-            </header>
+    <div class="main-content">
+        <div class="page-header">
+            <h1>Dictionary</h1>
+            <p class="subtitle">
+                Showing <?= number_format($offset + 1) ?>-<?= number_format(min($offset + $per_page, $total)) ?> of <?= number_format($total) ?> words
+            </p>
+        </div>
 
-            <!-- Results Header -->
-            <div class="results-header">
-                <p class="results-count">
-                    Showing <?= number_format($offset + 1) ?>-<?= number_format(min($offset + $per_page, $total)) ?>
-                    of <?= number_format($total) ?> results
-                </p>
-            </div>
-
-            <!-- Results Grid -->
-            <div class="entries-grid">
-                <?php foreach ($entries as $entry): ?>
-                    <a href="/library/word/<?= urlencode($entry['entry_id']) ?>" class="entry-card">
-                        <div class="entry-card__header">
-                            <h3 class="entry-headword"><?= htmlspecialchars($entry['headword']) ?></h3>
-                            <?php if ($entry['guide_word']): ?>
-                                <span class="entry-guide-word">[<?= htmlspecialchars($entry['guide_word']) ?>]</span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="entry-card__meta">
-                            <span class="badge badge--pos"><?= htmlspecialchars($entry['pos']) ?></span>
-                            <span class="badge badge--language">
-                                <?= $entry['language'] === 'sux' ? 'Sumerian' : 'Akkadian' ?>
-                            </span>
-                        </div>
-                        <div class="entry-card__stats">
-                            <span class="entry-frequency"><?= number_format($entry['icount']) ?> attestations</span>
-                        </div>
-                    </a>
-                <?php endforeach; ?>
-
-                <?php if (empty($entries)): ?>
-                    <div class="no-results">
-                        <p>No entries match your filters.</p>
-                        <a href="/library/" class="btn">Clear filters</a>
+        <!-- Results Grid -->
+        <div class="entries-grid">
+            <?php foreach ($entries as $entry): ?>
+                <a href="/dictionary/word/<?= urlencode($entry['entry_id']) ?>" class="entry-card">
+                    <div class="entry-card__header">
+                        <h3 class="entry-headword"><?= htmlspecialchars($entry['headword']) ?></h3>
+                        <?php if ($entry['guide_word']): ?>
+                            <span class="entry-guide-word">[<?= htmlspecialchars($entry['guide_word']) ?>]</span>
+                        <?php endif; ?>
                     </div>
-                <?php endif; ?>
-            </div>
+                    <div class="entry-card__meta">
+                        <span class="badge badge--pos"><?= htmlspecialchars($entry['pos']) ?></span>
+                        <span class="badge badge--language">
+                            <?= $entry['language'] === 'sux' ? 'Sumerian' : 'Akkadian' ?>
+                        </span>
+                    </div>
+                    <div class="entry-card__stats">
+                        <span class="entry-frequency"><?= number_format($entry['icount']) ?> attestations</span>
+                    </div>
+                </a>
+            <?php endforeach; ?>
 
-            <!-- Pagination -->
-            <?php if ($total_pages > 1): ?>
-                <nav class="pagination" aria-label="Pagination">
-                    <?php
-                    $query_params = $_GET;
-                    unset($query_params['page']);
-                    $base_url = '/library/?' . http_build_query($query_params);
-                    ?>
-
-                    <?php if ($page > 1): ?>
-                        <a href="<?= $base_url ?>&page=<?= $page - 1 ?>" class="pagination-prev">← Previous</a>
-                    <?php endif; ?>
-
-                    <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
-
-                    <?php if ($page < $total_pages): ?>
-                        <a href="<?= $base_url ?>&page=<?= $page + 1 ?>" class="pagination-next">Next →</a>
-                    <?php endif; ?>
-                </nav>
+            <?php if (empty($entries)): ?>
+                <div class="no-results">
+                    <p>No entries match your filters.</p>
+                    <a href="/dictionary/" class="btn">Clear filters</a>
+                </div>
             <?php endif; ?>
-        </main>
-    </div>
+        </div>
 
-    <!-- JavaScript -->
-    <script src="/assets/js/modules/educational-help.js"></script>
-    <script src="/assets/js/modules/dictionary-search.js"></script>
-    <script>
-        // Initialize search autocomplete
-        const searchInput = document.getElementById('search');
-        if (searchInput) {
-            new DictionarySearch(searchInput, {
-                minChars: 2,
-                maxSuggestions: 8
-            });
-        }
-    </script>
-</body>
-</html>
+        <!-- Pagination -->
+        <?php if ($total_pages > 1): ?>
+            <nav class="pagination" aria-label="Pagination">
+                <?php
+                $query_params = $_GET;
+                unset($query_params['page']);
+                $base_url = '/dictionary/?' . http_build_query($query_params);
+                ?>
+
+                <?php if ($page > 1): ?>
+                    <a href="<?= $base_url ?>&page=<?= $page - 1 ?>" class="pagination-prev">← Previous</a>
+                <?php endif; ?>
+
+                <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
+
+                <?php if ($page < $total_pages): ?>
+                    <a href="<?= $base_url ?>&page=<?= $page + 1 ?>" class="pagination-next">Next →</a>
+                <?php endif; ?>
+            </nav>
+        <?php endif; ?>
+    </div>
+</div>
+</main>
+
+<!-- JavaScript -->
+<script src="/assets/js/modules/educational-help.js"></script>
+<script src="/assets/js/modules/dictionary-search.js"></script>
+<script>
+    // Initialize search autocomplete
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        new DictionarySearch(searchInput, {
+            minChars: 2,
+            maxSuggestions: 8
+        });
+    }
+</script>

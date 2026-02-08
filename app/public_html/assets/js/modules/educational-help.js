@@ -186,39 +186,8 @@ class EducationalHelpSystem {
         this.updateHelpElements();
 
         // Initialize welcome banner in sidebar (if on dictionary pages)
-        if (document.querySelector('.dictionary-browser') || document.querySelector('.dictionary-word-detail')) {
+        if (document.querySelector('.filtered-list-page') || document.querySelector('.dictionary-word-detail')) {
             this.initWelcomeBanner();
-        }
-
-        // Add settings toggle to header if not present
-        this.addSettingsToggle();
-    }
-
-    /**
-     * Add help settings toggle to header
-     */
-    addSettingsToggle() {
-        const header = document.querySelector('.site-header');
-        if (!header || document.querySelector('.help-settings-toggle')) return;
-
-        const toggle = document.createElement('button');
-        toggle.className = 'help-settings-toggle';
-        toggle.innerHTML = `
-            <span class="help-icon">${this.helpVisible ? '?' : '?'}</span>
-            <span class="help-label">${this.helpVisible ? 'Hide Help' : 'Show Help'}</span>
-        `;
-        toggle.setAttribute('aria-label', 'Toggle help tooltips');
-        toggle.addEventListener('click', () => {
-            this.toggleHelpVisibility();
-            toggle.querySelector('.help-label').textContent = this.helpVisible ? 'Hide Help' : 'Show Help';
-        });
-
-        // Insert before search or at end of header
-        const searchForm = header.querySelector('.search-form');
-        if (searchForm) {
-            searchForm.parentNode.insertBefore(toggle, searchForm);
-        } else {
-            header.appendChild(toggle);
         }
     }
 
