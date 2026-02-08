@@ -1,0 +1,248 @@
+/**
+ * Collections Activity Feed
+ * Purpose: Social activity feed with EXAMPLE overlay for future collaboration features
+ * Used on: Homepage and collections page
+ * Dependencies: core/tokens.css
+ * JavaScript: None
+ */
+
+.activity-feed-section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4);
+    position: relative;
+}
+
+/* ==========================================================================
+   EXAMPLE Overlay
+   ========================================================================== */
+
+.activity-feed--example {
+    position: relative;
+}
+
+.example-overlay {
+    position: absolute;
+    top: var(--space-8);
+    right: var(--space-4);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.example-badge {
+    display: inline-block;
+    padding: var(--space-2) var(--space-4);
+    background: rgba(218, 139, 139, 0.15);
+    border: 2px dashed rgba(218, 139, 139, 0.4);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #da8b8b;
+    transform: rotate(8deg);
+}
+
+/* Coming Soon Badge in Header */
+.coming-soon-badge {
+    display: inline-block;
+    margin-left: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    vertical-align: middle;
+}
+
+/* ==========================================================================
+   Activity Feed List
+   ========================================================================== */
+
+.activity-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Activity Item
+   ========================================================================== */
+
+.activity-item {
+    display: flex;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+    transition: background 0.2s ease;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-item:hover {
+    background: var(--color-surface);
+}
+
+/* ==========================================================================
+   Activity Icon
+   ========================================================================== */
+
+.activity-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    font-size: 1.125rem;
+}
+
+/* ==========================================================================
+   Activity Content
+   ========================================================================== */
+
+.activity-content {
+    flex: 1;
+    min-width: 0; /* Allow text truncation */
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-bottom: var(--space-1);
+}
+
+.activity-description {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--color-text);
+    margin: 0;
+    flex: 1;
+}
+
+/* User Name */
+.activity-user {
+    font-weight: 600;
+    color: var(--color-accent);
+}
+
+/* Tablet Link */
+.activity-tablet-link {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    font-weight: 600;
+    color: var(--color-text);
+    text-decoration: none;
+    padding: 0.125em 0.25em;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+}
+
+.activity-tablet-link:hover {
+    background: var(--color-accent-muted);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+/* Timestamp */
+.activity-timestamp {
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-subtle);
+    white-space: nowrap;
+}
+
+/* Activity Detail (Secondary Line) */
+.activity-detail {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* ==========================================================================
+   Activity Feed Footer
+   ========================================================================== */
+
+.activity-feed-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-6);
+}
+
+.activity-feed-footer .btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .activity-feed-section {
+        padding: var(--space-5) var(--space-3);
+    }
+
+    .example-overlay {
+        top: var(--space-6);
+        right: var(--space-3);
+    }
+
+    .example-badge {
+        padding: var(--space-1) var(--space-3);
+        font-size: 0.7rem;
+    }
+
+    .activity-item {
+        flex-direction: column;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+    }
+
+    .activity-icon {
+        align-self: flex-start;
+    }
+
+    .activity-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-1);
+    }
+
+    .activity-timestamp {
+        align-self: flex-start;
+    }
+
+    .coming-soon-badge {
+        display: block;
+        margin-left: 0;
+        margin-top: var(--space-2);
+        width: fit-content;
+    }
+}
+
+@media (max-width: 480px) {
+    .activity-description {
+        font-size: 0.85rem;
+    }
+
+    .activity-detail {
+        font-size: 0.8rem;
+    }
+}
