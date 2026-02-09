@@ -1,0 +1,93 @@
+/**
+ * Knowledge Sidebar List
+ * Purpose: Scrollable results list pattern for knowledge sidebar tabs
+ * Used on: Dictionary browse results, research results, etc.
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   List Container
+   ========================================================================== */
+
+.knowledge-sidebar-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Scrollable Items
+   ========================================================================== */
+
+.knowledge-sidebar-list__items {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--color-bg);
+    position: relative;
+}
+
+/* ==========================================================================
+   List Item
+   ========================================================================== */
+
+.knowledge-sidebar-list__item {
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.knowledge-sidebar-list__item:last-child {
+    border-bottom: none;
+}
+
+.knowledge-sidebar-list__item:hover {
+    background: var(--color-surface);
+}
+
+.knowledge-sidebar-list__item--active {
+    background: var(--color-surface);
+    border-left: 2px solid var(--color-accent);
+}
+
+/* ==========================================================================
+   Item Content
+   ========================================================================== */
+
+.knowledge-sidebar-list__item-title {
+    font-weight: 300;
+    color: var(--color-text);
+    margin-bottom: 3px;
+    font-size: 0.875rem;
+    line-height: 1.3;
+}
+
+.knowledge-sidebar-list__item-meta {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+
+.knowledge-sidebar-list__footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+}
+
+.knowledge-sidebar-list__count {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+/* Load more button uses .btn.btn-sm */
