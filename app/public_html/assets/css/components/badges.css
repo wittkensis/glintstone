@@ -1,0 +1,59 @@
+/**
+ * Badge Component
+ * Purpose: Shared badge styles for POS, language, frequency, sign-type indicators
+ * Used on: Dictionary pages, search results, tablet detail
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   Base Badge
+   ========================================================================== */
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: 4px;
+    background: var(--color-background);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+
+/* Small variant for compact contexts */
+.badge--sm {
+    padding: 0.125rem 0.375rem;
+    font-size: 0.6875rem;
+}
+
+/* ==========================================================================
+   Semantic Variants
+   ========================================================================== */
+
+/* Part of Speech - Purple */
+.badge--pos {
+    background: #3b3052;
+    color: #d4c5f9;
+    border-color: #574369;
+}
+
+/* Language - Green */
+.badge--language {
+    background: #2d4a3e;
+    color: #a8ddb5;
+    border-color: #4a6b5a;
+}
+
+/* Frequency - Blue-gray */
+.badge--frequency {
+    background: #3a4556;
+    color: #b8c5d6;
+    border-color: #505d6f;
+}
+
+/* Sign Type - Warm/gold */
+.badge--sign-type {
+    background: #4a3d2f;
+    color: #d9c5a9;
+    border-color: #5f5242;
+}

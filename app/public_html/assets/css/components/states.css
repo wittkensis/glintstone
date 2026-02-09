@@ -1,0 +1,157 @@
+/**
+ * State Component
+ * Purpose: Unified empty, loading, and error states for all contexts
+ * Used on: Dictionary pages, knowledge sidebar, search results, any list/grid
+ * Dependencies: core/tokens.css
+ *
+ * Modifiers:
+ *   --compact: Reduced padding for sidebar contexts
+ */
+
+/* ==========================================================================
+   Base State Styles
+   ========================================================================== */
+
+.state-empty,
+.state-loading,
+.state-error {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--color-text-secondary);
+}
+
+.state-empty p,
+.state-loading p {
+    font-size: 1.125rem;
+    margin-bottom: 1.5rem;
+}
+
+.state-error {
+    color: var(--color-error);
+}
+
+.state-error h2 {
+    margin-bottom: 1rem;
+}
+
+.state-error p {
+    color: var(--color-text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+/* ==========================================================================
+   Compact Variant (for sidebars)
+   ========================================================================== */
+
+.state-empty--compact,
+.state-loading--compact,
+.state-error--compact {
+    padding: var(--space-6);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.state-empty--compact p,
+.state-loading--compact p {
+    font-size: 0.85rem;
+    margin-bottom: var(--space-2);
+}
+
+.state-error--compact {
+    color: var(--color-danger);
+}
+
+/* ==========================================================================
+   State with Icon
+   ========================================================================== */
+
+.state-empty--with-icon,
+.state-loading--with-icon,
+.state-error--with-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.state-empty--with-icon svg,
+.state-loading--with-icon svg,
+.state-error--with-icon svg {
+    margin-bottom: var(--space-3);
+    opacity: 0.4;
+    width: 40px;
+    height: 40px;
+}
+
+.state-empty--with-icon h3,
+.state-error--with-icon h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+    color: var(--color-text);
+}
+
+.state-empty--with-icon p,
+.state-error--with-icon p {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    max-width: 240px;
+}
+
+/* ==========================================================================
+   Hint Text (secondary message)
+   ========================================================================== */
+
+.state-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    margin-top: 8px;
+}
+
+/* Compact variant */
+.state-empty--compact .state-hint,
+.state-loading--compact .state-hint,
+.state-error--compact .state-hint {
+    font-size: 0.7rem;
+    margin-top: 4px;
+}
+
+/* ==========================================================================
+   Legacy Class Aliases (for backwards compatibility during migration)
+   ========================================================================== */
+
+.no-results {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--color-text-secondary);
+}
+
+.no-results p {
+    font-size: 1.125rem;
+    margin-bottom: 1.5rem;
+}
+
+.loading-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--color-text-secondary);
+}
+
+.loading-state p {
+    font-size: 1.125rem;
+}
+
+.error-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--color-error);
+}
+
+.error-state h2 {
+    margin-bottom: 1rem;
+}
+
+.error-state p {
+    color: var(--color-text-secondary);
+    margin-bottom: 1.5rem;
+}
