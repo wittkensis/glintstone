@@ -19,7 +19,7 @@
     border-left: 1px solid var(--color-border);
     padding: var(--space-4);
     background: var(--color-bg);
-    overflow-y: auto;
+    overflow: auto;
 }
 
 .atf-translation-column__header {
@@ -35,9 +35,11 @@
 
 .atf-translation-line {
     display: flex;
+    flex-wrap: nowrap;
     padding: var(--space-1) 0;
     font-size: 0.875rem;
     line-height: 2;
+    white-space: nowrap;
 }
 
 .atf-translation-line__number {
