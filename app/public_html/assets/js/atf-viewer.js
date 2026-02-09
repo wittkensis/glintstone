@@ -463,8 +463,8 @@ class ATFViewer {
                             <!-- Results List -->
                             <div class="knowledge-sidebar-list">
                                 <div class="knowledge-sidebar-list__items"></div>
-                                <div class="knowledge-sidebar-list__footer">
-                                    <span class="knowledge-sidebar-list__count">Loading...</span>
+                                <div class="knowledge-sidebar-list__footer" style="display: none;">
+                                    <span class="knowledge-sidebar-list__count"></span>
                                     <button class="btn btn-sm knowledge-sidebar-list__load-more" style="display: none;">Load more</button>
                                 </div>
                             </div>
@@ -1210,7 +1210,9 @@ class ATFViewer {
 
             this.renderDictionaryResults();
 
-            // Update count
+            // Show footer and update count
+            const footer = this.container.querySelector('.knowledge-sidebar-list__footer');
+            footer.style.display = 'flex';
             const showing = Math.min(this.dictionaryResults.length, this.dictionaryTotalCount);
             countEl.textContent = `Showing ${showing.toLocaleString()} of ${this.dictionaryTotalCount.toLocaleString()}`;
 
@@ -1220,6 +1222,9 @@ class ATFViewer {
         } catch (err) {
             console.error('Failed to load dictionary page:', err);
             resultsList.innerHTML = '<div class="state-error state-error--compact">Failed to load results</div>';
+            // Hide footer on error
+            const footer = this.container.querySelector('.knowledge-sidebar-list__footer');
+            footer.style.display = 'none';
         }
     }
 
