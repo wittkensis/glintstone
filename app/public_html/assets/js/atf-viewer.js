@@ -352,12 +352,14 @@ class ATFViewer {
                         </svg>
                     </button>
                     <nav class="tabs-nav tabs-nav-compact atf-tabs" role="tablist"></nav>
-                    <div class="btn-group btn-group-stateful atf-modes">
-                        <button class="btn btn-group-item atf-mode atf-mode--active" data-mode="interactive">Interactive</button>
-                        <button class="btn btn-group-item atf-mode" data-mode="raw">Raw</button>
-                    </div>
                 </div>
                 <div class="atf-viewer__body">
+                    <div class="atf-view-settings">
+                        <div class="btn-group btn-group-stateful atf-modes">
+                            <button class="btn btn-group-item atf-mode atf-mode--active" data-mode="interactive">Interactive</button>
+                            <button class="btn btn-group-item atf-mode" data-mode="raw">Raw</button>
+                        </div>
+                    </div>
                     <div class="atf-content"></div>
                 </div>
                 <div class="atf-legend">
