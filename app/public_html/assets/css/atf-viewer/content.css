@@ -14,11 +14,12 @@
 .atf-columns {
     display: flex;
     gap: var(--space-6);
+    overflow-x: auto;
 }
 
 .atf-column {
-    flex: 1;
-    min-width: 0;
+    flex: 0 0 auto;
+    min-width: max-content;
 }
 
 .atf-column__header {

@@ -28,8 +28,10 @@
 .atf-line__content {
     display: flex;
     flex-direction: row;
+    flex-wrap: nowrap;
     align-items: baseline;
     font-size: 0.8rem;
+    white-space: nowrap;
 }
 
 .atf-line {
@@ -55,7 +57,7 @@
 }
 
 .atf-line__content {
-    min-width: 0;
+    min-width: max-content;
 }
 
 /* Inline translations (from #tr.XX: in ATF) */
