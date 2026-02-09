@@ -31,7 +31,8 @@ if (empty($entry_id)) {
     <title>Word Detail - Cuneiform Library</title>
     <link rel="stylesheet" href="/assets/css/layout/site.css">
     <link rel="stylesheet" href="/assets/css/layout/page-header.css">
-    <link rel="stylesheet" href="/assets/css/components/word-detail.css">
+    <link rel="stylesheet" href="/assets/css/components/badges.css">
+    <link rel="stylesheet" href="/assets/css/dictionary/page-word-detail.css">
     <link rel="stylesheet" href="/assets/css/components/educational-help.css">
 </head>
 <body>

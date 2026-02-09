@@ -106,7 +106,9 @@ $total_pages = ceil($total / $per_page);
 <link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
 <link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
 <link rel="stylesheet" href="/assets/css/components/pagination.css">
-<link rel="stylesheet" href="/assets/css/components/dictionary-browser.css">
+<link rel="stylesheet" href="/assets/css/components/badges.css">
+<link rel="stylesheet" href="/assets/css/components/states.css">
+<link rel="stylesheet" href="/assets/css/dictionary/page-browser.css">
 <link rel="stylesheet" href="/assets/css/components/educational-help.css">
 
 <main class="layout-two-column filtered-list-page">

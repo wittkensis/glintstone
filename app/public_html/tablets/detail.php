@@ -201,9 +201,19 @@ require_once __DIR__ . '/../includes/header.php';
 <link rel="stylesheet" href="/assets/css/zoombox/controls.css">
 <link rel="stylesheet" href="/assets/css/zoombox/minimap.css">
 
+<!-- Shared Components -->
+<link rel="stylesheet" href="/assets/css/components/badges.css">
+<link rel="stylesheet" href="/assets/css/components/states.css">
+
+<!-- Knowledge Sidebar -->
+<link rel="stylesheet" href="/assets/css/knowledge-sidebar/layout.css">
+<link rel="stylesheet" href="/assets/css/knowledge-sidebar/search.css">
+<link rel="stylesheet" href="/assets/css/knowledge-sidebar/list.css">
+<link rel="stylesheet" href="/assets/css/knowledge-sidebar/filters.css">
+<link rel="stylesheet" href="/assets/css/knowledge-sidebar/placeholders.css">
+
 <!-- Dictionary -->
-<link rel="stylesheet" href="/assets/css/dictionary/browser.css">
-<link rel="stylesheet" href="/assets/css/dictionary/word-detail.css">
+<link rel="stylesheet" href="/assets/css/dictionary/knowledge-sidebar.css">
 <link rel="stylesheet" href="/assets/css/dictionary/sign-grid.css">
 
 <div class="tablet-detail-page">

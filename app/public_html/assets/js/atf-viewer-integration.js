@@ -21,7 +21,7 @@
      */
     ATFViewer.prototype.loadDictionaryContent = async function(word) {
         const sidebar = this.container.querySelector('.atf-knowledge-sidebar');
-        const dictContent = sidebar.querySelector('.dictionary-content');
+        const dictContent = sidebar.querySelector('.knowledge-sidebar-word-content');
 
         this.lastDictionaryWord = word;
 
@@ -45,7 +45,7 @@
         }
 
         // Show loading state
-        dictContent.innerHTML = '<div class="atf-dictionary__loading">Loading definition...</div>';
+        dictContent.innerHTML = '<div class="knowledge-sidebar-dictionary__loading">Loading definition...</div>';
 
         try {
             // Fetch from glossary API (existing endpoint)
@@ -65,9 +65,9 @@
         } catch (error) {
             console.error('Error loading dictionary:', error);
             dictContent.innerHTML = `
-                <div class="atf-dictionary__empty">
+                <div class="knowledge-sidebar-dictionary__empty">
                     Error loading definition
-                    <div class="atf-dictionary__empty-hint">Please try again</div>
+                    <div class="knowledge-sidebar-dictionary__empty-hint">Please try again</div>
                 </div>
             `;
         }
@@ -78,8 +78,8 @@
      */
     ATFViewer.prototype.loadWordDetailFromDictionary = async function(entryId, word, fallbackData) {
         const sidebar = this.container.querySelector('.atf-knowledge-sidebar');
-        const citationEl = sidebar.querySelector('.dictionary-word-header__citation');
-        const dictContent = sidebar.querySelector('.dictionary-content');
+        const citationEl = sidebar.querySelector('.knowledge-sidebar-word-header__citation');
+        const dictContent = sidebar.querySelector('.knowledge-sidebar-word-content');
 
         try {
             // Fetch from word-detail API
@@ -109,7 +109,7 @@
 
             // Add "View in Library" button
             const viewInLibraryBtn = document.createElement('div');
-            viewInLibraryBtn.className = 'dictionary-library-link';
+            viewInLibraryBtn.className = 'knowledge-sidebar-library-link';
             viewInLibraryBtn.innerHTML = `
                 <a href="/dictionary/word.php?id=${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
                     View in Dictionary →
@@ -139,9 +139,9 @@
                 this.renderDictionaryContentLegacy(fallbackData, word);
             } else {
                 dictContent.innerHTML = `
-                    <div class="atf-dictionary__empty">
+                    <div class="knowledge-sidebar-dictionary__empty">
                         Error loading full definition
-                        <div class="atf-dictionary__empty-hint">Showing basic information</div>
+                        <div class="knowledge-sidebar-dictionary__empty-hint">Showing basic information</div>
                     </div>
                 `;
             }
@@ -158,11 +158,11 @@
         // Add "View in Library" link if we have entry_id
         if (data.entries && data.entries.length > 0 && data.entries[0].entry_id) {
             const sidebar = this.container.querySelector('.atf-knowledge-sidebar');
-            const dictContent = sidebar.querySelector('.dictionary-content');
+            const dictContent = sidebar.querySelector('.knowledge-sidebar-word-content');
 
             const entryId = data.entries[0].entry_id;
             const viewInLibraryBtn = document.createElement('div');
-            viewInLibraryBtn.className = 'dictionary-library-link';
+            viewInLibraryBtn.className = 'knowledge-sidebar-library-link';
             viewInLibraryBtn.innerHTML = `
                 <a href="/dictionary/word.php?id=${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
                     View in Dictionary →
@@ -182,7 +182,7 @@
 
             // Add additional handling for library links
             this.container.addEventListener('click', (e) => {
-                if (e.target.closest('.dictionary-library-link a')) {
+                if (e.target.closest('.knowledge-sidebar-library-link a')) {
                     // Link will open in new tab, no special handling needed
                 }
             });
@@ -194,13 +194,13 @@
         const style = document.createElement('style');
         style.id = 'atf-library-integration-styles';
         style.textContent = `
-            .dictionary-library-link {
+            .knowledge-sidebar-library-link {
                 margin-top: 1.5rem;
                 padding-top: 1.5rem;
                 border-top: 1px solid var(--color-border);
             }
 
-            .dictionary-library-link .btn {
+            .knowledge-sidebar-library-link .btn {
                 width: 100%;
                 text-align: center;
             }

@@ -400,16 +400,16 @@ class ATFViewer {
                     <!-- Dictionary Tab Content -->
                     <div class="knowledge-tab-content knowledge-tab-content--active" data-content="dictionary">
                         <!-- Browse Mode UI -->
-                        <div class="dictionary-browse">
+                        <div class="knowledge-sidebar-dictionary">
                             <!-- Search Bar -->
-                            <div class="dictionary-search">
-                                <input type="text" class="dictionary-search__input" placeholder="Search dictionary..." aria-label="Search dictionary">
-                                <button class="dictionary-search__clear" aria-label="Clear search" style="display: none;">&times;</button>
+                            <div class="knowledge-sidebar-search">
+                                <input type="text" class="knowledge-sidebar-search__input" placeholder="Search dictionary..." aria-label="Search dictionary">
+                                <button class="knowledge-sidebar-search__clear" aria-label="Clear search" style="display: none;">&times;</button>
                             </div>
 
                             <!-- Filter Bar -->
-                            <div class="dictionary-filters">
-                                <select class="dictionary-filter__language" aria-label="Filter by language">
+                            <div class="knowledge-sidebar-filters">
+                                <select class="knowledge-sidebar-filter" data-filter="language" aria-label="Filter by language">
                                     <option value="">All Languages</option>
                                     <option value="akk">Akkadian (11,357)</option>
                                     <option value="sux">Sumerian (5,271)</option>
@@ -418,7 +418,7 @@ class ATFViewer {
                                     <option value="xhu">Hurrian (137)</option>
                                     <option value="uga">Ugaritic (100)</option>
                                 </select>
-                                <select class="dictionary-filter__pos" aria-label="Filter by part of speech">
+                                <select class="knowledge-sidebar-filter" data-filter="pos" aria-label="Filter by part of speech">
                                     <option value="">All Parts of Speech</option>
                                     <optgroup label="Words">
                                         <option value="N">Noun</option>
@@ -458,34 +458,34 @@ class ATFViewer {
                             </div>
 
                             <!-- Active Filter Chips -->
-                            <div class="dictionary-filter-chips" style="display: none;"></div>
+                            <div class="knowledge-sidebar-filter-chips" style="display: none;"></div>
 
                             <!-- Results List -->
-                            <div class="dictionary-results">
-                                <div class="dictionary-results__list"></div>
-                                <div class="dictionary-results__footer">
-                                    <span class="dictionary-results__count">Loading...</span>
-                                    <button class="btn btn-sm dictionary-results__load-more" style="display: none;">Load more</button>
+                            <div class="knowledge-sidebar-list">
+                                <div class="knowledge-sidebar-list__items"></div>
+                                <div class="knowledge-sidebar-list__footer">
+                                    <span class="knowledge-sidebar-list__count">Loading...</span>
+                                    <button class="btn btn-sm knowledge-sidebar-list__load-more" style="display: none;">Load more</button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Word Detail UI (for word clicks) -->
-                        <div class="dictionary-word-detail" style="display: none;">
-                            <div class="dictionary-word-header">
-                                <button class="dictionary-word-detail__back" aria-label="Back to browse">
+                        <div class="knowledge-sidebar-word-detail" style="display: none;">
+                            <div class="knowledge-sidebar-word-header">
+                                <button class="knowledge-sidebar-word-header__back" aria-label="Back to browse">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M19 12H5M12 19l-7-7 7-7"/>
                                     </svg>
-                                    <span class="dictionary-word-header__citation"></span>
+                                    <span class="knowledge-sidebar-word-header__citation"></span>
                                 </button>
                             </div>
-                            <div class="dictionary-content"></div>
+                            <div class="knowledge-sidebar-word-content"></div>
                         </div>
                     </div>
                     <!-- Research Tab Content -->
                     <div class="knowledge-tab-content" data-content="research">
-                        <div class="knowledge-tab-placeholder">
+                        <div class="knowledge-sidebar-placeholder">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                 <path d="M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18ZM12 3L1 9L12 15L21 10.09V17H23V9L12 3Z"/>
                             </svg>
@@ -495,7 +495,7 @@ class ATFViewer {
                     </div>
                     <!-- Discussion Tab Content -->
                     <div class="knowledge-tab-content" data-content="discussion">
-                        <div class="knowledge-tab-placeholder">
+                        <div class="knowledge-sidebar-placeholder">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                 <path d="M22 2H2.01L2 22L6 18H22V2ZM6 9H18V11H6V9ZM14 14H6V12H14V14ZM18 8H6V6H18V8Z"/>
                             </svg>
@@ -505,7 +505,7 @@ class ATFViewer {
                     </div>
                     <!-- Context Tab Content -->
                     <div class="knowledge-tab-content" data-content="context">
-                        <div class="knowledge-tab-placeholder">
+                        <div class="knowledge-sidebar-placeholder">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                 <path d="M11.99 2C6.47 2 2 6.48 2 12C2 17.52 6.47 22 11.99 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 11.99 2ZM18.92 8H15.97C15.65 6.75 15.19 5.55 14.59 4.44C16.43 5.07 17.96 6.35 18.92 8ZM12 4.04C12.83 5.24 13.48 6.57 13.91 8H10.09C10.52 6.57 11.17 5.24 12 4.04ZM4.26 14C4.1 13.36 4 12.69 4 12C4 11.31 4.1 10.64 4.26 10H7.64C7.56 10.66 7.5 11.32 7.5 12C7.5 12.68 7.56 13.34 7.64 14H4.26ZM5.08 16H8.03C8.35 17.25 8.81 18.45 9.41 19.56C7.57 18.93 6.04 17.66 5.08 16ZM8.03 8H5.08C6.04 6.34 7.57 5.07 9.41 4.44C8.81 5.55 8.35 6.75 8.03 8ZM12 19.96C11.17 18.76 10.52 17.43 10.09 16H13.91C13.48 17.43 12.83 18.76 12 19.96ZM14.34 14H9.66C9.57 13.34 9.5 12.68 9.5 12C9.5 11.32 9.57 10.65 9.66 10H14.34C14.43 10.65 14.5 11.32 14.5 12C14.5 12.68 14.43 13.34 14.34 14ZM14.59 19.56C15.19 18.45 15.65 17.25 15.97 16H18.92C17.96 17.65 16.43 18.93 14.59 19.56ZM16.36 14C16.44 13.34 16.5 12.68 16.5 12C16.5 11.32 16.44 10.66 16.36 10H19.74C19.9 10.64 20 11.31 20 12C20 12.69 19.9 13.36 19.74 14H16.36Z"/>
                             </svg>
@@ -545,12 +545,12 @@ class ATFViewer {
         });
 
         // Dictionary browse event listeners
-        const searchInput = this.container.querySelector('.dictionary-search__input');
-        const searchClear = this.container.querySelector('.dictionary-search__clear');
-        const languageFilter = this.container.querySelector('.dictionary-filter__language');
-        const posFilter = this.container.querySelector('.dictionary-filter__pos');
-        const loadMoreBtn = this.container.querySelector('.dictionary-results__load-more');
-        const backBtn = this.container.querySelector('.dictionary-word-detail__back');
+        const searchInput = this.container.querySelector('.knowledge-sidebar-search__input');
+        const searchClear = this.container.querySelector('.knowledge-sidebar-search__clear');
+        const languageFilter = this.container.querySelector('.knowledge-sidebar-filter[data-filter="language"]');
+        const posFilter = this.container.querySelector('.knowledge-sidebar-filter[data-filter="pos"]');
+        const loadMoreBtn = this.container.querySelector('.knowledge-sidebar-list__load-more');
+        const backBtn = this.container.querySelector('.knowledge-sidebar-word-header__back');
 
         searchInput.addEventListener('input', (e) => {
             this.searchDictionary(e.target.value);
@@ -643,7 +643,7 @@ class ATFViewer {
         }
 
         if (!this.data?.surfaces[this.currentSurface]) {
-            contentArea.innerHTML = '<p class="atf-dictionary__empty">No content available</p>';
+            contentArea.innerHTML = '<p class="knowledge-sidebar-dictionary__empty">No content available</p>';
             return;
         }
 
@@ -1031,7 +1031,7 @@ class ATFViewer {
      */
     async loadDictionaryContent(word) {
         const sidebar = this.container.querySelector('.atf-knowledge-sidebar');
-        const dictContent = sidebar.querySelector('.dictionary-content');
+        const dictContent = sidebar.querySelector('.knowledge-sidebar-word-content');
 
         this.lastDictionaryWord = word;
 
@@ -1045,7 +1045,7 @@ class ATFViewer {
         }
 
         // Show loading
-        dictContent.innerHTML = '<div class="atf-dictionary__loading">Loading...</div>';
+        dictContent.innerHTML = '<div class="knowledge-sidebar-dictionary__loading">Loading...</div>';
 
         try {
             const response = await fetch(`/api/glossary.php?q=${encodeURIComponent(word)}&full=1`);
@@ -1057,7 +1057,7 @@ class ATFViewer {
             this.renderDictionaryContent(data, word);
 
         } catch (err) {
-            dictContent.innerHTML = '<div class="atf-dictionary__empty">Failed to load definition</div>';
+            dictContent.innerHTML = '<div class="knowledge-sidebar-dictionary__empty">Failed to load definition</div>';
         }
     }
 
@@ -1067,8 +1067,8 @@ class ATFViewer {
      */
     setDictionaryMode(mode) {
         this.dictionaryMode = mode;
-        const browseUI = this.container.querySelector('.dictionary-browse');
-        const wordUI = this.container.querySelector('.dictionary-word-detail');
+        const browseUI = this.container.querySelector('.knowledge-sidebar-dictionary');
+        const wordUI = this.container.querySelector('.knowledge-sidebar-word-detail');
 
         if (mode === 'browse') {
             browseUI.style.display = 'flex';
@@ -1117,11 +1117,11 @@ class ATFViewer {
      * Update filter chips display
      */
     updateFilterChips() {
-        const chipsContainer = this.container.querySelector('.dictionary-filter-chips');
+        const chipsContainer = this.container.querySelector('.knowledge-sidebar-filter-chips');
         const chips = [];
 
         if (this.dictionaryFilters.language) {
-            const select = this.container.querySelector('.dictionary-filter__language');
+            const select = this.container.querySelector('.knowledge-sidebar-filter[data-filter="language"]');
             const option = select.querySelector(`option[value="${this.dictionaryFilters.language}"]`);
             chips.push({
                 type: 'language',
@@ -1131,7 +1131,7 @@ class ATFViewer {
         }
 
         if (this.dictionaryFilters.pos) {
-            const select = this.container.querySelector('.dictionary-filter__pos');
+            const select = this.container.querySelector('.knowledge-sidebar-filter[data-filter="pos"]');
             const option = select.querySelector(`option[value="${this.dictionaryFilters.pos}"]`);
             chips.push({
                 type: 'pos',
@@ -1142,19 +1142,19 @@ class ATFViewer {
 
         if (chips.length > 0) {
             chipsContainer.innerHTML = chips.map(chip => `
-                <span class="dictionary-filter-chip" data-type="${chip.type}">
+                <span class="knowledge-sidebar-filter-chip" data-type="${chip.type}">
                     ${chip.label}
-                    <button class="dictionary-filter-chip__remove" data-type="${chip.type}" aria-label="Remove filter">&times;</button>
+                    <button class="knowledge-sidebar-filter-chip__remove" data-type="${chip.type}" aria-label="Remove filter">&times;</button>
                 </span>
             `).join('');
             chipsContainer.style.display = 'flex';
 
             // Add remove handlers
-            chipsContainer.querySelectorAll('.dictionary-filter-chip__remove').forEach(btn => {
+            chipsContainer.querySelectorAll('.knowledge-sidebar-filter-chip__remove').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const filterType = btn.dataset.type;
                     this.dictionaryFilters[filterType] = null;
-                    const select = this.container.querySelector(`.dictionary-filter__${filterType}`);
+                    const select = this.container.querySelector(`.knowledge-sidebar-filter[data-filter="${filterType}"]`);
                     select.value = '';
                     this.filterDictionary(filterType, '');
                 });
@@ -1169,13 +1169,13 @@ class ATFViewer {
      * @param {number} offset - Page offset
      */
     async loadDictionaryPage(offset) {
-        const resultsList = this.container.querySelector('.dictionary-results__list');
-        const countEl = this.container.querySelector('.dictionary-results__count');
-        const loadMoreBtn = this.container.querySelector('.dictionary-results__load-more');
+        const resultsList = this.container.querySelector('.knowledge-sidebar-list__items');
+        const countEl = this.container.querySelector('.knowledge-sidebar-list__count');
+        const loadMoreBtn = this.container.querySelector('.knowledge-sidebar-list__load-more');
 
         // Show loading for first page
         if (offset === 0) {
-            resultsList.innerHTML = '<div class="dictionary-results__loading">Loading...</div>';
+            resultsList.innerHTML = '<div class="state-loading state-loading--compact">Loading...</div>';
         }
 
         try {
@@ -1219,7 +1219,7 @@ class ATFViewer {
 
         } catch (err) {
             console.error('Failed to load dictionary page:', err);
-            resultsList.innerHTML = '<div class="dictionary-results__error">Failed to load results</div>';
+            resultsList.innerHTML = '<div class="state-error state-error--compact">Failed to load results</div>';
         }
     }
 
@@ -1227,10 +1227,10 @@ class ATFViewer {
      * Render dictionary results list
      */
     renderDictionaryResults() {
-        const resultsList = this.container.querySelector('.dictionary-results__list');
+        const resultsList = this.container.querySelector('.knowledge-sidebar-list__items');
 
         if (this.dictionaryResults.length === 0) {
-            resultsList.innerHTML = '<div class="dictionary-results__empty">No entries found</div>';
+            resultsList.innerHTML = '<div class="state-empty state-empty--compact">No entries found</div>';
             return;
         }
 
@@ -1248,9 +1248,9 @@ class ATFViewer {
                 : headword;
 
             return `
-                <div class="dictionary-results__item" data-entry-id="${entry.entry_id}">
-                    <div class="dictionary-results__item-headword">${mainText}</div>
-                    <div class="dictionary-results__item-meta">
+                <div class="knowledge-sidebar-list__item" data-entry-id="${entry.entry_id}">
+                    <div class="knowledge-sidebar-list__item-title">${mainText}</div>
+                    <div class="knowledge-sidebar-list__item-meta">
                         ${language} · ${guideWord} · ${pos} · ${icount.toLocaleString()} occurrences
                     </div>
                 </div>
@@ -1258,7 +1258,7 @@ class ATFViewer {
         }).join('');
 
         // Add click handlers
-        resultsList.querySelectorAll('.dictionary-results__item').forEach(item => {
+        resultsList.querySelectorAll('.knowledge-sidebar-list__item').forEach(item => {
             item.addEventListener('click', () => {
                 const entryId = item.dataset.entryId;
                 const entry = this.dictionaryResults.find(e => e.entry_id === entryId);
@@ -1307,15 +1307,15 @@ class ATFViewer {
      */
     renderDictionaryContent(data, word) {
         const sidebar = this.container.querySelector('.atf-knowledge-sidebar');
-        const citationEl = sidebar.querySelector('.dictionary-word-header__citation');
-        const body = sidebar.querySelector('.dictionary-content');
+        const citationEl = sidebar.querySelector('.knowledge-sidebar-word-header__citation');
+        const body = sidebar.querySelector('.knowledge-sidebar-word-content');
 
         if (!data.entries || data.entries.length === 0) {
             citationEl.textContent = word;
             body.innerHTML = `
-                <div class="atf-dictionary__empty">
+                <div class="knowledge-sidebar-dictionary__empty">
                     No definition found
-                    <div class="atf-dictionary__empty-hint">This word may not be in the ORACC glossaries</div>
+                    <div class="knowledge-sidebar-dictionary__empty-hint">This word may not be in the ORACC glossaries</div>
                 </div>
             `;
             return;
@@ -1333,8 +1333,8 @@ class ATFViewer {
         // Prominent definition (guide_word)
         if (entry.guide_word) {
             html += `
-                <div class="dictionary-definition">
-                    <div class="dictionary-definition__text">${this.escapeHtml(entry.guide_word)}</div>
+                <div class="knowledge-sidebar-word-definition">
+                    <div class="knowledge-sidebar-word-definition__text">${this.escapeHtml(entry.guide_word)}</div>
                 </div>
             `;
         }
@@ -1345,35 +1345,35 @@ class ATFViewer {
         }
 
         // Metadata Fields
-        html += '<dl class="atf-dictionary__fields">';
+        html += '<dl class="knowledge-sidebar-word-fields">';
 
         if (entry.headword) {
             const fieldLabel = data.field_explanations?.headword ? 'Headword' : 'Dictionary Form';
             html += `
-                <dt class="atf-dictionary__field-label">${fieldLabel}</dt>
-                <dd class="atf-dictionary__field-value">${this.escapeHtml(entry.headword)}</dd>
+                <dt class="knowledge-sidebar-word-field-label">${fieldLabel}</dt>
+                <dd class="knowledge-sidebar-word-field-value">${this.escapeHtml(entry.headword)}</dd>
             `;
         }
 
         if (entry.pos) {
             html += `
-                <dt class="atf-dictionary__field-label">Part of Speech</dt>
-                <dd class="atf-dictionary__field-value">${posLabel}</dd>
+                <dt class="knowledge-sidebar-word-field-label">Part of Speech</dt>
+                <dd class="knowledge-sidebar-word-field-value">${posLabel}</dd>
             `;
         }
 
         if (entry.language) {
             const langLabels = { akk: 'Akkadian', sux: 'Sumerian', qpc: 'Proto-Cuneiform' };
             html += `
-                <dt class="atf-dictionary__field-label">Language</dt>
-                <dd class="atf-dictionary__field-value">${langLabels[entry.language] || entry.language}</dd>
+                <dt class="knowledge-sidebar-word-field-label">Language</dt>
+                <dd class="knowledge-sidebar-word-field-value">${langLabels[entry.language] || entry.language}</dd>
             `;
         }
 
         if (entry.icount) {
             html += `
-                <dt class="atf-dictionary__field-label">Occurrences</dt>
-                <dd class="atf-dictionary__field-value">${entry.icount.toLocaleString()} in corpus</dd>
+                <dt class="knowledge-sidebar-word-field-label">Occurrences</dt>
+                <dd class="knowledge-sidebar-word-field-value">${entry.icount.toLocaleString()} in corpus</dd>
             `;
         }
 
@@ -1383,16 +1383,16 @@ class ATFViewer {
         const forms = data.forms?.[entry.entry_id];
         if (forms && forms.length > 0) {
             html += `
-                <div class="atf-dictionary__variants">
-                    <div class="atf-dictionary__variants-title">Variant Spellings (${forms.length})</div>
-                    <div class="atf-dictionary__variants-list">
+                <div class="knowledge-sidebar-variants">
+                    <div class="knowledge-sidebar-variants__title">Variant Spellings (${forms.length})</div>
+                    <div class="knowledge-sidebar-variants__list">
                         ${forms.slice(0, 10).map(f => `
-                            <span class="atf-dictionary__variant">
+                            <span class="knowledge-sidebar-variant">
                                 ${this.escapeHtml(f.form)}
-                                <span class="atf-dictionary__variant-count">${f.count || ''}</span>
+                                <span class="knowledge-sidebar-variant__count">${f.count || ''}</span>
                             </span>
                         `).join('')}
-                        ${forms.length > 10 ? `<span class="atf-dictionary__variant">+${forms.length - 10} more</span>` : ''}
+                        ${forms.length > 10 ? `<span class="knowledge-sidebar-variant">+${forms.length - 10} more</span>` : ''}
                     </div>
                 </div>
             `;
@@ -1401,16 +1401,16 @@ class ATFViewer {
         // All entries (if more than one)
         if (data.entries.length > 1) {
             html += `
-                <details class="atf-dictionary__entries">
+                <details class="knowledge-sidebar-entries">
                     <summary>All ${data.entries.length} entries for "${word}"</summary>
-                    <div class="atf-dictionary__entries-list">
+                    <div class="knowledge-sidebar-entries__list">
                         ${data.entries.map((e, i) => `
-                            <div class="atf-dictionary__entry ${i === 0 ? 'atf-dictionary__entry--active' : ''}">
-                                <div class="atf-dictionary__entry-head">
-                                    <span class="atf-dictionary__entry-word">${this.escapeHtml(e.headword || word)}</span>
-                                    ${e.pos ? `<span class="atf-dictionary__entry-pos">${e.pos}</span>` : ''}
+                            <div class="knowledge-sidebar-entry ${i === 0 ? 'knowledge-sidebar-entry--active' : ''}">
+                                <div class="knowledge-sidebar-entry__head">
+                                    <span class="knowledge-sidebar-entry__word">${this.escapeHtml(e.headword || word)}</span>
+                                    ${e.pos ? `<span class="knowledge-sidebar-entry__pos">${e.pos}</span>` : ''}
                                 </div>
-                                <div class="atf-dictionary__entry-meaning">${this.escapeHtml(e.guide_word || 'No definition')}</div>
+                                <div class="knowledge-sidebar-entry__meaning">${this.escapeHtml(e.guide_word || 'No definition')}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -1443,19 +1443,19 @@ class ATFViewer {
         const explanation = this.generateLinguisticExplanation(cleanSurfaceForm, entry, signType);
 
         const badgeHtml = signType === 'logogram'
-            ? '<span class="dictionary-sign-badge dictionary-sign-badge--logo">Logogram</span>'
+            ? '<span class="knowledge-sidebar-sign-badge knowledge-sidebar-sign-badge--logo">Logogram</span>'
             : signType === 'phonogram'
-            ? '<span class="dictionary-sign-badge dictionary-sign-badge--phono">Phonogram</span>'
+            ? '<span class="knowledge-sidebar-sign-badge knowledge-sidebar-sign-badge--phono">Phonogram</span>'
             : '';
 
         return `
-            <div class="dictionary-sign-form">
-                <div class="dictionary-sign-form__header">
-                    <span class="dictionary-sign-form__label">Cuneiform Sign</span>
+            <div class="knowledge-sidebar-sign-form">
+                <div class="knowledge-sidebar-sign-form__header">
+                    <span class="knowledge-sidebar-sign-form__label">Cuneiform Sign</span>
                     ${badgeHtml}
                 </div>
-                <div class="dictionary-sign-form__text">${this.escapeHtml(cleanSurfaceForm)}</div>
-                <div class="dictionary-sign-form__explanation">${explanation}</div>
+                <div class="knowledge-sidebar-sign-form__text">${this.escapeHtml(cleanSurfaceForm)}</div>
+                <div class="knowledge-sidebar-sign-form__explanation">${explanation}</div>
             </div>
         `;
     }
@@ -1547,7 +1547,7 @@ class ATFViewer {
         this.hideDictionary();
 
         // Show loading state
-        list.innerHTML = '<div class="atf-dictionary__loading">Loading composite...</div>';
+        list.innerHTML = '<div class="knowledge-sidebar-dictionary__loading">Loading composite...</div>';
 
         try {
             // Fetch composite data
@@ -1565,7 +1565,7 @@ class ATFViewer {
 
         } catch (err) {
             console.error('ATFViewer: Failed to load composite', err);
-            list.innerHTML = '<div class="atf-dictionary__empty">Failed to load composite</div>';
+            list.innerHTML = '<div class="knowledge-sidebar-dictionary__empty">Failed to load composite</div>';
         }
     }
 
@@ -1630,9 +1630,9 @@ class ATFViewer {
     renderError(message) {
         const contentArea = this.container.querySelector('.atf-content');
         contentArea.innerHTML = `
-            <div class="atf-dictionary__empty">
+            <div class="knowledge-sidebar-dictionary__empty">
                 ${this.escapeHtml(message)}
-                <div class="atf-dictionary__empty-hint">The transliteration may not be available for this tablet.</div>
+                <div class="knowledge-sidebar-dictionary__empty-hint">The transliteration may not be available for this tablet.</div>
             </div>
         `;
     }
