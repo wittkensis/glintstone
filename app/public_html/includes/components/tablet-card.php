@@ -19,7 +19,7 @@ $hasCollectionId = isset($collection_id);
 $langAbbr = getLanguageAbbreviation($tablet['language']);
 ?>
 <a href="/tablets/detail.php?p=<?= urlencode($tablet['p_number']) ?>"
-   class="tablet-card <?= $selectable ? 'selectable' : '' ?>"
+   class="card tablet-card <?= $selectable ? 'selectable' : '' ?>"
    data-p-number="<?= htmlspecialchars($tablet['p_number']) ?>">
 
     <?php if ($selectable): ?>
@@ -57,7 +57,7 @@ $langAbbr = getLanguageAbbreviation($tablet['language']);
     </div>
 
     <!-- Overlay Info Panel -->
-    <div class="card-overlay">
+    <div class="card-details card-overlay">
 
         <!-- Pipeline Status Bar -->
         <div class="card-pipeline-bar">
@@ -69,15 +69,15 @@ $langAbbr = getLanguageAbbreviation($tablet['language']);
         </div>
 
 
-        <span class="card-p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
+        <span class="card-eyebrow p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>
         <?php if ($tablet['period']): ?>
-        <span class="meta-period"><?= htmlspecialchars(truncateText($tablet['period'], 25)) ?></span>
+        <span class="card-primary meta-period"><?= htmlspecialchars(truncateText($tablet['period'], 25)) ?></span>
         <?php endif; ?>
         <?php if ($tablet['provenience']): ?>
-        <span class="meta-site"><?= htmlspecialchars(truncateText($tablet['provenience'], 20)) ?></span>
+        <span class="card-meta"><?= htmlspecialchars(truncateText($tablet['provenience'], 20)) ?></span>
         <?php endif; ?>
         <?php if ($tablet['genre']): ?>
-        <span class="meta-genre"><?= htmlspecialchars(truncateText($tablet['genre'], 20)) ?></span>
+        <span class="card-meta"><?= htmlspecialchars(truncateText($tablet['genre'], 20)) ?></span>
         <?php endif; ?>
         <!--<div class="card-designation"><?= htmlspecialchars($tablet['designation'] ?? 'Unknown') ?></div>-->
     </div>

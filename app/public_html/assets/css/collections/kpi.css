@@ -6,6 +6,8 @@
  * JavaScript: None
  */
 
+/* TODO: Split this into Homepage and KPI-specific files */
+
 .kpi-dashboard {
     max-width: 1200px;
     margin: 0 auto;

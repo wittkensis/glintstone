@@ -63,10 +63,10 @@ $showPipelineFilter = $showPipelineFilter ?? true;
                            id="search-input"
                            class="search-input"
                            value="<?= htmlspecialchars($_GET['search'] ?? '') ?>"
-                           placeholder="Search tablets by keyword or text...">
-                    <button type="submit" class="search-submit">Search</button>
+                           placeholder="Search">
+                    <button type="submit" class="btn search-submit">Search</button>
                 </div>
-                <p class="search-help">Searches P-number, designation, and transliteration text. Use || for multiple: P000001 || P000025</p>
+                <div class="help-text-subtle search-help">Search P-numbers, designations, and transliterations. Use || for multiple.</div>
             </form>
         </div>
     </div>

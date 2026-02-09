@@ -8,6 +8,76 @@
  */
 
 /* ==========================================================================
+   Column Layout
+   ========================================================================== */
+
+.atf-columns {
+    display: flex;
+    gap: var(--space-6);
+}
+
+.atf-column {
+    flex: 1;
+    min-width: 0;
+}
+
+.atf-column__header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Single column - hide header */
+.atf-viewer--single-column .atf-column__header {
+    display: none;
+}
+
+/* ==========================================================================
+   ATF Display
+   Monospace display for transliteration text
+   ========================================================================== */
+
+.atf-display {
+    font-family: var(--font-mono);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    font-size: 0.875rem;
+    line-height: 1.8;
+}
+
+.atf-display .line-number {
+    color: var(--color-text-subtle);
+    user-select: none;
+    margin-right: var(--space-4);
+}
+
+.atf-display .directive {
+    color: var(--color-accent-muted);
+}
+
+.atf-display .composite-ref {
+    color: var(--color-success);
+}
+
+/* Reset em/code styling in ATF display */
+.atf-display em,
+.atf-display code {
+    font-style: normal;
+    font-family: inherit;
+    background: none;
+}
+
+
+ /* ==========================================================================
    Legend
    ========================================================================== */
 
@@ -84,149 +154,4 @@
 .atf-legend__swatch--translation {
     color: var(--color-accent-muted);
     font-weight: 700;
-}
-
-/* ==========================================================================
-   Content Area
-   ========================================================================== */
-
-.atf-viewer__body {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.atf-content {
-    height: 100%;
-    padding: var(--space-4);
-    overflow-y: auto;
-    font-family: var(--font-mono);
-    font-size: 0.9rem;
-    line-height: 2;
-}
-
-/* Raw mode */
-.atf-viewer--mode-raw .atf-content {
-    white-space: pre-wrap;
-    font-size: 0.85rem;
-    line-height: 1.6;
-    color: var(--color-text-muted);
-}
-
-/* ==========================================================================
-   Column Layout
-   ========================================================================== */
-
-.atf-columns {
-    display: flex;
-    gap: var(--space-6);
-}
-
-.atf-column {
-    flex: 1;
-    min-width: 0;
-}
-
-.atf-column__header {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--color-text-subtle);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: var(--space-3);
-    padding-bottom: var(--space-2);
-    border-bottom: 1px solid var(--color-border);
-}
-
-/* Single column - hide header */
-.atf-viewer--single-column .atf-column__header {
-    display: none;
-}
-
-/* ==========================================================================
-   Lines
-   ========================================================================== */
-
-.atf-line {
-    display: flex;
-    align-items: baseline;
-    padding: var(--space-1) 0;
-    border-radius: var(--radius-sm);
-    transition: background var(--transition-fast);
-}
-
-.atf-line:hover {
-    background: var(--color-bg);
-}
-
-.atf-line__number {
-    width: 36px;
-    flex-shrink: 0;
-    color: var(--color-text-subtle);
-    font-size: 0.8em;
-    text-align: right;
-    padding-right: var(--space-3);
-    user-select: none;
-}
-
-.atf-line__number--prime::after {
-    content: "'";
-}
-
-.atf-line__content {
-    flex: 1;
-    min-width: 0;
-}
-
-/* State markers */
-.atf-state {
-    color: var(--color-text-subtle);
-    font-style: italic;
-    padding: var(--space-2) 0;
-    padding-left: 36px;
-    font-size: 0.85em;
-}
-
-/* Inline translations (from #tr.XX: in ATF) */
-.atf-line__translation {
-    margin-left: 36px;
-    margin-top: 2px;
-    margin-bottom: var(--space-2);
-    padding: var(--space-1) var(--space-2);
-    background: var(--color-bg);
-    border-left: 2px solid var(--color-accent-muted);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    color: var(--color-text-muted);
-    font-size: 0.8rem;
-    font-style: italic;
-    font-family: var(--font-sans);
-}
-
-/* Composite references */
-.atf-composite {
-    display: block;
-    margin-left: 36px;
-    margin-top: -4px;
-    margin-bottom: var(--space-2);
-    color: var(--color-success);
-    font-size: 0.7rem;
-    opacity: 0.8;
-    cursor: pointer;
-    text-decoration: underline;
-    text-decoration-style: dotted;
-}
-
-.atf-composite:hover {
-    opacity: 1;
-    text-decoration-style: solid;
-}
-
-/* ==========================================================================
-   Responsive
-   ========================================================================== */
-
-@media (max-width: 600px) {
-    .atf-legend__items {
-        gap: var(--space-2) var(--space-4);
-    }
 }

@@ -219,37 +219,7 @@
    ========================================================================== */
 
 @media (max-width: 640px) {
-    .tablet-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--space-2);
-    }
-
-    .tablet-header__main {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--space-2);
-        width: 100%;
-    }
-
-    .tablet-header__identity {
-        flex-direction: column;
-        gap: 0;
-    }
-
-    .tablet-header__sep {
-        display: none;
-    }
-
-    .tablet-header__designation {
-        font-size: 0.875rem;
-    }
-
-    .tablet-header__actions {
-        position: absolute;
-        top: var(--space-4);
-        right: var(--space-4);
-    }
+    /* Tablet header responsive styles moved to tablet/header.css */
 
     .tablet-meta__row {
         gap: var(--space-2) var(--space-4);

@@ -4,129 +4,15 @@
  * Used on: Tablet detail pages with multi-surface ATF content
  * Dependencies: core/tokens.css
  * JavaScript: assets/js/atf-viewer.js
- * Required classes for JS: .atf-tab, .atf-tab--active, .atf-mode, .atf-mode--active
+ * Required classes for JS: .atf-tab, .atf-mode, .atf-mode--active
+ * ARIA: Surface tabs use aria-selected attribute for active state
  */
 
-/* ==========================================================================
-   Surface Tabs
-   ========================================================================== */
-
-.atf-tabs {
-    display: flex;
-    gap: 0;
-    margin: 0;
-    padding: 0;
-    list-style: none;
+.atf-knowledge-sidebar .tabs-nav {
+    background: linear-gradient(90deg, var(--color-bg-inset), var(--color-bg));
+    transition: all 300ms ease-out;
 }
 
-.atf-tab {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-4);
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--color-text-muted);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    white-space: nowrap;
-}
-
-.atf-tab:hover {
-    color: var(--color-text);
-    background: var(--color-bg-subtle);
-}
-
-.atf-tab--active {
-    color: var(--color-text);
-    border-bottom-color: var(--color-accent);
-}
-
-.atf-tab__count {
-    font-size: 0.7rem;
-    color: var(--color-text-subtle);
+.atf-knowledge-sidebar[data-state="open"] .tabs-nav {
     background: var(--color-bg);
-    padding: 2px 6px;
-    border-radius: var(--radius-sm);
-}
-
-.atf-tab--active .atf-tab__count {
-    background: var(--color-accent);
-    color: var(--color-bg);
-}
-
-/* Single surface - hide tabs */
-.atf-viewer--single-surface .atf-tabs {
-    display: none;
-}
-
-/* ==========================================================================
-   View Mode Toggle
-   ========================================================================== */
-
-.atf-modes {
-    display: flex;
-    gap: 1px;
-    background: var(--color-border);
-    padding: 2px;
-    border-radius: var(--radius-md);
-}
-
-.atf-mode {
-    padding: var(--space-1) var(--space-3);
-    background: var(--color-bg);
-    border: none;
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.atf-mode:first-child {
-    border-radius: calc(var(--radius-md) - 2px) 0 0 calc(var(--radius-md) - 2px);
-}
-
-.atf-mode:last-child {
-    border-radius: 0 calc(var(--radius-md) - 2px) calc(var(--radius-md) - 2px) 0;
-}
-
-.atf-mode:hover {
-    color: var(--color-text);
-    background: var(--color-bg-subtle);
-}
-
-.atf-mode--active {
-    background: var(--color-accent);
-    color: var(--color-bg);
-}
-
-.atf-mode:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Knowledge Toggle Button */
-/* Knowledge toggle now uses .btn.btn--icon-only.btn--toggle from buttons.css */
-/* Positioning override for ATF header */
-.atf-viewer__header .btn.btn--toggle {
-    margin-left: auto;
-}
-
-/* ==========================================================================
-   Responsive
-   ========================================================================== */
-
-@media (max-width: 600px) {
-    .atf-tabs {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .atf-modes {
-        align-self: flex-end;
-    }
 }

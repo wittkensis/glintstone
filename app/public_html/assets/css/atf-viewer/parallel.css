@@ -1,23 +1,18 @@
 /**
- * ATF Viewer Parallel Mode
- * Purpose: Side-by-side parallel translation view
+ * ATF Viewer Translation Display
+ * Purpose: Side-by-side parallel translation view (always shown when available)
  * Used on: Tablet detail pages with ATF content and translations
  * Dependencies: core/tokens.css
  * JavaScript: assets/js/atf-viewer.js
- * Required classes for JS: .atf-viewer--mode-parallel
  */
 
 /* ==========================================================================
-   Parallel Translation Mode
+   Translation Display (Always Shown When Available)
    ========================================================================== */
 
-.atf-viewer--mode-parallel .atf-viewer__body {
+.atf-viewer--has-translation .atf-viewer__body {
     display: grid;
     grid-template-columns: 1fr 1fr;
-}
-
-.atf-viewer--mode-parallel .atf-dictionary {
-    display: none;
 }
 
 .atf-translation-column {
@@ -79,7 +74,7 @@
    ========================================================================== */
 
 @media (max-width: 900px) {
-    .atf-viewer--mode-parallel .atf-viewer__body {
+    .atf-viewer--has-translation .atf-viewer__body {
         grid-template-columns: 1fr;
         grid-template-rows: 1fr 1fr;
     }

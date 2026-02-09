@@ -8,28 +8,23 @@
    Tab Container
    ========================================================================== */
 
-.tabs-container {
-    max-width: 1400px;
-    margin: 0 auto;
-}
+/* .tabs-container {} */
 
 /* ==========================================================================
-   Tab Navigation Bar
+   Tab Navigation
    ========================================================================== */
 
 .tabs-nav {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
     border-bottom: 2px solid var(--color-border);
     margin-bottom: var(--space-6);
-    padding: 0 var(--space-2);
 }
 
 /* Tab Buttons */
 .tab-button {
     position: relative;
-    padding: var(--space-3) var(--space-6);
+    padding: var(--space-3);
     background: transparent;
     border: none;
     color: var(--color-text-muted);
@@ -42,6 +37,30 @@
     align-items: center;
     gap: var(--space-2);
     user-select: none;
+}
+
+.tabs-nav.tabs-nav-compact {
+    margin-top: 0;
+    margin-bottom: 0;
+    border-bottom-width: 0;
+}
+.tabs-nav.tabs-nav-compact .tab-button {
+    font-size: 0.8rem;
+    border-top-left-radius: var(--radius-sm);
+    border-top-right-radius: var(--radius-sm);
+    padding: var(--space-4) var(--space-4) var(--space-3) var(--space-4);
+}
+
+.tabs-nav.tabs-nav-compact .tab-button::after {
+    background: var(--color-bg-inset);
+}
+
+.tabs-nav.tabs-nav-compact .tab-button[aria-selected="true"] {
+    background: var(--color-bg-inset);
+    box-shadow: 0 2px 0px inset var(--color-border);
+}
+.tabs-nav.tabs-nav-compact .tab-button[aria-selected="false"]:hover::after {
+    display: none;
 }
 
 .tab-button:hover {
@@ -59,6 +78,7 @@
     color: var(--color-accent);
 }
 
+.tab-button[aria-selected="false"]:hover::after,
 .tab-button[aria-selected="true"]::after {
     content: '';
     position: absolute;
@@ -81,7 +101,7 @@
     color: var(--color-text-subtle);
     font-size: 0.75rem;
     font-weight: 600;
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-sm);
     transition: all var(--transition-normal);
 }
 
@@ -142,4 +162,56 @@
         min-width: 1rem;
         height: 1rem;
     }
+}
+
+/* ==========================================================================
+   Vertical Icon Tabs Modifier
+   For icon-only sidebar navigation
+   ========================================================================== */
+
+.tabs-nav--vertical-icons {
+    flex-direction: column;
+    border-bottom: none;
+    border-left: 1px solid var(--color-border);
+    margin-bottom: 0;
+    padding: var(--space-2) 0;
+    gap: var(--space-1);
+    width: 48px;
+    flex-shrink: 0;
+    background: var(--color-surface);
+    z-index: 100;
+}
+
+.tabs-nav--vertical-icons .tab-button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    margin: 0 auto;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+}
+
+.tabs-nav--vertical-icons .tab-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+.tabs-nav--vertical-icons .tab-button::after {
+    display: none;
+}
+
+.tabs-nav--vertical-icons .tab-button[aria-selected="true"] {
+    background: var(--color-bg-elevated);
+}
+
+.tabs-nav--vertical-icons .tab-button[aria-selected="true"]::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 24px;
+    background: var(--color-accent);
+    border-radius: 0 2px 2px 0;
 }

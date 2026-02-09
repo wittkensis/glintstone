@@ -6,14 +6,18 @@
  * Dependencies: core/tokens.css
  */
 
-.filtered-list-page {
-    min-height: 100vh;
+ /* TODO: Rename this to be "full-bleed" */
+.layout-two-column {
+    max-width: unset;
+    padding: 0;
     display: flex;
     flex-direction: column;
+    min-height: 100vh;
 }
 
 /* Remove max-width constraint and padding for full-bleed layout */
 .filtered-list-page .page-with-sidebar {
+    display: grid;
     max-width: none !important;
     padding: 0 !important;
     margin: 0 !important;
@@ -23,7 +27,8 @@
 }
 
 /* Full-height sidebar without padding */
-.filtered-list-page .filter-sidebar {
+/* TODO: Remove this; relocated to filters.css */
+/* .filtered-list-page .filter-sidebar {
     padding: 0 !important;
     margin: 0 !important;
     border-radius: 0 !important;
@@ -34,15 +39,11 @@
     max-height: calc(100vh - var(--site-header-height, 48px));
     background: var(--color-bg-elevated);
     height: calc(100vh - var(--site-header-height, 48px));
-}
-
-/* Add padding back to sidebar sections */
-.filtered-list-page .filter-sidebar > * {
-    padding: var(--space-4);
-}
+} */
 
 /* Remove padding from sections that manage their own spacing */
-.filtered-list-page .filter-sidebar > .filter-section {
+/* TODO: Remove this; relocated to filters.css */
+/* .filtered-list-page .filter-sidebar > .filter-section {
     padding: 0;
 }
 
@@ -58,7 +59,7 @@
 .filtered-list-page .filter-sidebar .filter-content {
     padding: var(--space-3) var(--space-4);
     padding-top: 0;
-}
+} */
 
 /* Always-visible sections */
 .filtered-list-page .filter-section.always-visible .filter-section-header {
@@ -67,7 +68,6 @@
 
 .filtered-list-page .filter-section.always-visible .filter-content {
     display: block !important;
-    padding-top: var(--space-3);
 }
 
 /* Main content area padding (since we removed it from page-with-sidebar) */

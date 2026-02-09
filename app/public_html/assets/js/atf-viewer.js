@@ -128,15 +128,9 @@ class ATFViewer {
             this.hasTranslation = false;
         }
 
-        // Update parallel mode button
-        const parallelBtn = this.container.querySelector('[data-mode="parallel"]');
-        if (parallelBtn) {
-            parallelBtn.disabled = !this.hasTranslation;
-            parallelBtn.title = this.hasTranslation ? '' : 'No translation available';
-        }
-
         // Hide the separate translation section if we have ATF viewer with translation
         if (this.hasTranslation) {
+            this.container.classList.add('atf-viewer--has-translation');
             const separateTranslationSection = document.querySelector('.translation-section');
             if (separateTranslationSection) {
                 separateTranslationSection.style.display = 'none';
@@ -332,7 +326,7 @@ class ATFViewer {
 
         // Update tab states
         this.container.querySelectorAll('.atf-tab').forEach((tab, i) => {
-            tab.classList.toggle('atf-tab--active', i === index);
+            tab.setAttribute('aria-selected', i === index);
         });
 
         // Re-render content
@@ -347,7 +341,7 @@ class ATFViewer {
         this.container.innerHTML = `
             <div class="atf-viewer__main">
                 <div class="atf-viewer__header">
-                    <button class="viewer-toggle" aria-label="Toggle viewer size" aria-expanded="false" title="Expand/collapse tablet image">
+                    <button class="btn btn--icon btn--toggle viewer-toggle" aria-label="Toggle viewer size" aria-expanded="false" title="Expand/collapse tablet image">
                         <svg class="viewer-toggle__icon-expand" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                             <path d="M12.9998 6L11.5898 7.41L16.1698 12L11.5898 16.59L12.9998 18L18.9998 12L12.9998 6Z"/>
                             <path d="M6.41 6L5 7.41L9.58 12L5 16.59L6.41 18L12.41 12L6.41 6Z"/>
@@ -357,20 +351,11 @@ class ATFViewer {
                             <path d="M17.5898 18L18.9998 16.59L14.4198 12L18.9998 7.41L17.5898 6L11.5898 12L17.5898 18Z"/>
                         </svg>
                     </button>
-                    <nav class="atf-tabs" role="tablist"></nav>
-                    <div class="atf-modes">
-                        <button class="atf-mode atf-mode--active" data-mode="interactive">Interactive</button>
-                        <button class="atf-mode" data-mode="raw">Raw</button>
-                        <button class="atf-mode" data-mode="parallel" disabled title="No translation available">+ Translation</button>
+                    <nav class="tabs-nav tabs-nav-compact atf-tabs" role="tablist"></nav>
+                    <div class="btn-group btn-group-stateful atf-modes">
+                        <button class="btn btn-group-item atf-mode atf-mode--active" data-mode="interactive">Interactive</button>
+                        <button class="btn btn-group-item atf-mode" data-mode="raw">Raw</button>
                     </div>
-                    <button class="btn btn--icon-only btn--toggle" aria-label="Toggle knowledge sidebar" aria-expanded="false" title="Open knowledge sidebar">
-                        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path d="M17.5 14.3301C15.8 14.3301 14.26 14.6201 13 15.1601V16.8201C14.13 16.1801 15.7 15.8301 17.5 15.8301C18.38 15.8301 19.23 15.9201 20 16.0901V14.5701C19.21 14.4101 18.36 14.3301 17.5 14.3301Z" fill="currentColor"/>
-                            <path d="M13 12.4902V14.1502C14.13 13.5102 15.7 13.1602 17.5 13.1602C18.38 13.1602 19.23 13.2502 20 13.4202V11.9002C19.21 11.7502 18.36 11.6602 17.5 11.6602C15.8 11.6602 14.26 11.9602 13 12.4902Z" fill="currentColor"/>
-                            <path d="M17.5 10.5C18.38 10.5 19.23 10.59 20 10.76V9.24C19.21 9.09 18.36 9 17.5 9C15.8 9 14.26 9.29 13 9.83V11.49C14.13 10.85 15.7 10.5 17.5 10.5Z" fill="currentColor"/>
-                            <path d="M21 5C19.89 4.65 18.67 4.5 17.5 4.5C15.55 4.5 13.45 4.9 12 6C10.55 4.9 8.45 4.5 6.5 4.5C4.55 4.5 2.45 4.9 1 6V21.5C2.45 20.4 4.55 20 6.5 20C8.45 20 10.55 20.4 12 21.5C13.45 20.4 15.55 20 17.5 20C18.67 20 19.89 20.15 21 20.5C21.75 20.75 22.4 21.05 23 21.5V6C22.4 5.55 21.75 5.25 21 5ZM21 18.5C19.9 18.15 18.7 18 17.5 18C15.8 18 13.35 18.65 12 19.5V8C13.35 7.15 15.8 6.5 17.5 6.5C18.7 6.5 19.9 6.65 21 7V18.5Z" fill="currentColor"/>
-                        </svg>
-                    </button>
                 </div>
                 <div class="atf-viewer__body">
                     <div class="atf-content"></div>
@@ -379,17 +364,39 @@ class ATFViewer {
                     <div class="atf-legend__items"></div>
                 </div>
             </div>
-            <aside class="atf-knowledge-sidebar atf-knowledge-sidebar--hidden">
-                <div class="atf-knowledge-sidebar__header">
-                    <nav class="knowledge-tabs" role="tablist">
-                        <button class="knowledge-tab knowledge-tab--active" data-tab="dictionary" role="tab" aria-selected="true">Dictionary</button>
-                        <button class="knowledge-tab" data-tab="research" role="tab" aria-selected="false">Research</button>
-                        <button class="knowledge-tab" data-tab="discussion" role="tab" aria-selected="false">Discussion</button>
-                        <button class="knowledge-tab" data-tab="context" role="tab" aria-selected="false">Context</button>
-                    </nav>
-                    <button class="atf-knowledge-sidebar__close" aria-label="Close">&times;</button>
-                </div>
-                <div class="atf-knowledge-sidebar__body">
+            <aside class="atf-knowledge-sidebar" data-state="closed">
+                <!-- Vertical Icon Bar -->
+                <nav class="tabs-nav tabs-nav--vertical-icons" role="tablist" aria-label="Knowledge panels">
+                    <button class="tab-button" data-tab="dictionary" role="tab" aria-selected="false" title="Dictionary">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M17.5 14.33C15.8 14.33 14.26 14.62 13 15.16V16.82C14.13 16.18 15.7 15.83 17.5 15.83C18.38 15.83 19.23 15.92 20 16.09V14.57C19.21 14.41 18.36 14.33 17.5 14.33Z"/>
+                            <path d="M13 12.49V14.15C14.13 13.51 15.7 13.16 17.5 13.16C18.38 13.16 19.23 13.25 20 13.42V11.9C19.21 11.75 18.36 11.66 17.5 11.66C15.8 11.66 14.26 11.96 13 12.49Z"/>
+                            <path d="M17.5 10.5C18.38 10.5 19.23 10.59 20 10.76V9.24C19.21 9.09 18.36 9 17.5 9C15.8 9 14.26 9.29 13 9.83V11.49C14.13 10.85 15.7 10.5 17.5 10.5Z"/>
+                            <path d="M21 5C19.89 4.65 18.67 4.5 17.5 4.5C15.55 4.5 13.45 4.9 12 6C10.55 4.9 8.45 4.5 6.5 4.5C4.55 4.5 2.45 4.9 1 6V21.5C2.45 20.4 4.55 20 6.5 20C8.45 20 10.55 20.4 12 21.5C13.45 20.4 15.55 20 17.5 20C18.67 20 19.89 20.15 21 20.5C21.75 20.75 22.4 21.05 23 21.5V6C22.4 5.55 21.75 5.25 21 5ZM21 18.5C19.9 18.15 18.7 18 17.5 18C15.8 18 13.35 18.65 12 19.5V8C13.35 7.15 15.8 6.5 17.5 6.5C18.7 6.5 19.9 6.65 21 7V18.5Z"/>
+                        </svg>
+                    </button>
+                    <button class="tab-button" data-tab="research" role="tab" aria-selected="false" title="Research">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18ZM12 3L1 9L12 15L21 10.09V17H23V9L12 3Z"/>
+                        </svg>
+                    </button>
+                    <button class="tab-button" data-tab="discussion" role="tab" aria-selected="false" title="Discussion">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M22 2H2.01L2 22L6 18H22V2ZM6 9H18V11H6V9ZM14 14H6V12H14V14ZM18 8H6V6H18V8Z"/>
+                        </svg>
+                    </button>
+                    <button class="tab-button" data-tab="context" role="tab" aria-selected="false" title="Context">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M11.99 2C6.47 2 2 6.48 2 12C2 17.52 6.47 22 11.99 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 11.99 2ZM18.92 8H15.97C15.65 6.75 15.19 5.55 14.59 4.44C16.43 5.07 17.96 6.35 18.92 8ZM12 4.04C12.83 5.24 13.48 6.57 13.91 8H10.09C10.52 6.57 11.17 5.24 12 4.04ZM4.26 14C4.1 13.36 4 12.69 4 12C4 11.31 4.1 10.64 4.26 10H7.64C7.56 10.66 7.5 11.32 7.5 12C7.5 12.68 7.56 13.34 7.64 14H4.26ZM5.08 16H8.03C8.35 17.25 8.81 18.45 9.41 19.56C7.57 18.93 6.04 17.66 5.08 16ZM8.03 8H5.08C6.04 6.34 7.57 5.07 9.41 4.44C8.81 5.55 8.35 6.75 8.03 8ZM12 19.96C11.17 18.76 10.52 17.43 10.09 16H13.91C13.48 17.43 12.83 18.76 12 19.96ZM14.34 14H9.66C9.57 13.34 9.5 12.68 9.5 12C9.5 11.32 9.57 10.65 9.66 10H14.34C14.43 10.65 14.5 11.32 14.5 12C14.5 12.68 14.43 13.34 14.34 14ZM14.59 19.56C15.19 18.45 15.65 17.25 15.97 16H18.92C17.96 17.65 16.43 18.93 14.59 19.56ZM16.36 14C16.44 13.34 16.5 12.68 16.5 12C16.5 11.32 16.44 10.66 16.36 10H19.74C19.9 10.64 20 11.31 20 12C20 12.69 19.9 13.36 19.74 14H16.36Z"/>
+                        </svg>
+                    </button>
+                </nav>
+                <!-- Sliding Content Panel -->
+                <div class="knowledge-content-panel">
+                    <div class="knowledge-content-panel__header">
+                        <span class="knowledge-content-panel__title">Dictionary</span>
+                    </div>
+                    <div class="knowledge-content-panel__body">
                     <!-- Dictionary Tab Content -->
                     <div class="knowledge-tab-content knowledge-tab-content--active" data-content="dictionary">
                         <!-- Browse Mode UI -->
@@ -458,7 +465,7 @@ class ATFViewer {
                                 <div class="dictionary-results__list"></div>
                                 <div class="dictionary-results__footer">
                                     <span class="dictionary-results__count">Loading...</span>
-                                    <button class="dictionary-results__load-more" style="display: none;">Load more</button>
+                                    <button class="btn btn-sm dictionary-results__load-more" style="display: none;">Load more</button>
                                 </div>
                             </div>
                         </div>
@@ -479,8 +486,8 @@ class ATFViewer {
                     <!-- Research Tab Content -->
                     <div class="knowledge-tab-content" data-content="research">
                         <div class="knowledge-tab-placeholder">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18ZM12 3L1 9L12 15L21 10.09V17H23V9L12 3Z"/>
                             </svg>
                             <h3>Research Notes</h3>
                             <p>Cross-references, parallel texts, and scholarly notes will appear here.</p>
@@ -489,8 +496,8 @@ class ATFViewer {
                     <!-- Discussion Tab Content -->
                     <div class="knowledge-tab-content" data-content="discussion">
                         <div class="knowledge-tab-placeholder">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M22 2H2.01L2 22L6 18H22V2ZM6 9H18V11H6V9ZM14 14H6V12H14V14ZM18 8H6V6H18V8Z"/>
                             </svg>
                             <h3>Discussion</h3>
                             <p>Community interpretations and scholarly discussions will appear here.</p>
@@ -499,13 +506,13 @@ class ATFViewer {
                     <!-- Context Tab Content -->
                     <div class="knowledge-tab-content" data-content="context">
                         <div class="knowledge-tab-placeholder">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M11.99 2C6.47 2 2 6.48 2 12C2 17.52 6.47 22 11.99 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 11.99 2ZM18.92 8H15.97C15.65 6.75 15.19 5.55 14.59 4.44C16.43 5.07 17.96 6.35 18.92 8ZM12 4.04C12.83 5.24 13.48 6.57 13.91 8H10.09C10.52 6.57 11.17 5.24 12 4.04ZM4.26 14C4.1 13.36 4 12.69 4 12C4 11.31 4.1 10.64 4.26 10H7.64C7.56 10.66 7.5 11.32 7.5 12C7.5 12.68 7.56 13.34 7.64 14H4.26ZM5.08 16H8.03C8.35 17.25 8.81 18.45 9.41 19.56C7.57 18.93 6.04 17.66 5.08 16ZM8.03 8H5.08C6.04 6.34 7.57 5.07 9.41 4.44C8.81 5.55 8.35 6.75 8.03 8ZM12 19.96C11.17 18.76 10.52 17.43 10.09 16H13.91C13.48 17.43 12.83 18.76 12 19.96ZM14.34 14H9.66C9.57 13.34 9.5 12.68 9.5 12C9.5 11.32 9.57 10.65 9.66 10H14.34C14.43 10.65 14.5 11.32 14.5 12C14.5 12.68 14.43 13.34 14.34 14ZM14.59 19.56C15.19 18.45 15.65 17.25 15.97 16H18.92C17.96 17.65 16.43 18.93 14.59 19.56ZM16.36 14C16.44 13.34 16.5 12.68 16.5 12C16.5 11.32 16.44 10.66 16.36 10H19.74C19.9 10.64 20 11.31 20 12C20 12.69 19.9 13.36 19.74 14H16.36Z"/>
                             </svg>
                             <h3>Historical Context</h3>
                             <p>Period information, archaeological context, and related materials will appear here.</p>
                         </div>
+                    </div>
                     </div>
                 </div>
             </aside>
@@ -516,19 +523,25 @@ class ATFViewer {
             btn.addEventListener('click', () => this.setMode(btn.dataset.mode));
         });
 
-        // Knowledge sidebar event listeners
-        this.container.querySelector('.atf-viewer__header .btn.btn--toggle').addEventListener('click', () => {
-            this.toggleKnowledgeSidebar();
-        });
-
-        this.container.querySelector('.atf-knowledge-sidebar__close').addEventListener('click', () => {
-            this.hideKnowledgeSidebar();
-        });
-
-        this.container.querySelectorAll('.knowledge-tab').forEach(btn => {
+        // Knowledge sidebar icon bar event listeners
+        this.container.querySelectorAll('.tabs-nav--vertical-icons .tab-button').forEach(btn => {
             btn.addEventListener('click', () => {
-                this.setActiveKnowledgeTab(btn.dataset.tab);
+                const tab = btn.dataset.tab;
+                if (this.activeKnowledgeTab === tab && this.knowledgeSidebarOpen) {
+                    // Clicking active tab closes sidebar
+                    this.hideKnowledgeSidebar();
+                } else {
+                    // Open sidebar to this tab
+                    this.showKnowledgeSidebar(tab);
+                }
             });
+        });
+
+        // Listen for tablet viewer state changes (mutual exclusivity)
+        document.addEventListener('tablet-viewer-state', (e) => {
+            if (e.detail.action === 'viewer-expanding' && this.knowledgeSidebarOpen) {
+                this.hideKnowledgeSidebar();
+            }
         });
 
         // Dictionary browse event listeners
@@ -584,12 +597,12 @@ class ATFViewer {
                 sum + col.lines.filter(l => l.type === 'content').length, 0);
 
             return `
-                <button class="atf-tab ${i === 0 ? 'atf-tab--active' : ''}"
+                <button class="tab-button atf-tab"
                         role="tab"
                         aria-selected="${i === 0}"
                         data-surface="${i}">
                     ${surface.label}
-                    <span class="atf-tab__count">${lineCount}</span>
+                    <span class="count-badge atf-tab__count">${lineCount}</span>
                 </button>
             `;
         }).join('');
@@ -661,8 +674,8 @@ class ATFViewer {
         // Add composite click handlers
         this.attachCompositeHandlers();
 
-        // Parallel mode: add translation column
-        if (this.mode === 'parallel' && this.hasTranslation) {
+        // Always show translation column when available
+        if (this.hasTranslation) {
             this.renderTranslationColumn(surface);
         }
 
@@ -771,7 +784,7 @@ class ATFViewer {
     }
 
     /**
-     * Render translation column for parallel mode
+     * Render translation column (always shown when available)
      * Shows full translation as a block since line-by-line matching is unreliable
      */
     renderTranslationColumn(surface) {
@@ -902,30 +915,34 @@ class ATFViewer {
      */
     showKnowledgeSidebar(tab = null, word = null, surfaceForm = null) {
         const sidebar = this.container.querySelector('.atf-knowledge-sidebar');
-        const toggleBtn = this.container.querySelector('.atf-viewer__header .btn.btn--toggle');
+        const tabToShow = tab || this.activeKnowledgeTab || 'dictionary';
 
-        // Show sidebar
-        sidebar.classList.remove('atf-knowledge-sidebar--hidden');
+        // Set data-state for CSS transitions
+        sidebar.dataset.state = 'open';
         this.knowledgeSidebarOpen = true;
 
-        // Update toggle button state
-        if (toggleBtn) {
-            toggleBtn.classList.add('btn--active');
-            toggleBtn.setAttribute('aria-expanded', 'true');
-        }
+        // Switch to the tab
+        this.setActiveKnowledgeTab(tabToShow);
 
-        // If tab specified, switch to it
-        if (tab) {
-            this.setActiveKnowledgeTab(tab);
+        // Update panel title
+        const titleEl = sidebar.querySelector('.knowledge-content-panel__title');
+        if (titleEl) {
+            titleEl.textContent = this.getTabTitle(tabToShow);
         }
 
         // Store surface form for use in dictionary display
         this.lastSurfaceForm = surfaceForm;
 
+        // Notify tablet viewer to collapse (mutual exclusivity)
+        this.container.dispatchEvent(new CustomEvent('knowledge-sidebar-state', {
+            bubbles: true,
+            detail: { action: 'knowledge-open' }
+        }));
+
         // If word provided and dictionary tab, load definition
-        if (word && (tab === 'dictionary' || this.activeKnowledgeTab === 'dictionary')) {
+        if (word && (tabToShow === 'dictionary')) {
             this.loadDictionaryContent(word);
-        } else if (!word && this.activeKnowledgeTab === 'dictionary') {
+        } else if (!word && tabToShow === 'dictionary') {
             // Initialize browse mode if opening dictionary tab without a word
             if (this.dictionaryResults.length === 0) {
                 this.setDictionaryMode('browse');
@@ -938,20 +955,34 @@ class ATFViewer {
     }
 
     /**
+     * Get human-readable tab title
+     * @param {string} tabName - Tab identifier
+     * @returns {string} Display title
+     */
+    getTabTitle(tabName) {
+        const titles = {
+            dictionary: 'Dictionary',
+            research: 'Research',
+            discussion: 'Discussion',
+            context: 'Context'
+        };
+        return titles[tabName] || tabName;
+    }
+
+    /**
      * Hide knowledge sidebar
      */
     hideKnowledgeSidebar() {
         const sidebar = this.container.querySelector('.atf-knowledge-sidebar');
-        const toggleBtn = this.container.querySelector('.atf-viewer__header .btn.btn--toggle');
 
-        sidebar.classList.add('atf-knowledge-sidebar--hidden');
+        // Set data-state for CSS transitions
+        sidebar.dataset.state = 'closed';
         this.knowledgeSidebarOpen = false;
 
-        // Update toggle button state
-        if (toggleBtn) {
-            toggleBtn.classList.remove('btn--active');
-            toggleBtn.setAttribute('aria-expanded', 'false');
-        }
+        // Clear all icon button selections
+        sidebar.querySelectorAll('.tabs-nav--vertical-icons .tab-button').forEach(btn => {
+            btn.setAttribute('aria-selected', 'false');
+        });
     }
 
     /**
@@ -971,14 +1002,11 @@ class ATFViewer {
      * @param {string} tabName - Tab to activate
      */
     setActiveKnowledgeTab(tabName) {
-        if (this.activeKnowledgeTab === tabName) return;
-
         const sidebar = this.container.querySelector('.atf-knowledge-sidebar');
 
-        // Update tab buttons
-        sidebar.querySelectorAll('.knowledge-tab').forEach(btn => {
+        // Update icon bar buttons
+        sidebar.querySelectorAll('.tabs-nav--vertical-icons .tab-button').forEach(btn => {
             const isActive = btn.dataset.tab === tabName;
-            btn.classList.toggle('knowledge-tab--active', isActive);
             btn.setAttribute('aria-selected', isActive);
         });
 
@@ -987,6 +1015,12 @@ class ATFViewer {
             const isActive = content.dataset.content === tabName;
             content.classList.toggle('knowledge-tab-content--active', isActive);
         });
+
+        // Update panel title
+        const titleEl = sidebar.querySelector('.knowledge-content-panel__title');
+        if (titleEl) {
+            titleEl.textContent = this.getTabTitle(tabName);
+        }
 
         this.activeKnowledgeTab = tabName;
     }
@@ -1217,7 +1251,7 @@ class ATFViewer {
                 <div class="dictionary-results__item" data-entry-id="${entry.entry_id}">
                     <div class="dictionary-results__item-headword">${mainText}</div>
                     <div class="dictionary-results__item-meta">
-                        ${guideWord} · ${pos} · ${language} · ${icount.toLocaleString()} occurrences
+                        ${language} · ${guideWord} · ${pos} · ${icount.toLocaleString()} occurrences
                     </div>
                 </div>
             `;

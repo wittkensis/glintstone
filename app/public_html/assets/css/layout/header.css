@@ -9,7 +9,7 @@
    ========================================================================== */
 
 .site-header {
-    background: var(--folk-charcoal);
+    background: rgba(var(--color-bg-inset-rgb),0.8);
     border-bottom: 1px solid rgba(139, 126, 106, 0.2);
     position: sticky;
     top: 0;
@@ -71,7 +71,7 @@
     font-weight: 500;
     letter-spacing: 0.03rem;
     transition: all var(--transition-normal);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
 }
 
 .nav-link:hover {
@@ -80,72 +80,8 @@
 }
 
 .nav-link.active {
-    color: var(--folk-cream);
-    background: rgba(139, 126, 106, 0.15);
-}
-
-.nav-link.active::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--folk-sand);
-}
-
-/* Search */
-.header-search {
-    position: relative;
-    width: 100%;
-    max-width: 500px;
-    justify-self: center;
-}
-
-.header-search form {
-    position: relative;
-}
-
-.search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--folk-stone);
-    pointer-events: none;
-    opacity: 0.6;
-    transition: opacity var(--transition-fast);
-    width: 14px;
-    height: 14px;
-}
-
-.header-search input {
-    width: 100%;
-    padding: 8px 14px 8px 36px;
-    background: rgba(139, 126, 106, 0.08);
-    border: 1px solid rgba(139, 126, 106, 0.2);
-    border-radius: var(--radius-md);
-    color: var(--folk-cream);
-    font-size: 0.875rem;
-    font-weight: 400;
-    transition: all var(--transition-normal);
-}
-
-.header-search input::placeholder {
-    color: var(--folk-stone);
-    opacity: 0.6;
-}
-
-.header-search input:focus {
-    outline: none;
-    background: rgba(139, 126, 106, 0.12);
-    border-color: var(--folk-sand);
-    box-shadow: 0 0 0 2px rgba(232, 220, 200, 0.08);
-}
-
-.header-search input:focus + .search-icon,
-.header-search input:not(:placeholder-shown) + .search-icon {
-    opacity: 0.9;
+    color: var(--folk-sand);
+    background: var(--color-bg);
 }
 
 /* ==========================================================================

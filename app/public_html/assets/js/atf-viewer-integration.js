@@ -49,7 +49,7 @@
 
         try {
             // Fetch from glossary API (existing endpoint)
-            const response = await fetch(`/api/glossary.php?lookup=${encodeURIComponent(word)}`);
+            const response = await fetch(`/api/glossary.php?q=${encodeURIComponent(word)}`);
             if (!response.ok) throw new Error('API error');
 
             const data = await response.json();

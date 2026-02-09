@@ -20,7 +20,7 @@
 }
 
 /* Pipeline Segment */
-.pipeline-segment {
+.pipeline-track .pipeline-segment {
     flex: 1;
     min-width: 0;
     display: flex;
@@ -28,7 +28,7 @@
     border-right: 1px solid var(--color-border);
 }
 
-.pipeline-segment:last-child {
+.pipeline-track .pipeline-segment:last-child {
     border-right: none;
 }
 

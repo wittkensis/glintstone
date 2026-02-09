@@ -213,6 +213,7 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <!-- Filter Components -->
+<link rel="stylesheet" href="/assets/css/layout/page-header.css">
 <link rel="stylesheet" href="/assets/css/layout/filtered-list.css">
 <link rel="stylesheet" href="/assets/css/components/chevron-filter.css">
 <link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
@@ -220,7 +221,7 @@ require_once __DIR__ . '/../includes/header.php';
 <link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
 <link rel="stylesheet" href="/assets/css/components/pagination.css">
 
-<main class="filtered-list-page">
+<main class="layout-two-column filtered-list-page">
 <div class="page-with-sidebar">
     <?php
     // Set up filter sidebar variables
@@ -233,10 +234,14 @@ require_once __DIR__ . '/../includes/header.php';
 
     <div class="main-content">
         <div class="page-header">
-            <h1>Tablets</h1>
-            <p class="subtitle">
-                Showing <?= number_format($totalCount) ?> tablets
-            </p>
+            <div class="page-header-main">
+                <div class="page-header-title">
+                    <h1>Tablets</h1>
+                    <p class="subtitle">
+                        Showing <?= number_format($totalCount) ?> tablets
+                    </p>
+                </div>
+            </div>
         </div>
 
         <?php

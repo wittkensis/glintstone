@@ -8,46 +8,200 @@
  */
 
 /* ==========================================================================
-   Word Elements
+   State Markers ("$ beginning", "$ rest", etc)
+   ========================================================================== */
+
+.atf-state {
+    color: var(--color-text-subtle);
+    font-style: italic;
+    padding: var(--space-2) 0;
+    padding-left: 36px;
+    font-size: 0.85em;
+}
+
+
+/* ==========================================================================
+   Lines
+   ========================================================================== */
+
+.atf-line,
+.atf-line__content {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    font-size: 0.8rem;
+}
+
+.atf-line {
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) 0;
+}
+
+.atf-line:hover {
+    background: var(--color-bg);
+}
+
+.atf-line__number {
+    width: 36px;
+    flex-shrink: 0;
+    color: var(--color-text-subtle);
+    text-align: right;
+    padding-right: var(--space-3);
+    user-select: none;
+}
+
+.atf-line__number--prime::after {
+    content: "'";
+}
+
+.atf-line__content {
+    min-width: 0;
+}
+
+/* Inline translations (from #tr.XX: in ATF) */
+.atf-line__translation {
+    margin-left: 36px;
+    margin-top: 2px;
+    margin-bottom: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    background: var(--color-bg);
+    border-left: 2px solid var(--color-accent-muted);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    font-style: italic;
+    font-family: var(--font-sans);
+}
+
+/* ==========================================================================
+   Composites
+   ========================================================================== */
+
+.atf-composite {
+    display: block;
+    margin-left: 36px;
+    margin-top: -4px;
+    margin-bottom: var(--space-2);
+    color: var(--color-text-subtle);
+    font-size: 0.7rem;
+    opacity: 0.8;
+    cursor: default;
+}
+
+.atf-composite svg {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+/* Broken text */
+.atf-broken {
+    color: var(--color-text-subtle);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   ATF Word Interaction
+
+   STRUCTURE
+   .atf-word
+   [.atf-word--uncertain, .atf-word--has-definition, .atf-word--no-definition]
+       .atf-word__text
+       .atf-word__gloss
    ========================================================================== */
 
 .atf-word {
     cursor: pointer;
+    display: inline-flex;
     border-radius: 2px;
-    padding: 0 1px;
-    transition: background-color var(--transition-fast), color var(--transition-fast);
+    padding: 2px 4px 4px 4px;
     font-weight: normal;
+    color: var(--color-accent);
 }
+
 
 .atf-word:hover {
-    background: var(--color-surface);
-}
-
-/* Words with definitions */
-.atf-word--has-definition {
-    color: var(--color-accent);
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-underline-offset: 3px;
-}
-
-.atf-word--has-definition:hover {
     background: var(--color-accent);
-    color: var(--color-bg);
     text-decoration: none;
 }
 
-/* Words without definitions */
-.atf-word--no-definition {
-    color: var(--color-text-muted);
+.atf-word:hover,
+.atf-word:hover .atf-word__text .atf-markers,
+.atf-word:hover .atf-word__gloss {
+    color: var(--color-bg);
 }
 
-.atf-word--no-definition:hover {
-    background: var(--color-surface);
-    color: var(--color-text);
+.atf-word.atf-word--has-definition .atf-word__text,
+.atf-word.atf-word--no-definition {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 4px;
 }
 
-/* Determinatives */
+.atf-word.atf-word--no-definition {
+    text-decoration-color: var(--color-text-subtle);
+}
+
+/* ==========================================================================
+   Interlinear Glossing
+   ========================================================================== */
+
+.atf-word--glossed {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: baseline;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    /* margin: 0 2px; */
+}
+
+.atf-word .atf-word__text {
+    display: inline-block;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+
+.atf-word .atf-word__gloss {
+    display: block;
+    font-size: 0.7em;
+    line-height: 1.3;
+    color: var(--color-text-subtle);
+    font-family: var(--font-sans);
+    font-style: normal;
+    font-weight: 400;
+    white-space: nowrap;
+    user-select: none;
+    letter-spacing: 0.01em;
+    transition: all 0.15s ease;
+}
+
+/* ==========================================================================
+   Damage Indicators (Superscript)
+   ========================================================================== */
+
+.atf-word .atf-word__text .atf-markers {
+    font-size: 0.7em;
+    line-height: 0;
+    margin-left: 1px;
+}
+
+/* .atf-word--damaged .atf-word__text .atf-markers,
+.atf-word--uncertain .atf-word__text .atf-markers {
+    color: var(--color-warning);
+}
+
+.atf-word--corrected .atf-markers {
+    color: var(--color-success);
+} */
+
+/* ==========================================================================
+   Determinatives
+   ========================================================================== */
+
 .atf-det {
     font-size: 0.7em;
     vertical-align: super;
@@ -75,141 +229,12 @@
     margin-right: 0;
 }
 
-/* Logograms */
+/* ==========================================================================
+   Logograms
+   ========================================================================== */
+
 .atf-logo {
     font-weight: 500;
     letter-spacing: 0.02em;
     color: var(--color-text);
-}
-
-/* Damage indicators */
-.atf-word--damaged::after {
-    content: '#';
-    color: var(--color-warning);
-    font-size: 0.7em;
-    vertical-align: super;
-    line-height: 0;
-}
-
-.atf-word--uncertain::after {
-    content: '?';
-    color: var(--color-warning);
-    font-size: 0.7em;
-    vertical-align: super;
-    line-height: 0;
-}
-
-.atf-word--corrected::after {
-    content: '!';
-    color: var(--color-success);
-    font-size: 0.7em;
-    vertical-align: super;
-    line-height: 0;
-}
-
-/* ==========================================================================
-   Interlinear Glossing
-   ========================================================================== */
-
-.atf-word--glossed {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    vertical-align: baseline;
-    position: relative;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    padding: 0 2px;
-    margin: 0 1px;
-    border-radius: 2px;
-}
-
-.atf-word__text {
-    display: inline-block;
-    font-weight: 500;
-    color: var(--color-text);
-    transition: all 0.15s ease;
-}
-
-.atf-word__gloss {
-    display: block;
-    font-size: 0.7em;
-    line-height: 1.3;
-    color: var(--color-text-subtle);
-    font-family: var(--font-sans);
-    font-style: normal;
-    font-weight: 400;
-    margin-top: 1px;
-    padding: 1px 4px;
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 2px;
-    white-space: nowrap;
-    user-select: none;
-    letter-spacing: 0.01em;
-    transition: all 0.15s ease;
-}
-
-/* Hover state - entire unit is interactive */
-.atf-word--glossed:hover {
-    background: rgba(0, 0, 0, 0.02);
-}
-
-.atf-word--glossed:hover .atf-word__text {
-    color: var(--color-text);
-}
-
-.atf-word--glossed:hover .atf-word__gloss {
-    color: var(--color-text);
-    background: rgba(0, 0, 0, 0.08);
-}
-
-/* Enhanced styling for words with dictionary definitions */
-.atf-word--has-definition.atf-word--glossed .atf-word__text {
-    color: var(--color-accent);
-    text-decoration: none;
-}
-
-.atf-word--has-definition.atf-word--glossed .atf-word__gloss {
-    color: var(--color-accent-muted);
-    background: rgba(var(--color-accent-rgb, 100, 150, 200), 0.08);
-}
-
-.atf-word--has-definition.atf-word--glossed:hover .atf-word__text {
-    background: var(--color-accent);
-    color: var(--color-bg);
-    padding: 1px 3px;
-    border-radius: 2px;
-}
-
-.atf-word--has-definition.atf-word--glossed:hover .atf-word__gloss {
-    color: var(--color-accent);
-    background: rgba(var(--color-accent-rgb, 100, 150, 200), 0.15);
-    font-weight: 500;
-}
-
-/* Increased line height to accommodate glosses */
-.atf-line__content {
-    line-height: 2.4;
-}
-
-/* Adjust determinative positioning with glosses */
-.atf-word--glossed .atf-det {
-    position: relative;
-    top: -0.3em;
-}
-
-/* Hide glosses in raw mode */
-.atf-viewer--mode-raw .atf-word__gloss {
-    display: none;
-}
-
-/* Smaller glosses in parallel mode */
-.atf-viewer--mode-parallel .atf-word__gloss {
-    font-size: 0.6em;
-}
-
-/* Broken text */
-.atf-broken {
-    color: var(--color-text-subtle);
-    font-style: italic;
 }

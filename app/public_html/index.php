@@ -42,53 +42,7 @@ require_once __DIR__ . '/includes/header.php';
         <?php if (!empty($featuredCollections)): ?>
         <div class="collection-grid">
             <?php foreach ($featuredCollections as $collection): ?>
-            <a href="/collections/detail.php?id=<?= $collection['collection_id'] ?>" class="collection-card">
-                <!-- 2x2 Preview Grid -->
-                <div class="collection-cover">
-                    <?php
-                    $displayedThumbs = 0;
-                    foreach ($collection['preview_tablets'] as $tablet):
-                        $displayedThumbs++;
-                    ?>
-                        <div class="cover-thumb">
-                            <img src="/api/thumbnail.php?p=<?= urlencode($tablet['p_number']) ?>&size=100"
-                                 alt="<?= htmlspecialchars($tablet['designation'] ?? $tablet['p_number']) ?>"
-                                 loading="lazy"
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div class="cover-thumb__fallback" style="display:none;">
-                                <span class="cuneiform-icon">𒀭</span>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-
-                    <?php
-                    // Fill empty slots with fallback icon
-                    $emptySlots = 4 - $displayedThumbs;
-                    for ($i = 0; $i < $emptySlots; $i++):
-                    ?>
-                        <div class="cover-thumb empty">
-                            <span class="cuneiform-icon">𒀭</span>
-                        </div>
-                    <?php endfor; ?>
-                </div>
-
-                <!-- Collection Metadata -->
-                <div class="collection-meta">
-                    <h3 class="collection-name"><?= htmlspecialchars($collection['name']) ?></h3>
-                    <?php if (!empty($collection['description'])): ?>
-                        <p class="collection-description">
-                            <?= htmlspecialchars(mb_substr($collection['description'], 0, 120)) ?>
-                            <?= mb_strlen($collection['description']) > 120 ? '...' : '' ?>
-                        </p>
-                    <?php endif; ?>
-                    <div class="collection-stats">
-                        <span class="stat">
-                            <?= number_format($collection['tablet_count']) ?>
-                            <?= $collection['tablet_count'] === 1 ? 'tablet' : 'tablets' ?>
-                        </span>
-                    </div>
-                </div>
-            </a>
+                <?php include __DIR__ . '/includes/components/collection-card.php'; ?>
             <?php endforeach; ?>
         </div>
         <?php else: ?>

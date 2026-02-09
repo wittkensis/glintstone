@@ -40,6 +40,7 @@ $api_url = '/api/dictionary/signs-browse.php?' . http_build_query(array_filter($
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Library - Cuneiform Dictionary</title>
     <link rel="stylesheet" href="/assets/css/layout/site.css">
+    <link rel="stylesheet" href="/assets/css/layout/page-header.css">
     <link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
     <link rel="stylesheet" href="/assets/css/components/sign-grid.css">
     <link rel="stylesheet" href="/assets/css/components/educational-help.css">
@@ -115,12 +116,16 @@ $api_url = '/api/dictionary/signs-browse.php?' . http_build_query(array_filter($
 
         <!-- Main Content -->
         <main class="dictionary-main">
-            <header class="dictionary-header">
-                <h1>Sign Library</h1>
-                <p class="dictionary-description">
-                    Browse 3,300+ cuneiform signs with their values and usage
-                </p>
-            </header>
+            <div class="page-header">
+                <div class="page-header-main">
+                    <div class="page-header-title">
+                        <h1>Sign Library</h1>
+                        <p class="subtitle">
+                            Browse 3,300+ cuneiform signs with their values and usage
+                        </p>
+                    </div>
+                </div>
+            </div>
 
             <!-- Results will be loaded via JavaScript -->
             <div id="signs-results-container">

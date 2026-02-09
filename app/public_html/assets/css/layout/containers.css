@@ -8,6 +8,7 @@
    Main Content Container
    ========================================================================== */
 
+body > main,
 .container {
     max-width: var(--container-base);
     margin: 0 auto;

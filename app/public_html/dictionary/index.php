@@ -101,6 +101,7 @@ $total_pages = ceil($total / $per_page);
 ?>
 
 <!-- Filter Components -->
+<link rel="stylesheet" href="/assets/css/layout/page-header.css">
 <link rel="stylesheet" href="/assets/css/layout/filtered-list.css">
 <link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
 <link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
@@ -108,14 +109,14 @@ $total_pages = ceil($total / $per_page);
 <link rel="stylesheet" href="/assets/css/components/dictionary-browser.css">
 <link rel="stylesheet" href="/assets/css/components/educational-help.css">
 
-<main class="filtered-list-page">
+<main class="layout-two-column filtered-list-page">
 <div class="page-with-sidebar">
     <!-- Filter Sidebar -->
     <aside class="filter-sidebar">
             <div class="filter-header">
                 <h2>Filters</h2>
                 <?php if (!empty(array_filter([$search, $language, $pos, $min_freq]))): ?>
-                    <a href="/dictionary/" class="clear-filters">Clear all</a>
+                    <a href="/dictionary/" class="btn btn-sm clear-filters">Reset</a>
                 <?php endif; ?>
             </div>
 
@@ -192,16 +193,20 @@ $total_pages = ceil($total / $per_page);
                     </select>
                 </div>
 
-                <button type="submit" class="filter-apply">Apply Filters</button>
+                <button type="submit" class="btn filter-apply">Apply Filters</button>
             </form>
         </aside>
 
     <div class="main-content">
         <div class="page-header">
-            <h1>Dictionary</h1>
-            <p class="subtitle">
-                Showing <?= number_format($offset + 1) ?>-<?= number_format(min($offset + $per_page, $total)) ?> of <?= number_format($total) ?> words
-            </p>
+            <div class="page-header-main">
+                <div class="page-header-title">
+                    <h1>Dictionary</h1>
+                    <p class="subtitle">
+                        Showing <?= number_format($offset + 1) ?>-<?= number_format(min($offset + $per_page, $total)) ?> of <?= number_format($total) ?> words
+                    </p>
+                </div>
+            </div>
         </div>
 
         <!-- Results Grid -->

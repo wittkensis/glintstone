@@ -7,20 +7,29 @@
  * Required classes for JS: .filter-section-header, .filter-toggle, .filter-option, .filter-group-header
  */
 
+ /* ==========================================================================
+   Filter Container
+   ========================================================================== */
+
 /* Filter Sidebar Container */
 .filter-sidebar {
     background: var(--color-bg-elevated);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border);
     padding: var(--space-4);
+    margin: 0;
     height: fit-content;
     position: sticky;
-    top: calc(80px + var(--space-4));
-    max-height: calc(100vh - 100px);
+    top: var(--site-header-height, 48px);
+    height: calc(100vh - var(--site-header-height, 48px));
+    max-height: calc(100vh - var(--site-header-height, 48px));
     overflow-y: auto;
+
 }
 
-/* Filter Header */
+/* ==========================================================================
+   Filter Header
+   TODO: Is filter-header deprecated?
+   ========================================================================== */
+
 .filter-header {
     display: flex;
     justify-content: space-between;
@@ -37,19 +46,28 @@
     color: var(--color-text);
 }
 
-.clear-all {
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
+/* ==========================================================================
+   Filter Search Layout
+   ========================================================================== */
+
+.filter-sidebar .search-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+.filter-sidebar .search-input-wrapper {
+    display: flex;
+    gap: var(--space-2);
 }
 
-.clear-all:hover {
-    color: var(--color-accent);
+.search-input {
+    flex: 1;
 }
 
-/* Filter Sections */
-.filter-section {
-    margin-bottom: var(--space-2);
-}
+/* ==========================================================================
+   Filter Sections
+   ========================================================================== */
+
 
 .filter-section-header {
     display: flex;
@@ -85,7 +103,10 @@
     display: none;
 }
 
-/* Filter Groups (within sections) */
+/* ==========================================================================
+   Filter Groups
+   ========================================================================== */
+
 .filter-group {
     margin-bottom: var(--space-1);
 }
@@ -140,27 +161,6 @@
     transform: rotate(45deg);
 }
 
-/* Filter Options */
-.filter-option {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-1) 0;
-    cursor: pointer;
-    font-size: 0.8rem;
-    color: var(--color-text);
-}
-
-.filter-option:hover {
-    color: var(--color-accent);
-}
-
-.filter-option input[type="checkbox"],
-.filter-option input[type="radio"] {
-    accent-color: var(--color-accent);
-    cursor: pointer;
-}
-
 .option-label {
     flex: 1;
     overflow: hidden;
@@ -173,7 +173,11 @@
     font-size: 0.7rem;
 }
 
-/* Filter Subsection (for grouped options like Text Digitization) */
+/* ==========================================================================
+   Subsections
+   (for grouped options like Text Digitization)
+   ========================================================================== */
+
 .filter-subsection {
     margin-top: var(--space-3);
     padding-top: var(--space-3);
@@ -190,90 +194,14 @@
     margin-bottom: var(--space-2);
 }
 
-/* Show More Button */
-.show-more {
-    display: block;
-    width: 100%;
-    padding: var(--space-2);
-    margin-top: var(--space-2);
-    background: none;
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-sm);
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-    cursor: pointer;
-    text-align: center;
-}
-
-.show-more:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-}
-
+/* Show More */
 .more-items[hidden] {
     display: none;
 }
 
-/* Search Filter Styles */
-.search-form {
-    width: 100%;
-}
-
-.search-input-wrapper {
-    display: flex;
-    gap: var(--space-2);
-    margin-bottom: var(--space-2);
-}
-
-.search-input {
-    flex: 1;
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-bg-subtle);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    font-size: 0.875rem;
-    font-family: inherit;
-    transition: all 0.2s;
-}
-
-.search-input:focus {
-    outline: none;
-    border-color: var(--color-accent);
-    background: var(--color-surface);
-}
-
-.search-input::placeholder {
-    color: var(--color-text-subtle);
-}
-
-.search-submit {
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-accent);
-    border: none;
-    border-radius: var(--radius-md);
-    color: var(--color-bg);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.search-submit:hover {
-    background: var(--color-accent-hover, var(--color-accent));
-    filter: brightness(1.1);
-}
-
-.search-submit:active {
-    transform: scale(0.98);
-}
-
-.search-help {
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--color-text-subtle);
-    line-height: 1.4;
-}
+/* ==========================================================================
+   Modifier: "Always Visible" (no collapse/expand)
+   ========================================================================== */
 
 /* Always-visible filter sections (used with $alwaysShowSearch in filter-sidebar.php) */
 .filter-section.always-visible .filter-section-header {
@@ -285,8 +213,12 @@
     padding-top: 0;
 }
 
-/* Scrollbar styling for filter sidebar */
-.filter-sidebar::-webkit-scrollbar,
+/* ==========================================================================
+   Scrollbar Styling
+   TODO: Generalize this as an overall scrollbar style
+   ========================================================================== */
+
+   .filter-sidebar::-webkit-scrollbar,
 .filter-group-content::-webkit-scrollbar {
     width: 6px;
 }
@@ -305,4 +237,44 @@
 .filter-sidebar::-webkit-scrollbar-thumb:hover,
 .filter-group-content::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-subtle);
+}
+
+/* ==========================================================================
+   Filter Chips
+   ========================================================================== */
+
+/* Active Filters Container */
+.active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+/* Filter Chip */
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-accent-muted);
+    color: var(--color-text);
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    transition: background 0.2s;
+}
+
+.filter-chip:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.chip-remove {
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.filter-chip:hover .chip-remove {
+    opacity: 1;
 }

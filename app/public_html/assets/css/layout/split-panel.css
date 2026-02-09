@@ -6,6 +6,8 @@
  * Dependencies: core/tokens.css
  */
 
+/* TODO: Move to tablet folder */
+
 /* ==========================================================================
    Full-Page Split-Panel Layout
    ========================================================================== */
@@ -49,6 +51,7 @@ body:has(.tablet-detail-page) {
     max-width: var(--container-base);
     width: 100%;
     margin: var(--space-2) auto;
+    padding: 0 var(--space-4);
 }
 
 /* Full-page viewer fills remaining grid space */
@@ -74,6 +77,10 @@ body:has(.tablet-detail-page) {
     flex: 1;
     position: relative;
 }
+
+/* ==========================================================================
+   Tablet Viewer Panel
+   ========================================================================== */
 
 /* Viewer panel - dynamic width based on state */
 .viewer-panel {
@@ -143,6 +150,10 @@ body:has(.tablet-detail-page) {
     pointer-events: auto; /* Re-enable interactions in expanded state */
 }
 
+/* ==========================================================================
+   Tablet Viewer Zoombox
+   ========================================================================== */
+
 /* Zoombox fills available space */
 .tablet-detail-viewer .zoombox {
     flex: 1;
@@ -155,21 +166,6 @@ body:has(.tablet-detail-page) {
     flex: 1;
     border-radius: 0;
     background: #000;
-}
-
-/* Image source/options positioning */
-.tablet-detail-viewer .image-source,
-.tablet-detail-viewer .image-options {
-    flex-shrink: 0;
-    padding: var(--space-2) var(--space-4);
-}
-
-/* Hide image source/options in both collapsed and expanded states */
-.tablet-detail-viewer[data-state="collapsed"] .image-source,
-.tablet-detail-viewer[data-state="collapsed"] .image-options,
-.tablet-detail-viewer[data-state="expanded"] .image-source,
-.tablet-detail-viewer[data-state="expanded"] .image-options {
-    display: none;
 }
 
 /* Hide zoombox controls and minimap in collapsed state */
@@ -188,6 +184,10 @@ body:has(.tablet-detail-page) {
     width: 100%;
     height: 100%;
 }
+
+/* ==========================================================================
+   Tablet Viewer Toggle
+   ========================================================================== */
 
 /* Icon toggle based on viewer state - now controlled via data attribute on viewer container */
 .viewer-toggle__icon-expand,
@@ -217,6 +217,10 @@ body:has(.tablet-detail-page) {
     display: block;
 }
 
+/* ==========================================================================
+   ATF Viewer
+   ========================================================================== */
+
 /* ATF panel fills remaining space */
 .atf-panel {
     flex: 1;
@@ -227,50 +231,6 @@ body:has(.tablet-detail-page) {
     background: #0f0f0f; /* Much darker than var(--color-bg) #1a1a1a */
     overflow: hidden;
     position: relative;
-}
-
-/* Standalone viewer toggle (for tablets without ATF) */
-.atf-panel > .viewer-toggle {
-    position: absolute;
-    top: var(--space-3);
-    left: var(--space-3);
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    color: var(--color-text);
-    cursor: pointer;
-    pointer-events: auto;
-    transition: background-color 0.2s, border-color 0.2s;
-}
-
-/* Hide standalone toggle when ATF viewer is present */
-.atf-panel:has(.atf-viewer) > .viewer-toggle {
-    display: none;
-}
-
-.atf-panel > .viewer-toggle:hover {
-    background: var(--color-surface);
-    border-color: var(--color-border-hover);
-}
-
-.atf-panel > .viewer-toggle .viewer-toggle__icon-expand,
-.atf-panel > .viewer-toggle .viewer-toggle__icon-collapse {
-    display: none;
-}
-
-.tablet-detail-viewer[data-state="collapsed"] .atf-panel > .viewer-toggle .viewer-toggle__icon-expand {
-    display: block;
-}
-
-.tablet-detail-viewer[data-state="expanded"] .atf-panel > .viewer-toggle .viewer-toggle__icon-collapse {
-    display: block;
 }
 
 /* ATF viewer fills panel */
@@ -295,7 +255,39 @@ body:has(.tablet-detail-page) {
     background: #0f0f0f;
 }
 
-/* Dictionary/Composite panels - adjust for dark bg */
+/* ==========================================================================
+   ATF Viewer – Tablet Viewer Toggle
+   ========================================================================== */
+
+.atf-panel > .viewer-toggle {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    z-index: 100;
+}
+
+/* Hide standalone toggle when ATF viewer is present */
+.atf-panel:has(.atf-viewer) > .viewer-toggle {
+    display: none;
+}
+
+.atf-panel > .viewer-toggle .viewer-toggle__icon-expand,
+.atf-panel > .viewer-toggle .viewer-toggle__icon-collapse {
+    display: none;
+}
+
+.tablet-detail-viewer[data-state="collapsed"] .atf-panel > .viewer-toggle .viewer-toggle__icon-expand {
+    display: block;
+}
+
+.tablet-detail-viewer[data-state="expanded"] .atf-panel > .viewer-toggle .viewer-toggle__icon-collapse {
+    display: block;
+}
+
+/* ==========================================================================
+   Knowledge Sidebar
+   ========================================================================== */
+
 .atf-panel .atf-dictionary {
     background: #141414;
     border-left: 1px solid #202020;
@@ -324,6 +316,10 @@ body:has(.tablet-detail-page) {
         border-top: 1px solid var(--color-border);
     }
 }
+
+/* ==========================================================================
+   Knowledge Sidebar
+   ========================================================================== */
 
 /* Print: Restore contained layout */
 @media print {

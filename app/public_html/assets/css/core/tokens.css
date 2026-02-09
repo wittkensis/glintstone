@@ -18,6 +18,8 @@
 
     /* Background colors - Dark theme base */
     --color-bg: #1a1a1a;                /* Main background */
+    --color-bg-inset: #0a0a0a;          /* Inputs, high contrast surfaces */
+      --color-bg-inset-rgb: 10, 10, 10;
     --color-bg-elevated: #242424;       /* Cards, elevated surfaces */
     --color-bg-subtle: #2a2a2a;         /* Subtle backgrounds */
     --color-surface: #303030;           /* Interactive surfaces */
@@ -37,12 +39,16 @@
     --color-success: #6b8e6b;           /* Success states */
     --color-warning: #c9a962;           /* Warning states */
     --color-error: #b85c5c;             /* Error states */
+    --color-pipeline-complete: var(--color-success);
+    --color-pipeline-incomplete: var(--color-warning);
 
 
     /* ==========================================================================
        Colors - Folk Palette Aliases
        Maps to existing color system for backwards compatibility
        ========================================================================== */
+
+   /* TODO: Replace and remove these */
 
     --folk-charcoal: var(--color-bg-elevated);  /* #242424 */
     --folk-cream: var(--color-text);            /* #e8e6e3 */

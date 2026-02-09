@@ -235,6 +235,28 @@ function setupViewerToggle() {
         const initialState = viewerContainer.dataset.state || 'collapsed';
         viewerToggle.setAttribute('aria-expanded', initialState === 'expanded');
 
+        // Listen for knowledge sidebar state changes (mutual exclusivity)
+        document.addEventListener('knowledge-sidebar-state', (e) => {
+            if (e.detail.action === 'knowledge-open' && viewerContainer.dataset.state === 'expanded') {
+                // Collapse viewer when knowledge sidebar opens
+                viewerContainer.dataset.state = 'collapsed';
+                viewerToggle.setAttribute('aria-expanded', 'false');
+                zoomControls?.classList.remove('is-visible');
+                minimapContainer?.classList.remove('is-visible');
+
+                // Update zoom after transition
+                const handleCollapseEnd = (ev) => {
+                    if (ev.propertyName === 'width' && ev.target === viewerPanel) {
+                        if (TabletPage.zoombox) {
+                            TabletPage.zoombox.resetZoom();
+                        }
+                        viewerPanel.removeEventListener('transitionend', handleCollapseEnd);
+                    }
+                };
+                viewerPanel.addEventListener('transitionend', handleCollapseEnd);
+            }
+        });
+
         // Show controls if initially expanded
         if (initialState === 'expanded') {
             zoomControls?.classList.add('is-visible');
@@ -257,6 +279,13 @@ function setupViewerToggle() {
 
             viewerContainer.dataset.state = newState;
             viewerToggle.setAttribute('aria-expanded', newState === 'expanded');
+
+            // Notify knowledge sidebar when expanding (mutual exclusivity)
+            if (newState === 'expanded') {
+                document.dispatchEvent(new CustomEvent('tablet-viewer-state', {
+                    detail: { action: 'viewer-expanding' }
+                }));
+            }
 
             // If collapsing, immediately fade out controls
             if (newState === 'collapsed') {
@@ -310,6 +339,11 @@ function setupViewerToggle() {
                 if (viewerToggle) {
                     viewerToggle.setAttribute('aria-expanded', 'true');
                 }
+
+                // Notify knowledge sidebar when expanding (mutual exclusivity)
+                document.dispatchEvent(new CustomEvent('tablet-viewer-state', {
+                    detail: { action: 'viewer-expanding' }
+                }));
 
                 // Fade out controls (they'll fade in after expansion completes)
                 zoomControls?.classList.remove('is-visible');

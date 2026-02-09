@@ -17,13 +17,13 @@
    Header
    ========================================================================== */
 
-.word-detail__header {
+.word-detail-container .word-detail__header {
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 2px solid var(--color-accent);
 }
 
-.word-detail__headword {
+.word-detail-container .word-detail__headword {
     font-size: 3rem;
     font-weight: 700;
     margin: 0 0 0.75rem 0;
@@ -31,14 +31,14 @@
     line-height: 1.2;
 }
 
-.guide-word {
+.word-detail-container .guide-word {
     font-size: 1.75rem;
     color: var(--color-text-secondary);
     font-weight: normal;
     margin-left: 0.5rem;
 }
 
-.word-detail__meta {
+.word-detail-container .word-detail__meta {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
@@ -84,12 +84,12 @@
    Field List
    ========================================================================== */
 
-.field-list {
+.word-detail-container .field-list {
     display: grid;
     gap: 1.25rem;
 }
 
-.field-list dt {
+.word-detail-container .field-list dt {
     font-weight: 600;
     color: var(--color-text);
     display: flex;
@@ -98,7 +98,7 @@
     margin-bottom: 0.375rem;
 }
 
-.field-list dd {
+.word-detail-container .field-list dd {
     margin: 0;
     color: var(--color-text-secondary);
     font-size: 1.05rem;
@@ -106,61 +106,17 @@
 }
 
 /* ==========================================================================
-   Help Toggle
-   ========================================================================== */
-
-.help-toggle {
-    background: none;
-    border: none;
-    color: var(--color-accent);
-    cursor: pointer;
-    padding: 0.25rem;
-    font-size: 0.875rem;
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
-}
-
-.help-toggle:hover,
-.help-toggle:focus {
-    opacity: 1;
-}
-
-.field-help {
-    margin-top: 0.75rem;
-    padding: 1rem;
-    background: var(--color-surface);
-    border-left: 3px solid var(--color-accent);
-    border-radius: 4px;
-    font-size: 0.95rem;
-    line-height: 1.6;
-}
-
-.field-help[hidden] {
-    display: none;
-}
-
-.field-help ul {
-    margin: 0.5rem 0;
-    padding-left: 1.5rem;
-}
-
-.field-help a {
-    color: var(--color-accent);
-    text-decoration: underline;
-}
-
-/* ==========================================================================
    Meanings (Polysemy)
    ========================================================================== */
 
-.meanings-list {
+.word-detail-container .meanings-list {
     list-style: none;
     padding: 0;
     margin: 0;
     counter-reset: meaning-counter;
 }
 
-.meaning {
+.word-detail-container .meaning {
     margin-bottom: 1.5rem;
     padding: 1.25rem;
     background: var(--color-surface);
@@ -170,7 +126,7 @@
     position: relative;
 }
 
-.meaning::before {
+.word-detail-container .meaning::before {
     content: counter(meaning-counter);
     position: absolute;
     left: -2rem;
@@ -181,7 +137,7 @@
     opacity: 0.5;
 }
 
-.meaning__header {
+.word-detail-container .meaning__header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -190,12 +146,12 @@
     gap: 0.5rem;
 }
 
-.meaning__header strong {
+.word-detail-container .meaning__header strong {
     font-size: 1.125rem;
     color: var(--color-text);
 }
 
-.meaning__usage {
+.word-detail-container .meaning__usage {
     font-size: 0.875rem;
     color: var(--color-text-secondary);
     background: var(--color-background);
@@ -203,13 +159,13 @@
     border-radius: 4px;
 }
 
-.meaning__definition {
+.word-detail-container .meaning__definition {
     color: var(--color-text-secondary);
     line-height: 1.6;
     margin: 0.5rem 0;
 }
 
-.meaning__context {
+.word-detail-container .meaning__context {
     font-size: 0.95rem;
     color: var(--color-text-secondary);
     font-style: italic;
@@ -220,39 +176,39 @@
    Variants
    ========================================================================== */
 
-.variants-chart {
+.word-detail-container .variants-chart {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
 
-.variant-bar {
+.word-detail-container .variant-bar {
     display: grid;
     grid-template-columns: 150px 1fr auto;
     align-items: center;
     gap: 1rem;
 }
 
-.variant-form {
+.word-detail-container .variant-form {
     font-weight: 600;
     font-family: var(--font-mono, monospace);
     color: var(--color-text);
 }
 
-.variant-frequency-container {
+.word-detail-container .variant-frequency-container {
     background: var(--color-background);
     height: 24px;
     border-radius: 4px;
     overflow: hidden;
 }
 
-.variant-frequency {
+.word-detail-container .variant-frequency {
     background: var(--color-accent);
     height: 100%;
     transition: width 0.3s ease;
 }
 
-.variant-count {
+.word-detail-container .variant-count {
     font-size: 0.875rem;
     color: var(--color-text-secondary);
     min-width: 80px;
@@ -263,13 +219,13 @@
    Sign Breakdown
    ========================================================================== */
 
-.sign-breakdown {
+.word-detail-container .sign-breakdown {
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
 }
 
-.sign-item {
+.word-detail-container .sign-item {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 8px;
@@ -277,12 +233,12 @@
     transition: all 0.2s ease;
 }
 
-.sign-item:hover {
+.word-detail-container .sign-item:hover {
     border-color: var(--color-accent);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.sign-link {
+.word-detail-container .sign-link {
     text-decoration: none;
     color: var(--color-text);
     display: flex;
@@ -291,24 +247,24 @@
     gap: 0.5rem;
 }
 
-.sign-cuneiform {
+.word-detail-container .sign-cuneiform {
     font-size: 3rem;
     line-height: 1;
 }
 
-.sign-id {
+.word-detail-container .sign-id {
     font-weight: 600;
     font-size: 0.875rem;
     color: var(--color-text-secondary);
 }
 
-.sign-value {
+.word-detail-container .sign-value {
     font-family: var(--font-mono, monospace);
     font-size: 0.875rem;
     color: var(--color-text-secondary);
 }
 
-.sign-type {
+.word-detail-container .sign-type {
     font-size: 0.75rem;
     color: var(--color-text-secondary);
     text-transform: uppercase;
@@ -319,18 +275,18 @@
    Related Words
    ========================================================================== */
 
-.related-group {
+.word-detail-container .related-group {
     margin-bottom: 1.5rem;
 }
 
-.related-group h5 {
+.word-detail-container .related-group h5 {
     font-size: 1rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
     color: var(--color-text);
 }
 
-.related-list {
+.word-detail-container .related-list {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -339,14 +295,14 @@
     gap: 0.75rem;
 }
 
-.related-list li {
+.word-detail-container .related-list li {
     padding: 0.75rem;
     background: var(--color-surface);
     border-radius: 6px;
     border: 1px solid var(--color-border);
 }
 
-.related-word {
+.word-detail-container .related-word {
     text-decoration: none;
     color: var(--color-text);
     display: flex;
@@ -355,12 +311,12 @@
     flex-wrap: wrap;
 }
 
-.related-word:hover,
-.related-word:focus {
+.word-detail-container .related-word:hover,
+.word-detail-container .related-word:focus {
     color: var(--color-accent);
 }
 
-.related-notes {
+.word-detail-container .related-notes {
     display: block;
     margin-top: 0.5rem;
     font-size: 0.875rem;
@@ -372,20 +328,20 @@
    Corpus Examples
    ========================================================================== */
 
-.examples-list {
+.word-detail-container .examples-list {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-.example-item {
+.word-detail-container .example-item {
     padding: 1rem;
     background: var(--color-surface);
     border-left: 3px solid var(--color-accent);
     border-radius: 6px;
 }
 
-.example-header {
+.word-detail-container .example-header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -394,35 +350,35 @@
     gap: 0.5rem;
 }
 
-.p-number {
+.word-detail-container .p-number {
     font-family: var(--font-mono, monospace);
     font-weight: 600;
     color: var(--color-accent);
     text-decoration: none;
 }
 
-.p-number:hover,
-.p-number:focus {
+.word-detail-container .p-number:hover,
+.word-detail-container .p-number:focus {
     text-decoration: underline;
 }
 
-.example-meta {
+.word-detail-container .example-meta {
     font-size: 0.875rem;
     color: var(--color-text-secondary);
 }
 
-.example-content {
+.word-detail-container .example-content {
     font-family: var(--font-mono, monospace);
     color: var(--color-text-secondary);
     line-height: 1.6;
 }
 
-.transliteration {
+.word-detail-container .transliteration {
     display: block;
     margin-bottom: 0.5rem;
 }
 
-.examples-footer {
+.word-detail-container .examples-footer {
     margin-top: 1.5rem;
     font-size: 0.95rem;
     color: var(--color-text-secondary);
@@ -433,7 +389,7 @@
    CAD References
    ========================================================================== */
 
-.cad-header {
+.word-detail-container .cad-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -442,29 +398,29 @@
     gap: 1rem;
 }
 
-.volume-badge {
+.word-detail-container .volume-badge {
     font-weight: 600;
     color: var(--color-text);
 }
 
-.pdf-link {
+.word-detail-container .pdf-link {
     color: var(--color-accent);
     text-decoration: none;
     font-weight: 500;
 }
 
-.pdf-link:hover,
-.pdf-link:focus {
+.word-detail-container .pdf-link:hover,
+.word-detail-container .pdf-link:focus {
     text-decoration: underline;
 }
 
-.verified-badge {
+.word-detail-container .verified-badge {
     color: var(--color-success);
     font-size: 0.875rem;
 }
 
-.cad-etymology,
-.cad-notes {
+.word-detail-container .cad-etymology,
+.word-detail-container .cad-notes {
     margin-bottom: 0.75rem;
     padding: 1rem;
     background: var(--color-surface);

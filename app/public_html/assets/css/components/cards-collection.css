@@ -19,88 +19,10 @@
    Collection Card
    ========================================================================== */
 
-.collection-card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    background: var(--color-bg-elevated);
-    border-radius: var(--radius-lg);
+.card.collection-card {
     overflow: hidden;
     transition: transform var(--transition-normal), box-shadow var(--transition-normal);
     text-decoration: none;
-    color: inherit;
-    border: 1px solid var(--color-border);
-}
-
-.collection-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    border-color: var(--color-accent);
-}
-
-/* ==========================================================================
-   Collection Cover (2x2 Thumbnail Grid)
-   ========================================================================== */
-
-.collection-cover {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 2px;
-    background: var(--color-bg);
-    overflow: hidden;
-}
-
-.cover-thumb {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background: var(--color-bg-subtle);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-.cover-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s;
-}
-
-.collection-card:hover .cover-thumb img {
-    transform: scale(1.05);
-}
-
-/* Empty thumbnail slots */
-.cover-thumb.empty {
-    background: var(--color-bg-subtle);
-}
-
-.cover-thumb.empty .cuneiform-icon,
-.cover-thumb.no-image .cuneiform-icon {
-    font-size: 2rem;
-    color: var(--color-text-subtle);
-    opacity: 0.3;
-}
-
-.cover-thumb__fallback {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-bg-subtle);
-}
-
-.cover-thumb__fallback .cuneiform-icon {
-    font-size: 2rem;
-    color: var(--color-text-subtle);
-    opacity: 0.3;
 }
 
 /* ==========================================================================
@@ -130,10 +52,14 @@
     vertical-align: middle;
 }
 
+.collection-description,
+.collection-stats {
+    font-size: 0.7rem;
+    line-height: 1.6;
+}
+
 .collection-description {
     margin: 0;
-    font-size: 0.875rem;
-    line-height: 1.6;
     color: var(--color-text-muted);
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -145,14 +71,10 @@
     display: flex;
     gap: var(--space-3);
     margin-top: auto;
-    padding-top: var(--space-2);
-    border-top: 1px solid var(--color-border);
 }
 
 .collection-stats .stat {
-    font-size: 0.8125rem;
     color: var(--color-text-subtle);
-    font-weight: 500;
 }
 
 .collection-id {

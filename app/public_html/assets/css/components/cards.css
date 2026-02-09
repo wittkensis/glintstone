@@ -27,26 +27,164 @@
    ========================================================================== */
 
 .card {
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
-    transition: border-color var(--transition-normal), transform var(--transition-normal);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    transition:
+        box-shadow var(--transition-normal);
 }
 
 .card:hover {
-    border-color: var(--color-accent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
-.card h3 {
-    margin-bottom: var(--space-3);
-    font-size: 1.25rem;
+.card .card-details {
+    background: rgba(var(--color-bg-inset-rgb), 0.9);
+    padding: var(--space-3);
 }
 
-.card p {
+.card .card-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(8px);
+    z-index: 5;
+}
+
+.card .card-eyebrow {
+    font-size: 0.65rem;
     color: var(--color-text-muted);
-    line-height: 1.6;
 }
+
+.card .card-primary {
+    color: var(--color-accent);
+    font-size: 0.9rem;
+}
+.card:hover .card-primary {
+    text-decoration: underline;
+}
+
+.card .card-meta {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   Single Image Thumbnail
+   ========================================================================== */
+
+.card .card-image {
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg-subtle);
+}
+
+.card .card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.card:hover .card-image img {
+    transform: scale(1.1);
+}
+
+/* Placeholder for missing images */
+.card .card-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: -1;
+}
+
+.card .card-placeholder .cuneiform-icon {
+    font-family: var(--font-cuneiform);
+    font-size: 3.5rem;
+    color: var(--color-border);
+    opacity: 0.4;
+}
+
+.card .card-image.no-image img {
+    display: none;
+}
+
+.card .card-image.no-image .card-placeholder {
+    z-index: 1;
+}
+
+
+
+/* ==========================================================================
+   2x2 Thumbnail Grid
+   ========================================================================== */
+
+.card-image-grid {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+    background: var(--color-bg);
+    overflow: hidden;
+}
+
+.card-image-grid .cover-thumb {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--color-bg-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.card-image-grid .cover-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+/* Empty thumbnail slots */
+.card-image-grid .cover-thumb.empty {
+    background: var(--color-bg-subtle);
+}
+
+.card-image-grid .cover-thumb.empty .cuneiform-icon,
+.card-image-grid .cover-thumb.no-image .cuneiform-icon {
+    font-size: 2rem;
+    color: var(--color-text-subtle);
+    opacity: 0.3;
+}
+
+.card-image-grid .cover-thumb__fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-subtle);
+}
+
+.card-image-grid .cover-thumb__fallback .cuneiform-icon {
+    font-size: 2rem;
+    color: var(--color-text-subtle);
+    opacity: 0.3;
+}
+
 
 /* ==========================================================================
    Card Modifiers

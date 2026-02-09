@@ -2,82 +2,43 @@
  * Tablet Header
  * Purpose: Page header for tablet detail view with identity, badges, and actions
  * Used on: Tablet detail pages
- * Dependencies: core/tokens.css
+ * Dependencies: core/tokens.css, layout/page-header.css
  * JavaScript: None
  */
 
 /* ==========================================================================
-   Compact Header
+   Tablet-Specific Styling
    ========================================================================== */
 
-.tablet-header {
+.tablet-header .page-header-title {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--space-4);
-    margin-bottom: var(--space-3);
+    flex-direction: row;
 }
 
-.tablet-header__main {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    flex: 1;
-    min-width: 0;
-}
-
-.tablet-header__identity {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-    min-width: 0;
-}
-
-.tablet-header__pnumber {
-    font-size: 1.5rem;
+/* Override h1 size for tablet headers */
+.tablet-header .page-header-title h1 {
+    /* font-size: 1.5rem;
     font-weight: 600;
-    margin: 0;
-    white-space: nowrap;
+    margin-bottom: 0; */
 }
 
-.tablet-header__sep {
-    color: var(--color-text-subtle);
-    font-weight: 300;
-}
-
-.tablet-header__designation {
-    font-size: 1rem;
-    color: var(--color-text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.tablet-header__badges {
-    display: flex;
-    gap: var(--space-2);
-    flex-shrink: 0;
-}
-
-.language-badge {
-    display: inline-block;
+/* Language Badge - displayed inline with title */
+.tablet-header .language-badge {
+    display: inline-flex;
     padding: 2px 8px;
+    margin-left: var(--space-2);
     font-size: 0.6875rem;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    background: var(--color-accent);
-    color: var(--color-bg);
+    text-transform: capitalize;
+    background: var(--color-bg-inset);
+    color: var(--color-text-muted);
     border-radius: var(--radius-sm);
+    align-items: center;
 }
 
-/* Actions Menu */
-.tablet-header__actions {
-    display: flex;
-    gap: var(--space-2);
-    flex-shrink: 0;
-}
+/* ==========================================================================
+   Actions Menu (Tablet-Specific)
+   ========================================================================== */
 
 .actions-menu {
     position: relative;
@@ -144,3 +105,26 @@
 }
 
 /* Composite Toggle - now uses .btn.btn--icon-left.btn--toggle from buttons.css */
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .tablet-header .page-header-title h1 {
+        font-size: 1.25rem;
+    }
+
+    .tablet-header .language-badge {
+        display: block;
+        margin-left: 0;
+        margin-top: var(--space-1);
+        width: fit-content;
+    }
+
+    .tablet-header .page-header-actions {
+        position: absolute;
+        top: var(--space-4);
+        right: var(--space-4);
+    }
+}

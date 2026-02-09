@@ -17,7 +17,7 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="form-container">
         <div class="form-header">
             <a href="/collections/" class="back-link">← Back to Collections</a>
-            <h1>Create New Collection</h1>
+            <h1>New Collection</h1>
             <p class="subtitle">Organize tablets by theme, period, or research topic</p>
         </div>
 

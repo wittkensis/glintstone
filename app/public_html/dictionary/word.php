@@ -30,21 +30,28 @@ if (empty($entry_id)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Word Detail - Cuneiform Library</title>
     <link rel="stylesheet" href="/assets/css/layout/site.css">
+    <link rel="stylesheet" href="/assets/css/layout/page-header.css">
     <link rel="stylesheet" href="/assets/css/components/word-detail.css">
     <link rel="stylesheet" href="/assets/css/components/educational-help.css">
 </head>
 <body>
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <a href="/dictionary/" class="back-link">← Back to Dictionary</a>
+                <h1 id="word-title">Loading...</h1>
+                <p class="subtitle" id="word-subtitle" style="display: none;"></p>
+            </div>
+        </div>
+    </div>
+
     <div class="dictionary-word-detail">
         <div class="word-detail-container" id="word-detail-container">
             <!-- Loading state -->
             <div class="loading-state">
                 <p>Loading entry...</p>
             </div>
-        </div>
-
-        <!-- Back to browse -->
-        <div class="word-actions">
-            <a href="/dictionary/" class="btn btn--secondary">← Back to Dictionary Browser</a>
         </div>
     </div>
 
@@ -55,6 +62,8 @@ if (empty($entry_id)) {
         (async function() {
             const entryId = <?= json_encode($entry_id) ?>;
             const container = document.getElementById('word-detail-container');
+            const titleElement = document.getElementById('word-title');
+            const subtitleElement = document.getElementById('word-subtitle');
 
             try {
                 // Fetch word data from API
@@ -65,6 +74,16 @@ if (empty($entry_id)) {
                 }
 
                 const data = await response.json();
+
+                // Update page header
+                if (data.entry) {
+                    titleElement.textContent = data.entry.headword;
+                    if (data.entry.guide_word) {
+                        subtitleElement.textContent = `[${data.entry.guide_word}]`;
+                        subtitleElement.style.display = 'block';
+                    }
+                    document.title = `${data.entry.headword}${data.entry.guide_word ? ` [${data.entry.guide_word}]` : ''} - Cuneiform Library`;
+                }
 
                 // Get help visibility from educational help system
                 const showHelp = educationalHelp.helpVisible;
@@ -77,13 +96,9 @@ if (empty($entry_id)) {
 
                 await renderer.render(data, container);
 
-                // Update page title
-                if (data.entry) {
-                    document.title = `${data.entry.headword}${data.entry.guide_word ? ` [${data.entry.guide_word}]` : ''} - Cuneiform Library`;
-                }
-
             } catch (error) {
                 console.error('Error loading word detail:', error);
+                titleElement.textContent = 'Error';
                 container.innerHTML = `
                     <div class="error-state">
                         <h2>Error loading entry</h2>

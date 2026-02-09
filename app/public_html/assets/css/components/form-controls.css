@@ -4,6 +4,10 @@
  * Dependencies: CSS variables from core.css
  */
 
+form {
+    display: flex;
+}
+
 /* ==========================================================================
    Base Button Class
    ========================================================================== */
@@ -13,7 +17,7 @@
     align-items: center;
     justify-content: center;
     gap: var(--space-2);
-    padding: var(--space-1) var(--space-3);
+    padding: var(--space-2);
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
@@ -24,10 +28,6 @@
     transition: all var(--transition-fast);
     white-space: nowrap;
 }
-
-/* ==========================================================================
-   Buttons
-   ========================================================================== */
 
 .btn:hover {
     background: var(--color-bg-elevated);
@@ -58,6 +58,10 @@
    Icon Positioning Modifiers
    ========================================================================== */
 
+.btn--icon {
+    padding: var(--space-2);
+}
+
 .btn--icon-left {
     flex-direction: row;
 }
@@ -65,15 +69,6 @@
 .btn--icon-right {
     flex-direction: row-reverse;
 }
-
-.btn--icon-only {
-    padding: var(--space-2);
-    gap: 0;
-}
-
-/* ==========================================================================
-   SVG Icon Sizing in Buttons
-   ========================================================================== */
 
 .btn svg {
     width: 16px;
@@ -108,7 +103,7 @@
     font-size: 0.6875rem;
 }
 
-.btn-sm.btn--icon-only {
+.btn-sm.btn--icon {
     padding: var(--space-1);
 }
 
@@ -122,7 +117,7 @@
     font-size: 0.875rem;
 }
 
-.btn-lg.btn--icon-only {
+.btn-lg.btn--icon {
     padding: var(--space-3);
 }
 
@@ -156,6 +151,7 @@
 .btn--primary:hover {
     background: var(--color-accent-hover);
     border-color: var(--color-accent-hover);
+    color: var(--color-bg);
 }
 
 /* Secondary variant - already handled by base .btn */
@@ -188,29 +184,7 @@
 }
 
 /* ==========================================================================
-   Accessibility
-   ========================================================================== */
-
-/* Respect reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-    .btn {
-        transition: none;
-    }
-
-    .btn:active {
-        transform: none;
-    }
-}
-
-/* High contrast support */
-@media (prefers-contrast: high) {
-    .btn {
-        border-width: 2px;
-    }
-}
-
-/* ==========================================================================
-   Responsive Adjustments
+   Button Responsive Adjustments
    ========================================================================== */
 
 @media (max-width: 600px) {
@@ -224,3 +198,120 @@
         padding: 6px 8px;
     }
 }
+
+/* ==========================================================================
+   Text Inputs
+   ========================================================================== */
+
+
+label {
+    font-size: 0.875rem;
+    color: var(--color-text);
+}
+
+input[type="text"],
+input[type="number"],
+select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-bg-inset);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+input::placeholder {
+    color: var(--color-text-muted);
+}
+
+/* Radio Pickers */
+.filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.filter-option input[type="radio"] {
+    cursor: pointer;
+}
+
+/* Frequency Input (used on Dictionary) */
+/* TODO: Come up with a better frequency filter */
+.freq-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.freq-inputs input {
+    flex: 1;
+}
+
+.freq-inputs span {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+/* ==========================================================================
+   Stateful Button Toggles (View Mode Toggle)
+   ========================================================================== */
+
+.btn-group {
+    display: flex;
+    gap: -1px;
+}
+
+/* .btn-group.btn-group-stateful {} */
+
+.btn-group .btn-group-item:not(:first-child):not(:last-child) {
+    border-radius: 0;
+}
+.btn-group .btn-group-item:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.btn-group .btn-group-item:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.btn-group .btn-group-item.btn-group-item--active,
+.btn-group .atf-mode--active {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.atf-mode {
+    /* padding: var(--space-1) var(--space-3);
+    background: var(--color-bg);
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast); */
+}
+
+/* .atf-mode:hover {
+    color: var(--color-text);
+    background: var(--color-bg-subtle);
+}
+*/

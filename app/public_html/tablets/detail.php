@@ -182,32 +182,29 @@ $defaultViewerState = $hasData ? 'collapsed' : 'expanded';
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
-<!-- Shared Components -->
-<link rel="stylesheet" href="/assets/css/components/atf-words.css">
-<link rel="stylesheet" href="/assets/css/components/empty-states.css">
+<!-- ATF Viewer -->
+<link rel="stylesheet" href="/assets/css/atf-viewer/layout.css">
+<link rel="stylesheet" href="/assets/css/atf-viewer/tabs.css">
+<link rel="stylesheet" href="/assets/css/atf-viewer/content.css">
+<link rel="stylesheet" href="/assets/css/atf-viewer/words.css">
+<link rel="stylesheet" href="/assets/css/atf-viewer/parallel.css">
+<link rel="stylesheet" href="/assets/css/atf-viewer/sidebar.css">
 
-<!-- Tablet Layout -->
-<link rel="stylesheet" href="/assets/css/layout/immersive.css">
+<!-- Tablet Detail -->
+<link rel="stylesheet" href="/assets/css/tablet/header.css">
+<link rel="stylesheet" href="/assets/css/tablet/metadata.css">
+<link rel="stylesheet" href="/assets/css/tablet/composite.css">
+<link rel="stylesheet" href="/assets/css/tablet/sections.css">
 
-<!-- Tablet Components -->
-<link rel="stylesheet" href="/assets/css/components/tablet-header.css">
-<link rel="stylesheet" href="/assets/css/components/composite-panel.css">
-<link rel="stylesheet" href="/assets/css/components/tablet-metadata.css">
-<link rel="stylesheet" href="/assets/css/components/tablet-sections.css">
-<link rel="stylesheet" href="/assets/css/components/ocr-box.css">
-<link rel="stylesheet" href="/assets/css/components/tablet-translation.css">
+<!-- Zoombox -->
+<link rel="stylesheet" href="/assets/css/zoombox/viewer.css">
+<link rel="stylesheet" href="/assets/css/zoombox/controls.css">
+<link rel="stylesheet" href="/assets/css/zoombox/minimap.css">
 
-<!-- ATF Viewer Components -->
-<link rel="stylesheet" href="/assets/css/components/atf-viewer-core.css">
-<link rel="stylesheet" href="/assets/css/components/atf-content.css">
-<link rel="stylesheet" href="/assets/css/components/knowledge-sidebar-compact.css">
-<link rel="stylesheet" href="/assets/css/components/word-detail.css">
-<link rel="stylesheet" href="/assets/css/components/educational-help.css">
-<link rel="stylesheet" href="/assets/css/components/atf-parallel.css">
-
-<!-- Zoombox Components -->
-<link rel="stylesheet" href="/assets/css/components/zoombox-core.css">
-<link rel="stylesheet" href="/assets/css/components/zoombox-minimap.css">
+<!-- Dictionary -->
+<link rel="stylesheet" href="/assets/css/dictionary/browser.css">
+<link rel="stylesheet" href="/assets/css/dictionary/word-detail.css">
+<link rel="stylesheet" href="/assets/css/dictionary/sign-grid.css">
 
 <div class="tablet-detail-page">
 <main class="container">
@@ -232,43 +229,41 @@ require_once __DIR__ . '/../includes/header.php';
     <!-- Inner container for header/meta (constrained width) -->
     <div class="container-inner">
     <!-- Compact Header -->
-    <header class="tablet-header">
-        <div class="tablet-header__main">
-            <div class="tablet-header__identity">
-                <h1 class="tablet-header__pnumber"><?= htmlspecialchars($tablet['p_number']) ?></h1>
-            </div>
-            <div class="tablet-header__badges">
+    <div class="page-header tablet-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <h1><?= htmlspecialchars($tablet['p_number']) ?></h1>
                 <?php if ($tablet['language']): ?>
                     <span class="language-badge"><?= htmlspecialchars($tablet['language']) ?></span>
                 <?php endif; ?>
             </div>
-        </div>
-        <div class="tablet-header__actions">
-            <?php if (!empty($composites)): ?>
-                <button class="btn btn--icon-left btn--toggle" id="composite-toggle" aria-expanded="false" aria-controls="composite-panel" title="View composite text">
-                    <?= icon('layers') ?>
-                    <span><?= htmlspecialchars($composites[0]['name'] ?? $composites[0]['q_number']) ?></span>
-                </button>
-            <?php endif; ?>
-            <div class="actions-menu">
-                <button class="actions-menu__trigger" aria-haspopup="true" aria-expanded="false">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
-                    </svg>
-                </button>
-                <div class="actions-menu__dropdown">
-                    <a href="https://cdli.ucla.edu/search/archival_view.php?ObjectID=<?= urlencode($pNumber) ?>"
-                       target="_blank" class="actions-menu__item">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            <div class="page-header-actions">
+                <?php if (!empty($composites)): ?>
+                    <button class="btn btn--icon-left btn--toggle" id="composite-toggle" aria-expanded="false" aria-controls="composite-panel" title="View composite text">
+                        <?= icon('layers') ?>
+                        <span><?= htmlspecialchars($composites[0]['name'] ?? $composites[0]['q_number']) ?></span>
+                    </button>
+                <?php endif; ?>
+                <div class="actions-menu">
+                    <button class="btn btn--icon actions-menu__trigger" aria-haspopup="true" aria-expanded="false">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
                         </svg>
-                        View on CDLI
-                    </a>
+                    </button>
+                    <div class="actions-menu__dropdown">
+                        <a href="https://cdli.ucla.edu/search/archival_view.php?ObjectID=<?= urlencode($pNumber) ?>"
+                           target="_blank" class="actions-menu__item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                            </svg>
+                            View on CDLI
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-    </header>
+    </div>
 
     <!-- Primary Metadata -->
     <?php
@@ -470,7 +465,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="atf-viewer-container" id="atf-viewer" data-p-number="<?= htmlspecialchars($pNumber) ?>"></div>
             <?php else: ?>
                 <!-- Viewer Toggle (only for tablets without ATF) -->
-                <button class="viewer-toggle" aria-label="Toggle viewer size" title="Expand/collapse tablet image">
+                <button class="btn btn--icon btn--toggle viewer-toggle" aria-label="Toggle viewer size" title="Expand/collapse tablet image">
                     <?= icon('expand', 'viewer-toggle__icon-expand') ?>
                     <?= icon('collapse', 'viewer-toggle__icon-collapse') ?>
                 </button>

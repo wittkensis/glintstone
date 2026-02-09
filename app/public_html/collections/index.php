@@ -36,6 +36,7 @@ $composites = getCompositesWithMetadata();
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
+<link rel="stylesheet" href="/assets/css/layout/page-header.css">
 <link rel="stylesheet" href="/assets/css/components/collection-cards.css">
 <link rel="stylesheet" href="/assets/css/components/empty-states.css">
 <link rel="stylesheet" href="/assets/css/components/section-header.css">
@@ -44,14 +45,18 @@ require_once __DIR__ . '/../includes/header.php';
 
 <main class="collections-page">
     <div class="page-header">
-        <h1>Collections</h1>
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <h1>Collections</h1>
+            </div>
+        </div>
     </div>
 
     <!-- Tabbed Interface -->
     <div class="tabs-container">
         <nav class="tabs-nav" role="tablist">
             <button class="tab-button" data-tab="collections" role="tab" aria-selected="true" tabindex="0">
-                Your Collections
+                Curated Collections
                 <span class="count-badge"><?= count($collections) ?></span>
             </button>
             <button class="tab-button" data-tab="smart-collections" role="tab" aria-selected="false" tabindex="-1">
@@ -69,11 +74,11 @@ require_once __DIR__ . '/../includes/header.php';
             <section id="collections" class="tab-panel" role="tabpanel">
                 <div class="section-header">
                     <div class="section-header__content">
-                        <h2>Your Collections</h2>
-                        <p class="section-description">Personal curated sets of tablets organized by theme, period, or research topic. Create custom collections to group related tablets together for study or reference.</p>
+                        <h2>Curated Collections</h2>
+                        <p class="section-description">Some of the most fascinating and impactful tablets available.</p>
                     </div>
                     <div class="header-actions">
-                        <a href="/collections/new.php" class="btn-primary">Create New Collection</a>
+                        <a href="/collections/new.php" class="btn btn-primary">New</a>
                     </div>
                 </div>
 
@@ -89,57 +94,7 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Collections Grid -->
             <div class="collection-grid">
                 <?php foreach ($collections as $collection): ?>
-                <a href="/collections/detail.php?id=<?= $collection['collection_id'] ?>" class="collection-card">
-                    <!-- Preview Grid (first 4 tablets) -->
-                    <div class="collection-cover">
-                        <?php if (!empty($collection['preview_tablets'])): ?>
-                            <?php foreach ($collection['preview_tablets'] as $tablet): ?>
-                                <div class="cover-thumb">
-                                    <img src="/api/thumbnail.php?p=<?= urlencode($tablet['p_number']) ?>&size=100"
-                                         alt="<?= htmlspecialchars($tablet['designation'] ?? $tablet['p_number']) ?>"
-                                         loading="lazy"
-                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                    <div class="cover-thumb__fallback" style="display:none;">
-                                        <span class="cuneiform-icon">𒀭</span>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                            <?php
-                            // Fill empty slots if less than 4 tablets
-                            $emptySlots = 4 - count($collection['preview_tablets']);
-                            for ($i = 0; $i < $emptySlots; $i++):
-                            ?>
-                                <div class="cover-thumb empty">
-                                    <span class="cuneiform-icon">𒀭</span>
-                                </div>
-                            <?php endfor; ?>
-                        <?php else: ?>
-                            <!-- All empty if no tablets -->
-                            <?php for ($i = 0; $i < 4; $i++): ?>
-                                <div class="cover-thumb empty">
-                                    <span class="cuneiform-icon">𒀭</span>
-                                </div>
-                            <?php endfor; ?>
-                        <?php endif; ?>
-                    </div>
-
-                    <!-- Collection Metadata -->
-                    <div class="collection-meta">
-                        <h3 class="collection-name"><?= htmlspecialchars($collection['name']) ?></h3>
-                        <?php if ($collection['description']): ?>
-                            <p class="collection-description">
-                                <?= htmlspecialchars(mb_substr($collection['description'], 0, 120)) ?>
-                                <?= mb_strlen($collection['description']) > 120 ? '...' : '' ?>
-                            </p>
-                        <?php endif; ?>
-                        <div class="collection-stats">
-                            <span class="stat">
-                                <?= $collection['tablet_count'] ?>
-                                <?= $collection['tablet_count'] === 1 ? 'tablet' : 'tablets' ?>
-                            </span>
-                        </div>
-                    </div>
-                </a>
+                    <?php include __DIR__ . '/../includes/components/collection-card.php'; ?>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
@@ -164,70 +119,12 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php else: ?>
                     <!-- Smart Collections Grid -->
                     <div class="collection-grid">
-                        <?php foreach ($smartCollections as $smartCollection): ?>
-                        <a href="/tablets/list.php?smart_collection=<?= $smartCollection['smart_collection_id'] ?>" class="collection-card smart-collection-card">
-                            <!-- Smart Collection Badge -->
-                            <div class="smart-badge">
-                                <span class="smart-badge-icon">✨</span>
-                                <span class="smart-badge-text">Smart</span>
-                            </div>
-
-                            <!-- Preview Grid (first 4 tablets) -->
-                            <div class="collection-cover">
-                                <?php if (!empty($smartCollection['preview_tablets'])): ?>
-                                    <?php foreach ($smartCollection['preview_tablets'] as $tablet): ?>
-                                        <div class="cover-thumb">
-                                            <img src="/api/thumbnail.php?p=<?= urlencode($tablet['p_number']) ?>&size=100"
-                                                 alt="<?= htmlspecialchars($tablet['designation'] ?? $tablet['p_number']) ?>"
-                                                 loading="lazy"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                            <div class="cover-thumb__fallback" style="display:none;">
-                                                <span class="cuneiform-icon">𒀭</span>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                    <?php
-                                    // Fill empty slots if less than 4 tablets
-                                    $emptySlots = 4 - count($smartCollection['preview_tablets']);
-                                    for ($i = 0; $i < $emptySlots; $i++):
-                                    ?>
-                                        <div class="cover-thumb empty">
-                                            <span class="cuneiform-icon">𒀭</span>
-                                        </div>
-                                    <?php endfor; ?>
-                                <?php else: ?>
-                                    <!-- All empty if no tablets -->
-                                    <?php for ($i = 0; $i < 4; $i++): ?>
-                                        <div class="cover-thumb empty">
-                                            <span class="cuneiform-icon">𒀭</span>
-                                        </div>
-                                    <?php endfor; ?>
-                                <?php endif; ?>
-                            </div>
-
-                            <!-- Collection Metadata -->
-                            <div class="collection-meta">
-                                <h3 class="collection-name">
-                                    <span class="collection-icon"><?= htmlspecialchars($smartCollection['icon']) ?></span>
-                                    <?= htmlspecialchars($smartCollection['name']) ?>
-                                </h3>
-                                <?php if ($smartCollection['description']): ?>
-                                    <p class="collection-description">
-                                        <?= htmlspecialchars(mb_substr($smartCollection['description'], 0, 120)) ?>
-                                        <?= mb_strlen($smartCollection['description']) > 120 ? '...' : '' ?>
-                                    </p>
-                                <?php endif; ?>
-                                <div class="collection-stats">
-                                    <span class="stat">
-                                        <?= number_format($smartCollection['tablet_count']) ?>
-                                        <?= $smartCollection['tablet_count'] === 1 ? 'tablet' : 'tablets' ?>
-                                    </span>
-                                    <span class="stat stat-auto">
-                                        Auto-updating
-                                    </span>
-                                </div>
-                            </div>
-                        </a>
+                        <?php foreach ($smartCollections as $collection): ?>
+                            <?php
+                            $is_smart_collection = true;
+                            $show_auto_updating_badge = true;
+                            ?>
+                            <?php include __DIR__ . '/../includes/components/collection-card.php'; ?>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>

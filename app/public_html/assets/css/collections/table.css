@@ -7,6 +7,8 @@
  * Required classes for JS: .composites-table, .sortable, .composite-row, #composite-search
  */
 
+ /* TODO: Generalize as a table component */
+
 /* ==========================================================================
    Table Container
    ========================================================================== */

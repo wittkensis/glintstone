@@ -39,39 +39,51 @@ $pageTitle = htmlspecialchars($collection['name']) . ' - Collection';
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
+<!-- Collections -->
+<link rel="stylesheet" href="/assets/css/collections/table.css">
+<link rel="stylesheet" href="/assets/css/collections/kpi.css">
+<link rel="stylesheet" href="/assets/css/collections/activity.css">
+
+<!-- OLD IMPORTS; PRESERVED TEMPORARILY -->
+<!-- <link rel="stylesheet" href="/assets/css/layout/page-header.css">
 <link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
 <link rel="stylesheet" href="/assets/css/components/cards-selectable.css">
 <link rel="stylesheet" href="/assets/css/components/pagination.css">
 <link rel="stylesheet" href="/assets/css/components/empty-states.css">
-<link rel="stylesheet" href="/assets/css/pages/collection-detail.css">
+<link rel="stylesheet" href="/assets/css/pages/collection-detail.css"> -->
 
 <main class="collection-detail-page">
-    <div class="collection-header">
-        <a href="/collections/" class="back-link">← Back to Collections</a>
-
-        <div class="collection-title-section">
-            <h1><?= htmlspecialchars($collection['name']) ?></h1>
-            <?php if ($collection['description']): ?>
-                <p class="collection-description-full">
-                    <?= nl2br(htmlspecialchars($collection['description'])) ?>
-                </p>
-            <?php endif; ?>
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <a href="/collections/" class="back-link">← Back to Collections</a>
+                <h1><?= htmlspecialchars($collection['name']) ?></h1>
+                <?php if ($collection['description']): ?>
+                    <p class="subtitle">
+                        <?= nl2br(htmlspecialchars($collection['description'])) ?>
+                    </p>
+                <?php endif; ?>
+            </div>
+            <div class="page-header-actions">
+                <a href="/collections/browser.php?collection_id=<?= $collectionId ?>" class="btn btn--primary">Add Tablets</a>
+                <a href="/collections/edit.php?id=<?= $collectionId ?>" class="btn btn--icon" aria-label="Edit collection" title="Edit collection">
+                    <?= icon('edit') ?>
+                </a>
+                <form method="POST" action="/collections/delete.php">
+                    <input type="hidden" name="collection_id" value="<?= $collectionId ?>">
+                    <button type="submit" class="btn btn--icon btn--danger" aria-label="Delete collection" title="Delete collection" onclick="return confirm('Delete this collection? This will not delete the tablets themselves.');">
+                        <?= icon('trash') ?>
+                    </button>
+                </form>
+            </div>
         </div>
-
-        <div class="collection-actions">
-            <a href="/collections/browser.php?collection_id=<?= $collectionId ?>" class="btn-primary">Add Tablets</a>
-            <a href="/collections/edit.php?id=<?= $collectionId ?>" class="btn-secondary">Edit</a>
-            <form method="POST" action="/collections/delete.php" style="display: inline;">
-                <input type="hidden" name="collection_id" value="<?= $collectionId ?>">
-                <button type="submit" class="btn-danger" onclick="return confirm('Delete this collection? This will not delete the tablets themselves.');">Delete</button>
-            </form>
-        </div>
-
-        <div class="collection-stats">
-            <span class="stat">
-                <?= number_format($totalTablets) ?>
-                <?= $totalTablets === 1 ? 'tablet' : 'tablets' ?>
-            </span>
+        <div class="page-header-metadata">
+            <div class="page-stats">
+                <span class="stat">
+                    <?= number_format($totalTablets) ?>
+                    <?= $totalTablets === 1 ? 'tablet' : 'tablets' ?>
+                </span>
+            </div>
         </div>
     </div>
 

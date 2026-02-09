@@ -126,34 +126,6 @@
     color: var(--color-text, #e8e8e8);
 }
 
-#add-to-collection-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Button Styles */
-.btn-ghost {
-    padding: var(--space-2, 12px) var(--space-3, 16px);
-    background: transparent;
-    color: var(--color-text-muted, #a0a0a0);
-    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
-    border-radius: var(--radius-md, 8px);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-ghost:hover {
-    background: var(--color-bg-subtle, #222222);
-    color: var(--color-text, #e8e8e8);
-    border-color: var(--color-accent, #6b8e6b);
-}
-
 /* Tablet Grid in Browser */
 .browser-page .tablet-grid {
     display: grid;
