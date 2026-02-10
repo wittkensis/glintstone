@@ -2,279 +2,303 @@
 /**
  * Dictionary Browser
  *
- * Main landing page for browsing dictionary entries with:
- * - Search by word or meaning
- * - Faceted filters (language, POS, frequency)
- * - Card-based grid display
- * - Pagination
- * - Educational welcome overlay (first-time users)
+ * 3-column master-detail view for browsing dictionary entries:
+ * - Column 1: Groupings (POS, Language, Frequency)
+ * - Column 2: Filterable word list with search
+ * - Column 3: Word detail view
+ *
+ * URL Parameters:
+ *   word   - Selected word entry_id
+ *   group  - Active grouping type (pos, language, frequency)
+ *   value  - Active grouping value
+ *   search - Search query
  */
 
 require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../includes/header.php';
 
-// Get filter parameters
-$search = $_GET['search'] ?? '';
-$language = $_GET['lang'] ?? '';
-$pos = $_GET['pos'] ?? '';
-$min_freq = isset($_GET['min_freq']) ? (int)$_GET['min_freq'] : 0;
-$max_freq = isset($_GET['max_freq']) ? (int)$_GET['max_freq'] : 10000;
-$sort = $_GET['sort'] ?? 'icount'; // icount, headword, language
-$per_page = isset($_GET['per_page']) ? min((int)$_GET['per_page'], 200) : 50;
-$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-$offset = ($page - 1) * $per_page;
+// Get URL parameters
+$selectedWordId = $_GET['word'] ?? null;
+$activeGroup = $_GET['group'] ?? 'all';
+$activeValue = $_GET['value'] ?? null;
+$searchQuery = $_GET['search'] ?? '';
 
-// Build query
+// Validate activeGroup
+if (!in_array($activeGroup, ['all', 'pos', 'language', 'frequency'])) {
+    $activeGroup = 'all';
+    $activeValue = null;
+}
+
 $db = getDB();
-$where_clauses = [];
-$bind_params = [];
 
-if (!empty($search)) {
-    $where_clauses[] = "(headword LIKE :search OR citation_form LIKE :search OR guide_word LIKE :search)";
-    $bind_params[':search'] = '%' . $search . '%';
-}
+/**
+ * Fetch initial word list with current filters
+ */
+function fetchWordList($db, $search, $groupType, $groupValue, $limit = 50, $offset = 0) {
+    $where = [];
+    $params = [];
 
-if (!empty($language)) {
-    if ($language === 'sux') {
-        $where_clauses[] = "language = 'sux'";
-    } elseif ($language === 'akk') {
-        $where_clauses[] = "language LIKE 'akk%'";
-    } else {
-        $where_clauses[] = "language = :language";
-        $bind_params[':language'] = $language;
+    if ($search && trim($search) !== '') {
+        $searchTerm = '%' . $search . '%';
+        $where[] = '(headword LIKE :search OR citation_form LIKE :search OR guide_word LIKE :search)';
+        $params[':search'] = $searchTerm;
     }
+
+    if ($groupType && $groupType !== 'all' && $groupValue) {
+        switch ($groupType) {
+            case 'pos':
+                $where[] = 'pos = :groupValue';
+                $params[':groupValue'] = $groupValue;
+                break;
+            case 'language':
+                if ($groupValue === 'akk') {
+                    $where[] = "(language = 'akk' OR language LIKE 'akk-x-%')";
+                } elseif ($groupValue === 'sux') {
+                    $where[] = "(language = 'sux' OR language LIKE 'sux-x-%')";
+                } elseif ($groupValue === 'qpn') {
+                    $where[] = "(language = 'qpn' OR language LIKE 'qpn-x-%')";
+                } else {
+                    $where[] = 'language = :groupValue';
+                    $params[':groupValue'] = $groupValue;
+                }
+                break;
+            case 'frequency':
+                switch ($groupValue) {
+                    case '1': $where[] = 'icount = 1'; break;
+                    case '2-10': $where[] = 'icount BETWEEN 2 AND 10'; break;
+                    case '11-100': $where[] = 'icount BETWEEN 11 AND 100'; break;
+                    case '101-500': $where[] = 'icount BETWEEN 101 AND 500'; break;
+                    case '500+': $where[] = 'icount > 500'; break;
+                }
+                break;
+        }
+    }
+
+    $whereClause = empty($where) ? '' : 'WHERE ' . implode(' AND ', $where);
+
+    // Count total
+    $countSql = "SELECT COUNT(*) as total FROM glossary_entries $whereClause";
+    $stmt = $db->prepare($countSql);
+    foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value, SQLITE3_TEXT);
+    }
+    $total = (int)$stmt->execute()->fetchArray(SQLITE3_ASSOC)['total'];
+
+    // Get entries
+    $sql = "SELECT entry_id, headword, citation_form, guide_word, language, pos, icount
+            FROM glossary_entries $whereClause
+            ORDER BY headword ASC
+            LIMIT :limit OFFSET :offset";
+
+    $stmt = $db->prepare($sql);
+    foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value, SQLITE3_TEXT);
+    }
+    $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
+    $stmt->bindValue(':offset', $offset, SQLITE3_INTEGER);
+
+    $entries = [];
+    $result = $stmt->execute();
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $row['icount'] = (int)$row['icount'];
+        $entries[] = $row;
+    }
+
+    return ['entries' => $entries, 'total' => $total];
 }
 
-if (!empty($pos)) {
-    $where_clauses[] = "pos = :pos";
-    $bind_params[':pos'] = $pos;
+/**
+ * Fetch grouping counts
+ */
+function fetchCounts($db) {
+    $counts = ['all' => 0, 'pos' => [], 'language' => [], 'frequency' => []];
+
+    // Total
+    $counts['all'] = (int)$db->query("SELECT COUNT(*) as c FROM glossary_entries")->fetchArray()['c'];
+
+    // POS
+    $result = $db->query("SELECT pos, COUNT(*) as c FROM glossary_entries WHERE pos IS NOT NULL AND pos != '' GROUP BY pos ORDER BY c DESC");
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $counts['pos'][$row['pos']] = (int)$row['c'];
+    }
+
+    // Language (grouped by family)
+    $result = $db->query("
+        SELECT CASE
+            WHEN language LIKE 'akk%' THEN 'akk'
+            WHEN language LIKE 'sux%' THEN 'sux'
+            WHEN language LIKE 'qpn%' THEN 'qpn'
+            ELSE language END as lang,
+            COUNT(*) as c
+        FROM glossary_entries WHERE language IS NOT NULL GROUP BY lang ORDER BY c DESC
+    ");
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $counts['language'][$row['lang']] = (int)$row['c'];
+    }
+
+    // Frequency
+    $counts['frequency']['1'] = (int)$db->query("SELECT COUNT(*) as c FROM glossary_entries WHERE icount = 1")->fetchArray()['c'];
+    $counts['frequency']['2-10'] = (int)$db->query("SELECT COUNT(*) as c FROM glossary_entries WHERE icount BETWEEN 2 AND 10")->fetchArray()['c'];
+    $counts['frequency']['11-100'] = (int)$db->query("SELECT COUNT(*) as c FROM glossary_entries WHERE icount BETWEEN 11 AND 100")->fetchArray()['c'];
+    $counts['frequency']['101-500'] = (int)$db->query("SELECT COUNT(*) as c FROM glossary_entries WHERE icount BETWEEN 101 AND 500")->fetchArray()['c'];
+    $counts['frequency']['500+'] = (int)$db->query("SELECT COUNT(*) as c FROM glossary_entries WHERE icount > 500")->fetchArray()['c'];
+
+    return $counts;
 }
 
-if ($min_freq > 0 || $max_freq < 10000) {
-    $where_clauses[] = "icount >= :min_freq AND icount <= :max_freq";
-    $bind_params[':min_freq'] = $min_freq;
-    $bind_params[':max_freq'] = $max_freq;
+/**
+ * Fetch word detail data
+ */
+function fetchWordDetail($db, $entryId) {
+    if (!$entryId) return null;
+
+    // Main entry
+    $stmt = $db->prepare("SELECT * FROM glossary_entries WHERE entry_id = :id");
+    $stmt->bindValue(':id', $entryId, SQLITE3_TEXT);
+    $entry = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
+
+    if (!$entry) return null;
+
+    // Variants
+    $stmt = $db->prepare("
+        SELECT gf.form, gf.count as stored_count, COUNT(DISTINCT l.p_number) as occ
+        FROM glossary_forms gf
+        LEFT JOIN lemmas l ON gf.form = l.form AND l.cf = :cf AND l.lang = :lang
+        WHERE gf.entry_id = :id
+        GROUP BY gf.form ORDER BY occ DESC, stored_count DESC
+    ");
+    $stmt->bindValue(':id', $entryId, SQLITE3_TEXT);
+    $stmt->bindValue(':cf', $entry['citation_form'], SQLITE3_TEXT);
+    $stmt->bindValue(':lang', $entry['language'], SQLITE3_TEXT);
+    $variants = [];
+    $result = $stmt->execute();
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $variants[] = ['form' => $row['form'], 'count' => (int)$row['occ'] ?: (int)$row['stored_count']];
+    }
+
+    // Signs
+    $stmt = $db->prepare("
+        SELECT swu.sign_id, swu.sign_value, swu.value_type, swu.usage_count, s.utf8, s.sign_type
+        FROM sign_word_usage swu
+        JOIN signs s ON swu.sign_id = s.sign_id
+        WHERE swu.entry_id = :id ORDER BY swu.usage_count DESC
+    ");
+    $stmt->bindValue(':id', $entryId, SQLITE3_TEXT);
+    $signs = [];
+    $result = $stmt->execute();
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $signs[] = $row;
+    }
+
+    // Senses
+    $stmt = $db->prepare("SELECT * FROM glossary_senses WHERE entry_id = :id ORDER BY sense_number");
+    $stmt->bindValue(':id', $entryId, SQLITE3_TEXT);
+    $senses = [];
+    $result = $stmt->execute();
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $senses[] = $row;
+    }
+
+    // Attestations
+    $stmt = $db->prepare("
+        SELECT DISTINCT l.p_number, l.form, a.period, a.provenience, a.genre
+        FROM lemmas l LEFT JOIN artifacts a ON l.p_number = a.p_number
+        WHERE l.cf = :cf AND l.lang = :lang
+        ORDER BY l.p_number LIMIT 10
+    ");
+    $stmt->bindValue(':cf', $entry['citation_form'], SQLITE3_TEXT);
+    $stmt->bindValue(':lang', $entry['language'], SQLITE3_TEXT);
+    $attestations = [];
+    $result = $stmt->execute();
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $attestations[] = $row;
+    }
+
+    // Related words
+    $stmt = $db->prepare("
+        SELECT gr.relationship_type, gr.notes, ge2.*
+        FROM glossary_relationships gr
+        JOIN glossary_entries ge2 ON gr.to_entry_id = ge2.entry_id
+        WHERE gr.from_entry_id = :id ORDER BY gr.relationship_type, ge2.icount DESC
+    ");
+    $stmt->bindValue(':id', $entryId, SQLITE3_TEXT);
+    $related = ['translations' => [], 'synonyms' => [], 'cognates' => [], 'see_also' => []];
+    $result = $stmt->execute();
+    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        $type = $row['relationship_type'];
+        if (isset($related[$type])) {
+            $related[$type][] = $row;
+        } else {
+            $related['see_also'][] = $row;
+        }
+    }
+
+    // CAD (Akkadian only)
+    $cad = null;
+    if (strpos($entry['language'], 'akk') === 0) {
+        $stmt = $db->prepare("SELECT * FROM cad_entries WHERE oracc_entry_id = :id LIMIT 1");
+        $stmt->bindValue(':id', $entryId, SQLITE3_TEXT);
+        $cad = $stmt->execute()->fetchArray(SQLITE3_ASSOC) ?: null;
+    }
+
+    return [
+        'entry' => $entry,
+        'variants' => $variants,
+        'signs' => $signs,
+        'senses' => $senses,
+        'attestations' => $attestations,
+        'related' => $related,
+        'cad' => $cad
+    ];
 }
 
-$where_sql = !empty($where_clauses) ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
+// Fetch data for initial render
+$counts = fetchCounts($db);
+$wordListData = fetchWordList($db, $searchQuery, $activeGroup, $activeValue);
+$initialWords = $wordListData['entries'];
+$totalWords = $wordListData['total'];
 
-// Build ORDER BY
-$order_by = match($sort) {
-    'headword' => 'headword ASC',
-    'language' => 'language ASC, headword ASC',
-    default => 'icount DESC'
-};
-
-// Count total
-$count_sql = "SELECT COUNT(*) as total FROM glossary_entries $where_sql";
-$stmt = $db->prepare($count_sql);
-foreach ($bind_params as $key => $value) {
-    $stmt->bindValue($key, $value, is_int($value) ? SQLITE3_INTEGER : SQLITE3_TEXT);
-}
-$result = $stmt->execute();
-$total_row = $result->fetchArray(SQLITE3_ASSOC);
-$total = (int)$total_row['total'];
-
-// Get entries
-$sql = "
-    SELECT entry_id, headword, citation_form, guide_word, pos, language, icount
-    FROM glossary_entries
-    $where_sql
-    ORDER BY $order_by
-    LIMIT :limit OFFSET :offset
-";
-
-$stmt = $db->prepare($sql);
-foreach ($bind_params as $key => $value) {
-    $stmt->bindValue($key, $value, is_int($value) ? SQLITE3_INTEGER : SQLITE3_TEXT);
-}
-$stmt->bindValue(':limit', $per_page, SQLITE3_INTEGER);
-$stmt->bindValue(':offset', $offset, SQLITE3_INTEGER);
-$result = $stmt->execute();
-
-$entries = [];
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-    $entries[] = $row;
+// Auto-select first word if none selected and we have results
+if (!$selectedWordId && !empty($initialWords)) {
+    $selectedWordId = $initialWords[0]['entry_id'];
 }
 
-$total_pages = ceil($total / $per_page);
+$wordDetail = fetchWordDetail($db, $selectedWordId);
+
+// Page title
+$pageTitle = 'Dictionary';
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
-<!-- Filter Components -->
-<link rel="stylesheet" href="/assets/css/layout/page-header.css">
-<link rel="stylesheet" href="/assets/css/layout/filtered-list.css">
-<link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
-<link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
-<link rel="stylesheet" href="/assets/css/components/pagination.css">
+<!-- Dictionary Browser Styles -->
+<link rel="stylesheet" href="/assets/css/dictionary/browser.css">
+<link rel="stylesheet" href="/assets/css/dictionary/groupings.css">
+<link rel="stylesheet" href="/assets/css/dictionary/word-list.css">
+<link rel="stylesheet" href="/assets/css/dictionary/word-detail.css">
+<link rel="stylesheet" href="/assets/css/dictionary/placeholders.css">
+<link rel="stylesheet" href="/assets/css/tablet/metadata.css">
 <link rel="stylesheet" href="/assets/css/components/badges.css">
-<link rel="stylesheet" href="/assets/css/components/states.css">
-<link rel="stylesheet" href="/assets/css/dictionary/page-browser.css">
-<link rel="stylesheet" href="/assets/css/components/educational-help.css">
 
-<main class="layout-two-column filtered-list-page">
-<div class="page-with-sidebar">
-    <!-- Filter Sidebar -->
-    <aside class="filter-sidebar">
-            <div class="filter-header">
-                <h2>Filters</h2>
-                <?php if (!empty(array_filter([$search, $language, $pos, $min_freq]))): ?>
-                    <a href="/dictionary/" class="btn btn-sm clear-filters">Reset</a>
-                <?php endif; ?>
-            </div>
+<?php
+// Render the browser layout component
+include __DIR__ . '/../includes/components/dictionary/browser-layout.php';
+?>
 
-            <form method="GET" action="/dictionary/" class="filter-form">
-                <!-- Search -->
-                <div class="filter-section">
-                    <label for="search">Search</label>
-                    <input type="text" id="search" name="search" value="<?= htmlspecialchars($search) ?>"
-                           placeholder="Word or meaning...">
-                </div>
-
-                <!-- Language -->
-                <div class="filter-section">
-                    <label>Language</label>
-                    <div class="filter-options">
-                        <label class="filter-option">
-                            <input type="radio" name="lang" value="" <?= empty($language) ? 'checked' : '' ?>>
-                            All Languages
-                        </label>
-                        <label class="filter-option">
-                            <input type="radio" name="lang" value="sux" <?= $language === 'sux' ? 'checked' : '' ?>>
-                            Sumerian
-                        </label>
-                        <label class="filter-option">
-                            <input type="radio" name="lang" value="akk" <?= $language === 'akk' ? 'checked' : '' ?>>
-                            Akkadian
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Part of Speech -->
-                <div class="filter-section">
-                    <label for="pos">Part of Speech</label>
-                    <select id="pos" name="pos">
-                        <option value="">All</option>
-                        <option value="N" <?= $pos === 'N' ? 'selected' : '' ?>>Noun (N)</option>
-                        <option value="V" <?= $pos === 'V' ? 'selected' : '' ?>>Verb (V)</option>
-                        <option value="AJ" <?= $pos === 'AJ' ? 'selected' : '' ?>>Adjective (AJ)</option>
-                        <option value="AV" <?= $pos === 'AV' ? 'selected' : '' ?>>Adverb (AV)</option>
-                        <option value="DP" <?= $pos === 'DP' ? 'selected' : '' ?>>Demonstrative (DP)</option>
-                        <option value="PP" <?= $pos === 'PP' ? 'selected' : '' ?>>Preposition (PP)</option>
-                        <option value="CNJ" <?= $pos === 'CNJ' ? 'selected' : '' ?>>Conjunction (CNJ)</option>
-                    </select>
-                </div>
-
-                <!-- Frequency Range -->
-                <div class="filter-section">
-                    <label>Frequency Range</label>
-                    <div class="freq-inputs">
-                        <input type="number" name="min_freq" value="<?= $min_freq ?>" placeholder="Min" min="0">
-                        <span>to</span>
-                        <input type="number" name="max_freq" value="<?= $max_freq ?>" placeholder="Max" min="0">
-                    </div>
-                </div>
-
-                <!-- Sort -->
-                <div class="filter-section">
-                    <label for="sort">Sort By</label>
-                    <select id="sort" name="sort">
-                        <option value="icount" <?= $sort === 'icount' ? 'selected' : '' ?>>Frequency (High to Low)</option>
-                        <option value="headword" <?= $sort === 'headword' ? 'selected' : '' ?>>Alphabetical</option>
-                        <option value="language" <?= $sort === 'language' ? 'selected' : '' ?>>Language</option>
-                    </select>
-                </div>
-
-                <!-- Per Page -->
-                <div class="filter-section">
-                    <label for="per_page">Results per page</label>
-                    <select id="per_page" name="per_page">
-                        <option value="25" <?= $per_page === 25 ? 'selected' : '' ?>>25</option>
-                        <option value="50" <?= $per_page === 50 ? 'selected' : '' ?>>50</option>
-                        <option value="100" <?= $per_page === 100 ? 'selected' : '' ?>>100</option>
-                        <option value="200" <?= $per_page === 200 ? 'selected' : '' ?>>200</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn filter-apply">Apply Filters</button>
-            </form>
-        </aside>
-
-    <div class="main-content">
-        <div class="page-header">
-            <div class="page-header-main">
-                <div class="page-header-title">
-                    <h1>Dictionary</h1>
-                    <p class="subtitle">
-                        Showing <?= number_format($offset + 1) ?>-<?= number_format(min($offset + $per_page, $total)) ?> of <?= number_format($total) ?> words
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Results Grid -->
-        <div class="entries-grid">
-            <?php foreach ($entries as $entry): ?>
-                <a href="/dictionary/word.php?id=<?= urlencode($entry['entry_id']) ?>" class="entry-card">
-                    <div class="entry-card__header">
-                        <h3 class="entry-headword"><?= htmlspecialchars($entry['headword']) ?></h3>
-                        <?php if ($entry['guide_word']): ?>
-                            <span class="entry-guide-word">[<?= htmlspecialchars($entry['guide_word']) ?>]</span>
-                        <?php endif; ?>
-                    </div>
-                    <div class="entry-card__meta">
-                        <span class="badge badge--pos"><?= htmlspecialchars($entry['pos']) ?></span>
-                        <span class="badge badge--language">
-                            <?= $entry['language'] === 'sux' ? 'Sumerian' : 'Akkadian' ?>
-                        </span>
-                    </div>
-                    <div class="entry-card__stats">
-                        <span class="entry-frequency"><?= number_format($entry['icount']) ?> attestations</span>
-                    </div>
-                </a>
-            <?php endforeach; ?>
-
-            <?php if (empty($entries)): ?>
-                <div class="no-results">
-                    <p>No entries match your filters.</p>
-                    <a href="/dictionary/" class="btn">Clear filters</a>
-                </div>
-            <?php endif; ?>
-        </div>
-
-        <!-- Pagination -->
-        <?php if ($total_pages > 1): ?>
-            <nav class="pagination" aria-label="Pagination">
-                <?php
-                $query_params = $_GET;
-                unset($query_params['page']);
-                $base_url = '/dictionary/?' . http_build_query($query_params);
-                ?>
-
-                <?php if ($page > 1): ?>
-                    <a href="<?= $base_url ?>&page=<?= $page - 1 ?>" class="pagination-prev">← Previous</a>
-                <?php endif; ?>
-
-                <span class="pagination-info">Page <?= $page ?> of <?= $total_pages ?></span>
-
-                <?php if ($page < $total_pages): ?>
-                    <a href="<?= $base_url ?>&page=<?= $page + 1 ?>" class="pagination-next">Next →</a>
-                <?php endif; ?>
-            </nav>
-        <?php endif; ?>
-    </div>
-</div>
-</main>
-
-<!-- JavaScript -->
-<script src="/assets/js/modules/educational-help.js"></script>
-<script src="/assets/js/modules/dictionary-search.js"></script>
+<!-- Dictionary Browser JavaScript -->
+<script src="/assets/js/dictionary-browser.js"></script>
 <script>
-    // Initialize search autocomplete
-    const searchInput = document.getElementById('search');
-    if (searchInput) {
-        new DictionarySearch(searchInput, {
-            minChars: 2,
-            maxSuggestions: 8
+    // Initialize dictionary browser
+    document.addEventListener('DOMContentLoaded', function() {
+        window.dictionaryBrowser = new DictionaryBrowser({
+            initialState: {
+                groupType: '<?= htmlspecialchars($activeGroup) ?>',
+                groupValue: <?= $activeValue ? "'" . htmlspecialchars($activeValue) . "'" : 'null' ?>,
+                searchQuery: '<?= htmlspecialchars(addslashes($searchQuery)) ?>',
+                selectedWordId: <?= $selectedWordId ? "'" . htmlspecialchars($selectedWordId) . "'" : 'null' ?>,
+                offset: 0,
+                total: <?= $totalWords ?>
+            }
         });
-    }
+    });
 </script>
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>
