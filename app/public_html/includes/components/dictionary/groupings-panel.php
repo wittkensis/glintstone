@@ -31,10 +31,12 @@ $languageLabels = [
     'sux-x-emesal' => 'Emesal (Sumerian)',
     'xhu' => 'Hurrian',
     'uga' => 'Ugaritic',
-    'elx' => 'Elamite',
-    'qpn' => 'Proper Nouns',
-    'qpn-x-places' => 'Place Names'
+    'elx' => 'Elamite'
 ];
+
+// Language codes to hide from the Language section
+// qpn = "proper nouns" - not a real language, these are names with unknown/mixed language
+$hiddenLanguages = ['qpn', 'qpn-x-places'];
 
 // True Parts of Speech (linguistic categories)
 $posLabels = [
@@ -177,7 +179,7 @@ HTML;
             <div class="dict-groupings__section-content">
                 <?php if (!empty($counts['language'])): ?>
                     <?php foreach ($counts['language'] as $lang => $count): ?>
-                        <?php if ($count > 0): ?>
+                        <?php if ($count > 0 && !in_array($lang, $hiddenLanguages)): ?>
                             <?= renderGroupingItem('language', $lang, $languageLabels[$lang] ?? $lang, number_format($count), $activeGroup, $activeValue) ?>
                         <?php endif; ?>
                     <?php endforeach; ?>
