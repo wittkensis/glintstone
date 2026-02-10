@@ -28,7 +28,10 @@ $languageLabels = [
     'akk-x-oldbab' => 'Old Babylonian',
     'akk-x-neoass' => 'Neo-Assyrian',
     'sux' => 'Sumerian',
-    'sux-x-emesal' => 'Emesal',
+    'sux-x-emesal' => 'Emesal (Sumerian)',
+    'xhu' => 'Hurrian',
+    'uga' => 'Ugaritic',
+    'elx' => 'Elamite',
     'qpn' => 'Proper Nouns',
     'qpn-x-places' => 'Place Names'
 ];
