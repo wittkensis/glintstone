@@ -409,13 +409,13 @@ class DictionaryBrowser {
     }
 
     renderWordDetail(data) {
-        if (!this.elements.detail || !data) return;
+        if (!this.elements.detail || !data || !data.entry) return;
 
         // Build HTML for word detail
         // Note: This is a simplified version - the full detail is rendered server-side
         // For dynamic updates, we fetch the rendered HTML or build it client-side
 
-        const entry = data;
+        const entry = data.entry;
         const langLabels = {
             'sux': 'Sumerian', 'akk': 'Akkadian', 'akk-x-stdbab': 'Standard Babylonian',
             'qpn': 'Personal Name'
@@ -470,9 +470,9 @@ class DictionaryBrowser {
                     </dl>
                 </div>
 
-                ${this.renderVariants(entry.variants)}
-                ${this.renderSigns(entry.signs)}
-                ${this.renderAttestations(entry.attestations, entry.icount)}
+                ${this.renderVariants(data.variants)}
+                ${this.renderSigns(data.signs)}
+                ${this.renderAttestations(data.attestations?.sample, entry.icount)}
             </div>
             <div class="dict-loading-overlay">
                 <div class="dict-spinner"></div>
