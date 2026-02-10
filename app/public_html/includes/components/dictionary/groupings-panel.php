@@ -33,21 +33,53 @@ $languageLabels = [
     'qpn-x-places' => 'Place Names'
 ];
 
-// POS labels for display
+// True Parts of Speech (linguistic categories)
 $posLabels = [
     'N' => 'Noun',
     'V' => 'Verb',
+    'V/t' => 'Verb (transitive)',
+    'V/i' => 'Verb (intransitive)',
     'AJ' => 'Adjective',
     'AV' => 'Adverb',
     'NU' => 'Number',
     'PRP' => 'Preposition',
+    'PP' => 'Postposition',
     'CNJ' => 'Conjunction',
+    'DP' => 'Demonstrative',
+    'IP' => 'Interrogative',
+    'RP' => 'Relative Pronoun',
+    'XP' => 'Indefinite Pronoun',
+    'REL' => 'Relative',
+    'DET' => 'Determiner',
+    'MOD' => 'Modifier',
+    'J' => 'Interjection',
+    'SBJ' => 'Subjunction',
+    'QP' => 'Quantifier',
+    'MA' => 'Auxiliary',
+    'O' => 'Other',
+    'M' => 'Morpheme'
+];
+
+// Proper Noun Types (name categories) - stored in POS field but are name classifications
+$nameTypeLabels = [
     'PN' => 'Personal Name',
     'DN' => 'Divine Name',
     'GN' => 'Geographic Name',
+    'SN' => 'Settlement Name',
+    'TN' => 'Temple Name',
+    'WN' => 'Watercourse Name',
     'RN' => 'Royal Name',
-    'TN' => 'Temple Name'
+    'EN' => 'Ethnic Name',
+    'CN' => 'Celestial Name',
+    'ON' => 'Object Name',
+    'MN' => 'Month Name',
+    'LN' => 'Line Name',
+    'FN' => 'Field Name',
+    'AN' => 'Artifact Name'
 ];
+
+// Codes that are name types (to separate from true POS)
+$nameTypeCodes = array_keys($nameTypeLabels);
 
 // Frequency range labels
 $frequencyLabels = [
@@ -93,7 +125,7 @@ HTML;
         <!-- All Words -->
         <?= renderGroupingItem('all', null, 'All Words', number_format($counts['all'] ?? 0), $activeGroup, $activeValue) ?>
 
-        <!-- By Part of Speech -->
+        <!-- By Part of Speech (true linguistic categories only) -->
         <div class="dict-groupings__section" data-expanded="<?= in_array('pos', $expandedSections) ? 'true' : 'false' ?>">
             <button class="dict-groupings__section-header">
                 <span>Part of Speech</span>
@@ -104,8 +136,27 @@ HTML;
             <div class="dict-groupings__section-content">
                 <?php if (!empty($counts['pos'])): ?>
                     <?php foreach ($counts['pos'] as $pos => $count): ?>
-                        <?php if ($count > 0): ?>
+                        <?php if ($count > 0 && !in_array($pos, $nameTypeCodes)): ?>
                             <?= renderGroupingItem('pos', $pos, $posLabels[$pos] ?? $pos, number_format($count), $activeGroup, $activeValue) ?>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- By Name Type (proper noun categories) -->
+        <div class="dict-groupings__section" data-expanded="<?= in_array('nametype', $expandedSections) ? 'true' : 'false' ?>">
+            <button class="dict-groupings__section-header">
+                <span>Name Type</span>
+                <svg class="dict-groupings__section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </button>
+            <div class="dict-groupings__section-content">
+                <?php if (!empty($counts['pos'])): ?>
+                    <?php foreach ($counts['pos'] as $pos => $count): ?>
+                        <?php if ($count > 0 && in_array($pos, $nameTypeCodes)): ?>
+                            <?= renderGroupingItem('pos', $pos, $nameTypeLabels[$pos] ?? $pos, number_format($count), $activeGroup, $activeValue) ?>
                         <?php endif; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
