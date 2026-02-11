@@ -17,76 +17,39 @@
  *   }
  */
 
-// Set JSON header FIRST before any includes
-header('Content-Type: application/json');
+require_once __DIR__ . '/_bootstrap.php';
 
-// Catch all errors and return as JSON
-set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Server error',
-        'message' => $errstr,
-        'file' => basename($errfile),
-        'line' => $errline
-    ]);
-    exit;
-});
+use Glintstone\Http\JsonResponse;
+use Glintstone\Service\TabletService;
+use function Glintstone\app;
 
-// Wrap everything in try-catch
-try {
-    require_once __DIR__ . '/../includes/db.php';
+// Get parameters
+$params = getRequestParams();
+$pNumber = $params['p'] ?? null;
 
-    $pNumber = $_GET['p'] ?? null;
+// Validate P-number format
+if (!$pNumber || !preg_match('/^P\d{6}$/', $pNumber)) {
+    JsonResponse::badRequest('Invalid P-number format. Expected format: P000001');
+}
 
-    if (!$pNumber || !preg_match('/^P\d{6}$/', $pNumber)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid P-number format. Expected format: P000001']);
-        exit;
-    }
+// Get lemmas via service
+$service = app()->get(TabletService::class);
+$lemmas = $service->getLemmas($pNumber);
 
-    $db = getDB();
+// Convert to object format for JSON (maintains JS object structure)
+$lemmasObject = new stdClass();
+$count = 0;
 
-    $stmt = $db->prepare("
-        SELECT line_no, word_no, form, cf, gw, pos, lang
-        FROM lemmas
-        WHERE p_number = :p
-        ORDER BY line_no ASC, word_no ASC
-    ");
-    $stmt->bindValue(':p', $pNumber, SQLITE3_TEXT);
-    $result = $stmt->execute();
-
-    $lemmas = new stdClass();
-    $count = 0;
-
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        $lineNo = strval($row['line_no']);
-        $wordNo = strval($row['word_no']);
-
-        if (!isset($lemmas->$lineNo)) {
-            $lemmas->$lineNo = new stdClass();
-        }
-
-        $lemmas->$lineNo->$wordNo = [
-            'form' => $row['form'],
-            'cf' => $row['cf'],
-            'gw' => $row['gw'],
-            'pos' => $row['pos'],
-            'lang' => $row['lang']
-        ];
+foreach ($lemmas as $lineNo => $words) {
+    $lemmasObject->$lineNo = new stdClass();
+    foreach ($words as $wordNo => $lemmaData) {
+        $lemmasObject->$lineNo->$wordNo = $lemmaData;
         $count++;
     }
-
-    echo json_encode([
-        'p_number' => $pNumber,
-        'lemmas' => $lemmas,
-        'count' => $count
-    ], JSON_PRETTY_PRINT);
-
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Database error',
-        'message' => $e->getMessage()
-    ]);
-    exit;
 }
+
+JsonResponse::success([
+    'p_number' => $pNumber,
+    'lemmas' => $lemmasObject,
+    'count' => $count
+]);
