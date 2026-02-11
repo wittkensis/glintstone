@@ -2,65 +2,42 @@
 /**
  * Sign Annotations API
  * Returns bounding box annotations for a tablet from imported datasets (CompVis, eBL)
+ *
+ * Parameters:
+ *   p       - P-number (required, format: P000001)
+ *   surface - Optional filter: 'obverse', 'reverse'
  */
 
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/_bootstrap.php';
 
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+use Glintstone\Http\JsonResponse;
+use Glintstone\Service\TabletService;
+use function Glintstone\app;
 
-$pNumber = $_GET['p'] ?? null;
-$surface = $_GET['surface'] ?? null;  // Optional filter: 'obverse', 'reverse'
+// Get parameters
+$params = getRequestParams();
+$pNumber = $params['p'] ?? null;
+$surface = $params['surface'] ?? null;
 
+// Validate P-number format
 if (!$pNumber || !preg_match('/^P\d{6}$/', $pNumber)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid P-number format']);
-    exit;
+    JsonResponse::badRequest('Invalid P-number format');
 }
 
-$db = getDB();
+// Get annotations via service
+$service = app()->get(TabletService::class);
+$rawAnnotations = $service->getAnnotations($pNumber, $surface ? strtolower($surface) : null);
 
-// Build query with optional surface filter
-$sql = "
-    SELECT
-        id,
-        sign_label,
-        bbox_x,
-        bbox_y,
-        bbox_width,
-        bbox_height,
-        confidence,
-        surface,
-        atf_line,
-        source,
-        ref_image_width,
-        ref_image_height
-    FROM sign_annotations
-    WHERE p_number = :p
-";
-
-if ($surface) {
-    $sql .= " AND (surface = :surface OR surface IS NULL)";
-}
-
-$sql .= " ORDER BY bbox_y, bbox_x";
-
-$stmt = $db->prepare($sql);
-$stmt->bindValue(':p', $pNumber, SQLITE3_TEXT);
-if ($surface) {
-    $stmt->bindValue(':surface', strtolower($surface), SQLITE3_TEXT);
-}
-
-$result = $stmt->execute();
-
+// Format annotations for response
 $annotations = [];
 $sources = [];
+$stats = [];
 $refWidth = null;
 $refHeight = null;
 
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-    // Capture reference dimensions from first row (same for all annotations of a tablet)
-    if ($refWidth === null && $row['ref_image_width']) {
+foreach ($rawAnnotations as $row) {
+    // Capture reference dimensions from first row
+    if ($refWidth === null && !empty($row['ref_image_width'])) {
         $refWidth = (int)$row['ref_image_width'];
         $refHeight = (int)$row['ref_image_height'];
     }
@@ -77,25 +54,14 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         'atfLine' => $row['atf_line'] ? (int)$row['atf_line'] : null,
         'source' => $row['source'],
     ];
-    $sources[$row['source']] = true;
+
+    // Track sources
+    $source = $row['source'];
+    $sources[$source] = true;
+    $stats[$source] = ($stats[$source] ?? 0) + 1;
 }
 
-// Get summary stats
-$stmt = $db->prepare("
-    SELECT COUNT(*) as count, source
-    FROM sign_annotations
-    WHERE p_number = :p
-    GROUP BY source
-");
-$stmt->bindValue(':p', $pNumber, SQLITE3_TEXT);
-$statsResult = $stmt->execute();
-
-$stats = [];
-while ($row = $statsResult->fetchArray(SQLITE3_ASSOC)) {
-    $stats[$row['source']] = (int)$row['count'];
-}
-
-echo json_encode([
+JsonResponse::success([
     'p_number' => $pNumber,
     'count' => count($annotations),
     'sources' => array_keys($sources),
