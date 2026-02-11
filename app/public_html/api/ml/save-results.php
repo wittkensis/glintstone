@@ -4,32 +4,18 @@
  * Saves ML-predicted sign annotations to the database
  */
 
-require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../_bootstrap.php';
 
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+use Glintstone\Http\JsonResponse;
+use function Glintstone\app;
 
-// Handle CORS preflight
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
-    exit;
-}
+requireMethod('POST');
 
 // Parse JSON body
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (!$input) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid JSON input']);
-    exit;
+    JsonResponse::badRequest('Invalid JSON input');
 }
 
 $pNumber = $input['p_number'] ?? null;
@@ -39,27 +25,23 @@ $imageWidth = $input['image_width'] ?? null;
 $imageHeight = $input['image_height'] ?? null;
 $replaceExisting = $input['replace_existing'] ?? false;
 
-// Validate P-number
 if (!$pNumber || !preg_match('/^P\d{6}$/', $pNumber)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid P-number format']);
-    exit;
+    JsonResponse::badRequest('Invalid P-number format');
 }
 
-// Validate detections
 if (!is_array($detections) || count($detections) === 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'No detections provided']);
-    exit;
+    JsonResponse::badRequest('No detections provided');
 }
 
-$db = getDB();
+// Need write access
+$dbPath = defined('DB_PATH') ? DB_PATH : dirname(__DIR__, 3) . '/database/glintstone.db';
+$db = new SQLite3($dbPath, SQLITE3_OPEN_READWRITE);
+$db->enableExceptions(true);
+$db->busyTimeout(5000);
 
-// Start transaction
 $db->exec('BEGIN TRANSACTION');
 
 try {
-    // Optionally delete existing annotations from this source
     if ($replaceExisting) {
         $deleteStmt = $db->prepare("DELETE FROM sign_annotations WHERE p_number = :p AND source = :source");
         $deleteStmt->bindValue(':p', $pNumber, SQLITE3_TEXT);
@@ -67,53 +49,29 @@ try {
         $deleteStmt->execute();
     }
 
-    // Prepare insert statement
     $insertStmt = $db->prepare("
         INSERT INTO sign_annotations (
-            p_number,
-            sign_label,
-            bbox_x,
-            bbox_y,
-            bbox_width,
-            bbox_height,
-            confidence,
-            surface,
-            source,
-            image_type,
-            ref_image_width,
-            ref_image_height
+            p_number, sign_label, bbox_x, bbox_y, bbox_width, bbox_height,
+            confidence, surface, source, image_type, ref_image_width, ref_image_height
         ) VALUES (
-            :p_number,
-            :sign_label,
-            :bbox_x,
-            :bbox_y,
-            :bbox_width,
-            :bbox_height,
-            :confidence,
-            :surface,
-            :source,
-            :image_type,
-            :ref_width,
-            :ref_height
+            :p_number, :sign_label, :bbox_x, :bbox_y, :bbox_width, :bbox_height,
+            :confidence, :surface, :source, :image_type, :ref_width, :ref_height
         )
     ");
 
     $inserted = 0;
 
     foreach ($detections as $det) {
-        // Extract bounding box - detections have bbox as [x_min, y_min, x_max, y_max]
         $bbox = $det['bbox'] ?? [];
-        if (count($bbox) !== 4) {
-            continue;
-        }
+        if (count($bbox) !== 4) continue;
 
-        // Convert from xyxy to xywh for storage
+        // Convert from xyxy to xywh
         $x = $bbox[0];
         $y = $bbox[1];
         $width = $bbox[2] - $bbox[0];
         $height = $bbox[3] - $bbox[1];
 
-        // Convert to percentages if we have image dimensions
+        // Convert to percentages if image dimensions provided
         if ($imageWidth && $imageHeight) {
             $x = ($x / $imageWidth) * 100;
             $y = ($y / $imageHeight) * 100;
@@ -142,16 +100,13 @@ try {
     // Update pipeline_status
     $pipelineStmt = $db->prepare("
         UPDATE pipeline_status
-        SET has_sign_annotations = 1,
-            ocr_model = :model,
-            last_updated = datetime('now')
+        SET has_sign_annotations = 1, ocr_model = :model, last_updated = datetime('now')
         WHERE p_number = :p
     ");
     $pipelineStmt->bindValue(':p', $pNumber, SQLITE3_TEXT);
     $pipelineStmt->bindValue(':model', $source, SQLITE3_TEXT);
     $pipelineStmt->execute();
 
-    // If no pipeline_status row exists, create one
     if ($db->changes() === 0) {
         $createStmt = $db->prepare("
             INSERT OR IGNORE INTO pipeline_status (p_number, has_sign_annotations, ocr_model, last_updated)
@@ -163,9 +118,9 @@ try {
     }
 
     $db->exec('COMMIT');
+    $db->close();
 
-    echo json_encode([
-        'success' => true,
+    JsonResponse::success([
         'p_number' => $pNumber,
         'inserted' => $inserted,
         'source' => $source,
@@ -174,9 +129,6 @@ try {
 
 } catch (Exception $e) {
     $db->exec('ROLLBACK');
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Database error',
-        'detail' => $e->getMessage()
-    ]);
+    $db->close();
+    JsonResponse::serverError('Database error');
 }

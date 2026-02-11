@@ -64,6 +64,18 @@ final class ArtifactRepository extends BaseRepository
     }
 
     /**
+     * Get composite metadata by Q-number
+     */
+    public function findComposite(string $qNumber): ?array
+    {
+        $stmt = $this->prepare(
+            "SELECT * FROM composites WHERE q_number = :q_number",
+            ['q_number' => $qNumber]
+        );
+        return $this->fetchOne($stmt);
+    }
+
+    /**
      * Search artifacts with filters
      *
      * @param array $filters Filter criteria

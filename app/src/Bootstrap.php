@@ -110,6 +110,10 @@ class App
             return new Repository\CollectionRepository();
         });
 
+        $this->register(Repository\SignRepository::class, function () {
+            return new Repository\SignRepository();
+        });
+
         // Service layer
         $this->register(Service\TabletService::class, function (App $app) {
             return new Service\TabletService(

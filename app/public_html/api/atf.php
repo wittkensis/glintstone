@@ -9,59 +9,24 @@
  *   parsed  - If set, return parsed ATF structure for interactive display
  */
 
-// Set JSON header FIRST before any includes
-header('Content-Type: application/json');
+require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/../includes/ATFParser.php';
 
-// Catch all errors and return as JSON
-set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Server error',
-        'message' => $errstr,
-        'file' => basename($errfile),
-        'line' => $errline
-    ]);
-    exit;
-});
+use Glintstone\Http\JsonResponse;
+use Glintstone\Repository\InscriptionRepository;
+use function Glintstone\app;
 
-// Wrap everything in try-catch
-try {
-    require_once __DIR__ . '/../includes/db.php';
-    require_once __DIR__ . '/../includes/ATFParser.php';
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Failed to load dependencies',
-        'message' => $e->getMessage()
-    ]);
-    exit;
+$params = getRequestParams();
+$pNumber = $params['p'] ?? null;
+$fetchRemote = isset($params['fetch']);
+$returnParsed = isset($params['parsed']);
+
+if (!$pNumber || !preg_match('/^P\d{6}$/', $pNumber)) {
+    JsonResponse::badRequest('Invalid P-number format');
 }
 
-try {
-    $pNumber = $_GET['p'] ?? null;
-    $fetchRemote = isset($_GET['fetch']);
-    $returnParsed = isset($_GET['parsed']);
-
-    if (!$pNumber || !preg_match('/^P\d{6}$/', $pNumber)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid P-number format']);
-        exit;
-    }
-
-    // Check local database first
-    $db = getDB();
-    $stmt = $db->prepare("SELECT atf, source FROM inscriptions WHERE p_number = :p AND is_latest = 1");
-    $stmt->bindValue(':p', $pNumber, SQLITE3_TEXT);
-    $result = $stmt->execute();
-    $row = $result->fetchArray(SQLITE3_ASSOC);
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Database error',
-        'message' => $e->getMessage()
-    ]);
-    exit;
-}
+$repo = app()->get(InscriptionRepository::class);
+$row = $repo->getLatest($pNumber);
 
 if ($row && $row['atf']) {
     $response = [
@@ -71,32 +36,20 @@ if ($row && $row['atf']) {
         'cached' => true
     ];
 
-    // Add parsed structure if requested
     if ($returnParsed) {
-        try {
-            $parser = new ATFParser();
-            $response['parsed'] = $parser->parse($row['atf']);
-            $response['legend'] = $parser->getLegendItems();
-        } catch (Throwable $e) {
-            http_response_code(500);
-            echo json_encode([
-                'error' => 'Parser error',
-                'message' => $e->getMessage()
-            ]);
-            exit;
-        }
+        $parser = new ATFParser();
+        $response['parsed'] = $parser->parse($row['atf']);
+        $response['legend'] = $parser->getLegendItems();
     }
 
-    echo json_encode($response);
-    exit;
+    JsonResponse::success($response);
 }
 
-// If not found locally and fetch requested, try CDLI
+// Not found locally - try CDLI if requested
 if ($fetchRemote) {
     $atf = fetchFromCDLI($pNumber);
 
     if ($atf) {
-        // Store locally for future use
         storeATF($pNumber, $atf, 'cdli-api');
 
         $response = [
@@ -106,31 +59,22 @@ if ($fetchRemote) {
             'cached' => false
         ];
 
-        // Add parsed structure if requested
         if ($returnParsed) {
             $parser = new ATFParser();
             $response['parsed'] = $parser->parse($atf);
             $response['legend'] = $parser->getLegendItems();
         }
 
-        echo json_encode($response);
-        exit;
+        JsonResponse::success($response);
     }
 }
 
-// Not found
-http_response_code(404);
-echo json_encode([
-    'error' => 'ATF not available',
-    'p_number' => $pNumber,
-    'hint' => $fetchRemote ? 'Not found on CDLI either' : 'Add ?fetch=1 to try fetching from CDLI'
-]);
+JsonResponse::notFound('ATF not available');
 
 /**
  * Fetch ATF from CDLI API
  */
 function fetchFromCDLI(string $pNumber): ?string {
-    // CDLI API endpoint for ATF
     $url = "https://cdli.earth/artifacts/{$pNumber}/inscription";
 
     $context = stream_context_create([
@@ -144,7 +88,6 @@ function fetchFromCDLI(string $pNumber): ?string {
     $response = @file_get_contents($url, false, $context);
 
     if ($response === false || strlen($response) < 10) {
-        // Try alternative ATF endpoint
         $altUrl = "https://cdli.ucla.edu/P/$pNumber/atf";
         $response = @file_get_contents($altUrl, false, $context);
     }
@@ -160,11 +103,9 @@ function fetchFromCDLI(string $pNumber): ?string {
  * Store fetched ATF in local database
  */
 function storeATF(string $pNumber, string $atf, string $source): void {
-    // Need write access - open new connection
-    $dbPath = dirname(__DIR__, 3) . '/database/glintstone.db';
+    $dbPath = defined('DB_PATH') ? DB_PATH : dirname(__DIR__, 3) . '/database/glintstone.db';
     $db = new SQLite3($dbPath, SQLITE3_OPEN_READWRITE);
 
-    // Insert or update inscription
     $stmt = $db->prepare("
         INSERT INTO inscriptions (p_number, atf, source, is_latest)
         VALUES (:p, :atf, :source, 1)
@@ -176,12 +117,10 @@ function storeATF(string $pNumber, string $atf, string $source): void {
     $stmt->bindValue(':atf', $atf, SQLITE3_TEXT);
     $stmt->bindValue(':source', $source, SQLITE3_TEXT);
 
-    // Handle case where constraint doesn't exist
     try {
         $stmt->execute();
     } catch (Exception $e) {
-        // Fallback: simple insert/update
-        $db->exec("DELETE FROM inscriptions WHERE p_number = '$pNumber' AND source = '$source'");
+        $db->exec("DELETE FROM inscriptions WHERE p_number = '{$pNumber}' AND source = '{$source}'");
         $stmt = $db->prepare("INSERT INTO inscriptions (p_number, atf, source, is_latest) VALUES (:p, :atf, :source, 1)");
         $stmt->bindValue(':p', $pNumber, SQLITE3_TEXT);
         $stmt->bindValue(':atf', $atf, SQLITE3_TEXT);
@@ -189,7 +128,6 @@ function storeATF(string $pNumber, string $atf, string $source): void {
         $stmt->execute();
     }
 
-    // Update pipeline status
     $db->exec("
         INSERT INTO pipeline_status (p_number, has_atf, atf_source)
         VALUES ('$pNumber', 1, '$source')

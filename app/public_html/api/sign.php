@@ -4,56 +4,26 @@
  * Returns sign data from OGSL
  */
 
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/_bootstrap.php';
 
-header('Content-Type: application/json');
+use Glintstone\Http\JsonResponse;
+use Glintstone\Repository\SignRepository;
+use function Glintstone\app;
 
-$query = $_GET['q'] ?? null;
+$params = getRequestParams();
+$query = $params['q'] ?? null;
 
 if (!$query) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Missing query parameter']);
-    exit;
+    JsonResponse::badRequest('Missing query parameter');
 }
 
-$db = getDB();
+$repo = app()->get(SignRepository::class);
 
-// Search by UTF-8 character, sign ID, or value
-$results = [];
-
-// Try exact UTF-8 match first
-$stmt = $db->prepare("SELECT * FROM signs WHERE utf8 = :q");
-$stmt->bindValue(':q', $query, SQLITE3_TEXT);
-$result = $stmt->execute();
-$sign = $result->fetchArray(SQLITE3_ASSOC);
-
-if (!$sign) {
-    // Try sign ID
-    $stmt = $db->prepare("SELECT * FROM signs WHERE sign_id = :q");
-    $stmt->bindValue(':q', $query, SQLITE3_TEXT);
-    $result = $stmt->execute();
-    $sign = $result->fetchArray(SQLITE3_ASSOC);
-}
-
-if (!$sign) {
-    // Try by value
-    $stmt = $db->prepare("
-        SELECT s.* FROM signs s
-        JOIN sign_values sv ON s.sign_id = sv.sign_id
-        WHERE sv.value = :q
-        LIMIT 1
-    ");
-    $stmt->bindValue(':q', strtolower($query), SQLITE3_TEXT);
-    $result = $stmt->execute();
-    $sign = $result->fetchArray(SQLITE3_ASSOC);
-}
+$sign = $repo->findByQuery($query);
 
 if ($sign) {
-    // Get all values for this sign
-    $values = getSignValues($sign['sign_id']);
-    $sign['values'] = $values;
-    echo json_encode($sign);
+    $sign['values'] = $repo->getValueNames($sign['sign_id']);
+    JsonResponse::success($sign);
 } else {
-    http_response_code(404);
-    echo json_encode(['error' => 'Sign not found']);
+    JsonResponse::notFound('Sign not found');
 }
