@@ -25,7 +25,7 @@
     fill: none;
     stroke: var(--color-surface);
     stroke-width: 20;
-    transition: stroke 0.3s;
+    transition: stroke var(--transition-slow);
 }
 
 /* Progress rings (animated) */
@@ -35,27 +35,27 @@
     stroke-width: 20;
     transform: rotate(-90deg);
     transform-origin: center;
-    transition: stroke-dashoffset 1.2s ease-out, stroke 0.3s;
+    transition: stroke-dashoffset 1.2s ease-out, stroke var(--transition-slow);
 }
 
 /* Ring colors - Distinct colors for each metric */
 .ring-1 {
-    stroke: #6b8e6b; /* Green for Images */
+    stroke: var(--color-success); /* Green for Images */
 }
 
 .ring-2 {
-    stroke: #c9a962; /* Gold for Transliterations */
+    stroke: var(--color-accent); /* Gold for Transliterations */
 }
 
 .ring-3 {
-    stroke: #7ba4c4; /* Blue for Translations */
+    stroke: var(--color-info); /* Blue for Translations */
 }
 
 /* Center Monument Typography */
 .monument-number {
-    font-family: var(--font-serif); /* Playfair Display */
-    font-size: 48px;
-    font-weight: 700;
+    font-family: var(--font-serif);
+    font-size: var(--text-display);
+    font-weight: var(--font-weight-bold);
     fill: var(--color-text);
     letter-spacing: -0.02em;
 }
@@ -67,8 +67,8 @@
 
 .monument-label {
     font-family: var(--font-sans);
-    font-size: 16px;
-    font-weight: 400;
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
     fill: var(--color-text-muted);
     letter-spacing: 0.02em;
 }
@@ -91,7 +91,7 @@
     background: var(--color-bg-elevated);
     border: 1px solid var(--color-border);
     text-align: center;
-    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    transition: background var(--transition-normal), border-color var(--transition-normal), transform var(--transition-normal);
 }
 
 .ring-label:hover {
@@ -101,28 +101,28 @@
 
 /* Color accents matching rings */
 .ring-label-1 {
-    border-top: 3px solid #6b8e6b;
+    border-top: 3px solid var(--color-success);
 }
 
 .ring-label-2 {
-    border-top: 3px solid #c9a962;
+    border-top: 3px solid var(--color-accent);
 }
 
 .ring-label-3 {
-    border-top: 3px solid #7ba4c4;
+    border-top: 3px solid var(--color-info);
 }
 
 .label-name {
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 .label-stat {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-bold);
     color: var(--color-text);
     font-variant-numeric: tabular-nums;
     display: block;
@@ -131,7 +131,7 @@
 
 .label-count {
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--color-text-subtle);
     display: block;
 }
@@ -160,11 +160,11 @@
     }
 
     .monument-number {
-        font-size: 42px;
+        font-size: var(--text-4xl);
     }
 
     .monument-label {
-        font-size: 14px;
+        font-size: var(--text-sm);
     }
 }
 
@@ -179,11 +179,11 @@
     }
 
     .monument-number {
-        font-size: 36px;
+        font-size: var(--text-3xl);
     }
 
     .monument-label {
-        font-size: 13px;
+        font-size: var(--text-xs);
     }
 
     .ring-labels {
@@ -193,7 +193,7 @@
     }
 
     .label-stat {
-        font-size: 1.25rem;
+        font-size: var(--text-xl);
     }
 }
 

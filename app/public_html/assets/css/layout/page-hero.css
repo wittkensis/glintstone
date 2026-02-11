@@ -47,7 +47,7 @@ main:has(.page-hero) {
 .page-hero-overlay {
     position: absolute;
     inset: 0;
-    z-index: 1;
+    z-index: var(--z-base);
 }
 
 /* Two-layer approach: blur + gradient */
@@ -118,31 +118,31 @@ main:has(.page-hero) {
 .page-hero-title .back-link {
     display: inline-flex;
     align-items: center;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--color-white-80);
     text-decoration: none;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     margin-bottom: var(--space-3);
-    transition: color 0.2s;
+    transition: color var(--transition-normal);
 }
 
 .page-hero-title .back-link:hover {
-    color: rgba(255, 255, 255, 1);
+    color: var(--color-white);
 }
 
 .page-hero-title h1 {
-    font-size: 2.5rem;
+    font-size: var(--text-4xl);
     margin: 0;
     margin-bottom: var(--space-2);
-    color: #ffffff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    color: var(--color-white);
+    text-shadow: 0 2px 4px var(--color-overlay-medium);
 }
 
 .page-hero-title .subtitle {
-    font-size: 0.9375rem;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: var(--text-sm);
+    color: var(--color-white-90);
     margin: var(--space-2) 0 0 0;
-    line-height: 1.6;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    line-height: var(--line-height-loose);
+    text-shadow: 0 1px 2px var(--color-overlay-medium);
     max-width: 800px;
 }
 
@@ -156,20 +156,20 @@ main:has(.page-hero) {
 
 /* Ensure buttons are visible on dark background */
 .page-hero-actions .btn {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-md);
 }
 
 /* Hero Metadata/Stats */
 .page-hero-metadata {
     padding-top: var(--space-3);
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1px solid var(--color-white-20);
 }
 
 .page-hero-stats {
     display: flex;
     gap: var(--space-4);
-    font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: var(--text-sm);
+    color: var(--color-white-90);
 }
 
 .page-hero-stats .stat {
@@ -193,7 +193,7 @@ main:has(.page-hero) {
     }
 
     .page-hero-title h1 {
-        font-size: 1.75rem;
+        font-size: var(--text-3xl);
     }
 
     .page-hero-header {
@@ -217,7 +217,7 @@ main:has(.page-hero) {
     }
 
     .page-hero-title h1 {
-        font-size: 1.5rem;
+        font-size: var(--text-2xl);
     }
 
     .page-hero-actions {

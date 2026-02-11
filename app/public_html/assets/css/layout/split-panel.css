@@ -34,7 +34,7 @@ body:has(.tablet-detail-page) {
     padding: 0;
     background: var(--color-bg);
     position: relative;
-    z-index: 10;
+    z-index: var(--z-elevated);
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -58,7 +58,7 @@ body:has(.tablet-detail-page) {
     overflow: hidden;
     min-height: 0; /* Important: prevents grid item from expanding beyond allocated space */
     background: var(--color-bg);
-    z-index: 10;
+    z-index: var(--z-elevated);
 }
 
 /* Ensure container doesn't expand beyond grid row */
@@ -84,7 +84,7 @@ body:has(.tablet-detail-page) {
     flex-shrink: 0;
     background: var(--color-surface);
     border-right: 1px solid var(--color-border);
-    transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width var(--transition-slower) var(--ease-in-out);
     display: flex;
     flex-direction: column;
 }
@@ -98,14 +98,14 @@ body:has(.tablet-detail-page) {
     right: 0;
     bottom: 0;
     background: linear-gradient(to right,
-        rgba(0, 0, 0, 0.8) 0%,
-        rgba(0, 0, 0, 0.6) 50%,
-        rgba(0, 0, 0, 0.8) 100%
+        var(--color-overlay-heavy) 0%,
+        var(--color-overlay-heavy) 50%,
+        var(--color-overlay-heavy) 100%
     );
     pointer-events: none;
     z-index: 5;
     opacity: 0;
-    transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity var(--transition-slower) var(--ease-in-out);
 }
 
 /* Collapsed state: 100px thumbnail sidebar alongside ATF */
@@ -161,7 +161,7 @@ body:has(.tablet-detail-page) {
     height: auto !important; /* Override 500px fixed height */
     flex: 1;
     border-radius: 0;
-    background: #000;
+    background: var(--color-bg-pure-black);
 }
 
 /* Hide zoombox controls, minimap, and image controls in collapsed state */
@@ -225,7 +225,7 @@ body:has(.tablet-detail-page) {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    background: #0f0f0f; /* Much darker than var(--color-bg) #1a1a1a */
+    background: var(--color-bg-deepest);
     overflow: hidden;
     position: relative;
 }
@@ -243,15 +243,15 @@ body:has(.tablet-detail-page) {
     min-height: 0;
     border: none;
     border-radius: 0;
-    background: #0f0f0f;
+    background: var(--color-bg-deepest);
 }
 
 .atf-panel .atf-content {
-    background: #0f0f0f;
+    background: var(--color-bg-deepest);
 }
 
 .atf-panel .no-atf {
-    background: #0f0f0f;
+    background: var(--color-bg-deepest);
 }
 
 /* ==========================================================================
@@ -262,7 +262,7 @@ body:has(.tablet-detail-page) {
     position: absolute;
     top: var(--space-3);
     left: var(--space-3);
-    z-index: 100;
+    z-index: var(--z-dropdown);
 }
 
 /* Hide standalone toggle when ATF viewer is present */
@@ -288,13 +288,13 @@ body:has(.tablet-detail-page) {
    ========================================================================== */
 
 .atf-panel .atf-dictionary {
-    background: #141414;
-    border-left: 1px solid #202020;
+    background: var(--color-bg-deep);
+    border-left: 1px solid var(--color-border-deep);
 }
 
 .atf-panel .atf-composite-panel {
-    background: #141414;
-    border-right: 1px solid #202020;
+    background: var(--color-bg-deep);
+    border-right: 1px solid var(--color-border-deep);
 }
 
 /* Mobile: Stack vertically */

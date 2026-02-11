@@ -20,15 +20,20 @@
     --color-bg: #1a1a1a;                /* Main background */
     --color-bg-inset: #0a0a0a;          /* Inputs, high contrast surfaces */
       --color-bg-inset-rgb: 10, 10, 10;
+    --color-bg-deep: #141414;           /* Sidebars in immersive views */
+    --color-bg-deepest: #0f0f0f;        /* ATF panel, immersive reading */
+    --color-bg-pure-black: #000000;     /* Image viewports, maximum contrast */
     --color-bg-elevated: #242424;       /* Cards, elevated surfaces */
     --color-bg-subtle: #2a2a2a;         /* Subtle backgrounds */
     --color-surface: #303030;           /* Interactive surfaces */
     --color-border: #404040;            /* Borders and dividers */
     --color-border-subtle: #303030;
+    --color-border-deep: #202020;       /* Borders in deep backgrounds */
 
     /* Text colors */
     --color-text: #e8e6e3;              /* Primary text */
-    --color-text-muted: #a0a0a0;        /* Secondary text */
+    --color-text-secondary: #888888;    /* Secondary text (darker than muted) */
+    --color-text-muted: #a0a0a0;        /* Muted text */
     --color-text-subtle: #707070;       /* Tertiary text */
 
     /* Accent colors */
@@ -40,21 +45,61 @@
     --color-success: #6b8e6b;           /* Success states */
     --color-warning: #c9a962;           /* Warning states */
     --color-error: #b85c5c;             /* Error states */
+    --color-danger: #dc2626;            /* Danger/destructive actions */
+    --color-info: #7ba4c4;              /* Info states (blue) */
     --color-pipeline-complete: var(--color-success);
     --color-pipeline-incomplete: var(--color-warning);
 
+    /* Overlay colors */
+    --color-overlay-light: rgba(255, 255, 255, 0.1);
+    --color-overlay-medium: rgba(0, 0, 0, 0.4);
+    --color-overlay-heavy: rgba(0, 0, 0, 0.6);
+    --color-overlay-solid: rgba(26, 26, 26, 0.95);
+
+    /* White with opacity (for text on dark/image backgrounds) */
+    --color-white: #ffffff;
+    --color-white-20: rgba(255, 255, 255, 0.2);
+    --color-white-80: rgba(255, 255, 255, 0.8);
+    --color-white-90: rgba(255, 255, 255, 0.9);
+
+    /* Accent with opacity (for badges, highlights, scrollbars) */
+    --color-accent-10: rgba(201, 169, 98, 0.1);
+    --color-accent-15: rgba(201, 169, 98, 0.15);
+    --color-accent-20: rgba(201, 169, 98, 0.2);
+    --color-accent-25: rgba(201, 169, 98, 0.25);
+    --color-accent-30: rgba(201, 169, 98, 0.3);
+    --color-accent-50: rgba(201, 169, 98, 0.5);
+
+    /* Success with opacity */
+    --color-success-10: rgba(107, 142, 107, 0.1);
+    --color-success-20: rgba(107, 142, 107, 0.2);
+
+    /* Info with opacity */
+    --color-info-20: rgba(123, 164, 196, 0.2);
 
     /* ==========================================================================
-       Colors - Folk Palette Aliases
-       Maps to existing color system for backwards compatibility
+       Colors - Badge Semantic Colors
        ========================================================================== */
 
-   /* TODO: Replace and remove these */
+    /* Badge: Purple (for specific categories) */
+    --color-badge-purple-bg: #3b3052;
+    --color-badge-purple-text: #d4c5f9;
+    --color-badge-purple-border: #574369;
 
-    --folk-charcoal: var(--color-bg-elevated);  /* #242424 */
-    --folk-cream: var(--color-text);            /* #e8e6e3 */
-    --folk-stone: var(--color-text-muted);      /* #a0a0a0 */
-    --folk-sand: var(--color-accent);           /* #c9a962 */
+    /* Badge: Green (POS, success states) */
+    --color-badge-green-bg: #2d4a3e;
+    --color-badge-green-text: #a8ddb5;
+    --color-badge-green-border: #4a6b5a;
+
+    /* Badge: Blue (info states) */
+    --color-badge-blue-bg: #3a4556;
+    --color-badge-blue-text: #b8c5d6;
+    --color-badge-blue-border: #505d6f;
+
+    /* Badge: Brown/Neutral */
+    --color-badge-brown-bg: #4a3d2f;
+    --color-badge-brown-text: #d9c5a9;
+    --color-badge-brown-border: #5f5242;
 
 
     /* ==========================================================================
@@ -72,6 +117,8 @@
        Based on modular scale for consistent hierarchy
        ========================================================================== */
 
+    --text-xxs: 0.625rem;   /* 10px - Smallest readable */
+    --text-2xs: 0.6875rem;  /* 11px - Badges, fine details */
     --text-xs: 0.75rem;     /* 12px - Fine print, labels */
     --text-sm: 0.875rem;    /* 14px - Secondary text */
     --text-base: 1rem;      /* 16px - Body text */
@@ -80,6 +127,29 @@
     --text-2xl: 1.5rem;     /* 24px - Headings */
     --text-3xl: 1.75rem;    /* 28px - Large headings */
     --text-4xl: 2.5rem;     /* 40px - Display headings */
+    --text-display: 3rem;   /* 48px - Hero display text */
+
+
+    /* ==========================================================================
+       Typography - Font Weights
+       ========================================================================== */
+
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+
+    /* ==========================================================================
+       Typography - Line Heights
+       ========================================================================== */
+
+    --line-height-none: 1;
+    --line-height-tight: 1.2;
+    --line-height-snug: 1.3;
+    --line-height-normal: 1.4;
+    --line-height-relaxed: 1.5;
+    --line-height-loose: 1.6;
 
 
     /* ==========================================================================
@@ -87,7 +157,11 @@
        Consistent spacing for padding, margin, gaps
        ========================================================================== */
 
+    --space-0: 0;
+    --space-px: 1px;
+    --space-0-5: 0.125rem;  /* 2px */
     --space-1: 0.25rem;     /* 4px */
+    --space-1-5: 0.375rem;  /* 6px */
     --space-2: 0.5rem;      /* 8px */
     --space-3: 0.75rem;     /* 12px */
     --space-4: 1rem;        /* 16px */
@@ -123,9 +197,20 @@
        ========================================================================== */
 
     --z-base: 1;            /* Base layer for positioned elements */
+    --z-elevated: 10;       /* Raised elements */
+    --z-overlay: 50;        /* Overlays below dropdowns */
     --z-dropdown: 100;      /* Dropdowns, tooltips */
     --z-sticky: 100;        /* Sticky headers, sidebars */
     --z-modal: 1000;        /* Modals, overlays */
+
+
+    /* ==========================================================================
+       Layout - Sidebar Widths
+       ========================================================================== */
+
+    --sidebar-width-sm: 240px;
+    --sidebar-width-md: 280px;
+    --sidebar-width-lg: 350px;
 
 
     /* ==========================================================================
@@ -133,6 +218,7 @@
        Consistent corner rounding
        ========================================================================== */
 
+    --radius-xs: 2px;       /* Minimal rounding */
     --radius-sm: 4px;       /* Small radius (buttons, badges) */
     --radius-md: 8px;       /* Medium radius (cards, inputs) */
     --radius-lg: 12px;      /* Large radius (large cards, panels) */
@@ -144,9 +230,13 @@
        Elevation shadows for depth
        ========================================================================== */
 
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);      /* Minimal shadow */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);      /* Subtle shadow */
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);      /* Medium shadow */
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);    /* Large shadow */
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);    /* Extra large shadow */
+    --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.15);   /* Inset shadow */
+    --shadow-glow: 0 0 20px rgba(201, 169, 98, 0.3);       /* Accent glow */
 
 
     /* ==========================================================================
@@ -154,7 +244,17 @@
        Standard animation timings
        ========================================================================== */
 
+    --transition-instant: 0.05s ease;   /* Near-instant feedback */
     --transition-fast: 0.1s ease;       /* Quick interactions */
     --transition-normal: 0.2s ease;     /* Standard transitions */
     --transition-slow: 0.3s ease;       /* Slower, deliberate animations */
+    --transition-slower: 0.45s ease;    /* Extended animations */
+
+
+    /* ==========================================================================
+       Visual - Easing Functions
+       ========================================================================== */
+
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 }

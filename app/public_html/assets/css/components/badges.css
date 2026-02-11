@@ -11,19 +11,19 @@
 
 .badge {
     display: inline-block;
-    padding: 0.25rem 0.625rem;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    border-radius: 4px;
-    background: var(--color-background);
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-elevated);
     color: var(--color-text-secondary);
     border: 1px solid var(--color-border);
 }
 
 /* Small variant for compact contexts */
 .badge--sm {
-    padding: 0.125rem 0.375rem;
-    font-size: 0.6875rem;
+    padding: var(--space-0-5) var(--space-1-5);
+    font-size: var(--text-2xs);
 }
 
 /* ==========================================================================
@@ -32,28 +32,28 @@
 
 /* Part of Speech - Purple */
 .badge--pos {
-    background: #3b3052;
-    color: #d4c5f9;
-    border-color: #574369;
+    background: var(--color-badge-purple-bg);
+    color: var(--color-badge-purple-text);
+    border-color: var(--color-badge-purple-border);
 }
 
 /* Language - Green */
 .badge--language {
-    background: #2d4a3e;
-    color: #a8ddb5;
-    border-color: #4a6b5a;
+    background: var(--color-badge-green-bg);
+    color: var(--color-badge-green-text);
+    border-color: var(--color-badge-green-border);
 }
 
 /* Frequency - Blue-gray */
 .badge--frequency {
-    background: #3a4556;
-    color: #b8c5d6;
-    border-color: #505d6f;
+    background: var(--color-badge-blue-bg);
+    color: var(--color-badge-blue-text);
+    border-color: var(--color-badge-blue-border);
 }
 
 /* Sign Type - Warm/gold */
 .badge--sign-type {
-    background: #4a3d2f;
-    color: #d9c5a9;
-    border-color: #5f5242;
+    background: var(--color-badge-brown-bg);
+    color: var(--color-badge-brown-text);
+    border-color: var(--color-badge-brown-border);
 }

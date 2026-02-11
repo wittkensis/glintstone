@@ -9,24 +9,29 @@
    ========================================================================== */
 
 h1, h2, h3, h4 {
-    font-weight: 400;
-    line-height: 1.3;
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-snug);
     margin: 0;
     font-variant-numeric: lining-nums;
 }
 
 h1 {
-    font-size: 2.5rem;
+    font-size: var(--text-4xl);
     font-family: var(--font-serif);
 }
 
 h2 {
-    font-size: 1.75rem;
+    font-size: var(--text-3xl);
     font-family: var(--font-serif);
 }
 
 h3 {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
+    font-family: var(--font-serif);
+}
+
+h4 {
+    font-size: var(--text-lg);
     font-family: var(--font-serif);
 }
 
@@ -55,8 +60,8 @@ a:hover {
 
 .cuneiform {
     font-family: var(--font-cuneiform);
-    font-size: 1.5em;
-    line-height: 1.8;
+    font-size: 1.5em;  /* Relative to parent - intentional */
+    line-height: var(--line-height-loose);
 }
 
 /* ==========================================================================
@@ -65,7 +70,24 @@ a:hover {
    ========================================================================== */
 
 .help-text-subtle {
-    font-size: 0.70rem;
+    font-size: var(--text-2xs);
     color: var(--color-text-subtle);
-    line-height: 1.4;
+    line-height: var(--line-height-normal);
 }
+
+
+/* ==========================================================================
+   Heading Utilities
+   Size and weight modifiers for headings
+   ========================================================================== */
+
+/* Size modifiers */
+.heading-display { font-size: var(--text-display); }
+.heading-lg { font-size: var(--text-4xl); }
+.heading-md { font-size: var(--text-2xl); }
+.heading-sm { font-size: var(--text-xl); }
+.heading-xs { font-size: var(--text-lg); }
+
+/* Weight modifiers */
+.heading-semibold { font-weight: var(--font-weight-semibold); }
+.heading-medium { font-weight: var(--font-weight-medium); }

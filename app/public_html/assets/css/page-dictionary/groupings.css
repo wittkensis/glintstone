@@ -129,7 +129,7 @@
     border: none;
     color: var(--color-text-muted);
     font-size: var(--text-sm);
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
     flex-shrink: 0;
     transition: background var(--transition-fast),
@@ -150,7 +150,7 @@
     width: 16px;
     height: 16px;
     color: var(--color-text-muted);
-    transition: transform 0.2s ease;
+    transition: transform var(--transition-normal);
     flex-shrink: 0;
 }
 
