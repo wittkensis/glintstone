@@ -1,0 +1,12 @@
+/**
+ * ATF Viewer Feature Bundle
+ * Namespace: .atf-*
+ *
+ * Styles for the ATF (Akkadian Text Format) viewer component.
+ */
+
+@import url('layout.css');
+@import url('tabs.css');
+@import url('content.css');
+@import url('words.css');
+@import url('parallel.css');

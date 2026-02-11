@@ -1,0 +1,683 @@
+/**
+ * Word Detail Page
+ * Purpose: Comprehensive dictionary entry pages with meanings, variants, signs, examples
+ * Used on: Dictionary word detail pages
+ * Dependencies: core/tokens.css, tablet/metadata.css, components/badges.css
+ * JavaScript: None
+ */
+
+/* ==========================================================================
+   Page Layout
+   ========================================================================== */
+
+.word-detail-page {
+    padding-bottom: var(--space-8);
+}
+
+.word-detail-page .container-inner {
+    max-width: 800px;
+}
+
+/* ==========================================================================
+   Embedded Context (Dictionary Browser Column 3)
+   When word detail is embedded in the browser, remove container constraints
+   ========================================================================== */
+
+.dict-browser__detail .word-detail-content {
+    padding: var(--space-6);
+    max-width: 900px;
+}
+
+.dict-browser__detail .word-header {
+    margin-bottom: var(--space-4);
+}
+
+.dict-browser__detail .word-header .page-header-title h1 {
+    font-size: 1.75rem;
+}
+
+.dict-browser__detail .word-header .back-link {
+    display: none; /* Hide back link in browser context */
+}
+
+/* ==========================================================================
+   Word Header
+   ========================================================================== */
+
+.word-header .page-header-title h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.word-header .page-header-title h1 .guide-word {
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    margin-left: var(--space-2);
+}
+
+.word-header .page-header-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* ==========================================================================
+   Word Metadata (extends tablet-meta)
+   ========================================================================== */
+
+/* Separator between header and content */
+.word-detail-separator {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: var(--space-4) 0 var(--space-6);
+}
+
+.word-meta {
+    margin-bottom: var(--space-6);
+}
+
+.word-meta__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3) var(--space-6);
+    margin: 0;
+}
+
+.word-meta__row .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.word-meta__row dt {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.word-meta__row dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+
+.word-meta__row dd code {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    background: var(--color-surface);
+    padding: 1px 4px;
+    border-radius: var(--radius-sm);
+}
+
+/* Primary meta item (guide word) */
+.meta-item--primary {
+    flex-basis: 100%;
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.meta-guide-word {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+/* More details toggle */
+.word-meta__toggle {
+    font-size: 0.6875rem;
+    color: var(--color-text-subtle);
+    cursor: pointer;
+    user-select: none;
+    padding: var(--space-1) 0;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.word-meta__toggle:hover {
+    color: var(--color-text-muted);
+}
+
+.word-meta__toggle-icon {
+    transition: transform 0.15s ease;
+}
+
+.word-meta__toggle[aria-expanded="true"] .word-meta__toggle-icon {
+    transform: rotate(90deg);
+}
+
+/* Secondary metadata row */
+.word-meta__secondary {
+    display: none;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+    padding-top: var(--space-3);
+    margin-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+.word-meta__secondary.is-open {
+    display: flex;
+}
+
+.word-meta__secondary dt {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.word-meta__secondary dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+
+.word-meta__secondary .meta-placeholder {
+    color: var(--color-text-subtle);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   Section Styling
+   ========================================================================== */
+
+.word-section {
+    margin-bottom: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
+}
+
+.word-section:first-of-type {
+    border-top: none;
+    padding-top: 0;
+}
+
+.word-section h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* Section count badge */
+.section-count-badge {
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.6875rem;
+    font-weight: 500;
+}
+
+/* Share button */
+.word-share-btn {
+    margin-left: var(--space-2);
+    opacity: 0.5;
+    padding: var(--space-1);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: opacity var(--transition-fast), color var(--transition-fast);
+    vertical-align: middle;
+}
+
+.word-share-btn:hover {
+    opacity: 1;
+    color: var(--color-accent);
+}
+
+/* Show more/less toggle */
+.show-more-toggle {
+    display: block;
+    margin-top: var(--space-4);
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.show-more-toggle:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+}
+
+/* Hidden variants */
+.variants-hidden {
+    display: none;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.variants-chart[data-show-all="true"] .variants-hidden {
+    display: flex;
+}
+
+/* Toast notification */
+.toast {
+    position: fixed;
+    bottom: var(--space-6);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-surface);
+    color: var(--color-text);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    animation: toast-in 0.2s ease;
+}
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.word-section h3 {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-3);
+}
+
+/* Section description text */
+.section-description {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin: calc(-1 * var(--space-2)) 0 var(--space-4) 0;
+    line-height: 1.5;
+}
+
+/* Section placeholder for empty sections */
+.section-placeholder {
+    font-size: 0.875rem;
+    color: var(--color-text-subtle);
+    padding: var(--space-4);
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-md);
+    text-align: center;
+    margin: 0;
+}
+
+/* ==========================================================================
+   Meanings (Polysemy)
+   ========================================================================== */
+
+.meanings-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: meaning-counter;
+}
+
+.meaning {
+    margin-bottom: var(--space-4);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-accent);
+    counter-increment: meaning-counter;
+    position: relative;
+}
+
+.meaning::before {
+    content: counter(meaning-counter);
+    position: absolute;
+    left: calc(-1 * var(--space-4) - 3px);
+    top: var(--space-4);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    width: var(--space-4);
+    text-align: right;
+}
+
+.meaning__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: var(--space-2);
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.meaning__header strong {
+    font-size: 0.9375rem;
+    color: var(--color-text);
+}
+
+.meaning__usage {
+    font-size: 0.6875rem;
+    color: var(--color-text-subtle);
+    background: var(--color-bg-inset);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.meaning__definition {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin: var(--space-2) 0 0 0;
+}
+
+.meaning__context {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+    margin: var(--space-2) 0 0 0;
+}
+
+/* ==========================================================================
+   Attested Forms (Variants)
+   ========================================================================== */
+
+.variants-chart {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.variant-bar {
+    display: grid;
+    grid-template-columns: 140px 1fr auto;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.variant-form {
+    font-weight: 500;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.variant-frequency-container {
+    background: var(--color-bg-inset);
+    height: 20px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.variant-frequency {
+    background: var(--color-accent);
+    height: 100%;
+    transition: width 0.3s ease;
+    min-width: 2px;
+}
+
+.variant-count {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    min-width: 60px;
+    text-align: right;
+}
+
+/* ==========================================================================
+   Cuneiform Signs
+   ========================================================================== */
+
+.sign-breakdown {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.sign-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--color-text);
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+    min-width: 80px;
+}
+
+.sign-cuneiform {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.sign-value {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.sign-type {
+    font-size: 0.625rem;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   Related Words
+   ========================================================================== */
+
+.related-group {
+    margin-bottom: var(--space-4);
+}
+
+.related-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Related Words Grid */
+.related-words-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-3);
+}
+
+/* Card Word Component */
+.card-word {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--color-text);
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.card-word:hover {
+    border-color: var(--color-accent);
+    background: var(--color-bg-elevated);
+}
+
+.card-word__header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.card-word__headword {
+    font-weight: 500;
+    font-size: 0.9375rem;
+    color: var(--color-text);
+}
+
+.card-word:hover .card-word__headword {
+    color: var(--color-accent);
+}
+
+.card-word__guide-word {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    font-weight: 400;
+}
+
+.card-word__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.card-word__badge {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-inset);
+    color: var(--color-text-muted);
+}
+
+.card-word__badge--lang {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+}
+
+.card-word__count {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+    margin-left: auto;
+}
+
+.card-word__notes {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+}
+
+.examples-footer {
+    margin-top: var(--space-4);
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+/* ==========================================================================
+   CAD Reference
+   ========================================================================== */
+
+.cad-content {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+}
+
+.cad-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.volume-badge {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-text);
+}
+
+.pdf-link {
+    font-size: 0.8125rem;
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.pdf-link:hover {
+    text-decoration: underline;
+}
+
+.verified-badge {
+    color: var(--color-success);
+    font-size: 0.75rem;
+}
+
+.cad-etymology,
+.cad-notes {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+.cad-etymology strong {
+    color: var(--color-text);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .word-header .page-header-title h1 {
+        font-size: 1.5rem;
+    }
+
+    .word-header .page-header-title h1 .guide-word {
+        font-size: 1rem;
+        display: block;
+        margin-left: 0;
+        margin-top: var(--space-1);
+    }
+
+    .variant-bar {
+        grid-template-columns: 100px 1fr auto;
+        gap: var(--space-2);
+    }
+
+    .variant-form {
+        font-size: 0.8125rem;
+    }
+
+    .meaning::before {
+        display: none;
+    }
+
+    .meaning {
+        padding-left: var(--space-4);
+    }
+
+    .sign-breakdown {
+        gap: var(--space-2);
+    }
+
+    .sign-item {
+        min-width: 70px;
+        padding: var(--space-2);
+    }
+
+    .sign-cuneiform {
+        font-size: 2rem;
+    }
+}

@@ -1,0 +1,49 @@
+/**
+ * Knowledge Sidebar Placeholders
+ * Purpose: Empty tab content for tabs not yet implemented
+ * Used on: Research, Discussion, Context tabs in knowledge sidebar
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   Placeholder Container
+   ========================================================================== */
+
+.knowledge-sidebar-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6) var(--space-3);
+    text-align: center;
+    color: var(--color-text-muted);
+    height: 100%;
+}
+
+/* ==========================================================================
+   Placeholder Icon
+   ========================================================================== */
+
+.knowledge-sidebar-placeholder svg {
+    margin-bottom: var(--space-3);
+    opacity: 0.4;
+    width: 40px;
+    height: 40px;
+}
+
+/* ==========================================================================
+   Placeholder Text
+   ========================================================================== */
+
+.knowledge-sidebar-placeholder h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+    color: var(--color-text);
+}
+
+.knowledge-sidebar-placeholder p {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    max-width: 240px;
+}

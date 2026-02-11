@@ -1,0 +1,184 @@
+/**
+ * ATF Viewer Content
+ * Purpose: Text content display, columns, lines, legend, state markers
+ * Used on: Tablet detail pages with ATF content
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/atf-viewer.js
+ * Required classes for JS: .atf-line, .atf-column, .atf-content
+ */
+
+/* ==========================================================================
+   Column Layout
+   ========================================================================== */
+
+.atf-columns {
+    display: flex;
+    gap: var(--space-6);
+    overflow-x: auto;
+}
+
+.atf-column {
+    flex: 0 0 auto;
+    min-width: max-content;
+}
+
+.atf-column__header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Single column - hide header */
+.atf-viewer--single-column .atf-column__header {
+    display: none;
+}
+
+/* ==========================================================================
+   ATF Display
+   Monospace display for transliteration text
+   ========================================================================== */
+
+.atf-display {
+    font-family: var(--font-mono);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    font-size: 0.875rem;
+    line-height: 1.8;
+}
+
+.atf-display .line-number {
+    color: var(--color-text-subtle);
+    user-select: none;
+    margin-right: var(--space-4);
+}
+
+.atf-display .directive {
+    color: var(--color-accent-muted);
+}
+
+.atf-display .composite-ref {
+    color: var(--color-success);
+}
+
+/* Reset em/code styling in ATF display */
+.atf-display em,
+.atf-display code {
+    font-style: normal;
+    font-family: inherit;
+    background: none;
+}
+
+
+ /* ==========================================================================
+   Legend
+   ========================================================================== */
+
+.atf-legend {
+    padding: var(--space-3) 0;
+    margin-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.75rem;
+}
+
+/* Hide legend in raw mode */
+.atf-viewer--mode-raw .atf-legend {
+    display: none;
+}
+
+.atf-legend__items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+}
+
+.atf-legend__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-muted);
+}
+
+.atf-legend__swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.atf-legend__swatch--has-definition {
+    width: 20px;
+    height: 2px;
+    background: transparent;
+    border-bottom: 2px dotted var(--color-text);
+}
+
+.atf-legend__swatch--no-definition {
+    width: 20px;
+    height: 2px;
+    background: transparent;
+    border-bottom: 2px dotted var(--color-text-subtle);
+}
+
+.atf-legend__swatch--det-divine {
+    color: var(--color-accent);
+}
+
+.atf-legend__swatch--det-place {
+    color: var(--color-success);
+}
+
+.atf-legend__swatch--logogram {
+    font-family: var(--font-mono);
+    color: var(--color-text);
+    text-decoration: underline;
+}
+
+.atf-legend__swatch--damaged {
+    color: var(--color-warning);
+}
+
+.atf-legend__swatch--uncertain {
+    color: var(--color-warning);
+}
+
+.atf-legend__swatch--broken {
+    color: var(--color-text-subtle);
+}
+
+.atf-legend__swatch--translation {
+    color: var(--color-accent-muted);
+    font-weight: 700;
+}
+
+.atf-legend__swatch--scholarly-gloss {
+    font-family: var(--font-mono);
+    color: var(--color-success);
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-color: var(--color-success);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+
+.atf-legend__swatch--automatic-gloss {
+    font-family: var(--font-mono);
+    color: var(--color-text-subtle);
+    font-style: italic;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: var(--color-text-subtle);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}

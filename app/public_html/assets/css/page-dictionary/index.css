@@ -1,0 +1,15 @@
+/**
+ * Page Dictionary CSS Bundle
+ * Namespace: .dict-*
+ *
+ * All styles for the dictionary browser section.
+ */
+
+@import url('browser.css');
+@import url('page-browser.css');
+@import url('groupings.css');
+@import url('word-list.css');
+@import url('word-detail.css');
+@import url('sign-grid.css');
+@import url('placeholders.css');
+@import url('knowledge-sidebar.css');

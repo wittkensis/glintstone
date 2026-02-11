@@ -1,0 +1,10 @@
+/**
+ * Cards Component Bundle
+ * Namespace: .card-*
+ *
+ * Card components for displaying tablets, collections, and words.
+ */
+
+@import url('base.css');
+@import url('tablet.css');
+@import url('collection.css');

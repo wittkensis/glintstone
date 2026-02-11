@@ -1,0 +1,11 @@
+/**
+ * ATF Viewer Tabs
+ * Purpose: Surface tabs and view mode toggle buttons
+ * Used on: Tablet detail pages with multi-surface ATF content
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/atf-viewer.js
+ * Required classes for JS: .atf-tab, .atf-mode, .atf-mode--active
+ * ARIA: Surface tabs use aria-selected attribute for active state
+ */
+
+/* TODO: Delete this file */

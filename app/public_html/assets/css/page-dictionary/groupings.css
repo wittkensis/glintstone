@@ -1,0 +1,273 @@
+/**
+ * Dictionary Groupings Panel
+ * Purpose: Column 1 category navigation with expandable sections
+ * Used on: Dictionary browser page
+ * Dependencies: core/tokens.css, dictionary/browser.css
+ *
+ * Structure:
+ * - All Words (always visible)
+ * - By Part of Speech (expandable)
+ * - By Language (expandable)
+ * - By Frequency (expandable)
+ */
+
+/* ==========================================================================
+   Container
+   ========================================================================== */
+
+.dict-groupings {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* ==========================================================================
+   Navigation Container
+   ========================================================================== */
+
+.dict-groupings__nav {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: var(--space-2) 0;
+}
+
+/* ==========================================================================
+   Grouping Items (Clickable filters)
+   ========================================================================== */
+
+.dict-groupings__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-4);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                color var(--transition-fast);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+
+.dict-groupings__item:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.dict-groupings__item--active {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-left: 3px solid var(--color-accent);
+    padding-left: calc(var(--space-4) - 3px);
+}
+
+.dict-groupings__item-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dict-groupings__item-count {
+    flex-shrink: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    margin-left: var(--space-2);
+}
+
+.dict-groupings__item--active .dict-groupings__item-count {
+    color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   Accordion Sections (always visible, independently scrollable)
+   ========================================================================== */
+
+.dict-groupings__section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Critical for flexbox scrolling */
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.dict-groupings__section:first-of-type {
+    border-top: none;
+}
+
+/* Collapsed state: only header visible, don't grow */
+.dict-groupings__section[data-expanded="false"] {
+    flex: 0 0 auto;
+}
+
+/* Expanded state: fill all available height, content scrolls */
+.dict-groupings__section[data-expanded="true"] {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+/* Push collapsed sections to bottom when they follow an expanded section */
+/* Only target the first collapsed section after an expanded one */
+.dict-groupings__section[data-expanded="true"] + .dict-groupings__section[data-expanded="false"] {
+    margin-top: auto;
+}
+
+/* Section Header (expand/collapse toggle) */
+.dict-groupings__section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-5) var(--space-4);
+    background: var(--color-bg-subtle);
+    border: none;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--transition-fast),
+                color var(--transition-fast);
+}
+
+.dict-groupings__section-header:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.dict-groupings__section[data-expanded="true"] .dict-groupings__section-header {
+    color: var(--color-text);
+}
+
+/* Chevron icon */
+.dict-groupings__section-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-muted);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.dict-groupings__section[data-expanded="true"] .dict-groupings__section-chevron {
+    transform: rotate(180deg);
+}
+
+/* Section Content (independently scrollable when expanded) */
+.dict-groupings__section-content {
+    display: none;
+    flex: 1;
+    min-height: 0; /* Critical for nested flexbox scrolling */
+    overflow-y: auto;
+    padding-bottom: var(--space-2);
+}
+
+.dict-groupings__section[data-expanded="true"] .dict-groupings__section-content {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Nested items within sections */
+.dict-groupings__section-content .dict-groupings__item {
+    padding-left: var(--space-6);
+    font-size: var(--text-sm);
+}
+
+.dict-groupings__section-content .dict-groupings__item--active {
+    padding-left: calc(var(--space-6) - 3px);
+}
+
+/* ==========================================================================
+   Mobile Toggle Button (visible on tablet/mobile)
+   ========================================================================== */
+
+.dict-groupings__toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.dict-groupings__toggle:hover {
+    background: var(--color-bg-elevated);
+}
+
+.dict-groupings__toggle-icon {
+    width: 20px;
+    height: 20px;
+}
+
+@media (max-width: 1024px) {
+    .dict-groupings__toggle {
+        display: flex;
+    }
+}
+
+/* ==========================================================================
+   Close Button (for mobile overlay)
+   ========================================================================== */
+
+.dict-groupings__close {
+    display: none;
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: var(--color-surface);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                color var(--transition-fast);
+    z-index: 10;
+}
+
+.dict-groupings__close:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+}
+
+.dict-groupings__close-icon {
+    width: 16px;
+    height: 16px;
+}
+
+@media (max-width: 1024px) {
+    .dict-groupings__close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ==========================================================================
+   Loading State
+   ========================================================================== */
+
+.dict-groupings--loading .dict-groupings__item-count {
+    background: var(--color-surface);
+    color: transparent;
+    border-radius: var(--radius-sm);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}

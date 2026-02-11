@@ -1,0 +1,113 @@
+/**
+ * Zoombox Controls
+ * Purpose: Zoom controls toolbar and buttons
+ * Used on: Tablet detail pages with zoomable images
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/zoombox.js
+ * Required classes for JS: .zoombox__controls, .zoombox__btn, .is-visible
+ */
+
+/* ==========================================================================
+   Zoom Controls (top-left)
+   ========================================================================== */
+
+.zoombox__controls {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: rgba(15, 15, 18, 0.75);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    padding: 6px;
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.zoombox__controls.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ==========================================================================
+   Control Buttons
+   ========================================================================== */
+
+.zoombox__btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.zoombox__btn:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.zoombox__btn:active {
+    transform: scale(0.95);
+}
+
+.zoombox__btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.zoombox__btn:disabled:hover {
+    background: transparent;
+    color: var(--color-text);
+}
+
+.zoombox__btn--reset {
+    font-size: 0.875rem;
+}
+
+/* Zoom level indicator */
+.zoombox__zoom-level {
+    padding: var(--space-1);
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    user-select: none;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .zoombox__controls {
+        gap: 1px;
+        padding: 4px;
+    }
+
+    .zoombox__btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.875rem;
+    }
+}
+
+@media (pointer: coarse) {
+    .zoombox__controls {
+        opacity: 0.9;
+        pointer-events: auto;
+    }
+}

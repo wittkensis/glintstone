@@ -1,0 +1,108 @@
+/**
+ * Tablet Metadata
+ * Purpose: Metadata display for tablet detail pages
+ * Used on: Tablet detail pages
+ * Dependencies: core/tokens.css
+ * JavaScript: None
+ */
+
+/* ==========================================================================
+   Metadata Display
+   ========================================================================== */
+
+.tablet-meta {
+    margin-bottom: var(--space-4);
+}
+
+.tablet-meta__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3) var(--space-6);
+    margin: 0;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tablet-meta__row dt {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tablet-meta__row dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+
+.meta-name {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.meta-code {
+    color: var(--color-text-muted);
+    font-size: 0.875em;
+    margin-left: var(--space-1);
+}
+
+/* More details toggle - inline with metadata */
+.tablet-meta__toggle {
+    font-size: 0.6875rem;
+    color: var(--color-text-subtle);
+    cursor: pointer;
+    user-select: none;
+    padding: var(--space-1) 0;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.tablet-meta__toggle:hover {
+    color: var(--color-text-muted);
+}
+
+.tablet-meta__toggle-icon {
+    transition: transform 0.15s ease;
+}
+
+.tablet-meta__toggle[aria-expanded="true"] .tablet-meta__toggle-icon {
+    transform: rotate(90deg);
+}
+
+/* Secondary metadata row */
+.tablet-meta__secondary {
+    display: none;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+.tablet-meta__secondary.is-open {
+    display: flex;
+}
+
+.tablet-meta__secondary dt {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tablet-meta__secondary dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+

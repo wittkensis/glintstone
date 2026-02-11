@@ -1,0 +1,378 @@
+/**
+ * Dictionary Placeholders
+ * Purpose: Empty states, loading states, error states for all columns
+ * Used on: Dictionary browser page
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   Shared Placeholder Styles
+   ========================================================================== */
+
+.dict-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8);
+    text-align: center;
+    height: 100%;
+    min-height: 200px;
+}
+
+.dict-placeholder__icon {
+    width: 48px;
+    height: 48px;
+    color: var(--color-text-subtle);
+    opacity: 0.5;
+    margin-bottom: var(--space-4);
+}
+
+.dict-placeholder__title {
+    font-size: var(--text-lg);
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2);
+}
+
+.dict-placeholder__description {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-4);
+    max-width: 280px;
+    line-height: 1.5;
+}
+
+.dict-placeholder__action {
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                border-color var(--transition-fast);
+}
+
+.dict-placeholder__action:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-accent);
+}
+
+/* ==========================================================================
+   Column 2: Empty Word List
+   ========================================================================== */
+
+.dict-word-list__empty {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+    text-align: center;
+    flex: 1;
+}
+
+.dict-word-list[data-empty="true"] .dict-word-list__empty {
+    display: flex;
+}
+
+.dict-word-list[data-empty="true"] .dict-word-list__items {
+    display: none;
+}
+
+.dict-word-list__empty-icon {
+    width: 40px;
+    height: 40px;
+    color: var(--color-text-subtle);
+    opacity: 0.4;
+    margin-bottom: var(--space-3);
+}
+
+.dict-word-list__empty-title {
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0 0 var(--space-1);
+}
+
+.dict-word-list__empty-description {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-4);
+    max-width: 240px;
+}
+
+.dict-word-list__empty-action {
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.dict-word-list__empty-action:hover {
+    background: var(--color-bg-elevated);
+}
+
+/* ==========================================================================
+   Column 3: No Word Selected
+   ========================================================================== */
+
+.dict-detail-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: var(--space-8);
+    text-align: center;
+}
+
+.dict-detail-placeholder__icon {
+    width: 64px;
+    height: 64px;
+    color: var(--color-text-subtle);
+    opacity: 0.3;
+    margin-bottom: var(--space-6);
+}
+
+.dict-detail-placeholder__title {
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 400;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2);
+}
+
+.dict-detail-placeholder__description {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0;
+    max-width: 320px;
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+
+/* Full-panel loading overlay */
+.dict-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(26, 26, 26, 0.8);
+    z-index: 10;
+}
+
+[data-loading="true"] .dict-loading-overlay {
+    display: flex;
+}
+
+/* Loading spinner */
+.dict-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: dict-spin 0.8s linear infinite;
+}
+
+.dict-spinner--sm {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+@keyframes dict-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Inline loading indicator */
+.dict-loading-inline {
+    display: none;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+[data-loading="true"] .dict-loading-inline {
+    display: flex;
+}
+
+/* ==========================================================================
+   Skeleton Loading (Word List Items)
+   ========================================================================== */
+
+.dict-word-item--skeleton {
+    pointer-events: none;
+}
+
+.dict-word-item--skeleton .dict-word-item__headword {
+    background: var(--color-surface);
+    color: transparent;
+    border-radius: var(--radius-sm);
+    width: 100px;
+    height: 1em;
+}
+
+.dict-word-item--skeleton .dict-word-item__guide-word {
+    background: var(--color-surface);
+    color: transparent;
+    border-radius: var(--radius-sm);
+    width: 150px;
+    height: 1em;
+}
+
+.dict-word-item--skeleton .dict-word-item__badge {
+    background: var(--color-surface);
+    color: transparent;
+    width: 30px;
+}
+
+.dict-word-item--skeleton .dict-word-item__count {
+    background: var(--color-surface);
+    color: transparent;
+    border-radius: var(--radius-sm);
+    width: 40px;
+    height: 1em;
+}
+
+/* Skeleton animation */
+.dict-word-item--skeleton .dict-word-item__headword,
+.dict-word-item--skeleton .dict-word-item__guide-word,
+.dict-word-item--skeleton .dict-word-item__badge,
+.dict-word-item--skeleton .dict-word-item__count {
+    animation: dict-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dict-skeleton-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+/* Skeleton detail panel */
+.dict-detail-skeleton {
+    padding: var(--space-6);
+}
+
+.dict-detail-skeleton__header {
+    margin-bottom: var(--space-6);
+}
+
+.dict-detail-skeleton__title {
+    background: var(--color-surface);
+    height: 2rem;
+    width: 200px;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-3);
+    animation: dict-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dict-detail-skeleton__badges {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.dict-detail-skeleton__badge {
+    background: var(--color-surface);
+    height: 1.5rem;
+    width: 80px;
+    border-radius: var(--radius-full);
+    animation: dict-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dict-detail-skeleton__section {
+    margin-bottom: var(--space-6);
+}
+
+.dict-detail-skeleton__section-title {
+    background: var(--color-surface);
+    height: 1rem;
+    width: 120px;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-3);
+    animation: dict-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dict-detail-skeleton__line {
+    background: var(--color-surface);
+    height: 1rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-2);
+    animation: dict-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dict-detail-skeleton__line--short {
+    width: 60%;
+}
+
+.dict-detail-skeleton__line--medium {
+    width: 80%;
+}
+
+.dict-detail-skeleton__line--full {
+    width: 100%;
+}
+
+/* ==========================================================================
+   Error State
+   ========================================================================== */
+
+.dict-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+    text-align: center;
+}
+
+.dict-error__icon {
+    width: 40px;
+    height: 40px;
+    color: var(--color-error);
+    opacity: 0.7;
+    margin-bottom: var(--space-3);
+}
+
+.dict-error__title {
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0 0 var(--space-1);
+}
+
+.dict-error__description {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-4);
+    max-width: 280px;
+}
+
+.dict-error__retry {
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                border-color var(--transition-fast);
+}
+
+.dict-error__retry:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-accent);
+}

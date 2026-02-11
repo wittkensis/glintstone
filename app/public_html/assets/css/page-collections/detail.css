@@ -1,0 +1,29 @@
+/**
+ * Collection Detail Page Styles
+ */
+
+.collection-detail-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-6, 48px) var(--space-4, 24px);
+}
+
+/* Tablet Grid */
+.tablet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-4, 24px);
+    margin-bottom: var(--space-6, 48px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .collection-detail-page {
+        padding: var(--space-4, 24px) var(--space-3, 16px);
+    }
+
+    .tablet-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: var(--space-3, 16px);
+    }
+}

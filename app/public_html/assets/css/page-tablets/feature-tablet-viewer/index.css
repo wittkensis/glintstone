@@ -1,0 +1,17 @@
+/**
+ * Tablet Viewer Feature Bundle
+ * Namespace: .tablet-*, .zoombox-*
+ *
+ * Styles for tablet detail view including zoombox image viewer.
+ */
+
+/* Tablet detail sections */
+@import url('header.css');
+@import url('metadata.css');
+@import url('sections.css');
+@import url('composite.css');
+
+/* Zoombox image viewer */
+@import url('zoombox-viewer.css');
+@import url('zoombox-controls.css');
+@import url('zoombox-minimap.css');

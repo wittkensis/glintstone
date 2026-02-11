@@ -1,0 +1,194 @@
+/**
+ * Tablet Composite Panel
+ * Purpose: Horizontal scrolling list of related tablet composites
+ * Used on: Tablet detail pages with composite relationships
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/composite.js
+ * Required classes for JS: .composite-panel, .is-open
+ */
+
+/* ==========================================================================
+   Composite Panel
+   ========================================================================== */
+
+/* Composite panel - part of grid layout with dynamic height */
+.composite-panel {
+    display: flex;
+    max-height: 0;
+    width: 100%;
+    min-width: 0;
+    background: #0f0f0f;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 1;
+}
+
+.composite-panel.is-open {
+    max-height: 500px; /* Large enough for any content */
+}
+
+/* Fixed header on left */
+.composite-panel__header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: var(--space-3) var(--space-4);
+    border-right: 1px solid var(--color-border);
+    flex-shrink: 0;
+    width: 200px;
+}
+
+.composite-panel__title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.composite-panel__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+    line-height: 1.3;
+}
+
+.composite-panel__subtitle {
+    font-size: 0.65rem;
+    font-weight: 400;
+    font-family: var(--font-mono);
+    color: var(--color-text-muted);
+    line-height: 1.2;
+}
+
+.composite-panel__count {
+    font-size: 0.65rem;
+    color: var(--color-text-subtle);
+    margin-top: 4px;
+}
+
+/* Horizontal scrolling list */
+.composite-panel__list {
+    display: flex;
+    gap: 0.5rem;
+    padding: var(--space-2) var(--space-2);
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+
+    /* Hide scrollbars */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.composite-panel__list::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Opera */
+}
+
+.composite-panel__loading {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    padding: var(--space-2);
+}
+
+/* Tablet item in composite list - matches ATF composite item styling */
+.composite-tablet-item {
+    display: flex;
+    gap: var(--space-2);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: transparent;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.composite-tablet-item:hover {
+    background: var(--color-bg-subtle);
+}
+
+.composite-tablet-item.is-current {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.composite-tablet-item.is-current:hover {
+    background: var(--color-accent);
+}
+
+/* Thumbnail */
+.composite-tablet-item__thumbnail {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background: var(--color-bg-elevated);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    position: relative;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__thumbnail {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.composite-tablet-item__thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.composite-tablet-item__placeholder {
+    position: absolute;
+    color: var(--color-text-subtle);
+    font-size: 1.5rem;
+    font-family: 'Noto Sans Cuneiform', serif;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Info section */
+.composite-tablet-item__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+.composite-tablet-item__pnumber {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.2;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__pnumber {
+    color: var(--color-bg);
+}
+
+.composite-tablet-item__designation {
+    font-size: 0.6rem;
+    color: var(--color-text-subtle);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__designation {
+    color: rgba(255, 255, 255, 0.7);
+}

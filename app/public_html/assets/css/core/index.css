@@ -1,0 +1,11 @@
+/**
+ * Core CSS Bundle
+ * Namespace: .core-* (for non-reset/token styles)
+ *
+ * Foundation styles loaded on every page.
+ */
+
+@import url('tokens.css');
+@import url('reset.css');
+@import url('typography.css');
+@import url('utilities.css');

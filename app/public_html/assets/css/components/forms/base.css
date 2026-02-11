@@ -1,0 +1,51 @@
+/**
+ * Form Base Styles
+ * Namespace: .form-*
+ *
+ * Base styles for form elements.
+ */
+
+form {
+    display: flex;
+}
+
+label {
+    font-size: 0.875rem;
+    color: var(--color-text);
+}
+
+/* Radio Pickers */
+.filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.filter-option input[type="radio"] {
+    cursor: pointer;
+}
+
+/* Frequency Input (used on Dictionary) */
+.freq-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.freq-inputs input {
+    flex: 1;
+}
+
+.freq-inputs span {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}

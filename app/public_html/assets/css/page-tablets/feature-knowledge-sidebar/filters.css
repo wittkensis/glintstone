@@ -1,0 +1,153 @@
+/**
+ * Knowledge Sidebar Filters
+ * Purpose: Compact filter selects and chips for knowledge sidebar tabs
+ * Used on: Dictionary tab filters, research filters, etc.
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   Filter Container
+   ========================================================================== */
+
+.knowledge-sidebar-filters {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    background: var(--color-bg);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Filter Select
+   Layout-only styles (visual styling inherited from global select)
+   ========================================================================== */
+
+.knowledge-sidebar-filters .knowledge-sidebar-filter,
+.knowledge-sidebar-filters input {
+    flex: 1;
+    background: transparent;
+}
+
+/* ==========================================================================
+   Filter Chips (active filters)
+   ========================================================================== */
+
+.knowledge-sidebar-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: var(--space-2);
+    background: var(--color-surface);
+    flex-shrink: 0;
+}
+
+.knowledge-sidebar-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.knowledge-sidebar-filter-chip__remove {
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.25);
+    border: none;
+    border-radius: 50%;
+    color: var(--color-bg);
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+    transition: background var(--transition-fast);
+}
+
+.knowledge-sidebar-filter-chip__remove:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* ==========================================================================
+   Search Container
+   ========================================================================== */
+
+.knowledge-sidebar-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* ==========================================================================
+   Search Input
+   ========================================================================== */
+
+.knowledge-sidebar-search__input {
+    flex: 1;
+    padding: var(--space-2) var(--space-3);
+    padding-right: var(--space-8);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: 0.85rem;
+    transition: border-color var(--transition-fast);
+}
+
+.knowledge-sidebar-search__input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.knowledge-sidebar-search__input::placeholder {
+    color: var(--color-text-subtle);
+}
+
+/* ==========================================================================
+   Clear Button
+   ========================================================================== */
+
+.knowledge-sidebar-search__clear {
+    position: absolute;
+    right: var(--space-2);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: all var(--transition-fast);
+}
+
+.knowledge-sidebar-search__clear:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 600px) {
+    .knowledge-sidebar-filters {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .knowledge-sidebar-filter {
+        width: 100%;
+    }
+}

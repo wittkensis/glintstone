@@ -1,0 +1,15 @@
+/**
+ * Layout CSS Bundle
+ * Namespace: .layout-*, .header-*, .footer-*
+ *
+ * Structural styles for page layouts.
+ */
+
+@import url('containers.css');
+@import url('header.css');
+@import url('footer.css');
+@import url('page-header.css');
+@import url('hero.css');
+@import url('page-hero.css');
+@import url('split-panel.css');
+@import url('two-column.css');
