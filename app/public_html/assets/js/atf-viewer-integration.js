@@ -111,7 +111,7 @@
             const viewInLibraryBtn = document.createElement('div');
             viewInLibraryBtn.className = 'knowledge-sidebar-library-link';
             viewInLibraryBtn.innerHTML = `
-                <a href="/dictionary/word.php?id=${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
+                <a href="/dictionary/word.php?id=${encodeURIComponent(entryId)}" class="btn btn--ghost" target="_blank">
                     View in Dictionary →
                 </a>
             `;
@@ -164,7 +164,7 @@
             const viewInLibraryBtn = document.createElement('div');
             viewInLibraryBtn.className = 'knowledge-sidebar-library-link';
             viewInLibraryBtn.innerHTML = `
-                <a href="/dictionary/word.php?id=${encodeURIComponent(entryId)}" class="btn btn--secondary" target="_blank">
+                <a href="/dictionary/word.php?id=${encodeURIComponent(entryId)}" class="btn btn--ghost" target="_blank">
                     View in Dictionary →
                 </a>
             `;
@@ -187,73 +187,6 @@
                 }
             });
         };
-    }
-
-    // Add CSS for library link button
-    if (!document.getElementById('atf-library-integration-styles')) {
-        const style = document.createElement('style');
-        style.id = 'atf-library-integration-styles';
-        style.textContent = `
-            .knowledge-sidebar-library-link {
-                margin-top: 1.5rem;
-                padding-top: 1.5rem;
-                border-top: 1px solid var(--color-border);
-            }
-
-            .knowledge-sidebar-library-link .btn {
-                width: 100%;
-                text-align: center;
-            }
-
-            .word-detail-container.compact {
-                font-size: 0.95rem;
-            }
-
-            .word-detail-container.compact .word-detail__header {
-                margin-bottom: 1rem;
-                padding-bottom: 0.75rem;
-            }
-
-            .word-detail-container.compact .word-detail__headword {
-                font-size: 1.75rem;
-            }
-
-            .word-detail-container.compact .guide-word {
-                font-size: 1.125rem;
-            }
-
-            .word-detail-container.compact .field-list {
-                gap: 0.75rem;
-            }
-
-            .word-detail-container.compact .field-list dt {
-                font-size: 0.875rem;
-            }
-
-            .word-detail-container.compact .field-list dd {
-                font-size: 0.95rem;
-            }
-
-            .word-detail-container.compact .word-detail__variants,
-            .word-detail-container.compact .word-detail__signs,
-            .word-detail-container.compact .word-detail__related {
-                margin-bottom: 1.5rem;
-            }
-
-            .word-detail-container.compact h2,
-            .word-detail-container.compact h4 {
-                font-size: 1rem;
-                margin-bottom: 0.75rem;
-            }
-
-            /* Hide sections that don't make sense in compact mode */
-            .word-detail-container.compact .word-detail__core,
-            .word-detail-container.compact .word-detail__examples,
-            .word-detail-container.compact .word-detail__cad {
-                display: none;
-            }
-        `;
-        document.head.appendChild(style);
     }
 
     console.log('ATF Viewer library integration loaded');

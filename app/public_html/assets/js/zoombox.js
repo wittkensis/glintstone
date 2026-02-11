@@ -145,18 +145,24 @@ class Zoombox {
 
         const chain = [sources.local, sources.cdliPhoto, sources.cdliLineart].filter(Boolean);
 
+        console.log('[Zoombox] Attempting to load images:', chain);
+
         for (const src of chain) {
             try {
+                console.log('[Zoombox] Trying source:', src);
                 const result = await this._tryLoadImage(src);
+                console.log('[Zoombox] Successfully loaded:', src, result);
                 // Pass dimensions from the test image (which has loaded)
                 this._onImageLoaded(result.width, result.height);
                 return true;
             } catch (e) {
+                console.warn('[Zoombox] Failed to load:', src, e.message);
                 // Continue to next source
             }
         }
 
         // All sources failed
+        console.error('[Zoombox] All image sources failed');
         this._showPlaceholder();
         return false;
     }
@@ -208,6 +214,8 @@ class Zoombox {
                 this.image.classList.add('is-loaded');
                 this.container.classList.remove('is-loading');
                 this.container.classList.remove('is-placeholder');
+                this.container.classList.add('has-image');
+                console.log('[Zoombox] Image displayed, container classes:', this.container.className);
 
                 // Re-enable transitions
                 requestAnimationFrame(() => {
@@ -225,6 +233,7 @@ class Zoombox {
     _showPlaceholder() {
         this.imageLoaded = false;
         this.container.classList.remove('is-loading');
+        this.container.classList.remove('has-image');
         this.container.classList.add('is-placeholder');
         this.image.classList.add('is-error');
 
@@ -393,16 +402,16 @@ class Zoombox {
         // Draw image to canvas
         if (this.image.complete && this.naturalWidth > 0) {
             const aspectRatio = this.naturalWidth / this.naturalHeight;
-            const containerWidth = 100;  // Reduced from 120
-            const containerHeight = 67;   // Maintain 3:2 aspect ratio (100 * 2/3)
 
-            if (aspectRatio > containerWidth / containerHeight) {
-                canvas.width = containerWidth;
-                canvas.height = containerWidth / aspectRatio;
-            } else {
-                canvas.height = containerHeight;
-                canvas.width = containerHeight * aspectRatio;
+            // Set minimap container aspect ratio to match image
+            if (this.minimap) {
+                this.minimap.style.aspectRatio = aspectRatio;
             }
+
+            // Set canvas native dimensions to match aspect ratio
+            const canvasSize = 120;  // Base size
+            canvas.width = canvasSize;
+            canvas.height = canvasSize / aspectRatio;
 
             ctx.drawImage(this.image, 0, 0, canvas.width, canvas.height);
         }

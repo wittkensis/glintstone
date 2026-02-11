@@ -9,8 +9,21 @@ function getDB(): SQLite3 {
     static $db = null;
 
     if ($db === null) {
-        $db = new SQLite3(DB_PATH, SQLITE3_OPEN_READONLY);
-        $db->enableExceptions(true);
+        try {
+            $db = new SQLite3(DB_PATH, SQLITE3_OPEN_READONLY);
+            $db->enableExceptions(true);
+
+            // Set busy timeout to handle database locking (5 seconds)
+            // This prevents "database is locked" errors during concurrent access
+            $db->busyTimeout(5000);
+
+            // Enable WAL mode for better concurrent read performance
+            // WAL allows readers to not block writers and vice versa
+            $db->exec('PRAGMA journal_mode=WAL');
+        } catch (Exception $e) {
+            // If we can't open the database, throw a more helpful error
+            throw new Exception("Failed to open database: " . $e->getMessage());
+        }
     }
 
     return $db;
@@ -656,14 +669,12 @@ function getFilteredLanguageStats(array $filters): array {
     }
 
     // Search filter
-    // Supports OR operator: "P000001 || P000025 || P010663"
     $inscriptionJoin = "";
     if (!empty($filters['search'])) {
         $inscriptionJoin = "LEFT JOIN inscriptions i ON a.p_number = i.p_number AND i.is_latest = 1";
         $searchTerms = array_map('trim', explode('||', $filters['search']));
 
         if (count($searchTerms) > 1) {
-            // Multiple terms - build OR condition for each
             $searchConditions = [];
             foreach ($searchTerms as $i => $term) {
                 if (!empty($term)) {
@@ -675,7 +686,6 @@ function getFilteredLanguageStats(array $filters): array {
                 $where[] = "(" . implode(' OR ', $searchConditions) . ")";
             }
         } else {
-            // Single term - use simple search
             $where[] = "(a.p_number LIKE :search OR a.designation LIKE :search OR i.transliteration_clean LIKE :search)";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
@@ -683,15 +693,15 @@ function getFilteredLanguageStats(array $filters): array {
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-    // Query with joins to get counts and grouping info
+    // Efficient query: count directly from artifacts.language field
+    // This avoids the expensive cross-join with language_stats
     $sql = "
-        SELECT ls.language, ls.root_language, COUNT(DISTINCT a.p_number) as tablet_count
-        FROM language_stats ls
-        INNER JOIN artifacts a ON a.language LIKE '%' || ls.language || '%'
+        SELECT a.language, COUNT(DISTINCT a.p_number) as tablet_count
+        FROM artifacts a
         LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
         $inscriptionJoin
         $whereClause
-        GROUP BY ls.language, ls.root_language
+        GROUP BY a.language
         HAVING tablet_count > 0
         ORDER BY tablet_count DESC
     ";
@@ -702,25 +712,60 @@ function getFilteredLanguageStats(array $filters): array {
     }
     $result = $stmt->execute();
 
-    // Group by root language
+    // Get language metadata for grouping
+    $langMeta = [];
+    $metaResult = $db->query("SELECT language, root_language FROM language_stats");
+    while ($row = $metaResult->fetchArray(SQLITE3_ASSOC)) {
+        $langMeta[$row['language']] = $row['root_language'];
+    }
+
+    // Group results by root language
     $grouped = [];
     $rootTotals = [];
 
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        $root = $row['root_language'];
-        if (!isset($grouped[$root])) {
-            $grouped[$root] = [];
-            $rootTotals[$root] = 0;
+        $lang = $row['language'];
+        // Extract individual languages from comma-separated field
+        $langs = array_map('trim', explode(',', $lang));
+
+        foreach ($langs as $singleLang) {
+            if (empty($singleLang)) continue;
+
+            $root = $langMeta[$singleLang] ?? 'Other';
+            if (!isset($grouped[$root])) {
+                $grouped[$root] = [];
+                $rootTotals[$root] = 0;
+            }
+
+            // Find or create entry for this language
+            $found = false;
+            foreach ($grouped[$root] as &$item) {
+                if ($item['value'] === $singleLang) {
+                    $item['count'] += (int)$row['tablet_count'];
+                    $found = true;
+                    break;
+                }
+            }
+            unset($item);
+
+            if (!$found) {
+                $grouped[$root][] = [
+                    'value' => $singleLang,
+                    'count' => (int)$row['tablet_count']
+                ];
+            }
+            $rootTotals[$root] += (int)$row['tablet_count'];
         }
-        $grouped[$root][] = [
-            'value' => $row['language'],
-            'count' => (int)$row['tablet_count']
-        ];
-        $rootTotals[$root] += (int)$row['tablet_count'];
     }
 
     // Sort roots by total count
     arsort($rootTotals);
+
+    // Sort items within each group
+    foreach ($grouped as &$items) {
+        usort($items, fn($a, $b) => $b['count'] - $a['count']);
+    }
+    unset($items);
 
     $stats = [];
     foreach ($rootTotals as $root => $total) {
@@ -829,16 +874,16 @@ function getFilteredPeriodStats(array $filters): array {
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
+    // Efficient query: count directly from artifacts.period
     $sql = "
-        SELECT ps_tbl.period, ps_tbl.period_group, ps_tbl.sort_order, COUNT(DISTINCT a.p_number) as tablet_count
-        FROM period_stats ps_tbl
-        INNER JOIN artifacts a ON a.period = ps_tbl.period
+        SELECT a.period, COUNT(DISTINCT a.p_number) as tablet_count
+        FROM artifacts a
         LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
         $inscriptionJoin
         $whereClause
-        GROUP BY ps_tbl.period, ps_tbl.period_group, ps_tbl.sort_order
+        GROUP BY a.period
         HAVING tablet_count > 0
-        ORDER BY ps_tbl.sort_order ASC, tablet_count DESC
+        ORDER BY tablet_count DESC
     ";
 
     $stmt = $db->prepare($sql);
@@ -847,25 +892,46 @@ function getFilteredPeriodStats(array $filters): array {
     }
     $result = $stmt->execute();
 
+    // Get period metadata for grouping
+    $periodMeta = [];
+    $metaResult = $db->query("SELECT period, period_group, sort_order FROM period_stats");
+    while ($row = $metaResult->fetchArray(SQLITE3_ASSOC)) {
+        $periodMeta[$row['period']] = [
+            'group' => $row['period_group'],
+            'sort_order' => (int)$row['sort_order']
+        ];
+    }
+
     $grouped = [];
     $rootTotals = [];
     $rootOrder = [];
 
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        $group = $row['period_group'];
+        $period = $row['period'];
+        if (empty($period)) continue;
+
+        $meta = $periodMeta[$period] ?? ['group' => 'Other', 'sort_order' => 999];
+        $group = $meta['group'];
+
         if (!isset($grouped[$group])) {
             $grouped[$group] = [];
             $rootTotals[$group] = 0;
-            $rootOrder[$group] = (int)$row['sort_order'];
+            $rootOrder[$group] = $meta['sort_order'];
         }
         $grouped[$group][] = [
-            'value' => $row['period'],
+            'value' => $period,
             'count' => (int)$row['tablet_count']
         ];
         $rootTotals[$group] += (int)$row['tablet_count'];
     }
 
     asort($rootOrder);
+
+    // Sort items within each group by count
+    foreach ($grouped as &$items) {
+        usort($items, fn($a, $b) => $b['count'] - $a['count']);
+    }
+    unset($items);
 
     $stats = [];
     foreach ($rootOrder as $group => $order) {
@@ -974,14 +1040,14 @@ function getFilteredProvenienceStats(array $filters): array {
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
+    // Efficient query: count directly from artifacts.provenience
     $sql = "
-        SELECT prov_stats.provenience, prov_stats.region, COUNT(DISTINCT a.p_number) as tablet_count
-        FROM provenience_stats prov_stats
-        INNER JOIN artifacts a ON a.provenience LIKE '%' || prov_stats.provenience || '%'
+        SELECT a.provenience, COUNT(DISTINCT a.p_number) as tablet_count
+        FROM artifacts a
         LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
         $inscriptionJoin
         $whereClause
-        GROUP BY prov_stats.provenience, prov_stats.region
+        GROUP BY a.provenience
         HAVING tablet_count > 0
         ORDER BY tablet_count DESC
     ";
@@ -992,23 +1058,42 @@ function getFilteredProvenienceStats(array $filters): array {
     }
     $result = $stmt->execute();
 
+    // Get provenience metadata for grouping
+    $provMeta = [];
+    $metaResult = $db->query("SELECT provenience, region FROM provenience_stats");
+    while ($row = $metaResult->fetchArray(SQLITE3_ASSOC)) {
+        $provMeta[$row['provenience']] = $row['region'];
+    }
+
     $grouped = [];
     $rootTotals = [];
 
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        $region = $row['region'];
+        $prov = $row['provenience'];
+        if (empty($prov)) continue;
+
+        // Try to find region from metadata, default to 'Other'
+        $region = $provMeta[$prov] ?? 'Other';
+
         if (!isset($grouped[$region])) {
             $grouped[$region] = [];
             $rootTotals[$region] = 0;
         }
+
         $grouped[$region][] = [
-            'value' => $row['provenience'],
+            'value' => $prov,
             'count' => (int)$row['tablet_count']
         ];
         $rootTotals[$region] += (int)$row['tablet_count'];
     }
 
     arsort($rootTotals);
+
+    // Sort items within each group
+    foreach ($grouped as &$items) {
+        usort($items, fn($a, $b) => $b['count'] - $a['count']);
+    }
+    unset($items);
 
     $stats = [];
     foreach ($rootTotals as $region => $total) {
@@ -1117,14 +1202,14 @@ function getFilteredGenreStats(array $filters): array {
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
+    // Efficient query: count directly from artifacts.genre
     $sql = "
-        SELECT gs.genre, gs.category, COUNT(DISTINCT a.p_number) as tablet_count
-        FROM genre_stats gs
-        INNER JOIN artifacts a ON a.genre LIKE '%' || gs.genre || '%'
+        SELECT a.genre, COUNT(DISTINCT a.p_number) as tablet_count
+        FROM artifacts a
         LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
         $inscriptionJoin
         $whereClause
-        GROUP BY gs.genre, gs.category
+        GROUP BY a.genre
         HAVING tablet_count > 0
         ORDER BY tablet_count DESC
     ";
@@ -1135,23 +1220,42 @@ function getFilteredGenreStats(array $filters): array {
     }
     $result = $stmt->execute();
 
+    // Get genre metadata for grouping
+    $genreMeta = [];
+    $metaResult = $db->query("SELECT genre, category FROM genre_stats");
+    while ($row = $metaResult->fetchArray(SQLITE3_ASSOC)) {
+        $genreMeta[$row['genre']] = $row['category'];
+    }
+
     $grouped = [];
     $rootTotals = [];
 
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        $cat = $row['category'];
+        $genre = $row['genre'];
+        if (empty($genre)) continue;
+
+        // Try to find category from metadata, default to 'Other'
+        $cat = $genreMeta[$genre] ?? 'Other';
+
         if (!isset($grouped[$cat])) {
             $grouped[$cat] = [];
             $rootTotals[$cat] = 0;
         }
+
         $grouped[$cat][] = [
-            'value' => $row['genre'],
+            'value' => $genre,
             'count' => (int)$row['tablet_count']
         ];
         $rootTotals[$cat] += (int)$row['tablet_count'];
     }
 
     arsort($rootTotals);
+
+    // Sort items within each group
+    foreach ($grouped as &$items) {
+        usort($items, fn($a, $b) => $b['count'] - $a['count']);
+    }
+    unset($items);
 
     $stats = [];
     foreach ($rootTotals as $cat => $total) {
@@ -1184,6 +1288,7 @@ function getCollections(): array {
             c.collection_id,
             c.name,
             c.description,
+            c.image_path,
             c.created_at,
             c.updated_at,
             COUNT(cm.p_number) as tablet_count
@@ -1199,6 +1304,7 @@ function getCollections(): array {
             'collection_id' => (int)$row['collection_id'],
             'name' => $row['name'],
             'description' => $row['description'],
+            'image_path' => $row['image_path'],
             'created_at' => $row['created_at'],
             'updated_at' => $row['updated_at'],
             'tablet_count' => (int)$row['tablet_count']
@@ -1217,6 +1323,7 @@ function getCollection(int $collectionId): ?array {
             c.collection_id,
             c.name,
             c.description,
+            c.image_path,
             c.created_at,
             c.updated_at,
             COUNT(cm.p_number) as tablet_count
@@ -1237,6 +1344,7 @@ function getCollection(int $collectionId): ?array {
         'collection_id' => (int)$row['collection_id'],
         'name' => $row['name'],
         'description' => $row['description'],
+        'image_path' => $row['image_path'],
         'created_at' => $row['created_at'],
         'updated_at' => $row['updated_at'],
         'tablet_count' => (int)$row['tablet_count']

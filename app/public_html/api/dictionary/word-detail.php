@@ -12,9 +12,15 @@
  * - Polysemic senses (if available)
  */
 
-require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../_error-handler.php';
 
-header('Content-Type: application/json');
+try {
+    require_once __DIR__ . '/../../includes/db.php';
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Failed to load dependencies', 'message' => $e->getMessage()]);
+    exit;
+}
 
 // Get entry_id from query parameter
 $entry_id = $_GET['entry_id'] ?? '';
@@ -53,33 +59,40 @@ try {
         exit;
     }
 
+    // Prepare language family matching for lemmas queries
+    // e.g., 'akk-x-stdbab' -> base='akk', family='akk-x-%'
+    $langBase = explode('-x-', $entry['language'])[0];
+    $langFamily = $langBase . '-x-%';
+
     // Get variant forms with frequencies
     $stmt = $db->prepare("
         SELECT
             gf.form,
-            gf.form_type,
-            COUNT(DISTINCT l.p_number) as occurrence_count
+            gf.count as stored_count,
+            COALESCE(COUNT(DISTINCT l.p_number), 0) as occurrence_count,
+            COALESCE(gf.count, 0) as sort_count
         FROM glossary_forms gf
         LEFT JOIN lemmas l ON (
             gf.form = l.form
             AND l.cf = :cf
-            AND l.lang = :lang
+            AND (l.lang = :lang OR l.lang = :lang_base OR l.lang LIKE :lang_family)
         )
         WHERE gf.entry_id = :entry_id
-        GROUP BY gf.form, gf.form_type
-        ORDER BY occurrence_count DESC
+        GROUP BY gf.form
+        ORDER BY occurrence_count DESC, sort_count DESC
     ");
     $stmt->bindValue(':entry_id', $entry_id, SQLITE3_TEXT);
     $stmt->bindValue(':cf', $entry['citation_form'], SQLITE3_TEXT);
     $stmt->bindValue(':lang', $entry['language'], SQLITE3_TEXT);
+    $stmt->bindValue(':lang_base', $langBase, SQLITE3_TEXT);
+    $stmt->bindValue(':lang_family', $langFamily, SQLITE3_TEXT);
     $result = $stmt->execute();
 
     $variants = [];
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
         $variants[] = [
             'form' => $row['form'],
-            'form_type' => $row['form_type'],
-            'count' => (int)$row['occurrence_count']
+            'count' => (int)$row['occurrence_count'] ?: (int)$row['stored_count']
         ];
     }
 
@@ -190,7 +203,8 @@ try {
         ];
     }
 
-    // Get sample corpus attestations (limit to 10 for performance)
+    // Get all corpus attestations (distinct tablets)
+    // Use language family matching (langBase and langFamily defined earlier)
     $stmt = $db->prepare("
         SELECT DISTINCT
             l.p_number,
@@ -201,12 +215,13 @@ try {
         FROM lemmas l
         LEFT JOIN artifacts a ON l.p_number = a.p_number
         WHERE l.cf = :cf
-          AND l.lang = :lang
+          AND (l.lang = :lang OR l.lang = :lang_base OR l.lang LIKE :lang_family)
         ORDER BY l.p_number
-        LIMIT 10
     ");
     $stmt->bindValue(':cf', $entry['citation_form'], SQLITE3_TEXT);
     $stmt->bindValue(':lang', $entry['language'], SQLITE3_TEXT);
+    $stmt->bindValue(':lang_base', $langBase, SQLITE3_TEXT);
+    $stmt->bindValue(':lang_family', $langFamily, SQLITE3_TEXT);
     $result = $stmt->execute();
 
     $attestations = [];
@@ -277,6 +292,34 @@ try {
         ];
     }
 
+    // Calculate position in default sort order (frequency descending)
+    // Must match browse.php: ORDER BY icount DESC, citation_form ASC
+    $stmt = $db->prepare("
+        SELECT COUNT(*) as position
+        FROM glossary_entries
+        WHERE icount > :current_icount
+           OR (icount = :current_icount AND citation_form < :current_citation_form)
+    ");
+    $stmt->bindValue(':current_icount', $entry['icount'], SQLITE3_INTEGER);
+    $stmt->bindValue(':current_citation_form', $entry['citation_form'], SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $position_row = $result->fetchArray(SQLITE3_ASSOC);
+    $position_frequency = (int)$position_row['position'];
+
+    // Calculate position in alphabetical sort order
+    // Must match browse.php: ORDER BY citation_form ASC, headword ASC
+    $stmt = $db->prepare("
+        SELECT COUNT(*) as position
+        FROM glossary_entries
+        WHERE citation_form < :current_citation_form
+           OR (citation_form = :current_citation_form AND headword < :current_headword)
+    ");
+    $stmt->bindValue(':current_citation_form', $entry['citation_form'], SQLITE3_TEXT);
+    $stmt->bindValue(':current_headword', $entry['headword'], SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $position_row = $result->fetchArray(SQLITE3_ASSOC);
+    $position_alpha = (int)$position_row['position'];
+
     // Assemble complete response
     $response = [
         'entry' => [
@@ -289,6 +332,10 @@ try {
             'icount' => (int)$entry['icount'],
             'normalized_headword' => $entry['normalized_headword'],
             'semantic_category' => $entry['semantic_category']
+        ],
+        'position' => [
+            'frequency' => $position_frequency,
+            'alpha' => $position_alpha
         ],
         'variants' => $variants,
         'related_words' => $related_words,

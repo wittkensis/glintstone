@@ -11,9 +11,15 @@
  *   limit    - Results per page (default: 50, max: 100)
  */
 
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/_error-handler.php';
 
-header('Content-Type: application/json');
+try {
+    require_once __DIR__ . '/../includes/db.php';
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Failed to load dependencies', 'message' => $e->getMessage()]);
+    exit;
+}
 
 // Get parameters
 $search = $_GET['search'] ?? null;

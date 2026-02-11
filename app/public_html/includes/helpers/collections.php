@@ -26,6 +26,7 @@ function getRandomCollections(int $limit = 3): array {
             c.collection_id,
             c.name,
             c.description,
+            c.image_path,
             COUNT(cm.p_number) as tablet_count
         FROM collections c
         LEFT JOIN collection_members cm ON c.collection_id = cm.collection_id
@@ -46,6 +47,7 @@ function getRandomCollections(int $limit = 3): array {
             'collection_id' => (int)$row['collection_id'],
             'name' => $row['name'],
             'description' => $row['description'],
+            'image_path' => $row['image_path'],
             'tablet_count' => (int)$row['tablet_count'],
             'preview_tablets' => $previewTablets
         ];

@@ -26,6 +26,8 @@
     flex-direction: column;
     flex: 1;
     min-width: 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* ==========================================================================
@@ -34,7 +36,7 @@
 
 .atf-viewer__header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     padding: 0 var(--space-2);
     background: var(--color-surface);
@@ -50,18 +52,25 @@
 .atf-viewer__body {
     flex: 1;
     min-height: 0;
+    height: 0; /* Force height calculation in flex context */
     overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
+.atf-content-column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .atf-view-settings {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     align-items: center;
     padding: var(--space-2) var(--space-4);
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-surface);
     flex-shrink: 0;
 }
 
@@ -86,6 +95,45 @@
 /* Hide glosses in raw mode */
 .atf-viewer--mode-raw .atf-word__gloss {
     display: none;
+}
+
+/* ==========================================================================
+   Data Source Footer
+   Explains differences between inline glosses and translation panel
+   ========================================================================== */
+
+.atf-viewer__footer {
+    margin-top: var(--space-6);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+}
+
+.atf-viewer__footer-content {
+    display: flex;
+    gap: var(--space-2);
+    align-items: flex-start;
+}
+
+.atf-viewer__footer-icon {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+    opacity: 0.6;
+}
+
+.atf-viewer__footer-text {
+    flex: 1;
+}
+
+.atf-viewer__footer-text strong {
+    color: var(--color-text-subtle);
+    font-weight: 500;
 }
 
 /* ==========================================================================

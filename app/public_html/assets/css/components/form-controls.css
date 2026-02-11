@@ -213,13 +213,21 @@ input[type="text"],
 input[type="number"],
 select {
     width: 100%;
-    padding: 0.5rem 0.75rem;
+    padding: var(--space-2) var(--space-3);
     background: var(--color-bg-inset);
     color: var(--color-text);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-    transition: border-color 0.2s ease;
+    font-family: inherit;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    transition: border-color var(--transition-fast);
+}
+
+input[type="text"]:hover,
+input[type="number"]:hover,
+select:hover {
+    border-color: var(--color-text-subtle);
 }
 
 input[type="text"]:focus,
@@ -230,6 +238,37 @@ select:focus {
 }
 
 input::placeholder {
+    color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   Custom Select
+   Overrides OS default styling for consistent appearance
+   ========================================================================== */
+
+select {
+    /* Reset OS styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+
+    /* Custom dropdown arrow */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--space-2) center;
+    background-size: 12px;
+}
+
+/* Style options (limited browser support) */
+select option {
+    background: var(--color-surface);
+    color: var(--color-text);
+    padding: var(--space-2);
+}
+
+select optgroup {
+    font-weight: 600;
     color: var(--color-text-muted);
 }
 

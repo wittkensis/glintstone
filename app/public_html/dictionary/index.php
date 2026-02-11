@@ -15,6 +15,7 @@
  */
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/helpers/display.php';
 
 // Get URL parameters
 $selectedWordId = $_GET['word'] ?? null;
@@ -159,16 +160,31 @@ function fetchWordDetail($db, $entryId) {
     if (!$entry) return null;
 
     // Variants
+    // Use language family matching (e.g., 'akk' matches 'akk-x-stdbab')
+    $langBase = explode('-x-', $entry['language'])[0];
+    $langFamily = $langBase . '-x-%';
+
     $stmt = $db->prepare("
-        SELECT gf.form, gf.count as stored_count, COUNT(DISTINCT l.p_number) as occ
+        SELECT
+            gf.form,
+            gf.count as stored_count,
+            COALESCE(COUNT(DISTINCT l.p_number), 0) as occ,
+            COALESCE(gf.count, 0) as sort_count
         FROM glossary_forms gf
-        LEFT JOIN lemmas l ON gf.form = l.form AND l.cf = :cf AND l.lang = :lang
+        LEFT JOIN lemmas l ON (
+            gf.form = l.form
+            AND l.cf = :cf
+            AND (l.lang = :lang OR l.lang = :lang_base OR l.lang LIKE :lang_family)
+        )
         WHERE gf.entry_id = :id
-        GROUP BY gf.form ORDER BY occ DESC, stored_count DESC
+        GROUP BY gf.form
+        ORDER BY occ DESC, sort_count DESC
     ");
     $stmt->bindValue(':id', $entryId, SQLITE3_TEXT);
     $stmt->bindValue(':cf', $entry['citation_form'], SQLITE3_TEXT);
     $stmt->bindValue(':lang', $entry['language'], SQLITE3_TEXT);
+    $stmt->bindValue(':lang_base', $langBase, SQLITE3_TEXT);
+    $stmt->bindValue(':lang_family', $langFamily, SQLITE3_TEXT);
     $variants = [];
     $result = $stmt->execute();
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
@@ -198,15 +214,22 @@ function fetchWordDetail($db, $entryId) {
         $senses[] = $row;
     }
 
-    // Attestations
+    // Attestations (all distinct tablets)
+    // Use language family matching (e.g., 'akk' matches 'akk-x-stdbab')
+    $langBase = explode('-x-', $entry['language'])[0];
+    $langFamily = $langBase . '-x-%';
+
     $stmt = $db->prepare("
         SELECT DISTINCT l.p_number, l.form, a.period, a.provenience, a.genre
         FROM lemmas l LEFT JOIN artifacts a ON l.p_number = a.p_number
-        WHERE l.cf = :cf AND l.lang = :lang
-        ORDER BY l.p_number LIMIT 10
+        WHERE l.cf = :cf
+          AND (l.lang = :lang OR l.lang = :lang_base OR l.lang LIKE :lang_family)
+        ORDER BY l.p_number
     ");
     $stmt->bindValue(':cf', $entry['citation_form'], SQLITE3_TEXT);
     $stmt->bindValue(':lang', $entry['language'], SQLITE3_TEXT);
+    $stmt->bindValue(':lang_base', $langBase, SQLITE3_TEXT);
+    $stmt->bindValue(':lang_family', $langFamily, SQLITE3_TEXT);
     $attestations = [];
     $result = $stmt->execute();
     while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
@@ -277,6 +300,8 @@ require_once __DIR__ . '/../includes/header.php';
 <link rel="stylesheet" href="/assets/css/dictionary/placeholders.css">
 <link rel="stylesheet" href="/assets/css/tablet/metadata.css">
 <link rel="stylesheet" href="/assets/css/components/badges.css">
+<link rel="stylesheet" href="/assets/css/components/cards.css">
+<link rel="stylesheet" href="/assets/css/components/cards-tablet.css">
 
 <?php
 // Render the browser layout component

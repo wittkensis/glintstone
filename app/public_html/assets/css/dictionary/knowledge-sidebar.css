@@ -8,6 +8,8 @@
  * For reusable patterns, see /knowledge-sidebar/ folder.
  */
 
+/* TODO: Move this file to the knowledge-sidebar folder */
+
 /* ==========================================================================
    Dictionary Browse Container
    Extends: .knowledge-sidebar-content (from knowledge-sidebar/layout.css)
@@ -39,23 +41,20 @@
    Word Header
    -------------------------------------------------------------------------- */
 
-.knowledge-sidebar-word-header {
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-bg);
-}
+/* .knowledge-sidebar-word-header {} */
 
 .knowledge-sidebar-word-header__back {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 16px 12px;
+    padding: var(--space-2);
     width: 100%;
-    background: var(--color-surface);
+    background: var(--color-bg);
+    border-radius: var(--radius-sm);
     border: none;
     color: var(--color-text);
     font-size: 0.9rem;
     font-weight: 400;
-    cursor: pointer;
     transition: all var(--transition-fast);
     text-align: left;
 }
@@ -74,8 +73,6 @@
 .knowledge-sidebar-word-header__citation {
     flex: 1;
     font-family: var(--font-mono);
-    font-size: 1.1rem;
-    font-weight: 500;
     color: var(--color-accent);
     line-height: 1.3;
 }
@@ -114,20 +111,22 @@
    -------------------------------------------------------------------------- */
 
 .knowledge-sidebar-word-content {
-    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-4) 0;
+}
+.knowledge-sidebar-word-content > *:not(:first-child) {
+    border-top: 1px solid var(--color-border-subtle);
+    padding-top: var(--space-4);    
 }
 
-.knowledge-sidebar-word-definition {
-    padding: 16px 12px;
-    margin-bottom: 16px;
-    background: var(--color-surface);
-    border-left: 3px solid var(--color-accent);
-}
+/* .knowledge-sidebar-word-definition {} */
 
 .knowledge-sidebar-word-definition__text {
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 400;
-    color: var(--color-text);
+    color: var(--color-text-muted);
     line-height: 1.5;
 }
 
@@ -138,8 +137,8 @@
 .knowledge-sidebar-word-fields {
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: 8px 12px;
-    margin-bottom: 16px;
+    gap: var(--space-2) var(--space-2);
+    margin: 0;
 }
 
 .knowledge-sidebar-word-field-label {
@@ -163,30 +162,26 @@
 }
 
 /* ==========================================================================
+   Subsection Headers
+   ========================================================================== */
+
+.knowledge-sidebar-word-definition__label,
+.knowledge-sidebar-sign-form__label {
+    font-family: var(--font-serif);
+    font-size: 0.9rem;
+}
+
+/* ==========================================================================
    Sign Form Section
    ========================================================================== */
 
-.knowledge-sidebar-sign-form {
-    margin-bottom: var(--space-4);
-    padding: var(--space-3);
-    background: var(--color-bg-elevated, rgba(255, 255, 255, 0.03));
-    border-radius: var(--radius-sm);
-    border-left: 3px solid var(--color-warning, #e8a64d);
-}
+/* .knowledge-sidebar-sign-form {} */
 
 .knowledge-sidebar-sign-form__header {
     display: flex;
     align-items: center;
     gap: var(--space-2);
     margin-bottom: var(--space-2);
-}
-
-.knowledge-sidebar-sign-form__label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
 }
 
 .knowledge-sidebar-sign-badge {
@@ -232,9 +227,7 @@
    Variant Forms
    ========================================================================== */
 
-.knowledge-sidebar-variants {
-    margin-bottom: 16px;
-}
+/* .knowledge-sidebar-variants {} */
 
 .knowledge-sidebar-variants__title {
     font-size: 0.7rem;
@@ -274,16 +267,11 @@
    All Entries Expander
    ========================================================================== */
 
-.knowledge-sidebar-entries {
-    border-top: 1px solid var(--color-border);
-    padding-top: 12px;
-    margin-top: 12px;
-}
+/* .knowledge-sidebar-entries {} */
 
 .knowledge-sidebar-entries summary {
     cursor: pointer;
     font-size: 0.75rem;
-    color: var(--color-text-muted);
     user-select: none;
     padding: 6px 0;
 }
@@ -293,14 +281,14 @@
 }
 
 .knowledge-sidebar-entries__list {
-    margin-top: 12px;
+    margin-top: var(--space-2);
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
 .knowledge-sidebar-entry {
-    padding: 10px;
+    padding: var(--space-2);
     background: var(--color-surface);
     border-radius: var(--radius-sm);
     border-left: 2px solid var(--color-border);
@@ -384,4 +372,70 @@
     text-align: center;
     color: var(--color-text-muted);
     font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   Library Link
+   ========================================================================== */
+
+.knowledge-sidebar-library-link {
+    padding-top: var(--space-2);
+}
+
+.knowledge-sidebar-library-link .btn {
+    /* width: 100%; */
+    /* justify-content: center; */
+}
+
+/* ==========================================================================
+   Word Detail Compact Mode
+   Used when word detail is shown in the knowledge sidebar
+   ========================================================================== */
+
+.word-detail-container.compact {
+    font-size: 0.95rem;
+}
+
+.word-detail-container.compact .word-detail__header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+}
+
+.word-detail-container.compact .word-detail__headword {
+    font-size: 1.75rem;
+}
+
+.word-detail-container.compact .guide-word {
+    font-size: 1.125rem;
+}
+
+.word-detail-container.compact .field-list {
+    gap: 0.75rem;
+}
+
+.word-detail-container.compact .field-list dt {
+    font-size: 0.875rem;
+}
+
+.word-detail-container.compact .field-list dd {
+    font-size: 0.95rem;
+}
+
+.word-detail-container.compact .word-detail__variants,
+.word-detail-container.compact .word-detail__signs,
+.word-detail-container.compact .word-detail__related {
+    margin-bottom: 1.5rem;
+}
+
+.word-detail-container.compact h2,
+.word-detail-container.compact h4 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Hide sections that don't make sense in compact mode */
+.word-detail-container.compact .word-detail__core,
+.word-detail-container.compact .word-detail__examples,
+.word-detail-container.compact .word-detail__cad {
+    display: none;
 }

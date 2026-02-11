@@ -212,8 +212,7 @@ require_once __DIR__ . '/../includes/header.php';
 
 <link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
 <link rel="stylesheet" href="/assets/css/components/filter-active.css">
-<link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
-<link rel="stylesheet" href="/assets/css/components/cards-selectable.css">
+<link rel="stylesheet" href="/assets/css/components/cards-tablet.css">
 <link rel="stylesheet" href="/assets/css/components/pagination.css">
 <link rel="stylesheet" href="/assets/css/components/browser.css">
 

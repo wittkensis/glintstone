@@ -8,11 +8,4 @@
  * ARIA: Surface tabs use aria-selected attribute for active state
  */
 
-.atf-knowledge-sidebar .tabs-nav {
-    background: linear-gradient(90deg, var(--color-bg-inset), var(--color-bg));
-    transition: all 300ms ease-out;
-}
-
-.atf-knowledge-sidebar[data-state="open"] .tabs-nav {
-    background: var(--color-bg);
-}
+/* TODO: Delete this file */

@@ -29,11 +29,9 @@ $wordDetail = $wordDetail ?? null;
 <div class="dict-browser" data-active-group="<?= htmlspecialchars($activeGroup) ?>" data-active-value="<?= htmlspecialchars($activeValue ?? '') ?>">
     <!-- Page Header -->
     <header class="dict-browser__header">
-        <div>
-            <h1 class="dict-browser__title">Dictionary</h1>
-            <span class="dict-browser__subtitle"><?= number_format($counts['all'] ?? 0) ?> entries</span>
-        </div>
+        <h1 class="dict-browser__title">Dictionary</h1>
         <div class="dict-browser__actions">
+            <span class="dict-browser__sources">Sources: eBL, ORACC · CAD integration coming soon</span>
             <!-- Mobile groupings toggle -->
             <button class="dict-groupings__toggle" aria-label="Show groupings" data-action="toggle-groupings">
                 <svg class="dict-groupings__toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -46,7 +44,7 @@ $wordDetail = $wordDetail ?? null;
     <!-- Column 1: Groupings Panel -->
     <aside class="dict-browser__groupings" data-open="false">
         <?php
-        $expandedSections = ['pos', 'language'];
+        // expandedSections is calculated dynamically in groupings-panel.php based on active filter
         include __DIR__ . '/groupings-panel.php';
         ?>
     </aside>
@@ -75,26 +73,10 @@ $wordDetail = $wordDetail ?? null;
                         </svg>
                     </button>
                 </div>
-            </div>
-
-            <!-- Active Filter Display -->
-            <div class="dict-word-list__active-filter" data-visible="<?= $activeGroup !== 'all' ? 'true' : 'false' ?>">
-                <span>Filtered by:</span>
-                <span class="dict-word-list__active-filter-label" data-filter-label>
-                    <?php
-                    if ($activeGroup === 'pos') {
-                        $posLabels = ['N' => 'Noun', 'V' => 'Verb', 'AJ' => 'Adjective', 'AV' => 'Adverb', 'PN' => 'Personal Name', 'DN' => 'Divine Name', 'GN' => 'Geographic Name'];
-                        echo htmlspecialchars($posLabels[$activeValue] ?? $activeValue);
-                    } elseif ($activeGroup === 'language') {
-                        $langLabels = ['akk' => 'Akkadian', 'sux' => 'Sumerian', 'qpn' => 'Proper Nouns'];
-                        echo htmlspecialchars($langLabels[$activeValue] ?? $activeValue);
-                    } elseif ($activeGroup === 'frequency') {
-                        $freqLabels = ['1' => 'Hapax', '2-10' => 'Rare', '11-100' => 'Uncommon', '101-500' => 'Common', '500+' => 'Very Common'];
-                        echo htmlspecialchars($freqLabels[$activeValue] ?? $activeValue);
-                    }
-                    ?>
-                </span>
-                <button class="dict-word-list__active-filter-clear" data-action="clear-filter">Clear</button>
+                <select class="dict-word-list__sort" data-action="sort">
+                    <option value="frequency" selected>Sort by frequency</option>
+                    <option value="alpha">Sort alphabetically</option>
+                </select>
             </div>
 
             <!-- Word List Items -->

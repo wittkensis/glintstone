@@ -64,8 +64,8 @@ function buildChevronFilterUrl($stageValue, $currentValue, $urlParam) {
     $params = $_GET;
     unset($params['page']); // Reset pagination when changing filters
 
-    if ($stageValue === $currentValue) {
-        // Clicking active stage clears the filter
+    if ($stageValue === $currentValue || $stageValue === '') {
+        // Clicking active stage or "All" clears the filter
         unset($params[$urlParam]);
     } else {
         // Set new filter value

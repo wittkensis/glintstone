@@ -14,30 +14,20 @@
     flex-direction: column;
     gap: var(--space-2);
     padding: var(--space-2);
-    background: var(--color-surface);
+    background: var(--color-bg);
+    border-radius: var(--radius-md);
     flex-shrink: 0;
 }
 
 /* ==========================================================================
    Filter Select
+   Layout-only styles (visual styling inherited from global select)
    ========================================================================== */
 
-.knowledge-sidebar-filter {
+.knowledge-sidebar-filters .knowledge-sidebar-filter,
+.knowledge-sidebar-filters input {
     flex: 1;
-    width: 100%;
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: border-color var(--transition-fast);
-}
-
-.knowledge-sidebar-filter:focus {
-    outline: none;
-    border-color: var(--color-accent);
+    background: transparent;
 }
 
 /* ==========================================================================
@@ -83,6 +73,68 @@
 
 .knowledge-sidebar-filter-chip__remove:hover {
     background: rgba(255, 255, 255, 0.4);
+}
+
+/* ==========================================================================
+   Search Container
+   ========================================================================== */
+
+.knowledge-sidebar-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* ==========================================================================
+   Search Input
+   ========================================================================== */
+
+.knowledge-sidebar-search__input {
+    flex: 1;
+    padding: var(--space-2) var(--space-3);
+    padding-right: var(--space-8);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: 0.85rem;
+    transition: border-color var(--transition-fast);
+}
+
+.knowledge-sidebar-search__input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.knowledge-sidebar-search__input::placeholder {
+    color: var(--color-text-subtle);
+}
+
+/* ==========================================================================
+   Clear Button
+   ========================================================================== */
+
+.knowledge-sidebar-search__clear {
+    position: absolute;
+    right: var(--space-2);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: all var(--transition-fast);
+}
+
+.knowledge-sidebar-search__clear:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
 }
 
 /* ==========================================================================

@@ -14,6 +14,7 @@ class DictionaryBrowser {
             groupType: 'all',
             groupValue: null,
             searchQuery: '',
+            sortBy: 'frequency',
             selectedWordId: null,
             offset: 0,
             total: 0,
@@ -33,8 +34,6 @@ class DictionaryBrowser {
             wordCount: document.querySelector('[data-word-count]'),
             detail: document.querySelector('.dict-browser__detail'),
             searchInput: document.querySelector('.dict-word-list__search-input'),
-            activeFilter: document.querySelector('.dict-word-list__active-filter'),
-            filterLabel: document.querySelector('[data-filter-label]'),
             loadMoreBtn: document.querySelector('[data-action="load-more"]')
         };
 
@@ -92,6 +91,11 @@ class DictionaryBrowser {
             this.clearSearch();
         });
 
+        // Sort select
+        document.querySelector('[data-action="sort"]')?.addEventListener('change', (e) => {
+            this.handleSortChange(e.target.value);
+        });
+
         // Clear filter button
         document.querySelector('[data-action="clear-filter"]')?.addEventListener('click', () => {
             this.clearFilter();
@@ -135,6 +139,37 @@ class DictionaryBrowser {
             }
         });
 
+        // Detail panel actions (share, toggle, show more)
+        this.elements.detail?.addEventListener('click', (e) => {
+            // Share button
+            const shareBtn = e.target.closest('[data-action="share"]');
+            if (shareBtn) {
+                this.handleShare(shareBtn.dataset.url);
+                return;
+            }
+
+            // Meta toggle button
+            const metaToggle = e.target.closest('.word-meta__toggle');
+            if (metaToggle) {
+                this.handleMetaToggle(metaToggle);
+                return;
+            }
+
+            // Show more/less variants toggle
+            const variantsToggle = e.target.closest('[data-action="toggle-variants"]');
+            if (variantsToggle) {
+                this.handleVariantsToggle(variantsToggle);
+                return;
+            }
+
+            // Show more/less tablets toggle
+            const tabletsToggle = e.target.closest('[data-action="toggle-tablets"]');
+            if (tabletsToggle) {
+                this.handleTabletsToggle(tabletsToggle);
+                return;
+            }
+        });
+
         // Browser history navigation
         window.addEventListener('popstate', (e) => {
             if (e.state) {
@@ -166,6 +201,15 @@ class DictionaryBrowser {
     handleSectionToggle(e) {
         const section = e.currentTarget.closest('.dict-groupings__section');
         const isExpanded = section.dataset.expanded === 'true';
+
+        // Close all other sections first
+        document.querySelectorAll('.dict-groupings__section').forEach(s => {
+            if (s !== section) {
+                s.dataset.expanded = 'false';
+            }
+        });
+
+        // Toggle the clicked section
         section.dataset.expanded = isExpanded ? 'false' : 'true';
     }
 
@@ -183,7 +227,6 @@ class DictionaryBrowser {
         this.state.offset = 0;
         this.state.selectedWordId = null;
 
-        this.updateActiveFilterDisplay();
         this.loadWordList(true);
         this.updateURL();
     }
@@ -231,26 +274,32 @@ class DictionaryBrowser {
         this.clearFilter();
     }
 
-    updateActiveFilterDisplay() {
-        if (!this.elements.activeFilter) return;
-
-        const isFiltered = this.state.groupType !== 'all';
-        this.elements.activeFilter.dataset.visible = isFiltered ? 'true' : 'false';
-
-        if (isFiltered && this.elements.filterLabel) {
-            const labels = this.getFilterLabels();
-            this.elements.filterLabel.textContent = labels[this.state.groupType]?.[this.state.groupValue] || this.state.groupValue;
-        }
+    handleSortChange(sortBy) {
+        this.state.sortBy = sortBy;
+        this.state.offset = 0;
+        this.state.selectedWordId = null;
+        this.loadWordList(true);
+        this.updateURL();
     }
 
     getFilterLabels() {
         return {
             pos: {
-                'N': 'Noun', 'V': 'Verb', 'AJ': 'Adjective', 'AV': 'Adverb',
-                'PN': 'Personal Name', 'DN': 'Divine Name', 'GN': 'Geographic Name', 'RN': 'Royal Name'
+                'N': 'Noun', 'V': 'Verb', 'AJ': 'Adjective', 'AV': 'Adverb', 'NU': 'Number',
+                'PRP': 'Preposition', 'PP': 'Possessive Pronoun', 'CNJ': 'Conjunction',
+                'DP': 'Demonstrative', 'IP': 'Pronoun', 'RP': 'Reflexive', 'XP': 'Indefinite Pronoun',
+                'REL': 'Relative', 'QP': 'Interrogative', 'DET': 'Determiner', 'MOD': 'Modal',
+                'J': 'Interjection', 'SBJ': 'Subjunction', 'MA': 'Auxiliary', 'M': 'Morpheme', 'O': 'Other',
+                'V/i': 'Intransitive Verb', 'V/t': 'Transitive Verb',
+                'PN': 'Personal Name', 'DN': 'Divine Name', 'GN': 'Geographic Name', 'SN': 'Settlement Name',
+                'TN': 'Temple Name', 'WN': 'Watercourse Name', 'RN': 'Royal Name', 'EN': 'Ethnic Name',
+                'CN': 'Celestial Name', 'ON': 'Object Name', 'MN': 'Month Name', 'AN': 'Artifact Name',
+                'LN': 'Line Name'
             },
             language: {
-                'akk': 'Akkadian', 'sux': 'Sumerian', 'qpn': 'Proper Nouns'
+                'akk': 'Akkadian', 'akk-x-stdbab': 'Standard Babylonian', 'akk-x-oldbab': 'Old Babylonian',
+                'akk-x-neoass': 'Neo-Assyrian', 'sux': 'Sumerian', 'sux-x-emesal': 'Emesal',
+                'xhu': 'Hurrian', 'uga': 'Ugaritic', 'elx': 'Elamite'
             },
             frequency: {
                 '1': 'Hapax', '2-10': 'Rare', '11-100': 'Uncommon', '101-500': 'Common', '500+': 'Very Common'
@@ -271,7 +320,8 @@ class DictionaryBrowser {
         try {
             const params = new URLSearchParams({
                 limit: 50,
-                offset: replace ? 0 : this.state.offset
+                offset: replace ? 0 : this.state.offset,
+                sort: this.state.sortBy
             });
 
             if (this.state.searchQuery) {
@@ -324,21 +374,42 @@ class DictionaryBrowser {
 
     renderWordItem(entry) {
         const isActive = entry.entry_id === this.state.selectedWordId;
-        const langLabels = { 'akk': 'Akkadian', 'sux': 'Sumerian', 'qpn': 'Names' };
-        const langLabel = langLabels[entry.language?.split('-')[0]] || entry.language || '';
-        const posLabel = entry.pos || '';
+        const langLabels = {
+            'akk': 'Akkadian', 'akk-x-stdbab': 'Standard Babylonian', 'akk-x-oldbab': 'Old Babylonian',
+            'akk-x-neoass': 'Neo-Assyrian', 'sux': 'Sumerian', 'sux-x-emesal': 'Emesal',
+            'xhu': 'Hurrian', 'uga': 'Ugaritic', 'elx': 'Elamite', 'qpn': 'Names'
+        };
+        const posLabels = {
+            'N': 'Noun', 'V': 'Verb', 'AJ': 'Adjective', 'AV': 'Adverb', 'NU': 'Number',
+            'PRP': 'Preposition', 'PP': 'Possessive Pronoun', 'CNJ': 'Conjunction',
+            'DP': 'Demonstrative', 'IP': 'Pronoun', 'RP': 'Reflexive', 'XP': 'Indefinite Pronoun',
+            'REL': 'Relative', 'QP': 'Interrogative', 'DET': 'Determiner', 'MOD': 'Modal',
+            'J': 'Interjection', 'SBJ': 'Subjunction', 'MA': 'Auxiliary', 'M': 'Morpheme', 'O': 'Other',
+            'V/i': 'Intransitive Verb', 'V/t': 'Transitive Verb',
+            'PN': 'Personal Name', 'DN': 'Divine Name', 'GN': 'Geographic Name', 'SN': 'Settlement Name',
+            'TN': 'Temple Name', 'WN': 'Watercourse Name', 'RN': 'Royal Name', 'EN': 'Ethnic Name',
+            'CN': 'Celestial Name', 'ON': 'Object Name', 'MN': 'Month Name', 'AN': 'Artifact Name',
+            'LN': 'Line Name'
+        };
+        const langLabel = langLabels[entry.language] || langLabels[entry.language?.split('-')[0]] || '';
+        const posLabel = posLabels[entry.pos] || entry.pos || '';
+        const displayName = entry.citation_form || entry.headword;
+
+        // Conditional badge display based on active filter
+        const showPosBadge = this.state.groupType !== 'pos';
+        const showLangBadge = this.state.groupType !== 'language';
 
         return `
             <div class="dict-word-item ${isActive ? 'dict-word-item--active' : ''}"
                  data-entry-id="${this.escapeHtml(entry.entry_id)}"
                  tabindex="0" role="button">
                 <div class="dict-word-item__header">
-                    <span class="dict-word-item__headword">${this.escapeHtml(entry.headword)}</span>
-                    ${entry.guide_word ? `<span class="dict-word-item__guide-word">[${this.escapeHtml(entry.guide_word)}]</span>` : ''}
+                    <span class="dict-word-item__headword">${this.escapeHtml(displayName)}</span>
+                    ${entry.guide_word ? `<span class="dict-word-item__guide-word">${this.escapeHtml(entry.guide_word)}</span>` : ''}
                 </div>
                 <div class="dict-word-item__meta">
-                    ${posLabel ? `<span class="dict-word-item__badge dict-word-item__badge--pos">${this.escapeHtml(posLabel)}</span>` : ''}
-                    ${langLabel ? `<span class="dict-word-item__badge dict-word-item__badge--lang">${this.escapeHtml(langLabel)}</span>` : ''}
+                    ${showPosBadge && posLabel ? `<span class="dict-word-item__badge dict-word-item__badge--pos">${this.escapeHtml(posLabel)}</span>` : ''}
+                    ${showLangBadge && langLabel ? `<span class="dict-word-item__badge dict-word-item__badge--lang">${this.escapeHtml(langLabel)}</span>` : ''}
                     <span class="dict-word-item__count">${entry.icount?.toLocaleString() || 0}</span>
                 </div>
             </div>
@@ -365,12 +436,22 @@ class DictionaryBrowser {
     // Word Detail
     // =========================================================================
 
-    async selectWord(entryId, updateUrl = true) {
+    async selectWord(entryId, updateUrl = true, shouldHighlight = false) {
         if (!entryId || entryId === this.state.selectedWordId) return;
 
         // Update active state in list
         document.querySelectorAll('.dict-word-item').forEach(item => {
-            item.classList.toggle('dict-word-item--active', item.dataset.entryId === entryId);
+            const isActive = item.dataset.entryId === entryId;
+            item.classList.toggle('dict-word-item--active', isActive);
+
+            // Add highlight animation if requested
+            if (isActive && shouldHighlight) {
+                item.classList.add('dict-word-item--highlight');
+                // Remove highlight class after animation completes
+                setTimeout(() => {
+                    item.classList.remove('dict-word-item--highlight');
+                }, 2000);
+            }
         });
 
         this.state.selectedWordId = entryId;
@@ -417,12 +498,21 @@ class DictionaryBrowser {
 
         const entry = data.entry;
         const langLabels = {
-            'sux': 'Sumerian', 'akk': 'Akkadian', 'akk-x-stdbab': 'Standard Babylonian',
-            'qpn': 'Personal Name'
+            'sux': 'Sumerian', 'sux-x-emesal': 'Emesal', 'akk': 'Akkadian',
+            'akk-x-stdbab': 'Standard Babylonian', 'akk-x-oldbab': 'Old Babylonian',
+            'akk-x-neoass': 'Neo-Assyrian', 'xhu': 'Hurrian', 'uga': 'Ugaritic', 'elx': 'Elamite'
         };
         const posLabels = {
-            'N': 'Noun', 'V': 'Verb', 'AJ': 'Adjective', 'AV': 'Adverb',
-            'PN': 'Personal Name', 'DN': 'Divine Name', 'GN': 'Geographic Name'
+            'N': 'Noun', 'V': 'Verb', 'AJ': 'Adjective', 'AV': 'Adverb', 'NU': 'Number',
+            'PRP': 'Preposition', 'PP': 'Possessive Pronoun', 'CNJ': 'Conjunction',
+            'DP': 'Demonstrative', 'IP': 'Pronoun', 'RP': 'Reflexive', 'XP': 'Indefinite Pronoun',
+            'REL': 'Relative', 'QP': 'Interrogative', 'DET': 'Determiner', 'MOD': 'Modal',
+            'J': 'Interjection', 'SBJ': 'Subjunction', 'MA': 'Auxiliary', 'M': 'Morpheme', 'O': 'Other',
+            'V/i': 'Intransitive Verb', 'V/t': 'Transitive Verb',
+            'PN': 'Personal Name', 'DN': 'Divine Name', 'GN': 'Geographic Name', 'SN': 'Settlement Name',
+            'TN': 'Temple Name', 'WN': 'Watercourse Name', 'RN': 'Royal Name', 'EN': 'Ethnic Name',
+            'CN': 'Celestial Name', 'ON': 'Object Name', 'MN': 'Month Name', 'AN': 'Artifact Name',
+            'LN': 'Line Name'
         };
 
         const langLabel = langLabels[entry.language] || entry.language;
@@ -434,45 +524,57 @@ class DictionaryBrowser {
                 <div class="page-header word-header">
                     <div class="page-header-main">
                         <div class="page-header-title">
-                            <h1>${this.escapeHtml(entry.headword)}${entry.guide_word ? `<span class="guide-word">[${this.escapeHtml(entry.guide_word)}]</span>` : ''}</h1>
-                        </div>
-                        <div class="page-header-actions">
-                            <span class="badge badge--pos">${this.escapeHtml(posLabel)}</span>
-                            <span class="badge badge--language">${this.escapeHtml(langLabel)}</span>
-                            <span class="badge badge--frequency">${(entry.icount || 0).toLocaleString()} attestations</span>
+                            <h1>${this.escapeHtml(entry.citation_form || entry.headword)}</h1>
                         </div>
                     </div>
                 </div>
 
-                <div class="word-meta tablet-meta">
-                    <dl class="tablet-meta__row">
-                        <div class="meta-item">
-                            <dt>Citation Form</dt>
-                            <dd>${this.escapeHtml(entry.citation_form || entry.headword)}</dd>
-                        </div>
-                        ${entry.guide_word ? `
-                        <div class="meta-item">
+                <!-- Word Metadata -->
+                <div class="word-meta">
+                    <dl class="word-meta__row">
+                        <div class="meta-item meta-item--primary">
                             <dt>Guide Word</dt>
-                            <dd>${this.escapeHtml(entry.guide_word)}</dd>
-                        </div>` : ''}
-                        <div class="meta-item">
-                            <dt>Part of Speech</dt>
-                            <dd>${this.escapeHtml(posLabel)}</dd>
+                            <dd class="meta-guide-word">${entry.guide_word ? this.escapeHtml(entry.guide_word) : '<span class="meta-placeholder">—</span>'}</dd>
                         </div>
                         <div class="meta-item">
                             <dt>Language</dt>
                             <dd>${this.escapeHtml(langLabel)}</dd>
                         </div>
                         <div class="meta-item">
-                            <dt>Corpus Frequency</dt>
-                            <dd>${(entry.icount || 0).toLocaleString()} occurrences</dd>
+                            <dt>Part of Speech</dt>
+                            <dd>${this.escapeHtml(posLabel)}</dd>
+                        </div>
+                        <div class="meta-item">
+                            <dt>Attestations</dt>
+                            <dd>${(entry.icount || 0).toLocaleString()}</dd>
+                        </div>
+                        <div class="meta-item">
+                            <button class="word-meta__toggle" data-action="toggle-meta" aria-expanded="false" aria-controls="word-meta-secondary">
+                                <svg class="word-meta__toggle-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                                More
+                            </button>
+                        </div>
+                    </dl>
+                    <dl class="word-meta__secondary" id="word-meta-secondary">
+                        <div class="meta-item">
+                            <dt>Entry ID</dt>
+                            <dd>${entry.entry_id ? `<code>${this.escapeHtml(entry.entry_id)}</code>` : '<span class="meta-placeholder">—</span>'}</dd>
+                        </div>
+                        <div class="meta-item">
+                            <dt>Semantic Category</dt>
+                            <dd>${entry.semantic_category ? this.escapeHtml(entry.semantic_category) : '<span class="meta-placeholder">—</span>'}</dd>
                         </div>
                     </dl>
                 </div>
 
+                ${this.renderMeanings(data.senses)}
                 ${this.renderVariants(data.variants)}
                 ${this.renderSigns(data.signs)}
+                ${this.renderRelatedWords(data.related_words)}
                 ${this.renderAttestations(data.attestations?.sample, entry.icount)}
+                ${this.renderCAD(data.cad)}
             </div>
             <div class="dict-loading-overlay">
                 <div class="dict-spinner"></div>
@@ -488,45 +590,71 @@ class DictionaryBrowser {
     }
 
     renderVariants(variants) {
-        if (!variants || variants.length === 0) return '';
+        if (!variants || variants.length === 0) {
+            return `
+                <section class="word-section">
+                    <h2>Attested Forms</h2>
+                    <p class="section-description">Different spellings and grammatical forms found in the corpus, ordered by frequency.</p>
+                    <p class="section-placeholder">No attested forms documented yet.</p>
+                </section>
+            `;
+        }
 
         const maxCount = Math.max(...variants.map(v => v.count || 0));
+        const visibleCount = 12;
+        const hasMore = variants.length > visibleCount;
 
         return `
             <section class="word-section">
-                <h2>Attested Forms</h2>
+                <h2>Attested Forms <span class="section-count-badge">${variants.length}</span></h2>
+                <p class="section-description">Different spellings and grammatical forms found in the corpus, ordered by frequency.</p>
                 <div class="variants-chart">
-                    ${variants.map(v => {
+                    ${variants.map((v, index) => {
                         const pct = maxCount > 0 ? (v.count / maxCount) * 100 : 0;
+                        const isHidden = index >= visibleCount;
                         return `
-                            <div class="variant-bar">
+                            <div class="variant-bar${isHidden ? ' variant-bar--hidden' : ''}" ${isHidden ? 'style="display: none;"' : ''}>
                                 <span class="variant-form">${this.escapeHtml(v.form)}</span>
                                 <div class="variant-frequency-container">
                                     <div class="variant-frequency" style="width: ${pct}%"></div>
                                 </div>
-                                <span class="variant-count">${v.count} times</span>
+                                <span class="variant-count">${v.count} attestation${v.count !== 1 ? 's' : ''}</span>
                             </div>
                         `;
                     }).join('')}
                 </div>
+                ${hasMore ? `
+                    <button class="btn btn--secondary" data-action="toggle-variants" style="margin-top: var(--space-4);">
+                        <span data-show-text>Show all ${variants.length} forms</span>
+                        <span data-hide-text style="display: none;">Show fewer forms</span>
+                    </button>
+                ` : ''}
             </section>
         `;
     }
 
     renderSigns(signs) {
-        if (!signs || signs.length === 0) return '';
+        if (!signs || signs.length === 0) {
+            return `
+                <section class="word-section">
+                    <h2>Cuneiform Signs</h2>
+                    <p class="section-description">The signs used to write this word. Click a sign to explore all its readings.</p>
+                    <p class="section-placeholder">No cuneiform signs documented yet.</p>
+                </section>
+            `;
+        }
 
         return `
             <section class="word-section">
-                <h2>Cuneiform Signs</h2>
+                <h2>Cuneiform Signs <span class="section-count-badge">${signs.length}</span></h2>
+                <p class="section-description">The signs used to write this word. Click a sign to explore all its readings.</p>
                 <div class="sign-breakdown">
                     ${signs.map(s => `
-                        <a href="/dictionary/sign/${encodeURIComponent(s.sign_id)}" class="sign-item">
+                        <div class="sign-item">
                             <span class="sign-cuneiform">${s.utf8 || ''}</span>
-                            <span class="sign-id">${this.escapeHtml(s.sign_id)}</span>
                             <span class="sign-value">${this.escapeHtml(s.sign_value)}</span>
                             ${s.value_type ? `<span class="sign-type">${this.escapeHtml(s.value_type)}</span>` : ''}
-                        </a>
+                        </div>
                     `).join('')}
                 </div>
             </section>
@@ -534,29 +662,246 @@ class DictionaryBrowser {
     }
 
     renderAttestations(attestations, totalCount) {
-        if (!attestations || attestations.length === 0) return '';
+        if (!attestations || attestations.length === 0) {
+            return `
+                <section class="word-section">
+                    <h2>Tablets</h2>
+                    <p class="section-description">Ancient tablets where this word has been identified in the corpus.</p>
+                    <p class="section-placeholder">No tablet attestations available yet.</p>
+                </section>
+            `;
+        }
+
+        const visibleCount = 12;
+        const hasMore = attestations.length > visibleCount;
 
         return `
             <section class="word-section">
-                <h2>Corpus Examples</h2>
-                <div class="examples-list">
-                    ${attestations.map(a => `
-                        <div class="example-item">
-                            <div class="example-header">
-                                <a href="/tablets/detail.php?p=${encodeURIComponent(a.p_number)}" class="p-number">${this.escapeHtml(a.p_number)}</a>
-                                ${a.period || a.provenience ? `<span class="example-meta">${this.escapeHtml([a.period, a.provenience].filter(Boolean).join(' · '))}</span>` : ''}
-                            </div>
-                            <div class="example-content">
-                                <span class="transliteration">${this.escapeHtml(a.form)}</span>
-                            </div>
-                        </div>
-                    `).join('')}
+                <h2>Tablets <span class="section-count-badge">${attestations.length}</span></h2>
+                <p class="section-description">Ancient tablets where this word has been identified in the corpus.</p>
+                <div class="tablet-grid" data-tablet-grid>
+                    ${attestations.map((a, index) => this.renderTabletCard(a, index >= visibleCount)).join('')}
                 </div>
-                <p class="examples-footer">
-                    Showing ${attestations.length} of ${(totalCount || 0).toLocaleString()} attestations
-                </p>
+                ${hasMore ? `
+                    <button class="btn btn--secondary" data-action="toggle-tablets" style="margin-top: var(--space-4);">
+                        <span data-show-text>Show all ${attestations.length} tablets</span>
+                        <span data-hide-text style="display: none;">Show fewer tablets</span>
+                    </button>
+                ` : `
+                    <p class="examples-footer">
+                        ${attestations.length} tablet${attestations.length !== 1 ? 's' : ''} in corpus
+                    </p>
+                `}
             </section>
         `;
+    }
+
+    renderTabletCard(attestation, isHidden = false) {
+        const pNumber = this.escapeHtml(attestation.p_number);
+        const period = attestation.period ? this.escapeHtml(this.truncateText(attestation.period, 25)) : '';
+        const provenience = attestation.provenience ? this.escapeHtml(this.truncateText(attestation.provenience, 20)) : '';
+        const genre = attestation.genre ? this.escapeHtml(this.truncateText(attestation.genre, 20)) : '';
+
+        return `
+            <a href="/tablets/detail.php?p=${encodeURIComponent(attestation.p_number)}"
+               class="card tablet-card${isHidden ? ' tablet-card--hidden' : ''}"
+               data-p-number="${pNumber}"
+               ${isHidden ? 'style="display: none;"' : ''}>
+                <div class="card-image">
+                    <img src="/api/thumbnail.php?p=${encodeURIComponent(attestation.p_number)}&size=200"
+                         alt="${pNumber}"
+                         loading="lazy"
+                         onerror="this.parentElement.classList.add('no-image')">
+                    <div class="card-placeholder">
+                        <span class="cuneiform-icon">𒀭</span>
+                    </div>
+                </div>
+                <div class="card-details card-overlay">
+                    <span class="card-eyebrow p-number">${pNumber}</span>
+                    ${period ? `<span class="card-primary meta-period">${period}</span>` : ''}
+                    ${provenience ? `<span class="card-meta">${provenience}</span>` : ''}
+                    ${genre ? `<span class="card-meta">${genre}</span>` : ''}
+                </div>
+            </a>
+        `;
+    }
+
+    renderMeanings(senses) {
+        if (!senses || senses.length === 0) {
+            return `
+                <section class="word-section">
+                    <h2>Meanings</h2>
+                    <p class="section-description">Detailed senses with definitions, usage contexts, and frequency data. Different from the guide word above, which is a simple gloss for quick reference.</p>
+                    <p class="section-placeholder">No meanings documented yet.</p>
+                </section>
+            `;
+        }
+
+        return `
+            <section class="word-section">
+                <h2>Meanings <span class="section-count-badge">${senses.length}</span></h2>
+                <p class="section-description">Detailed senses with definitions, usage contexts, and frequency data. Different from the guide word above, which is a simple gloss for quick reference.</p>
+                <ol class="meanings-list">
+                    ${senses.map(sense => `
+                        <li class="meaning">
+                            <div class="meaning__header">
+                                <strong>${this.escapeHtml(sense.guide_word)}</strong>
+                                ${sense.frequency_percentage ? `<span class="meaning__usage">${Math.round(sense.frequency_percentage)}% of uses</span>` : ''}
+                            </div>
+                            ${sense.definition ? `<p class="meaning__definition">${this.escapeHtml(sense.definition)}</p>` : ''}
+                            ${sense.usage_context ? `<p class="meaning__context">${this.escapeHtml(sense.usage_context)}</p>` : ''}
+                        </li>
+                    `).join('')}
+                </ol>
+            </section>
+        `;
+    }
+
+    renderRelatedWords(related) {
+        const hasRelated = related && (
+            (related.translations && related.translations.length > 0) ||
+            (related.synonyms && related.synonyms.length > 0) ||
+            (related.cognates && related.cognates.length > 0) ||
+            (related.see_also && related.see_also.length > 0)
+        );
+
+        if (!hasRelated) {
+            return `
+                <section class="word-section">
+                    <h2>Related Words</h2>
+                    <p class="section-description">Bilingual equivalents, synonyms, and cognates across Sumerian and Akkadian.</p>
+                    <p class="section-placeholder">No related words documented yet.</p>
+                </section>
+            `;
+        }
+
+        const langLabels = {
+            'sux': 'Sumerian', 'sux-x-emesal': 'Emesal', 'akk': 'Akkadian',
+            'akk-x-stdbab': 'Standard Babylonian', 'akk-x-oldbab': 'Old Babylonian',
+            'akk-x-neoass': 'Neo-Assyrian', 'xhu': 'Hurrian', 'uga': 'Ugaritic', 'elx': 'Elamite'
+        };
+
+        return `
+            <section class="word-section">
+                <h2>Related Words</h2>
+                <p class="section-description">Bilingual equivalents, synonyms, and cognates across Sumerian and Akkadian.</p>
+
+                ${related.translations && related.translations.length > 0 ? `
+                    <div class="related-group">
+                        <h3>Bilingual Equivalents</h3>
+                        <div class="related-words-grid">
+                            ${related.translations.map(rel => `
+                                <a href="/dictionary/?word=${encodeURIComponent(rel.entry_id)}" class="card card-word" data-entry-id="${this.escapeHtml(rel.entry_id)}">
+                                    <div class="card-word__header">
+                                        <span class="card-word__headword">${this.escapeHtml(rel.headword)}</span>
+                                        ${rel.guide_word ? `<span class="card-word__guide-word">${this.escapeHtml(rel.guide_word)}</span>` : ''}
+                                    </div>
+                                    <div class="card-word__meta">
+                                        <span class="card-word__badge card-word__badge--lang">${langLabels[rel.language] || rel.language}</span>
+                                        ${rel.icount ? `<span class="card-word__count">${rel.icount.toLocaleString()}</span>` : ''}
+                                    </div>
+                                    ${rel.notes ? `<div class="card-word__notes">${this.escapeHtml(rel.notes)}</div>` : ''}
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${related.synonyms && related.synonyms.length > 0 ? `
+                    <div class="related-group">
+                        <h3>Synonyms</h3>
+                        <div class="related-words-grid">
+                            ${related.synonyms.map(rel => `
+                                <a href="/dictionary/?word=${encodeURIComponent(rel.entry_id)}" class="card card-word" data-entry-id="${this.escapeHtml(rel.entry_id)}">
+                                    <div class="card-word__header">
+                                        <span class="card-word__headword">${this.escapeHtml(rel.headword)}</span>
+                                        ${rel.guide_word ? `<span class="card-word__guide-word">${this.escapeHtml(rel.guide_word)}</span>` : ''}
+                                    </div>
+                                    <div class="card-word__meta">
+                                        ${rel.icount ? `<span class="card-word__count">${rel.icount.toLocaleString()}</span>` : ''}
+                                    </div>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${related.cognates && related.cognates.length > 0 ? `
+                    <div class="related-group">
+                        <h3>Cognates</h3>
+                        <div class="related-words-grid">
+                            ${related.cognates.map(rel => `
+                                <a href="/dictionary/?word=${encodeURIComponent(rel.entry_id)}" class="card card-word" data-entry-id="${this.escapeHtml(rel.entry_id)}">
+                                    <div class="card-word__header">
+                                        <span class="card-word__headword">${this.escapeHtml(rel.headword)}</span>
+                                    </div>
+                                    <div class="card-word__meta">
+                                        <span class="card-word__badge card-word__badge--lang">${langLabels[rel.language] || rel.language}</span>
+                                        ${rel.icount ? `<span class="card-word__count">${rel.icount.toLocaleString()}</span>` : ''}
+                                    </div>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${related.see_also && related.see_also.length > 0 ? `
+                    <div class="related-group">
+                        <h3>See Also</h3>
+                        <div class="related-words-grid">
+                            ${related.see_also.map(rel => `
+                                <a href="/dictionary/?word=${encodeURIComponent(rel.entry_id)}" class="card card-word" data-entry-id="${this.escapeHtml(rel.entry_id)}">
+                                    <div class="card-word__header">
+                                        <span class="card-word__headword">${this.escapeHtml(rel.headword)}</span>
+                                        ${rel.guide_word ? `<span class="card-word__guide-word">${this.escapeHtml(rel.guide_word)}</span>` : ''}
+                                    </div>
+                                    <div class="card-word__meta">
+                                        ${rel.icount ? `<span class="card-word__count">${rel.icount.toLocaleString()}</span>` : ''}
+                                    </div>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </section>
+        `;
+    }
+
+    renderCAD(cad) {
+        if (!cad) {
+            return `
+                <section class="word-section">
+                    <h2>Chicago Assyrian Dictionary</h2>
+                    <p class="section-description">Reference from the authoritative dictionary for Akkadian, published by the Oriental Institute.</p>
+                    <p class="section-placeholder">No CAD reference available.</p>
+                </section>
+            `;
+        }
+
+        return `
+            <section class="word-section">
+                <h2>Chicago Assyrian Dictionary</h2>
+                <p class="section-description">Reference from the authoritative dictionary for Akkadian, published by the Oriental Institute.</p>
+                <div class="cad-content">
+                    <div class="cad-header">
+                        <span class="volume-badge">CAD ${this.escapeHtml(cad.volume)}, pp. ${cad.page_start}${cad.page_end ? `-${cad.page_end}` : ''}</span>
+                        ${cad.pdf_url ? `<a href="${this.escapeHtml(cad.pdf_url)}/page/${cad.page_start}" target="_blank" class="pdf-link">View PDF →</a>` : ''}
+                        ${cad.human_verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
+                    </div>
+                    ${cad.etymology ? `
+                        <div class="cad-etymology">
+                            <strong>Etymology:</strong> ${this.escapeHtml(cad.etymology)}
+                        </div>
+                    ` : ''}
+                    ${cad.semantic_notes ? `<div class="cad-notes">${this.escapeHtml(cad.semantic_notes)}</div>` : ''}
+                </div>
+            </section>
+        `;
+    }
+
+    truncateText(text, maxLength) {
+        if (!text || text.length <= maxLength) return text;
+        return text.substring(0, maxLength - 1) + '…';
     }
 
     renderDetailError() {
@@ -588,6 +933,110 @@ class DictionaryBrowser {
     }
 
     // =========================================================================
+    // Detail Panel Actions
+    // =========================================================================
+
+    handleShare(url) {
+        const fullUrl = window.location.origin + url;
+
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                this.showToast('Link copied to clipboard');
+            }).catch(() => {
+                this.fallbackCopy(fullUrl);
+            });
+        } else {
+            this.fallbackCopy(fullUrl);
+        }
+    }
+
+    fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            this.showToast('Link copied to clipboard');
+        } catch (e) {
+            this.showToast('Unable to copy link');
+        }
+        document.body.removeChild(textarea);
+    }
+
+    showToast(message) {
+        // Remove existing toast
+        document.querySelector('.toast')?.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
+
+    handleMetaToggle(toggleBtn) {
+        const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+        const targetId = toggleBtn.getAttribute('aria-controls');
+        const target = document.getElementById(targetId);
+
+        toggleBtn.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+        target?.classList.toggle('is-open', !isExpanded);
+    }
+
+    handleVariantsToggle(toggleBtn) {
+        const section = toggleBtn.closest('.word-section');
+        const hiddenVariants = section?.querySelectorAll('.variant-bar--hidden');
+        if (!hiddenVariants || hiddenVariants.length === 0) return;
+
+        const firstHidden = hiddenVariants[0];
+        const isShowingAll = firstHidden.style.display !== 'none';
+
+        // Toggle visibility of all hidden variants
+        hiddenVariants.forEach(variant => {
+            variant.style.display = isShowingAll ? 'none' : '';
+        });
+
+        // Toggle button text
+        const showText = toggleBtn.querySelector('[data-show-text]');
+        const hideText = toggleBtn.querySelector('[data-hide-text]');
+        if (isShowingAll) {
+            showText.style.display = '';
+            hideText.style.display = 'none';
+        } else {
+            showText.style.display = 'none';
+            hideText.style.display = '';
+        }
+    }
+
+    handleTabletsToggle(toggleBtn) {
+        const section = toggleBtn.closest('.word-section');
+        const hiddenTablets = section?.querySelectorAll('.tablet-card--hidden');
+        if (!hiddenTablets || hiddenTablets.length === 0) return;
+
+        const firstHidden = hiddenTablets[0];
+        const isShowingAll = firstHidden.style.display !== 'none';
+
+        // Toggle visibility of all hidden tablets
+        hiddenTablets.forEach(tablet => {
+            tablet.style.display = isShowingAll ? 'none' : '';
+        });
+
+        // Toggle button text
+        const showText = toggleBtn.querySelector('[data-show-text]');
+        const hideText = toggleBtn.querySelector('[data-hide-text]');
+        if (isShowingAll) {
+            showText.style.display = '';
+            hideText.style.display = 'none';
+        } else {
+            showText.style.display = 'none';
+            hideText.style.display = '';
+        }
+    }
+
+    // =========================================================================
     // URL Management
     // =========================================================================
 
@@ -607,24 +1056,33 @@ class DictionaryBrowser {
             params.set('search', this.state.searchQuery);
         }
 
+        if (this.state.sortBy !== 'frequency') {
+            params.set('sort', this.state.sortBy);
+        }
+
         const url = params.toString() ? `/dictionary/?${params}` : '/dictionary/';
         history.pushState({ ...this.state }, '', url);
     }
 
-    syncFromURL() {
+    async syncFromURL() {
         const params = new URLSearchParams(window.location.search);
 
         this.state.selectedWordId = params.get('word') || null;
         this.state.groupType = params.get('group') || 'all';
         this.state.groupValue = params.get('value') || null;
         this.state.searchQuery = params.get('search') || '';
+        this.state.sortBy = params.get('sort') || 'frequency';
 
         // Update UI to match URL state
         if (this.elements.searchInput) {
             this.elements.searchInput.value = this.state.searchQuery;
         }
 
-        this.updateActiveFilterDisplay();
+        // Update sort select to match URL state
+        const sortSelect = document.querySelector('[data-action="sort"]');
+        if (sortSelect) {
+            sortSelect.value = this.state.sortBy;
+        }
 
         // Update grouping active states
         document.querySelectorAll('.dict-groupings__item').forEach(item => {
@@ -632,6 +1090,19 @@ class DictionaryBrowser {
                            (item.dataset.group === this.state.groupType && item.dataset.value === this.state.groupValue);
             item.classList.toggle('dict-groupings__item--active', isActive);
         });
+
+        // Position-based pagination: if we have a word but no grouping, load the correct page
+        if (this.state.selectedWordId && this.state.groupType === 'all' && !this.state.searchQuery) {
+            await this.loadWordWithPosition(this.state.selectedWordId);
+        } else {
+            // Standard list load
+            this.loadWordList(true);
+
+            // Load word detail if word ID is in URL
+            if (this.state.selectedWordId) {
+                this.loadWordDetail(this.state.selectedWordId);
+            }
+        }
     }
 
     restoreState(state) {
@@ -641,11 +1112,79 @@ class DictionaryBrowser {
             this.elements.searchInput.value = this.state.searchQuery || '';
         }
 
-        this.updateActiveFilterDisplay();
         this.loadWordList(true);
 
         if (this.state.selectedWordId) {
             this.loadWordDetail(this.state.selectedWordId);
+        }
+    }
+
+    // =========================================================================
+    // Position-Based Pagination
+    // =========================================================================
+
+    async loadWordWithPosition(entryId) {
+        try {
+            console.log('[Position Load] Starting for:', entryId);
+
+            // Fetch word detail to get position information
+            const response = await fetch(`/api/dictionary/word-detail.php?entry_id=${encodeURIComponent(entryId)}`);
+            const data = await response.json();
+
+            console.log('[Position Load] API response:', data);
+
+            if (!data || !data.position) {
+                console.warn('[Position Load] No position data, falling back');
+                // Fallback to standard loading
+                this.loadWordList(true);
+                this.loadWordDetail(entryId);
+                return;
+            }
+
+            // Determine position based on current sort order
+            const position = this.state.sortBy === 'alpha' ? data.position.alpha : data.position.frequency;
+            console.log('[Position Load] Sort:', this.state.sortBy, 'Position:', position);
+
+            // Calculate which page this word is on (50 items per page)
+            const pageSize = 50;
+            const pageOffset = Math.floor(position / pageSize) * pageSize;
+            console.log('[Position Load] Calculated offset:', pageOffset);
+
+            // Update state offset
+            this.state.offset = pageOffset;
+
+            // Load the word list at the calculated offset
+            await this.loadWordList(true);
+            console.log('[Position Load] Word list loaded');
+
+            // Wait for DOM to update before selecting and scrolling
+            requestAnimationFrame(() => {
+                requestAnimationFrame(async () => {
+                    console.log('[Position Load] Attempting to select and scroll');
+
+                    // Select the word and scroll to it with highlight
+                    await this.selectWord(entryId, false, true);
+
+                    // Scroll the word into view
+                    const wordItem = document.querySelector(`[data-entry-id="${entryId}"]`);
+                    console.log('[Position Load] Word item found:', wordItem);
+
+                    if (wordItem) {
+                        wordItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        console.log('[Position Load] Scrolled to word');
+                    } else {
+                        console.error('[Position Load] Word item not found in DOM!');
+                    }
+                });
+            });
+
+        } catch (error) {
+            console.error('Error loading word with position:', error);
+            // Fallback to standard loading
+            this.loadWordList(true);
+            if (entryId) {
+                this.loadWordDetail(entryId);
+            }
         }
     }
 

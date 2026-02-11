@@ -26,6 +26,33 @@
 }
 
 /* ==========================================================================
+   Collection Cover Image
+   ========================================================================== */
+
+.collection-cover-image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--color-bg-subtle);
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+
+.collection-cover-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform var(--transition-normal);
+}
+
+.card.collection-card:hover .collection-cover-image img {
+    transform: scale(1.05);
+}
+
+/* ==========================================================================
    Collection Metadata
    ========================================================================== */
 
@@ -83,55 +110,6 @@
     font-family: var(--font-mono);
     color: var(--color-text-subtle);
     font-weight: 500;
-}
-
-/* ==========================================================================
-   Smart Collection Variant
-   ========================================================================== */
-
-.smart-collection-card {
-    border: 1px solid rgba(201, 169, 98, 0.3);
-    background: linear-gradient(135deg, var(--color-bg-elevated) 0%, rgba(201, 169, 98, 0.05) 100%);
-}
-
-.smart-collection-card:hover {
-    border-color: rgba(201, 169, 98, 0.5);
-}
-
-.smart-badge {
-    position: absolute;
-    top: var(--space-2);
-    right: var(--space-2);
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-1) var(--space-2);
-    background: rgba(201, 169, 98, 0.2);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(201, 169, 98, 0.4);
-    border-radius: var(--radius-sm);
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-accent);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.smart-badge-icon {
-    font-size: 0.875rem;
-}
-
-.stat-auto {
-    color: var(--color-accent);
-    font-weight: 500;
-    font-size: 0.8rem;
-}
-
-.stat-auto::before {
-    content: '•';
-    margin-right: var(--space-1);
-    color: var(--color-text-muted);
 }
 
 /* ==========================================================================

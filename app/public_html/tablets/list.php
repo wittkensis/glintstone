@@ -21,10 +21,13 @@ $page = max(1, intval($_GET['page'] ?? 1));
 $perPage = 24;
 $offset = ($page - 1) * $perPage;
 
-// Load filter stats (use filtered versions if any filters are active)
-$hasActiveFilters = !empty($languages) || !empty($periods) || !empty($sites) || !empty($genres) || !empty($pipeline) || !empty($search);
+// Load filter stats
+// Note: Filtered stats are expensive to compute, so we only use them when
+// metadata filters (language, period, site, genre) are active.
+// For pipeline-only or search-only filters, use cached unfiltered stats.
+$hasMetadataFilters = !empty($languages) || !empty($periods) || !empty($sites) || !empty($genres);
 
-if ($hasActiveFilters) {
+if ($hasMetadataFilters) {
     $filterContext = [
         'languages' => $languages,
         'periods' => $periods,
@@ -38,6 +41,7 @@ if ($hasActiveFilters) {
     $provenienceStats = getFilteredProvenienceStats($filterContext);
     $genreStats = getFilteredGenreStats($filterContext);
 } else {
+    // Use cached/pre-computed stats for better performance
     $languageStats = getLanguageStats();
     $periodStats = getPeriodStats();
     $provenienceStats = getProvenienceStats();
@@ -92,6 +96,21 @@ if (!empty($genres)) {
 // Pipeline status filters
 if ($pipeline) {
     switch ($pipeline) {
+        // Task-oriented filters (main UI)
+        case 'needs_signs':
+            // Has image but no sign annotations - ready for sign recognition
+            $where[] = "ps.has_image = 1 AND (ps.has_sign_annotations IS NULL OR ps.has_sign_annotations = 0)";
+            break;
+        case 'needs_atf':
+            // Has image but no ATF transcription - ready for manual transcription
+            $where[] = "ps.has_image = 1 AND (ps.has_atf IS NULL OR ps.has_atf = 0)";
+            break;
+        case 'needs_translation':
+            // Has ATF but no translation - ready for translation work
+            $where[] = "ps.has_atf = 1 AND (ps.has_translation IS NULL OR ps.has_translation = 0)";
+            break;
+
+        // Legacy/API filters (kept for backward compatibility)
         case 'complete':
             $where[] = "ps.has_image = 1 AND ps.has_atf = 1 AND ps.has_lemmas = 1 AND ps.has_translation = 1";
             break;
@@ -119,7 +138,6 @@ if ($pipeline) {
         case 'missing_translation':
             $where[] = "(ps.has_translation IS NULL OR ps.has_translation = 0)";
             break;
-        // Text digitization filters
         case 'human_transcription':
             $where[] = "ps.has_atf = 1";
             break;
@@ -245,17 +263,16 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <?php
-        // Configure pipeline chevron filter
+        // Configure task-oriented filter
         $stages = [
-            ['label' => 'Image', 'value' => 'has_image'],
-            ['label' => 'Signs', 'value' => 'machine_ocr'],
-            ['label' => 'ATF', 'value' => 'has_atf'],
-            ['label' => 'Lemmas', 'value' => 'has_lemmas'],
-            ['label' => 'Translation', 'value' => 'has_translation']
+            ['label' => 'All Tablets', 'value' => ''],
+            ['label' => 'Needs Sign Recognition', 'value' => 'needs_signs'],
+            ['label' => 'Needs ATF', 'value' => 'needs_atf'],
+            ['label' => 'Needs Translation', 'value' => 'needs_translation']
         ];
-        $currentValue = $pipeline ?? null;
+        $currentValue = $pipeline ?? '';
         $urlParam = 'pipeline';
-        $ariaLabel = 'Filter by pipeline stage';
+        $ariaLabel = 'Filter by task';
         include __DIR__ . '/../includes/components/chevron-filter.php';
         ?>
 

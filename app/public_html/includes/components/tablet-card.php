@@ -23,7 +23,7 @@ $langAbbr = getLanguageAbbreviation($tablet['language']);
    data-p-number="<?= htmlspecialchars($tablet['p_number']) ?>">
 
     <?php if ($selectable): ?>
-    <label class="card-checkbox-wrapper" onclick="event.preventDefault(); event.stopPropagation();">
+    <label class="card-checkbox-wrapper" onclick="event.stopPropagation();">
         <input type="checkbox"
                class="card-checkbox"
                name="p_numbers[]"
@@ -60,13 +60,18 @@ $langAbbr = getLanguageAbbreviation($tablet['language']);
     <div class="card-details card-overlay">
 
         <!-- Pipeline Status Bar -->
-        <div class="card-pipeline-bar">
-            <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('image', $tablet) ?>" title="Image"></span>
-            <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('signs', $tablet) ?>" title="Sign Detection"></span>
-            <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('transliteration', $tablet) ?>" title="Transliteration"></span>
-            <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('lemmas', $tablet) ?>" title="Lemmas"></span>
-            <span class="pipeline-segment" data-status="<?= getPipelineSegmentStatus('translation', $tablet) ?>" title="Translation"></span>
-        </div>
+        <?php
+        // Build pipeline status for compact component
+        $pipelineStatus = [
+            'image' => ['status' => getPipelineSegmentStatus('image', $tablet)],
+            'signs' => ['status' => getPipelineSegmentStatus('signs', $tablet)],
+            'transliteration' => ['status' => getPipelineSegmentStatus('transliteration', $tablet)],
+            'lemmas' => ['status' => getPipelineSegmentStatus('lemmas', $tablet)],
+            'translation' => ['status' => getPipelineSegmentStatus('translation', $tablet)]
+        ];
+        $variant = 'compact';
+        include __DIR__ . '/pipeline.php';
+        ?>
 
 
         <span class="card-eyebrow p-number"><?= htmlspecialchars($tablet['p_number']) ?></span>

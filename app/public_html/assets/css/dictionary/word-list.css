@@ -29,7 +29,7 @@
     flex-shrink: 0;
     padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--color-border);
-    background: var(--color-bg);
+    background: var(--color-bg-inset);
 }
 
 .dict-word-list__search-wrapper {
@@ -105,47 +105,33 @@
     display: flex;
 }
 
-/* ==========================================================================
-   Active Filter Display
-   ========================================================================== */
-
-.dict-word-list__active-filter {
-    flex-shrink: 0;
-    display: none;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-4);
-    background: var(--color-bg-elevated);
-    border-bottom: 1px solid var(--color-border);
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-}
-
-.dict-word-list__active-filter[data-visible="true"] {
-    display: flex;
-}
-
-.dict-word-list__active-filter-label {
+/* Sort select */
+.dict-word-list__sort {
+    width: 100%;
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     color: var(--color-text);
-    font-weight: 500;
-}
-
-.dict-word-list__active-filter-clear {
-    margin-left: auto;
-    padding: var(--space-1) var(--space-2);
-    background: var(--color-surface);
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--color-text-muted);
     font-size: var(--text-xs);
     cursor: pointer;
-    transition: background var(--transition-fast),
-                color var(--transition-fast);
+    transition: border-color var(--transition-fast);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23707070' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--space-2) center;
+    padding-right: var(--space-6);
 }
 
-.dict-word-list__active-filter-clear:hover {
-    background: var(--color-bg);
-    color: var(--color-text);
+.dict-word-list__sort:hover {
+    border-color: var(--color-text-subtle);
+}
+
+.dict-word-list__sort:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(201, 169, 98, 0.2);
 }
 
 /* ==========================================================================
@@ -178,12 +164,26 @@
 }
 
 .dict-word-item--active {
-    background: var(--color-surface);
-    border-left: 3px solid var(--color-accent);
+    background: var(--color-bg);
     padding-left: calc(var(--space-3) - 3px);
 }
 
+/* Highlight animation for navigated words */
+@keyframes pulse-highlight {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(201, 169, 98, 0);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(201, 169, 98, 0.3);
+    }
+}
+
+.dict-word-item--highlight {
+    animation: pulse-highlight 2s ease-out;
+}
+
 /* Headword row */
+
 .dict-word-item__header {
     display: flex;
     align-items: baseline;
@@ -199,6 +199,10 @@
 }
 
 .dict-word-item:hover .dict-word-item__headword {
+    color: var(--color-accent);
+}
+
+.dict-word-item--active .dict-word-item__headword {
     color: var(--color-accent);
 }
 
@@ -265,7 +269,7 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--space-2) var(--space-4);
-    background: var(--color-bg-elevated);
+    background: var(--color-bg-inset);
     border-top: 1px solid var(--color-border);
 }
 

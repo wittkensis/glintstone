@@ -9,10 +9,20 @@
     flex-direction: column;
 }
 
-/* Remove max-width constraint for full-width display */
+/* Two-column grid layout for sidebar + content */
 .browser-page .page-with-sidebar {
+    display: grid;
+    grid-template-columns: 280px 1fr;
     max-width: none;
+    padding: 0;
+    gap: 0;
+    min-height: calc(100vh - var(--site-header-height, 48px) - 80px);
+}
+
+/* Main content area */
+.browser-page .main-content {
     padding: var(--space-4, 24px) var(--space-6, 48px);
+    background: var(--color-bg, #1a1a1a);
 }
 
 /* Browser Header */
@@ -89,26 +99,7 @@
 }
 
 .per-page-selector select {
-    padding: var(--space-1, 6px) var(--space-2, 12px);
-    background: var(--color-bg-subtle, #222222);
-    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
-    border-radius: var(--radius-sm, 4px);
-    color: var(--color-text, #e8e8e8);
-    font-size: 0.875rem;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.per-page-selector select:hover {
-    border-color: var(--color-accent, #6b8e6b);
-    background: var(--color-surface, #2a2a2a);
-}
-
-.per-page-selector select:focus {
-    outline: none;
-    border-color: var(--color-accent, #6b8e6b);
-    box-shadow: 0 0 0 2px rgba(107, 142, 107, 0.2);
+    width: auto;
 }
 
 .per-page-label {
@@ -153,6 +144,10 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    .browser-page .page-with-sidebar {
+        grid-template-columns: 1fr;
+    }
+
     .browser-header {
         flex-direction: column;
         align-items: flex-start;

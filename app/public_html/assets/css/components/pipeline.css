@@ -1,249 +1,300 @@
 /**
  * Pipeline Component
- * Pipeline status visualization for tablet processing stages
- * Dependencies: CSS variables from core.css
+ * Unified pipeline status visualization for tablet processing stages
+ * Variants: --compact (cards), --inline (header), --expanded (detail page)
+ * Dependencies: core/tokens.css
  */
 
 /* ==========================================================================
-   Pipeline Track Component
+   Base Layout & Shared Variables
    ========================================================================== */
 
-/* Pipeline Track - unified container */
-.pipeline-track {
+.pipeline {
     display: flex;
-    align-items: stretch;
-    gap: 0;
-    margin-bottom: var(--space-6);
-    background: var(--color-surface);
-    border-radius: var(--radius-md);
+    gap: 1px;
+}
+
+.pipeline__segment {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+}
+
+/* ==========================================================================
+   Compact Variant (Cards)
+   ========================================================================== */
+
+.pipeline--compact {
+    height: 3px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
 }
 
-/* Pipeline Segment */
-.pipeline-track .pipeline-segment {
-    flex: 1;
-    min-width: 0;
+.pipeline--compact .pipeline__segment {
+    background: var(--color-border);
+    transition: background var(--transition-normal);
+}
+
+.pipeline--compact .pipeline__segment[data-status="complete"] {
+    background: var(--color-success);
+}
+
+.pipeline--compact .pipeline__segment[data-status="partial"],
+.pipeline--compact .pipeline__segment[data-status="inferred"] {
+    background: var(--color-warning);
+}
+
+.pipeline--compact .pipeline__segment[data-status="skipped"] {
+    background: var(--color-text-subtle);
+}
+
+.pipeline--compact .pipeline__segment[data-status="missing"] {
+    background: var(--color-border);
+}
+
+/* Next step indicator - subtle pulse */
+.pipeline--compact .pipeline__segment--next {
+    animation: pipeline-pulse 2s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   Inline Variant (Header Actions)
+   ========================================================================== */
+
+.pipeline--inline {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 32px;
+    padding: 0 var(--space-2);
+    cursor: default;
+}
+
+.pipeline__dots {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.pipeline__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-border);
+    transition: background var(--transition-normal), transform var(--transition-normal);
+}
+
+.pipeline__dot[data-status="complete"] {
+    background: var(--color-success);
+}
+
+.pipeline__dot[data-status="partial"],
+.pipeline__dot[data-status="inferred"] {
+    background: var(--color-warning);
+}
+
+.pipeline__dot[data-status="skipped"] {
+    background: var(--color-text-subtle);
+}
+
+.pipeline__dot[data-status="missing"] {
+    background: var(--color-border);
+}
+
+/* Next step dot emphasis */
+.pipeline__dot--next {
+    width: 8px;
+    height: 8px;
+    background: var(--color-accent);
+    animation: pipeline-dot-pulse 2s ease-in-out infinite;
+}
+
+.pipeline__next-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+@keyframes pipeline-dot-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(0.9);
+    }
+}
+
+/* ==========================================================================
+   Expanded Variant (Detail Page)
+   ========================================================================== */
+
+.pipeline--expanded {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: var(--space-4);
+    gap: 0;
+}
+
+.pipeline--expanded .pipeline__segment {
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--color-border);
 }
 
-.pipeline-track .pipeline-segment:last-child {
+.pipeline--expanded .pipeline__segment:last-child {
     border-right: none;
 }
 
-/* Status bar at top - forms continuous bar */
-.segment-bar {
+/* Status bar at top */
+.pipeline__bar {
     height: 4px;
     background: var(--color-border);
     transition: background var(--transition-normal);
 }
 
-.pipeline-segment[data-status="complete"] .segment-bar {
+.pipeline__segment[data-status="complete"] .pipeline__bar {
     background: var(--color-success);
 }
 
-.pipeline-segment[data-status="partial"] .segment-bar,
-.pipeline-segment[data-status="inferred"] .segment-bar {
+.pipeline__segment[data-status="partial"] .pipeline__bar,
+.pipeline__segment[data-status="inferred"] .pipeline__bar {
     background: var(--color-warning);
 }
 
-.pipeline-segment[data-status="skipped"] .segment-bar {
+.pipeline__segment[data-status="skipped"] .pipeline__bar {
     background: var(--color-text-subtle);
 }
 
 /* Segment body */
-.segment-body {
-    padding: var(--space-2) var(--space-2);
+.pipeline__body {
+    padding: var(--space-2) var(--space-3);
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    flex: 1;
-    min-height: 95px;
+    min-height: 52px;
 }
 
-.segment-icon {
+.pipeline__label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+}
+
+.pipeline__status {
+    font-size: 0.625rem;
+    color: var(--color-text-subtle);
+    margin-top: 2px;
+}
+
+/* Next step emphasis */
+.pipeline--expanded .pipeline__segment--next {
+    background: rgba(201, 169, 98, 0.08);
+}
+
+.pipeline--expanded .pipeline__segment--next .pipeline__bar {
+    background: var(--color-accent);
+    animation: pipeline-bar-pulse 2s ease-in-out infinite;
+}
+
+.pipeline__next-hint {
+    font-size: 0.5625rem;
+    color: var(--color-accent);
+    font-style: italic;
+    margin-top: var(--space-1);
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
+@keyframes pipeline-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes pipeline-bar-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* ==========================================================================
+   Popover Tooltip
+   ========================================================================== */
+
+.pipeline-popover {
+    position: fixed;
+    width: 180px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    z-index: var(--z-dropdown, 1000);
+    padding: var(--space-3);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.pipeline-popover.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.pipeline-popover__header {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    margin-bottom: var(--space-1);
+    color: var(--color-text);
+}
+
+.pipeline-popover__status {
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     margin-bottom: var(--space-1);
-    opacity: 0.6;
 }
 
-.segment-icon svg {
-    width: 18px;
-    height: 18px;
-}
-
-.pipeline-segment[data-status="complete"] .segment-icon {
-    color: var(--color-success);
-    opacity: 1;
-}
-
-.pipeline-segment[data-status="partial"] .segment-icon,
-.pipeline-segment[data-status="inferred"] .segment-icon {
-    color: var(--color-warning);
-    opacity: 1;
-}
-
-.pipeline-segment[data-status="skipped"] .segment-icon {
-    color: var(--color-text-subtle);
-    opacity: 0.8;
-}
-
-.segment-title {
-    font-size: 0.625rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--color-text-muted);
-    margin: 0 0 var(--space-1);
-}
-
-.segment-status {
+.pipeline-popover__source {
     font-size: 0.6875rem;
-    font-weight: 500;
-    padding: 2px 6px;
-    border-radius: var(--radius-full);
-    margin-bottom: 2px;
-}
-
-.segment-status.complete {
-    background: rgba(107, 142, 107, 0.15);
-    color: var(--color-success);
-}
-
-.segment-status.partial,
-.segment-status.inferred {
-    background: rgba(201, 169, 98, 0.15);
-    color: var(--color-warning);
-}
-
-.segment-status.missing {
-    background: rgba(184, 92, 92, 0.1);
-    color: var(--color-error);
-}
-
-.segment-status.skipped {
-    background: rgba(160, 160, 160, 0.1);
     color: var(--color-text-subtle);
 }
 
-.segment-source {
-    font-size: 0.5625rem;
-    color: var(--color-text-subtle);
-    font-style: italic;
-    line-height: 1.2;
+.pipeline-popover__source:empty {
+    display: none;
 }
 
-.segment-next {
-    font-size: 0.5625rem;
-    color: var(--color-text-muted);
-    margin-top: auto;
+.pipeline-popover__next {
+    font-size: 0.6875rem;
+    color: var(--color-accent);
     font-style: italic;
-    line-height: 1.2;
-}
-
-/* ==========================================================================
-   Substages
-   ========================================================================== */
-
-.segment-substages {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-2);
-    width: 100%;
     margin-top: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
 }
 
-.substage {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: var(--space-2);
-    background: var(--color-bg-elevated);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border);
-    min-height: 60px;
-}
-
-.substage[data-status="complete"] {
-    border-color: rgba(107, 142, 107, 0.4);
-}
-
-.substage[data-status="inferred"] {
-    border-color: rgba(201, 169, 98, 0.4);
-}
-
-.substage[data-status="missing"] {
-    opacity: 0.6;
-    border-color: transparent;
-}
-
-.substage-label {
-    font-size: 0.625rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--color-text-muted);
-}
-
-.substage-status {
-    font-size: 0.875rem;
-    font-weight: 600;
-}
-
-.substage-status.complete {
-    color: var(--color-success);
-}
-
-.substage-status.inferred {
-    color: var(--color-warning);
-}
-
-.substage-status.missing {
-    color: var(--color-text-subtle);
-}
-
-.substage-source {
-    font-size: 0.5625rem;
-    color: var(--color-text-subtle);
-    font-style: italic;
-    text-align: center;
-}
-
-.substage-hint {
-    font-size: 0.5625rem;
-    color: var(--color-text-muted);
-    font-style: italic;
-    text-align: center;
+.pipeline-popover__next:empty {
+    display: none;
 }
 
 /* ==========================================================================
-   Pipeline Status Dots (Card view)
+   Card Context Overrides
    ========================================================================== */
 
-.pipeline-status {
-    display: flex;
-    gap: var(--space-2);
-}
-
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--color-border);
-}
-
-.status-dot.complete {
-    background: var(--color-success);
-}
-
-.status-dot.partial {
-    background: var(--color-warning);
-}
-
-.status-dot.missing {
-    background: var(--color-error);
+.card .pipeline--compact {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 10;
+    border-radius: 0;
 }
 
 /* ==========================================================================
@@ -251,26 +302,50 @@
    ========================================================================== */
 
 @media (max-width: 640px) {
-    .pipeline-track {
+    .pipeline--expanded {
         flex-direction: column;
-        gap: 0;
     }
 
-    .pipeline-segment {
+    .pipeline--expanded .pipeline__segment {
         border-right: none;
         border-bottom: 1px solid var(--color-border);
     }
 
-    .pipeline-segment:last-child {
+    .pipeline--expanded .pipeline__segment:last-child {
         border-bottom: none;
     }
 
-    .segment-body {
+    .pipeline__body {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
         min-height: auto;
-        padding: var(--space-3);
+        padding: var(--space-2) var(--space-3);
     }
 
-    .segment-substages {
-        grid-template-columns: 1fr 1fr;
+    .pipeline__label {
+        margin-bottom: 0;
+    }
+
+    .pipeline__status {
+        margin-top: 0;
+        margin-left: var(--space-2);
+    }
+
+    .pipeline__next-hint {
+        margin-top: 0;
+        margin-left: var(--space-2);
+    }
+}
+
+/* ==========================================================================
+   Accessibility
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .pipeline--compact .pipeline__segment--next,
+    .pipeline--inline .pipeline__dot--next,
+    .pipeline--expanded .pipeline__segment--next .pipeline__bar {
+        animation: none;
     }
 }

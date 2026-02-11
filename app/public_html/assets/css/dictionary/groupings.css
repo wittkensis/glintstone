@@ -16,24 +16,10 @@
    ========================================================================== */
 
 .dict-groupings {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
-}
-
-.dict-groupings__header {
-    padding: var(--space-4);
-    border-bottom: 1px solid var(--color-border);
-    flex-shrink: 0;
-}
-
-.dict-groupings__title {
-    font-family: var(--font-serif);
-    font-size: var(--text-lg);
-    font-weight: 400;
-    color: var(--color-text);
-    margin: 0;
-    letter-spacing: 0.05em;
 }
 
 /* ==========================================================================
@@ -41,8 +27,10 @@
    ========================================================================== */
 
 .dict-groupings__nav {
+    display: flex;
+    flex-direction: column;
     flex: 1;
-    overflow-y: auto;
+    min-height: 0;
     padding: var(--space-2) 0;
 }
 
@@ -99,15 +87,35 @@
 }
 
 /* ==========================================================================
-   Expandable Sections
+   Accordion Sections (always visible, independently scrollable)
    ========================================================================== */
 
 .dict-groupings__section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Critical for flexbox scrolling */
     border-top: 1px solid var(--color-border-subtle);
 }
 
 .dict-groupings__section:first-of-type {
     border-top: none;
+}
+
+/* Collapsed state: only header visible, don't grow */
+.dict-groupings__section[data-expanded="false"] {
+    flex: 0 0 auto;
+}
+
+/* Expanded state: fill all available height, content scrolls */
+.dict-groupings__section[data-expanded="true"] {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+/* Push collapsed sections to bottom when they follow an expanded section */
+/* Only target the first collapsed section after an expanded one */
+.dict-groupings__section[data-expanded="true"] + .dict-groupings__section[data-expanded="false"] {
+    margin-top: auto;
 }
 
 /* Section Header (expand/collapse toggle) */
@@ -116,20 +124,25 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: var(--space-3) var(--space-4);
-    background: none;
+    padding: var(--space-5) var(--space-4);
+    background: var(--color-bg-subtle);
     border: none;
-    color: var(--color-text);
+    color: var(--color-text-muted);
     font-size: var(--text-sm);
     font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     cursor: pointer;
-    transition: background var(--transition-fast);
+    flex-shrink: 0;
+    transition: background var(--transition-fast),
+                color var(--transition-fast);
 }
 
 .dict-groupings__section-header:hover {
     background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.dict-groupings__section[data-expanded="true"] .dict-groupings__section-header {
+    color: var(--color-text);
 }
 
 /* Chevron icon */
@@ -145,14 +158,18 @@
     transform: rotate(180deg);
 }
 
-/* Section Content (collapsible) */
+/* Section Content (independently scrollable when expanded) */
 .dict-groupings__section-content {
     display: none;
+    flex: 1;
+    min-height: 0; /* Critical for nested flexbox scrolling */
+    overflow-y: auto;
     padding-bottom: var(--space-2);
 }
 
 .dict-groupings__section[data-expanded="true"] .dict-groupings__section-content {
-    display: block;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Nested items within sections */
@@ -218,6 +235,7 @@
     cursor: pointer;
     transition: background var(--transition-fast),
                 color var(--transition-fast);
+    z-index: 10;
 }
 
 .dict-groupings__close:hover {
@@ -235,10 +253,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-
-    .dict-groupings__header {
-        padding-right: var(--space-12);
     }
 }
 

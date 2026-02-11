@@ -6,7 +6,6 @@
 
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/helpers/display.php';
-require_once __DIR__ . '/../includes/helpers/smart-collections.php';
 
 $pageTitle = 'Collections & Composites';
 
@@ -19,17 +18,6 @@ foreach ($collections as &$collection) {
 }
 unset($collection); // Break reference
 
-// Get all Smart Collections
-$smartCollections = getAllSmartCollections();
-
-// Get preview tablets and counts for each Smart Collection
-foreach ($smartCollections as &$smartCollection) {
-    $tablets = executeSmartCollection($smartCollection['smart_collection_id'], 4);
-    $smartCollection['preview_tablets'] = $tablets;
-    $smartCollection['tablet_count'] = getSmartCollectionCount($smartCollection['smart_collection_id']);
-}
-unset($smartCollection);
-
 // Get all composites with aggregated metadata (cached)
 $composites = getCompositesWithMetadata();
 
@@ -37,7 +25,7 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <link rel="stylesheet" href="/assets/css/layout/page-header.css">
-<link rel="stylesheet" href="/assets/css/components/collection-cards.css">
+<link rel="stylesheet" href="/assets/css/components/cards-collection.css">
 <link rel="stylesheet" href="/assets/css/components/empty-states.css">
 <link rel="stylesheet" href="/assets/css/components/section-header.css">
 <link rel="stylesheet" href="/assets/css/components/tabs.css">
@@ -56,12 +44,8 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="tabs-container">
         <nav class="tabs-nav" role="tablist">
             <button class="tab-button" data-tab="collections" role="tab" aria-selected="true" tabindex="0">
-                Curated Collections
+                Collections
                 <span class="count-badge"><?= count($collections) ?></span>
-            </button>
-            <button class="tab-button" data-tab="smart-collections" role="tab" aria-selected="false" tabindex="-1">
-                Smart Collections
-                <span class="count-badge"><?= count($smartCollections) ?></span>
             </button>
             <button class="tab-button" data-tab="composites" role="tab" aria-selected="false" tabindex="-1">
                 Composites
@@ -74,7 +58,7 @@ require_once __DIR__ . '/../includes/header.php';
             <section id="collections" class="tab-panel" role="tabpanel">
                 <div class="section-header">
                     <div class="section-header__content">
-                        <h2>Curated Collections</h2>
+                        <h2>Collections</h2>
                         <p class="section-description">Some of the most fascinating and impactful tablets available.</p>
                     </div>
                     <div class="header-actions">
@@ -98,36 +82,6 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
-            </section>
-
-            <!-- Smart Collections Tab Panel -->
-            <section id="smart-collections" class="tab-panel" role="tabpanel" hidden>
-                <div class="section-header">
-                    <div class="section-header__content">
-                        <h2>Smart Collections</h2>
-                        <p class="section-description">Dynamically curated collections that automatically update based on tablet metadata, quality scores, and scholarly significance. These collections surface the most valuable tablets for research and contribution.</p>
-                    </div>
-                </div>
-
-                <?php if (empty($smartCollections)): ?>
-                    <!-- Empty State -->
-                    <div class="empty-state">
-                        <div class="empty-icon">✨</div>
-                        <h3>No Smart Collections available</h3>
-                        <p>Smart Collections have not been configured yet.</p>
-                    </div>
-                <?php else: ?>
-                    <!-- Smart Collections Grid -->
-                    <div class="collection-grid">
-                        <?php foreach ($smartCollections as $collection): ?>
-                            <?php
-                            $is_smart_collection = true;
-                            $show_auto_updating_badge = true;
-                            ?>
-                            <?php include __DIR__ . '/../includes/components/collection-card.php'; ?>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
             </section>
 
             <!-- Composites Tab Panel -->

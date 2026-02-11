@@ -45,7 +45,6 @@
     <!-- Components - Other -->
     <link rel="stylesheet" href="/assets/css/components/pipeline.css">
     <link rel="stylesheet" href="/assets/css/components/progress-meter.css">
-    <link rel="stylesheet" href="/assets/css/components/smart-collection-showcase.css">
     <link rel="stylesheet" href="/assets/css/components/educational-help.css">
     <link rel="stylesheet" href="/assets/css/components/ocr-box.css">
 

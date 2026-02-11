@@ -168,8 +168,8 @@ function getPipelineStatus(array $tablet, bool $localImageExists): array {
 // Calculate image path - prefer local, fall back to CDLI
 $localImagePath = "/images/{$pNumber}.jpg";
 $localImageExists = file_exists(dirname(__DIR__) . "/images/{$pNumber}.jpg");
-$cdliImageUrl = "https://cdli.ucla.edu/dl/photo/{$pNumber}.jpg";
-$cdliLineartUrl = "https://cdli.ucla.edu/dl/lineart/{$pNumber}.jpg";
+$cdliImageUrl = "https://cdli.earth/dl/photo/{$pNumber}.jpg";
+$cdliLineartUrl = "https://cdli.earth/dl/lineart/{$pNumber}.jpg";
 $imagePath = $localImageExists ? $localImagePath : $cdliImageUrl;
 $imageSource = $localImageExists ? 'Local (CDLI)' : 'CDLI (Remote)';
 
@@ -204,6 +204,7 @@ require_once __DIR__ . '/../includes/header.php';
 <!-- Shared Components -->
 <link rel="stylesheet" href="/assets/css/components/badges.css">
 <link rel="stylesheet" href="/assets/css/components/states.css">
+<link rel="stylesheet" href="/assets/css/components/ml-panel.css">
 
 <!-- Knowledge Sidebar -->
 <link rel="stylesheet" href="/assets/css/knowledge-sidebar/layout.css">
@@ -243,11 +244,12 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="page-header-main">
             <div class="page-header-title">
                 <h1><?= htmlspecialchars($tablet['p_number']) ?></h1>
-                <?php if ($tablet['language']): ?>
-                    <span class="language-badge"><?= htmlspecialchars($tablet['language']) ?></span>
-                <?php endif; ?>
             </div>
             <div class="page-header-actions">
+                <?php
+                $variant = 'inline';
+                include dirname(__DIR__) . '/includes/components/pipeline.php';
+                ?>
                 <?php if (!empty($composites)): ?>
                     <button class="btn btn--icon-left btn--toggle" id="composite-toggle" aria-expanded="false" aria-controls="composite-panel" title="View composite text">
                         <?= icon('layers') ?>
@@ -282,6 +284,12 @@ require_once __DIR__ . '/../includes/header.php';
     ?>
     <div class="tablet-meta">
         <dl class="tablet-meta__row">
+            <?php if ($tablet['language']): ?>
+                <div class="meta-item">
+                    <dt>Language</dt>
+                    <dd><?= htmlspecialchars($tablet['language']) ?></dd>
+                </div>
+            <?php endif; ?>
             <?php if ($tablet['period']): ?>
                 <div class="meta-item">
                     <dt>Period</dt>
@@ -357,59 +365,11 @@ require_once __DIR__ . '/../includes/header.php';
         <?php endif; ?>
     </div>
 
-    <!-- Pipeline Status -->
     <?php
-    // Get status label for display
-    function getStatusLabel($status): string {
-        return match($status['status']) {
-            'complete' => $status['source'] ?? '✓',
-            'partial' => $status['detail'] ?? 'Partial',
-            'inferred' => 'Inferred',
-            'skipped' => 'N/A',
-            default => 'Missing'
-        };
-    }
-    // Get tooltip text
-    function getPipelineTooltip($stage, $status): string {
-        $text = ucfirst($stage) . ': ' . match($status['status']) {
-            'complete' => 'Available',
-            'partial' => 'Partial (' . ($status['detail'] ?? '') . ')',
-            'inferred' => 'Inferred from downstream data',
-            'skipped' => 'Not captured (tablet fully studied)',
-            default => 'Missing'
-        };
-        if ($status['source']) $text .= ' · Source: ' . $status['source'];
-        if ($status['next_step']) $text .= ' · ' . $status['next_step'];
-        return $text;
-    }
+    // Pipeline Status (expanded variant hidden - using inline in header instead)
+    // $variant = 'expanded';
+    // include dirname(__DIR__) . '/includes/components/pipeline.php';
     ?>
-    <nav class="pipeline-chevron" aria-label="Data pipeline status">
-        <div class="pipeline-chevron__step pipeline-chevron__step--<?= $pipelineStatus['image']['status'] ?>"
-             title="<?= htmlspecialchars(getPipelineTooltip('image', $pipelineStatus['image'])) ?>">
-            <span class="pipeline-chevron__label">Image</span>
-            <span class="pipeline-chevron__status"><?= getStatusLabel($pipelineStatus['image']) ?></span>
-        </div>
-        <div class="pipeline-chevron__step pipeline-chevron__step--<?= $pipelineStatus['signs']['status'] ?>"
-             title="<?= htmlspecialchars(getPipelineTooltip('signs', $pipelineStatus['signs'])) ?>">
-            <span class="pipeline-chevron__label">Signs</span>
-            <span class="pipeline-chevron__status"><?= getStatusLabel($pipelineStatus['signs']) ?></span>
-        </div>
-        <div class="pipeline-chevron__step pipeline-chevron__step--<?= $pipelineStatus['transliteration']['status'] ?>"
-             title="<?= htmlspecialchars(getPipelineTooltip('ATF', $pipelineStatus['transliteration'])) ?>">
-            <span class="pipeline-chevron__label">ATF</span>
-            <span class="pipeline-chevron__status"><?= getStatusLabel($pipelineStatus['transliteration']) ?></span>
-        </div>
-        <div class="pipeline-chevron__step pipeline-chevron__step--<?= $pipelineStatus['lemmas']['status'] ?>"
-             title="<?= htmlspecialchars(getPipelineTooltip('lemmas', $pipelineStatus['lemmas'])) ?>">
-            <span class="pipeline-chevron__label">Lemmas</span>
-            <span class="pipeline-chevron__status"><?= getStatusLabel($pipelineStatus['lemmas']) ?></span>
-        </div>
-        <div class="pipeline-chevron__step pipeline-chevron__step--<?= $pipelineStatus['translation']['status'] ?>"
-             title="<?= htmlspecialchars(getPipelineTooltip('translation', $pipelineStatus['translation'])) ?>">
-            <span class="pipeline-chevron__label">Translation</span>
-            <span class="pipeline-chevron__status"><?= getStatusLabel($pipelineStatus['translation']) ?></span>
-        </div>
-    </nav>
     </div><!-- .container-inner -->
 </main>
 
@@ -458,13 +418,24 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             </div>
 
-            <p class="image-source" id="image-source">Source: <?= $imageSource ?></p>
-            <div class="image-options">
-                <label class="annotation-toggle btn btn-small" id="annotation-toggle" style="display: none;">
-                    <input type="checkbox" id="annotation-checkbox">
-                    <span>Signs</span>
-                    <span class="annotation-badge" id="annotation-count"></span>
-                </label>
+            <div class="image-controls">
+                <p class="image-source" id="image-source">Source: <?= $imageSource ?></p>
+                <div class="image-options">
+                    <?php if ($tablet['has_image']): ?>
+                    <button class="btn btn-detect-signs" id="btn-detect-signs" title="Run ML sign detection">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <span>Detect Signs</span>
+                    </button>
+                    <?php endif; ?>
+                    <label class="annotation-toggle btn btn-small" id="annotation-toggle" style="display: none;">
+                        <input type="checkbox" id="annotation-checkbox">
+                        <span>Signs</span>
+                        <span class="annotation-badge" id="annotation-count"></span>
+                    </label>
+                </div>
             </div>
         </section>
         </div>
@@ -493,6 +464,8 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <script src="/assets/js/zoombox.js"></script>
+<script src="/assets/js/ml-panel.js"></script>
+<script src="/assets/js/pipeline.js"></script>
 <!-- Shared Library Modules -->
 <script src="/assets/js/modules/educational-help.js"></script>
 <script src="/assets/js/modules/word-detail-renderer.js"></script>

@@ -19,7 +19,24 @@
 // Set defaults
 $activeGroup = $activeGroup ?? 'all';
 $activeValue = $activeValue ?? null;
-$expandedSections = $expandedSections ?? ['pos', 'language'];
+
+// Codes that are name types (to separate from true POS)
+$nameTypeCodes = ['PN', 'DN', 'GN', 'SN', 'TN', 'WN', 'RN', 'EN', 'CN', 'ON', 'MN', 'LN', 'FN', 'AN'];
+
+// Auto-expand section containing active filter (all collapsed by default)
+$expandedSections = [];
+if ($activeGroup === 'pos') {
+    // Check if it's a name type or regular POS
+    if (in_array($activeValue, $nameTypeCodes)) {
+        $expandedSections[] = 'nametype';
+    } else {
+        $expandedSections[] = 'pos';
+    }
+} elseif ($activeGroup === 'language') {
+    $expandedSections[] = 'language';
+} elseif ($activeGroup === 'frequency') {
+    $expandedSections[] = 'frequency';
+}
 
 // Language labels for display
 $languageLabels = [
@@ -48,18 +65,18 @@ $posLabels = [
     'AV' => 'Adverb',
     'NU' => 'Number',
     'PRP' => 'Preposition',
-    'PP' => 'Postposition',
+    'PP' => 'Possessive Pronoun',
     'CNJ' => 'Conjunction',
     'DP' => 'Demonstrative',
-    'IP' => 'Interrogative',
-    'RP' => 'Relative Pronoun',
+    'IP' => 'Pronoun',
+    'RP' => 'Reflexive',
     'XP' => 'Indefinite Pronoun',
     'REL' => 'Relative',
+    'QP' => 'Interrogative',
     'DET' => 'Determiner',
-    'MOD' => 'Modifier',
+    'MOD' => 'Modal',
     'J' => 'Interjection',
     'SBJ' => 'Subjunction',
-    'QP' => 'Quantifier',
     'MA' => 'Auxiliary',
     'O' => 'Other',
     'M' => 'Morpheme'
@@ -82,9 +99,6 @@ $nameTypeLabels = [
     'FN' => 'Field Name',
     'AN' => 'Artifact Name'
 ];
-
-// Codes that are name types (to separate from true POS)
-$nameTypeCodes = array_keys($nameTypeLabels);
 
 // Frequency range labels
 $frequencyLabels = [
@@ -117,14 +131,11 @@ HTML;
 ?>
 
 <div class="dict-groupings">
-    <div class="dict-groupings__header">
-        <h2 class="dict-groupings__title">Browse</h2>
-        <button class="dict-groupings__close" aria-label="Close groupings panel">
-            <svg class="dict-groupings__close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-        </button>
-    </div>
+    <button class="dict-groupings__close" aria-label="Close groupings panel">
+        <svg class="dict-groupings__close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+    </button>
 
     <nav class="dict-groupings__nav">
         <!-- All Words -->
@@ -133,7 +144,7 @@ HTML;
         <!-- By Part of Speech (true linguistic categories only) -->
         <div class="dict-groupings__section" data-expanded="<?= in_array('pos', $expandedSections) ? 'true' : 'false' ?>">
             <button class="dict-groupings__section-header">
-                <span>Part of Speech</span>
+                <span>By Part of Speech</span>
                 <svg class="dict-groupings__section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M6 9l6 6 6-6"/>
                 </svg>
@@ -152,7 +163,7 @@ HTML;
         <!-- By Name Type (proper noun categories) -->
         <div class="dict-groupings__section" data-expanded="<?= in_array('nametype', $expandedSections) ? 'true' : 'false' ?>">
             <button class="dict-groupings__section-header">
-                <span>Name Type</span>
+                <span>By Name Type</span>
                 <svg class="dict-groupings__section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M6 9l6 6 6-6"/>
                 </svg>
@@ -171,7 +182,7 @@ HTML;
         <!-- By Language -->
         <div class="dict-groupings__section" data-expanded="<?= in_array('language', $expandedSections) ? 'true' : 'false' ?>">
             <button class="dict-groupings__section-header">
-                <span>Language</span>
+                <span>By Language</span>
                 <svg class="dict-groupings__section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M6 9l6 6 6-6"/>
                 </svg>
@@ -190,7 +201,7 @@ HTML;
         <!-- By Frequency -->
         <div class="dict-groupings__section" data-expanded="<?= in_array('frequency', $expandedSections) ? 'true' : 'false' ?>">
             <button class="dict-groupings__section-header">
-                <span>Frequency</span>
+                <span>By Frequency</span>
                 <svg class="dict-groupings__section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M6 9l6 6 6-6"/>
                 </svg>

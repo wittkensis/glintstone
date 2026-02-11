@@ -9,6 +9,7 @@
 const TabletPage = {
     zoombox: null,
     atfViewer: null,
+    mlPanel: null,
     annotationData: null,
     annotationsVisible: false,
     currentImageType: 'photo',
@@ -154,6 +155,22 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleAnnotations(this.checked);
     });
 
+    // Initialize ML Panel
+    if (typeof MLPanel !== 'undefined' && TabletPage.pNumber) {
+        TabletPage.mlPanel = new MLPanel({
+            pNumber: TabletPage.pNumber,
+            container: document.body,
+            zoombox: TabletPage.zoombox
+        });
+
+        // Detect Signs button
+        document.getElementById('btn-detect-signs')?.addEventListener('click', () => {
+            if (TabletPage.mlPanel) {
+                TabletPage.mlPanel.detect();
+            }
+        });
+    }
+
     // Initialize ATF Viewer
     const atfViewerContainer = document.getElementById('atf-viewer');
     if (atfViewerContainer && typeof ATFViewer !== 'undefined') {
@@ -226,6 +243,10 @@ function setupViewerToggle() {
     const zoomControls = document.querySelector('.zoombox__controls');
     const minimapContainer = document.querySelector('.zoombox__minimap-container');
 
+    // Load sound effect for viewer expansion
+    const expandSound = new Audio('/assets/sound/stone_slide_1.wav');
+    expandSound.volume = 0.2; // Set to 20% volume for subtlety
+
     console.log('setupViewerToggle:', { viewerToggle, viewerContainer, viewerPanel });
 
     if (viewerToggle && viewerContainer && viewerPanel) {
@@ -280,8 +301,14 @@ function setupViewerToggle() {
             viewerContainer.dataset.state = newState;
             viewerToggle.setAttribute('aria-expanded', newState === 'expanded');
 
-            // Notify knowledge sidebar when expanding (mutual exclusivity)
+            // Play sound when expanding
             if (newState === 'expanded') {
+                expandSound.currentTime = 0; // Reset to start
+                expandSound.play().catch(err => {
+                    console.log('Sound playback failed (user interaction may be required):', err);
+                });
+
+                // Notify knowledge sidebar when expanding (mutual exclusivity)
                 document.dispatchEvent(new CustomEvent('tablet-viewer-state', {
                     detail: { action: 'viewer-expanding' }
                 }));
@@ -339,6 +366,12 @@ function setupViewerToggle() {
                 if (viewerToggle) {
                     viewerToggle.setAttribute('aria-expanded', 'true');
                 }
+
+                // Play sound when expanding
+                expandSound.currentTime = 0; // Reset to start
+                expandSound.play().catch(err => {
+                    console.log('Sound playback failed (user interaction may be required):', err);
+                });
 
                 // Notify knowledge sidebar when expanding (mutual exclusivity)
                 document.dispatchEvent(new CustomEvent('tablet-viewer-state', {

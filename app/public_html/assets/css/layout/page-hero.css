@@ -1,0 +1,232 @@
+/**
+ * Page Hero Banner
+ * Full-width hero image with gradient overlay for detail pages
+ * Dependencies: core/tokens.css
+ */
+
+/* Remove default main padding when hero is present */
+main:has(.page-hero) {
+    padding-top: 0 !important;
+}
+
+/* ==========================================================================
+   Hero Banner Container
+   ========================================================================== */
+
+.page-hero {
+    position: relative;
+    width: 100%;
+    min-height: 400px;
+    margin: 0;
+    margin-bottom: var(--space-6);
+    background: var(--color-bg-subtle);
+    overflow: hidden;
+    border-bottom-left-radius: var(--radius-lg);
+    border-bottom-right-radius: var(--radius-lg);
+}
+
+.page-hero-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.page-hero-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+
+/* ==========================================================================
+   Gradient Overlay with Blur Effect
+   ========================================================================== */
+
+.page-hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+/* Two-layer approach: blur + gradient */
+.page-hero-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        transparent 20%,
+        rgba(0, 0, 0, 0.2) 40%,
+        rgba(0, 0, 0, 0.5) 60%,
+        rgba(0, 0, 0, 0.75) 80%,
+        rgba(0, 0, 0, 0.9) 100%
+    );
+    z-index: 1;
+}
+
+.page-hero-overlay::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(40, 40, 40, 0.3) 40%,
+        rgba(30, 30, 30, 0.6) 70%,
+        rgba(20, 20, 20, 0.8) 100%
+    );
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 2;
+}
+
+/* ==========================================================================
+   Hero Content
+   ========================================================================== */
+
+.page-hero-content {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 400px;
+    padding: var(--space-6);
+    padding-bottom: var(--space-5);
+}
+
+/* Hero Header (title + actions on same line) */
+.page-hero-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-4);
+    margin-bottom: var(--space-3);
+}
+
+.page-hero-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.page-hero-title .back-link {
+    display: inline-flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 0.875rem;
+    margin-bottom: var(--space-3);
+    transition: color 0.2s;
+}
+
+.page-hero-title .back-link:hover {
+    color: rgba(255, 255, 255, 1);
+}
+
+.page-hero-title h1 {
+    font-size: 2.5rem;
+    margin: 0;
+    margin-bottom: var(--space-2);
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.page-hero-title .subtitle {
+    font-size: 0.9375rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin: var(--space-2) 0 0 0;
+    line-height: 1.6;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    max-width: 800px;
+}
+
+/* Hero Actions */
+.page-hero-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+/* Ensure buttons are visible on dark background */
+.page-hero-actions .btn {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Hero Metadata/Stats */
+.page-hero-metadata {
+    padding-top: var(--space-3);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.page-hero-stats {
+    display: flex;
+    gap: var(--space-4);
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.page-hero-stats .stat {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .page-hero {
+        min-height: 350px;
+    }
+
+    .page-hero-content {
+        min-height: 350px;
+        padding: var(--space-4);
+    }
+
+    .page-hero-title h1 {
+        font-size: 1.75rem;
+    }
+
+    .page-hero-header {
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+
+    .page-hero-actions {
+        align-self: stretch;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-hero {
+        min-height: 300px;
+    }
+
+    .page-hero-content {
+        min-height: 300px;
+        padding: var(--space-3);
+    }
+
+    .page-hero-title h1 {
+        font-size: 1.5rem;
+    }
+
+    .page-hero-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .page-hero-actions > * {
+        width: 100%;
+        justify-content: center;
+    }
+}

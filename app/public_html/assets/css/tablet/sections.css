@@ -44,10 +44,32 @@
     margin-bottom: var(--space-4);
 }
 
+.image-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: rgba(15, 15, 18, 0.75);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 15;
+}
+
 .image-source {
+    display: flex;
+    align-items: center;
     font-size: 0.75rem;
-    color: var(--color-text-subtle);
-    margin-top: var(--space-2);
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    flex-grow: 1;
 }
 
 /* ==========================================================================
@@ -104,8 +126,8 @@
 .image-options {
     display: flex;
     gap: var(--space-2);
-    margin-top: var(--space-3);
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .btn-small {
@@ -223,6 +245,16 @@
 
     .tablet-meta__row {
         gap: var(--space-2) var(--space-4);
+    }
+
+    /* Compact image controls on mobile */
+    .image-controls {
+        padding: var(--space-2) var(--space-3);
+        gap: var(--space-1);
+    }
+
+    .image-source {
+        font-size: 0.6875rem;
     }
 
     /* Chevron pipeline - hide labels on small screens */

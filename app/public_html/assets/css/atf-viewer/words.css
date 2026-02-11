@@ -181,6 +181,36 @@
     transition: all 0.15s ease;
 }
 
+/* Scholarly lemmas (from ORACC lemmatization) */
+.atf-word__gloss--scholarly {
+    color: var(--color-success);
+    font-weight: 500;
+}
+
+.atf-word--lemma .atf-word__text {
+    /* Subtle underline to indicate scholarly annotation */
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-color: var(--color-success);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+/* Automatic glosses (from dictionary fallback) */
+.atf-word__gloss--automatic {
+    color: var(--color-text-subtle);
+    font-style: italic;
+}
+
+.atf-word--glossary .atf-word__text {
+    /* Dotted underline to indicate automatic gloss */
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: var(--color-text-subtle);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
 /* ==========================================================================
    Damage Indicators (Superscript)
    ========================================================================== */

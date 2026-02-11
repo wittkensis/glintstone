@@ -7,6 +7,7 @@
  *   search        - Search query (optional)
  *   group_type    - Grouping type: 'pos', 'language', 'frequency' (optional)
  *   group_value   - Filter value for the group type (optional)
+ *   sort          - Sort order: 'frequency' (default), 'alpha'
  *   offset        - Pagination offset (default: 0)
  *   limit         - Results per page (default: 50, max: 100)
  *   include_counts - Include grouping counts in response (default: 0)
@@ -18,18 +19,32 @@
  *   counts    - Grouping counts (if include_counts=1)
  */
 
-require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../_error-handler.php';
 
-header('Content-Type: application/json');
+try {
+    require_once __DIR__ . '/../../includes/db.php';
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Failed to load dependencies', 'message' => $e->getMessage()]);
+    exit;
+}
+
 header('Cache-Control: public, max-age=60');
 
 // Get parameters
 $search = $_GET['search'] ?? null;
 $groupType = $_GET['group_type'] ?? null;
 $groupValue = $_GET['group_value'] ?? null;
+$sortBy = $_GET['sort'] ?? 'frequency';
 $offset = max(0, intval($_GET['offset'] ?? 0));
 $limit = min(100, max(1, intval($_GET['limit'] ?? 50)));
 $includeCounts = (bool)($_GET['include_counts'] ?? 0);
+
+// Validate sort parameter
+$validSorts = ['frequency', 'alpha'];
+if (!in_array($sortBy, $validSorts)) {
+    $sortBy = 'frequency';
+}
 
 $db = getDB();
 
@@ -169,11 +184,16 @@ foreach ($params as $key => $value) {
 $countResult = $stmt->execute();
 $total = (int)$countResult->fetchArray(SQLITE3_ASSOC)['total'];
 
+// Build ORDER BY clause
+$orderBy = $sortBy === 'alpha'
+    ? 'ORDER BY citation_form ASC, headword ASC'
+    : 'ORDER BY icount DESC, citation_form ASC';
+
 // Get paginated entries
 $sql = "SELECT entry_id, headword, citation_form, guide_word, language, pos, icount
         FROM glossary_entries
         $whereClause
-        ORDER BY headword ASC
+        $orderBy
         LIMIT :limit OFFSET :offset";
 
 $stmt = $db->prepare($sql);

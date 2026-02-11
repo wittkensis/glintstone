@@ -10,9 +10,15 @@
  *   full   - If set, include variant forms and field explanations
  */
 
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/_error-handler.php';
 
-header('Content-Type: application/json');
+try {
+    require_once __DIR__ . '/../includes/db.php';
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Failed to load dependencies', 'message' => $e->getMessage()]);
+    exit;
+}
 
 $query = $_GET['q'] ?? null;
 $language = $_GET['lang'] ?? null;

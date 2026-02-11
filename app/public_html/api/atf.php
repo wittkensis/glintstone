@@ -9,27 +9,59 @@
  *   parsed  - If set, return parsed ATF structure for interactive display
  */
 
-require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../includes/ATFParser.php';
-
+// Set JSON header FIRST before any includes
 header('Content-Type: application/json');
 
-$pNumber = $_GET['p'] ?? null;
-$fetchRemote = isset($_GET['fetch']);
-$returnParsed = isset($_GET['parsed']);
+// Catch all errors and return as JSON
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'Server error',
+        'message' => $errstr,
+        'file' => basename($errfile),
+        'line' => $errline
+    ]);
+    exit;
+});
 
-if (!$pNumber || !preg_match('/^P\d{6}$/', $pNumber)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid P-number format']);
+// Wrap everything in try-catch
+try {
+    require_once __DIR__ . '/../includes/db.php';
+    require_once __DIR__ . '/../includes/ATFParser.php';
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'Failed to load dependencies',
+        'message' => $e->getMessage()
+    ]);
     exit;
 }
 
-// Check local database first
-$db = getDB();
-$stmt = $db->prepare("SELECT atf, source FROM inscriptions WHERE p_number = :p AND is_latest = 1");
-$stmt->bindValue(':p', $pNumber, SQLITE3_TEXT);
-$result = $stmt->execute();
-$row = $result->fetchArray(SQLITE3_ASSOC);
+try {
+    $pNumber = $_GET['p'] ?? null;
+    $fetchRemote = isset($_GET['fetch']);
+    $returnParsed = isset($_GET['parsed']);
+
+    if (!$pNumber || !preg_match('/^P\d{6}$/', $pNumber)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid P-number format']);
+        exit;
+    }
+
+    // Check local database first
+    $db = getDB();
+    $stmt = $db->prepare("SELECT atf, source FROM inscriptions WHERE p_number = :p AND is_latest = 1");
+    $stmt->bindValue(':p', $pNumber, SQLITE3_TEXT);
+    $result = $stmt->execute();
+    $row = $result->fetchArray(SQLITE3_ASSOC);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'Database error',
+        'message' => $e->getMessage()
+    ]);
+    exit;
+}
 
 if ($row && $row['atf']) {
     $response = [
@@ -41,9 +73,18 @@ if ($row && $row['atf']) {
 
     // Add parsed structure if requested
     if ($returnParsed) {
-        $parser = new ATFParser();
-        $response['parsed'] = $parser->parse($row['atf']);
-        $response['legend'] = $parser->getLegendItems();
+        try {
+            $parser = new ATFParser();
+            $response['parsed'] = $parser->parse($row['atf']);
+            $response['legend'] = $parser->getLegendItems();
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode([
+                'error' => 'Parser error',
+                'message' => $e->getMessage()
+            ]);
+            exit;
+        }
     }
 
     echo json_encode($response);

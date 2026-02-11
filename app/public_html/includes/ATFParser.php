@@ -83,7 +83,17 @@ class ATFParser {
                     break;
 
                 case 'surface':
-                    $currentSurface = $this->addSurface($parsed['name'], $parsed['modifier']);
+                    // Check if we should reuse an auto-created obverse surface
+                    // This happens when content/state lines appear before @obverse in the ATF
+                    if ($parsed['name'] === 'obverse' && $parsed['modifier'] === null &&
+                        count($this->result['surfaces']) === 1 &&
+                        $this->result['surfaces'][0]['name'] === 'obverse' &&
+                        $this->result['surfaces'][0]['modifier'] === null) {
+                        // Reuse the existing auto-created obverse
+                        $currentSurface = 0;
+                    } else {
+                        $currentSurface = $this->addSurface($parsed['name'], $parsed['modifier']);
+                    }
                     $currentColumn = null;
                     break;
 
@@ -92,10 +102,18 @@ class ATFParser {
                     break;
 
                 case 'state':
+                    // Auto-create obverse surface if no surface has been defined yet
+                    if ($currentSurface === null) {
+                        $currentSurface = $this->addSurface('obverse', null);
+                    }
                     $this->addState($currentSurface, $currentColumn, $parsed['text']);
                     break;
 
                 case 'content':
+                    // Auto-create obverse surface if no surface has been defined yet
+                    if ($currentSurface === null) {
+                        $currentSurface = $this->addSurface('obverse', null);
+                    }
                     $this->addContentLine($currentSurface, $currentColumn, $parsed);
                     break;
 
@@ -170,6 +188,15 @@ class ATFParser {
                 'type' => 'surface',
                 'name' => $m[1],
                 'modifier' => $m[2] ?? null
+            ];
+        }
+
+        // Generic surface: @surface a1, @surface b2, etc. (used for prisms, cylinders)
+        if (preg_match('/^@surface\s+(\S+)/', $line, $m)) {
+            return [
+                'type' => 'surface',
+                'name' => 'surface',
+                'modifier' => $m[1]
             ];
         }
 

@@ -35,14 +35,14 @@
 .zoombox__minimap {
     position: relative;
     width: 100%;
-    aspect-ratio: 3 / 2;
+    /* aspect-ratio set dynamically by JS to match image */
     background: #000;
 }
 
 .zoombox__minimap-canvas {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    display: block;
 }
 
 .zoombox__minimap-viewport {
@@ -50,6 +50,7 @@
     border: 2px solid var(--color-accent);
     background: rgba(201, 169, 98, 0.2);
     pointer-events: auto;
+    border-radius: var(--radius-md);
     cursor: move;
     box-sizing: border-box;
     display: none;

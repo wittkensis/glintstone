@@ -7,19 +7,38 @@
  */
 
 /* ==========================================================================
-   Translation Display (Always Shown When Available)
+   Translation Display
+   As opposed to inline translations, this shows separate translations.
+   Always Shown When Available
    ========================================================================== */
 
 .atf-viewer--has-translation .atf-viewer__body {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    height: 100%;
+}
+
+/* Grid children need explicit height to scroll */
+.atf-viewer--has-translation .atf-content-column {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.atf-viewer--has-translation .atf-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .atf-translation-column {
     border-left: 1px solid var(--color-border);
     padding: var(--space-4);
-    background: var(--color-bg);
-    overflow: auto;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .atf-translation-column__header {
@@ -78,7 +97,6 @@
 @media (max-width: 900px) {
     .atf-viewer--has-translation .atf-viewer__body {
         grid-template-columns: 1fr;
-        grid-template-rows: 1fr 1fr;
     }
 
     .atf-translation-column {

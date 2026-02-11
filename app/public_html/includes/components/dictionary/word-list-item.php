@@ -16,38 +16,58 @@
  * Optional variables:
  * @var bool $isActive - Whether this item is selected (default: false)
  * @var bool $isSkeleton - Render as skeleton loading state (default: false)
+ * @var string $activeGroup - Currently active filter group (default: 'all')
+ * @var string $activeValue - Currently active filter value (default: null)
  */
 
 // Set defaults
 $isActive = $isActive ?? false;
 $isSkeleton = $isSkeleton ?? false;
+$activeGroup = $activeGroup ?? 'all';
+$activeValue = $activeValue ?? null;
 
-// Language labels
+// Determine which badges to show based on active filter
+$showPosBadge = ($activeGroup !== 'pos');
+$showLangBadge = ($activeGroup !== 'language');
+
+// Language labels (full names, never codes)
 $languageLabels = [
     'akk' => 'Akkadian',
-    'akk-x-stdbab' => 'Std. Bab.',
-    'akk-x-oldbab' => 'Old Bab.',
-    'akk-x-neoass' => 'Neo-Ass.',
+    'akk-x-stdbab' => 'Standard Babylonian',
+    'akk-x-oldbab' => 'Old Babylonian',
+    'akk-x-neoass' => 'Neo-Assyrian',
     'sux' => 'Sumerian',
     'sux-x-emesal' => 'Emesal',
+    'xhu' => 'Hurrian',
+    'uga' => 'Ugaritic',
+    'elx' => 'Elamite',
     'qpn' => 'Names',
     'qpn-x-places' => 'Places'
 ];
 
-// POS labels (abbreviated)
+// POS labels - abbreviated for grammatical, full for name types
 $posLabels = [
-    'N' => 'N',
-    'V' => 'V',
+    'N' => 'Noun',
+    'V' => 'Verb',
     'AJ' => 'Adj',
     'AV' => 'Adv',
     'NU' => 'Num',
     'PRP' => 'Prep',
     'CNJ' => 'Conj',
-    'PN' => 'PN',
-    'DN' => 'DN',
-    'GN' => 'GN',
-    'RN' => 'RN',
-    'TN' => 'TN'
+    'PN' => 'Personal Name',
+    'DN' => 'Divine Name',
+    'GN' => 'Geographic Name',
+    'SN' => 'Settlement Name',
+    'TN' => 'Temple Name',
+    'WN' => 'Watercourse Name',
+    'RN' => 'Royal Name',
+    'EN' => 'Ethnic Name',
+    'CN' => 'Celestial Name',
+    'ON' => 'Object Name',
+    'MN' => 'Month Name',
+    'LN' => 'Line Name',
+    'FN' => 'Field Name',
+    'AN' => 'Artifact Name'
 ];
 
 // Build class list
@@ -66,20 +86,17 @@ $posLabel = $posLabels[$word['pos'] ?? ''] ?? ($word['pos'] ?? '');
      <?php if (!$isSkeleton): ?>tabindex="0" role="button"<?php endif; ?>>
 
     <div class="dict-word-item__header">
-        <span class="dict-word-item__headword"><?= htmlspecialchars($word['headword'] ?? '') ?></span>
-        <?php if (!empty($word['citation_form']) && $word['citation_form'] !== $word['headword']): ?>
-            <span class="dict-word-item__citation"><?= htmlspecialchars($word['citation_form']) ?></span>
-        <?php endif; ?>
+        <span class="dict-word-item__headword"><?= htmlspecialchars($word['citation_form'] ?? $word['headword'] ?? '') ?></span>
         <?php if (!empty($word['guide_word'])): ?>
-            <span class="dict-word-item__guide-word">[<?= htmlspecialchars($word['guide_word']) ?>]</span>
+            <span class="dict-word-item__guide-word"><?= htmlspecialchars($word['guide_word']) ?></span>
         <?php endif; ?>
     </div>
 
     <div class="dict-word-item__meta">
-        <?php if (!empty($posLabel)): ?>
+        <?php if ($showPosBadge && !empty($posLabel)): ?>
             <span class="dict-word-item__badge dict-word-item__badge--pos"><?= htmlspecialchars($posLabel) ?></span>
         <?php endif; ?>
-        <?php if (!empty($langLabel)): ?>
+        <?php if ($showLangBadge && !empty($langLabel)): ?>
             <span class="dict-word-item__badge dict-word-item__badge--lang"><?= htmlspecialchars($langLabel) ?></span>
         <?php endif; ?>
         <span class="dict-word-item__count"><?= number_format($word['icount'] ?? 0) ?></span>

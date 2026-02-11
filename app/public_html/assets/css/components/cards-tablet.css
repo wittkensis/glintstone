@@ -1,8 +1,8 @@
 /**
  * Tablet Cards Component
- * Purpose: Tablet-specific card styles with overlay, selection, and pipeline display
+ * Purpose: Tablet-specific card styles with overlay and selection
  * Used on: Tablets list, collection browser
- * Dependencies: core/tokens.css
+ * Dependencies: core/tokens.css, components/pipeline.css
  * JavaScript: assets/js/filters.js
  * Required classes for JS: .tablet-card, .card-checkbox-wrapper, .card-checkbox
  *
@@ -30,36 +30,8 @@
 }
 
 /* ==========================================================================
-   Pipeline Status Bar (top edge)
+   Card Typography
    ========================================================================== */
-
-.card .card-pipeline-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: var(--space-1) var(--space-2); 
-    display: flex;
-    gap: 1px;
-    z-index: 10;
-    background: rgba(var(--color-bg-inset-rgb), 0.8);
-}
-
-.card .pipeline-segment,
-.card .pipeline-segment[data-status="partial"],
-.card .pipeline-segment[data-status="missing"] {
-    flex: 1;
-    height: 3px;
-    background: var(--color-pipeline-incomplete);
-}
-
-.card .pipeline-segment[data-status="complete"] {
-    background: var(--color-pipeline-complete);
-}
-
-.card .pipeline-segment:last-child {
-    border-right: none;
-}
 
 .card .p-number {
     font-family: var(--font-mono);

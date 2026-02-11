@@ -49,7 +49,25 @@ if (file_exists($localPath)) {
     $sourceType = 'local';
 }
 
-// 2. Try CDLI photo (cdli.earth is the current domain)
+// 2. Try CDLI thumbnail photo
+if (!$sourceImage) {
+    $cdliUrl = "https://cdli.earth/dl/tn_photo/{$pNumber}_d.jpg";
+    $sourceImage = fetchRemoteImage($cdliUrl);
+    if ($sourceImage) {
+        $sourceType = 'cdli-photo-tn';
+    }
+}
+
+// 3. Try CDLI thumbnail lineart
+if (!$sourceImage) {
+    $cdliLineartUrl = "https://cdli.earth/dl/tn_lineart/{$pNumber}_l.jpg";
+    $sourceImage = fetchRemoteImage($cdliLineartUrl);
+    if ($sourceImage) {
+        $sourceType = 'cdli-lineart-tn';
+    }
+}
+
+// 4. Try CDLI full-size photo (fallback)
 if (!$sourceImage) {
     $cdliUrl = "https://cdli.earth/dl/photo/{$pNumber}.jpg";
     $sourceImage = fetchRemoteImage($cdliUrl);
@@ -58,7 +76,7 @@ if (!$sourceImage) {
     }
 }
 
-// 3. Try CDLI lineart
+// 5. Try CDLI full-size lineart (fallback)
 if (!$sourceImage) {
     $cdliLineartUrl = "https://cdli.earth/dl/lineart/{$pNumber}.jpg";
     $sourceImage = fetchRemoteImage($cdliLineartUrl);

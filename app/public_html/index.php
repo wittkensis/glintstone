@@ -19,7 +19,7 @@ require_once __DIR__ . '/includes/header.php';
 
 <!-- Homepage-specific CSS -->
 <link rel="stylesheet" href="/assets/css/components/progress-meter.css">
-<link rel="stylesheet" href="/assets/css/components/collection-cards.css">
+<link rel="stylesheet" href="/assets/css/components/cards-collection.css">
 <link rel="stylesheet" href="/assets/css/pages/homepage.css">
 
 <main class="homepage-container">

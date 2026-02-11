@@ -64,6 +64,37 @@ class ATFViewer {
     }
 
     /**
+     * Safely parse JSON response, handling PHP errors that return HTML
+     * @param {Response} response - Fetch response object
+     * @returns {Promise<Object>} Parsed JSON data
+     * @throws {Error} If response is not JSON or parsing fails
+     */
+    async safeJsonParse(response) {
+        const contentType = response.headers.get('content-type');
+
+        // Check if response is actually JSON
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+
+            // Check if it's a PHP error (HTML response)
+            if (text.includes('<br') || text.includes('Fatal error') || text.includes('Warning:')) {
+                console.error('Server returned HTML error instead of JSON:', text.substring(0, 500));
+                throw new Error('Server error - API returned HTML instead of JSON. This may be a PHP error or configuration issue.');
+            }
+
+            console.error('Unexpected content type:', contentType, 'Response:', text.substring(0, 500));
+            throw new Error(`Expected JSON but got ${contentType || 'unknown content type'}`);
+        }
+
+        try {
+            return await response.json();
+        } catch (err) {
+            console.error('JSON parse error:', err.message);
+            throw new Error(`Failed to parse JSON response: ${err.message}`);
+        }
+    }
+
+    /**
      * Load ATF data for a tablet
      */
     async load(pNumber) {
@@ -74,7 +105,7 @@ class ATFViewer {
             const response = await fetch(`/api/atf.php?p=${pNumber}&parsed=1`);
             if (!response.ok) throw new Error('ATF not available');
 
-            const result = await response.json();
+            const result = await this.safeJsonParse(response);
             this.rawATF = result.atf;
             this.data = result.parsed;
             this.legend = result.legend || [];
@@ -115,7 +146,7 @@ class ATFViewer {
         try {
             const response = await fetch(`/api/translation-lines.php?p=${this.pNumber}`);
             if (response.ok) {
-                const result = await response.json();
+                const result = await this.safeJsonParse(response);
                 if (result.has_translation) {
                     this.translationLines = result.lines;
                     this.translationRaw = result.raw;
@@ -148,7 +179,7 @@ class ATFViewer {
         try {
             const response = await fetch(`/api/lemmas.php?p=${this.pNumber}`);
             if (response.ok) {
-                const result = await response.json();
+                const result = await this.safeJsonParse(response);
                 this.lemmasData = result.lemmas || {};
                 this.lemmasLoaded = true;
             }
@@ -164,6 +195,8 @@ class ATFViewer {
      * 1. Lemma data (from lemmas table)
      * 2. Glossary API fallback
      * 3. Return null if neither available
+     *
+     * @returns {Object|null} { gloss: string, source: 'lemma'|'glossary' }
      */
     async getWordGloss(lineNo, wordNo, lookup) {
         // Priority 1: Check lemmas table
@@ -171,7 +204,10 @@ class ATFViewer {
         const wordNoStr = String(wordNo);
 
         if (this.lemmasData[lineNoStr]?.[wordNoStr]?.gw) {
-            return this.lemmasData[lineNoStr][wordNoStr].gw;
+            return {
+                gloss: this.lemmasData[lineNoStr][wordNoStr].gw,
+                source: 'lemma'
+            };
         }
 
         // Priority 2: Fallback to glossary
@@ -179,18 +215,19 @@ class ATFViewer {
 
         // Check cache
         if (this.glossaryGlossCache.has(lookup)) {
-            return this.glossaryGlossCache.get(lookup);
+            const cached = this.glossaryGlossCache.get(lookup);
+            return cached ? { gloss: cached, source: 'glossary' } : null;
         }
 
         // Fetch from glossary API
         try {
             const response = await fetch(`/api/glossary.php?q=${encodeURIComponent(lookup)}&limit=1`);
-            const data = await response.json();
+            const data = await this.safeJsonParse(response);
 
             if (data.entries && data.entries.length > 0) {
                 const guideWord = data.entries[0].guide_word || null;
                 this.glossaryGlossCache.set(lookup, guideWord);
-                return guideWord;
+                return guideWord ? { gloss: guideWord, source: 'glossary' } : null;
             }
 
             // No definition found
@@ -273,17 +310,21 @@ class ATFViewer {
                         continue;
                     }
 
-                    const gloss = await this.getWordGloss(lineNo, wordNo, lookup);
+                    const glossData = await this.getWordGloss(lineNo, wordNo, lookup);
 
-                    if (gloss) {
+                    if (glossData) {
                         // Only add if not already glossed
                         if (!wordEl.querySelector('.atf-word__text')) {
                             const originalHtml = wordEl.innerHTML;
+                            const glossClass = glossData.source === 'lemma'
+                                ? 'atf-word__gloss atf-word__gloss--scholarly'
+                                : 'atf-word__gloss atf-word__gloss--automatic';
                             wordEl.innerHTML = `
                                 <span class="atf-word__text">${originalHtml}</span>
-                                <span class="atf-word__gloss">${this.escapeHtml(gloss)}</span>
+                                <span class="${glossClass}">${this.escapeHtml(glossData.gloss)}</span>
                             `;
                             wordEl.classList.add('atf-word--glossed');
+                            wordEl.classList.add(glossData.source === 'lemma' ? 'atf-word--lemma' : 'atf-word--glossary');
                         }
                     }
 
@@ -310,6 +351,12 @@ class ATFViewer {
         // Update container class
         this.container.classList.remove('atf-viewer--mode-raw', 'atf-viewer--mode-interactive', 'atf-viewer--mode-parallel');
         this.container.classList.add(`atf-viewer--mode-${mode}`);
+
+        // Show/hide legend based on mode
+        const legendEl = this.container.querySelector('.atf-legend');
+        if (legendEl) {
+            legendEl.style.display = mode === 'interactive' ? '' : 'none';
+        }
 
         // Re-render content for mode
         this.renderContent();
@@ -354,16 +401,18 @@ class ATFViewer {
                     <nav class="tabs-nav tabs-nav-compact atf-tabs" role="tablist"></nav>
                 </div>
                 <div class="atf-viewer__body">
-                    <div class="atf-view-settings">
-                        <div class="btn-group btn-group-stateful atf-modes">
-                            <button class="btn btn-group-item atf-mode atf-mode--active" data-mode="interactive">Interactive</button>
-                            <button class="btn btn-group-item atf-mode" data-mode="raw">Raw</button>
+                    <div class="atf-content-column">
+                        <div class="atf-view-settings">
+                            <div class="btn-group btn-group-stateful atf-modes">
+                                <button class="btn btn-group-item atf-mode atf-mode--active" data-mode="interactive">Interactive</button>
+                                <button class="btn btn-group-item atf-mode" data-mode="raw">Raw</button>
+                            </div>
                         </div>
+                        <div class="atf-legend">
+                            <div class="atf-legend__items"></div>
+                        </div>
+                        <div class="atf-content"></div>
                     </div>
-                    <div class="atf-content"></div>
-                </div>
-                <div class="atf-legend">
-                    <div class="atf-legend__items"></div>
                 </div>
             </div>
             <aside class="atf-knowledge-sidebar" data-state="closed">
@@ -403,14 +452,12 @@ class ATFViewer {
                     <div class="knowledge-tab-content knowledge-tab-content--active" data-content="dictionary">
                         <!-- Browse Mode UI -->
                         <div class="knowledge-sidebar-dictionary">
-                            <!-- Search Bar -->
-                            <div class="knowledge-sidebar-search">
-                                <input type="text" class="knowledge-sidebar-search__input" placeholder="Search dictionary..." aria-label="Search dictionary">
-                                <button class="knowledge-sidebar-search__clear" aria-label="Clear search" style="display: none;">&times;</button>
-                            </div>
-
-                            <!-- Filter Bar -->
+                            <!-- Search & Filters -->
                             <div class="knowledge-sidebar-filters">
+                                <div class="knowledge-sidebar-search">
+                                    <input type="text" class="knowledge-sidebar-search__input" placeholder="Search dictionary..." aria-label="Search dictionary">
+                                    <button class="knowledge-sidebar-search__clear" aria-label="Clear search" style="display: none;">&times;</button>
+                                </div>
                                 <select class="knowledge-sidebar-filter" data-filter="language" aria-label="Filter by language">
                                     <option value="">All Languages</option>
                                     <option value="akk">Akkadian (11,357)</option>
@@ -620,8 +667,10 @@ class ATFViewer {
      */
     renderLegend() {
         const legendContainer = this.container.querySelector('.atf-legend__items');
+        const legendEl = this.container.querySelector('.atf-legend');
+
         if (!this.legend.length) {
-            this.container.querySelector('.atf-legend').style.display = 'none';
+            legendEl.style.display = 'none';
             return;
         }
 
@@ -631,12 +680,57 @@ class ATFViewer {
                 ${item.label}
             </span>
         `).join('');
+
+        // Show legend in interactive mode (default)
+        legendEl.style.display = this.mode === 'interactive' ? '' : 'none';
+    }
+
+    /**
+     * Update legend to include gloss type indicators
+     * Called after glosses are attached to check which types are present
+     */
+    updateLegendWithGlossTypes() {
+        const hasScholarlyGlosses = this.container.querySelectorAll('.atf-word--lemma').length > 0;
+        const hasAutomaticGlosses = this.container.querySelectorAll('.atf-word--glossary').length > 0;
+
+        if (!hasScholarlyGlosses && !hasAutomaticGlosses) return;
+
+        const legendContainer = this.container.querySelector('.atf-legend__items');
+        const legendEl = this.container.querySelector('.atf-legend');
+
+        // Show legend if hidden
+        legendEl.style.display = '';
+
+        // Add gloss type legend items if not already present
+        const glossLegendItems = [];
+
+        if (hasScholarlyGlosses) {
+            glossLegendItems.push(`
+                <span class="atf-legend__item">
+                    <span class="atf-legend__swatch atf-legend__swatch--scholarly-gloss">word</span>
+                    Scholarly lemma (ORACC)
+                </span>
+            `);
+        }
+
+        if (hasAutomaticGlosses) {
+            glossLegendItems.push(`
+                <span class="atf-legend__item">
+                    <span class="atf-legend__swatch atf-legend__swatch--automatic-gloss">word</span>
+                    Automatic gloss (dictionary)
+                </span>
+            `);
+        }
+
+        if (glossLegendItems.length > 0) {
+            legendContainer.innerHTML += glossLegendItems.join('');
+        }
     }
 
     /**
      * Render content based on mode
      */
-    renderContent() {
+    async renderContent() {
         const contentArea = this.container.querySelector('.atf-content');
 
         if (this.mode === 'raw') {
@@ -682,7 +776,66 @@ class ATFViewer {
         }
 
         // Add interlinear glosses
-        this.attachWordGlosses();
+        await this.attachWordGlosses();
+
+        // Update legend with gloss types
+        this.updateLegendWithGlossTypes();
+
+        // Show data source footer when both glosses and translation panel are present
+        this.updateDataSourceFooter();
+    }
+
+    /**
+     * Show/hide the data source footer based on available data
+     * Footer explains the difference between inline glosses and translation panel
+     * Appends footer inside .atf-content so it scrolls with the content
+     */
+    updateDataSourceFooter() {
+        const contentArea = this.container.querySelector('.atf-content');
+        if (!contentArea) return;
+
+        // Remove existing footer if present
+        contentArea.querySelector('.atf-viewer__footer')?.remove();
+
+        // Check for inline ATF translations (#tr.XX: lines in parsed data)
+        let hasInlineTranslations = false;
+        if (this.data?.surfaces[this.currentSurface]) {
+            const surface = this.data.surfaces[this.currentSurface];
+            for (const col of surface.columns) {
+                for (const line of col.lines) {
+                    if (line.translations && Object.keys(line.translations).length > 0) {
+                        hasInlineTranslations = true;
+                        break;
+                    }
+                }
+                if (hasInlineTranslations) break;
+            }
+        }
+
+        // Check for lemma-based glosses
+        const hasLemmaGlosses = this.lemmasLoaded && Object.keys(this.lemmasData).length > 0;
+
+        // Show footer when we have both:
+        // 1. Any inline content (ATF translations OR lemma glosses)
+        // 2. Translation panel data
+        const hasInlineContent = hasInlineTranslations || hasLemmaGlosses;
+        const showFooter = hasInlineContent && this.hasTranslation;
+
+        if (showFooter) {
+            const footer = document.createElement('footer');
+            footer.className = 'atf-viewer__footer';
+            footer.innerHTML = `
+                <div class="atf-viewer__footer-content">
+                    <svg class="atf-viewer__footer-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                    </svg>
+                    <div class="atf-viewer__footer-text">
+                        <strong>About these translations:</strong> The gray text below each line shows automatic word-by-word glosses from dictionary data. The translation panel shows scholarly translations from published sources. These may differ because glosses are literal word meanings, while translations capture the intended sense in context.
+                    </div>
+                </div>
+            `;
+            contentArea.appendChild(footer);
+        }
     }
 
     /**
@@ -887,7 +1040,7 @@ class ATFViewer {
                 body: JSON.stringify({ words: lookups })
             });
 
-            const data = await response.json();
+            const data = await this.safeJsonParse(response);
 
             if (data.definitions) {
                 words.forEach(el => {
@@ -1051,7 +1204,7 @@ class ATFViewer {
 
         try {
             const response = await fetch(`/api/glossary.php?q=${encodeURIComponent(word)}&full=1`);
-            const data = await response.json();
+            const data = await this.safeJsonParse(response);
 
             // Cache result
             this.definitionCache.set(word, data);
@@ -1197,7 +1350,7 @@ class ATFViewer {
             }
 
             const response = await fetch(`/api/glossary-browse.php?${params}`);
-            const data = await response.json();
+            const data = await this.safeJsonParse(response);
 
             this.dictionaryResultsOffset = offset;
             this.dictionaryTotalCount = data.total;
@@ -1341,6 +1494,7 @@ class ATFViewer {
         if (entry.guide_word) {
             html += `
                 <div class="knowledge-sidebar-word-definition">
+                    <div class="knowledge-sidebar-word-definition__label">Meaning</div>
                     <div class="knowledge-sidebar-word-definition__text">${this.escapeHtml(entry.guide_word)}</div>
                 </div>
             `;
@@ -1561,7 +1715,7 @@ class ATFViewer {
             const response = await fetch(`/api/composite.php?q=${qNumber}`);
             if (!response.ok) throw new Error('Failed to load composite');
 
-            const data = await response.json();
+            const data = await this.safeJsonParse(response);
 
             // Update panel header
             panel.querySelector('.atf-composite-panel__name').textContent =
@@ -1636,10 +1790,19 @@ class ATFViewer {
      */
     renderError(message) {
         const contentArea = this.container.querySelector('.atf-content');
+
+        // Determine error type and provide appropriate hint
+        let hint = 'The transliteration may not be available for this tablet.';
+        if (message.includes('Server error') || message.includes('PHP error')) {
+            hint = 'There was a server configuration error. This may be due to a PHP error, missing file, or database issue. Check the browser console for details.';
+        } else if (message.includes('JSON')) {
+            hint = 'The server returned an invalid response. This may be a temporary issue - try refreshing the page.';
+        }
+
         contentArea.innerHTML = `
             <div class="knowledge-sidebar-dictionary__empty">
                 ${this.escapeHtml(message)}
-                <div class="knowledge-sidebar-dictionary__empty-hint">The transliteration may not be available for this tablet.</div>
+                <div class="knowledge-sidebar-dictionary__empty-hint">${hint}</div>
             </div>
         `;
     }

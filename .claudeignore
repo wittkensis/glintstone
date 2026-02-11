@@ -8,7 +8,6 @@ _progress/
 
 # Models and data processing
 models/
-data-tools/
 downloads/
 
 # Image assets
