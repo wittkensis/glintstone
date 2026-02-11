@@ -7,8 +7,12 @@
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/helpers/homepage.php';
 require_once __DIR__ . '/includes/helpers/collections.php';
+require_once __DIR__ . '/includes/css.php';
 
 $pageTitle = 'Home';
+
+// Enqueue page-specific CSS
+CSSLoader::enqueue('page-home');
 
 // Fetch data for homepage
 $kpiData = getKPIMetrics();
@@ -16,11 +20,6 @@ $featuredCollections = getRandomCollections(3);
 
 require_once __DIR__ . '/includes/header.php';
 ?>
-
-<!-- Homepage-specific CSS -->
-<link rel="stylesheet" href="/assets/css/components/progress-meter.css">
-<link rel="stylesheet" href="/assets/css/components/cards-collection.css">
-<link rel="stylesheet" href="/assets/css/pages/homepage.css">
 
 <main class="homepage-container">
 

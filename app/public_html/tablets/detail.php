@@ -180,42 +180,11 @@ $pipelineStatus = getPipelineStatus($tablet, $localImageExists);
 $hasData = !empty($inscription['atf']) || !empty($tablet['has_lemmas']) || !empty($tablet['has_translation']);
 $defaultViewerState = $hasData ? 'collapsed' : 'expanded';
 
+// Enqueue tablet detail CSS (includes all features)
+require_once __DIR__ . '/../includes/css.php';
+CSSLoader::enqueue('page-tablets');
 require_once __DIR__ . '/../includes/header.php';
 ?>
-<!-- ATF Viewer -->
-<link rel="stylesheet" href="/assets/css/atf-viewer/layout.css">
-<link rel="stylesheet" href="/assets/css/atf-viewer/tabs.css">
-<link rel="stylesheet" href="/assets/css/atf-viewer/content.css">
-<link rel="stylesheet" href="/assets/css/atf-viewer/words.css">
-<link rel="stylesheet" href="/assets/css/atf-viewer/parallel.css">
-<link rel="stylesheet" href="/assets/css/atf-viewer/sidebar.css">
-
-<!-- Tablet Detail -->
-<link rel="stylesheet" href="/assets/css/tablet/header.css">
-<link rel="stylesheet" href="/assets/css/tablet/metadata.css">
-<link rel="stylesheet" href="/assets/css/tablet/composite.css">
-<link rel="stylesheet" href="/assets/css/tablet/sections.css">
-
-<!-- Zoombox -->
-<link rel="stylesheet" href="/assets/css/zoombox/viewer.css">
-<link rel="stylesheet" href="/assets/css/zoombox/controls.css">
-<link rel="stylesheet" href="/assets/css/zoombox/minimap.css">
-
-<!-- Shared Components -->
-<link rel="stylesheet" href="/assets/css/components/badges.css">
-<link rel="stylesheet" href="/assets/css/components/states.css">
-<link rel="stylesheet" href="/assets/css/components/ml-panel.css">
-
-<!-- Knowledge Sidebar -->
-<link rel="stylesheet" href="/assets/css/knowledge-sidebar/layout.css">
-<link rel="stylesheet" href="/assets/css/knowledge-sidebar/search.css">
-<link rel="stylesheet" href="/assets/css/knowledge-sidebar/list.css">
-<link rel="stylesheet" href="/assets/css/knowledge-sidebar/filters.css">
-<link rel="stylesheet" href="/assets/css/knowledge-sidebar/placeholders.css">
-
-<!-- Dictionary -->
-<link rel="stylesheet" href="/assets/css/dictionary/knowledge-sidebar.css">
-<link rel="stylesheet" href="/assets/css/dictionary/sign-grid.css">
 
 <div class="tablet-detail-page">
 <main class="container">

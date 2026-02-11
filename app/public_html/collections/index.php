@@ -21,15 +21,11 @@ unset($collection); // Break reference
 // Get all composites with aggregated metadata (cached)
 $composites = getCompositesWithMetadata();
 
+// Enqueue collections CSS
+require_once __DIR__ . '/../includes/css.php';
+CSSLoader::enqueue('page-collections');
 require_once __DIR__ . '/../includes/header.php';
 ?>
-
-<link rel="stylesheet" href="/assets/css/layout/page-header.css">
-<link rel="stylesheet" href="/assets/css/components/cards-collection.css">
-<link rel="stylesheet" href="/assets/css/components/empty-states.css">
-<link rel="stylesheet" href="/assets/css/components/section-header.css">
-<link rel="stylesheet" href="/assets/css/components/tabs.css">
-<link rel="stylesheet" href="/assets/css/components/composites-table.css">
 
 <main class="collections-page">
     <div class="page-header">

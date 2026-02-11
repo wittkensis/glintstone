@@ -36,22 +36,11 @@ $totalPages = (int)ceil($totalTablets / $tabletsPerPage);
 
 $pageTitle = htmlspecialchars($collection['name']) . ' - Collection';
 
+// Enqueue collections CSS
+require_once __DIR__ . '/../includes/css.php';
+CSSLoader::enqueue('page-collections');
 require_once __DIR__ . '/../includes/header.php';
 ?>
-
-<!-- Collections -->
-<link rel="stylesheet" href="/assets/css/collections/table.css">
-<link rel="stylesheet" href="/assets/css/collections/kpi.css">
-<link rel="stylesheet" href="/assets/css/collections/activity.css">
-<link rel="stylesheet" href="/assets/css/layout/page-hero.css">
-
-<!-- OLD IMPORTS; PRESERVED TEMPORARILY -->
-<!-- <link rel="stylesheet" href="/assets/css/layout/page-header.css">
-<link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
-<link rel="stylesheet" href="/assets/css/components/cards-selectable.css">
-<link rel="stylesheet" href="/assets/css/components/pagination.css">
-<link rel="stylesheet" href="/assets/css/components/empty-states.css">
-<link rel="stylesheet" href="/assets/css/pages/collection-detail.css"> -->
 
 <main class="collection-detail-page">
     <?php if (!empty($collection['image_path'])): ?>

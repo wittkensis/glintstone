@@ -227,17 +227,10 @@ foreach ($genres as $genre) {
     $activeFilters[] = ['type' => 'genre', 'value' => $genre, 'label' => $genre];
 }
 
+require_once __DIR__ . '/../includes/css.php';
+// Note: Base CSS loaded via header.php - list page uses components bundle
 require_once __DIR__ . '/../includes/header.php';
 ?>
-
-<!-- Filter Components -->
-<link rel="stylesheet" href="/assets/css/layout/page-header.css">
-<link rel="stylesheet" href="/assets/css/layout/filtered-list.css">
-<link rel="stylesheet" href="/assets/css/components/chevron-filter.css">
-<link rel="stylesheet" href="/assets/css/components/filter-sidebar.css">
-<link rel="stylesheet" href="/assets/css/components/filter-active.css">
-<link rel="stylesheet" href="/assets/css/components/cards-overlay.css">
-<link rel="stylesheet" href="/assets/css/components/pagination.css">
 
 <main class="layout-two-column filtered-list-page">
 <div class="page-with-sidebar">

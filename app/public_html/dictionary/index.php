@@ -287,23 +287,13 @@ if (!$selectedWordId && !empty($initialWords)) {
 
 $wordDetail = fetchWordDetail($db, $selectedWordId);
 
-// Page title
+// Page title and CSS
 $pageTitle = 'Dictionary';
+require_once __DIR__ . '/../includes/css.php';
+CSSLoader::enqueue('page-dictionary');
 require_once __DIR__ . '/../includes/header.php';
-?>
 
-<!-- Dictionary Browser Styles -->
-<link rel="stylesheet" href="/assets/css/dictionary/browser.css">
-<link rel="stylesheet" href="/assets/css/dictionary/groupings.css">
-<link rel="stylesheet" href="/assets/css/dictionary/word-list.css">
-<link rel="stylesheet" href="/assets/css/dictionary/word-detail.css">
-<link rel="stylesheet" href="/assets/css/dictionary/placeholders.css">
-<link rel="stylesheet" href="/assets/css/tablet/metadata.css">
-<link rel="stylesheet" href="/assets/css/components/badges.css">
-<link rel="stylesheet" href="/assets/css/components/cards.css">
-<link rel="stylesheet" href="/assets/css/components/cards-tablet.css">
-
-<?php
+// Render the browser layout component
 // Render the browser layout component
 include __DIR__ . '/../includes/components/dictionary/browser-layout.php';
 ?>
