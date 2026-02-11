@@ -10,28 +10,27 @@
  *   full   - If set, include variant forms and field explanations
  */
 
-require_once __DIR__ . '/_error-handler.php';
+require_once __DIR__ . '/_bootstrap.php';
 
-try {
-    require_once __DIR__ . '/../includes/db.php';
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Failed to load dependencies', 'message' => $e->getMessage()]);
-    exit;
-}
+use Glintstone\Http\JsonResponse;
+use Glintstone\Data\Labels;
+use Glintstone\Repository\GlossaryRepository;
+use function Glintstone\app;
 
-$query = $_GET['q'] ?? null;
-$language = $_GET['lang'] ?? null;
-$limit = min(50, max(1, intval($_GET['limit'] ?? 10)));
-$fullMode = isset($_GET['full']);
+// Get parameters
+$params = getRequestParams();
+$query = $params['q'] ?? null;
+$language = $params['lang'] ?? null;
+$limit = min(50, max(1, (int)($params['limit'] ?? 10)));
+$fullMode = isset($params['full']);
 
+// Validate required parameter
 if (!$query) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Missing query parameter']);
-    exit;
+    JsonResponse::badRequest('Missing query parameter');
 }
 
-$db = getDB();
+$repo = app()->get(GlossaryRepository::class);
+$db = $repo->db();
 $entries = [];
 
 // First try exact match on headword or citation_form
@@ -108,7 +107,7 @@ $response = [
 // Add variant forms and field explanations if full mode requested
 if ($fullMode && !empty($entries)) {
     // Get variant forms for all matched entries
-    $entryIds = array_map(function($e) { return $e['entry_id'] ?? ''; }, $entries);
+    $entryIds = array_map(fn($e) => $e['entry_id'] ?? '', $entries);
     $entryIds = array_filter($entryIds);
 
     if (!empty($entryIds)) {
@@ -148,36 +147,8 @@ if ($fullMode && !empty($entries)) {
         'project' => 'Source project - which ORACC project this entry comes from'
     ];
 
-    // Add POS expansions
-    $response['pos_labels'] = [
-        'N' => 'Noun',
-        'V' => 'Verb',
-        'AJ' => 'Adjective',
-        'AV' => 'Adverb',
-        'DP' => 'Demonstrative Pronoun',
-        'IP' => 'Independent Pronoun',
-        'PP' => 'Personal Pronoun',
-        'RP' => 'Relative Pronoun',
-        'XP' => 'Indefinite Pronoun',
-        'QP' => 'Interrogative Pronoun',
-        'REL' => 'Relative',
-        'MOD' => 'Modal',
-        'PRP' => 'Preposition',
-        'CNJ' => 'Conjunction',
-        'J' => 'Interjection',
-        'NU' => 'Number',
-        'n' => 'Number',
-        'DN' => 'Divine Name',
-        'PN' => 'Personal Name',
-        'RN' => 'Royal Name',
-        'GN' => 'Geographic Name',
-        'TN' => 'Temple Name',
-        'WN' => 'Watercourse Name',
-        'FN' => 'Field Name',
-        'MN' => 'Month Name',
-        'ON' => 'Object Name',
-        'AN' => 'Agricultural Name'
-    ];
+    // Use consolidated labels from Labels class
+    $response['pos_labels'] = Labels::getAllPosLabels();
 }
 
-echo json_encode($response);
+JsonResponse::success($response);

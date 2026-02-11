@@ -47,8 +47,9 @@ abstract class BaseRepository
 
     /**
      * Shorthand for read connection
+     * Public to allow incremental migration of existing code
      */
-    protected function db(): SQLite3
+    public function db(): SQLite3
     {
         return $this->getReadConnection();
     }
