@@ -8,62 +8,57 @@
  *   lang  - Language filter (optional, default: 'en')
  */
 
-require_once __DIR__ . '/_error-handler.php';
+require_once __DIR__ . '/_bootstrap.php';
 
-try {
-    require_once __DIR__ . '/../includes/db.php';
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Failed to load dependencies', 'message' => $e->getMessage()]);
-    exit;
-}
+use Glintstone\Http\JsonResponse;
+use Glintstone\Repository\InscriptionRepository;
+use function Glintstone\app;
 
-$pNumber = $_GET['p'] ?? null;
-$language = $_GET['lang'] ?? 'en';
+// Get parameters
+$params = getRequestParams();
+$pNumber = $params['p'] ?? null;
+$language = $params['lang'] ?? 'en';
 
+// Validate P-number format
 if (!$pNumber || !preg_match('/^P\d{6}$/', $pNumber)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid P-number format']);
-    exit;
+    JsonResponse::badRequest('Invalid P-number format');
 }
 
-$db = getDB();
+// Get translations
+$repo = app()->get(InscriptionRepository::class);
+$translations = $repo->getTranslations($pNumber);
 
-// Get translations for this tablet
-$stmt = $db->prepare("
-    SELECT translation, language, source
-    FROM translations
-    WHERE p_number = :p
-    ORDER BY
-        CASE WHEN language = :lang THEN 0 ELSE 1 END,
-        source
-    LIMIT 1
-");
-$stmt->bindValue(':p', $pNumber, SQLITE3_TEXT);
-$stmt->bindValue(':lang', $language, SQLITE3_TEXT);
-$result = $stmt->execute();
-$row = $result->fetchArray(SQLITE3_ASSOC);
-
-if (!$row) {
-    http_response_code(404);
-    echo json_encode([
+if (empty($translations)) {
+    JsonResponse::success([
         'p_number' => $pNumber,
         'has_translation' => false,
         'message' => 'No translation available'
     ]);
-    exit;
+}
+
+// Find best translation (prefer requested language)
+$translation = null;
+foreach ($translations as $t) {
+    if ($t['language'] === $language) {
+        $translation = $t;
+        break;
+    }
+}
+// Fall back to first available
+if (!$translation) {
+    $translation = $translations[0];
 }
 
 // Parse translation into structured lines
-$lines = parseTranslationLines($row['translation']);
+$lines = parseTranslationLines($translation['translation'] ?? '');
 
-echo json_encode([
+JsonResponse::success([
     'p_number' => $pNumber,
     'has_translation' => true,
-    'language' => $row['language'],
-    'source' => $row['source'],
+    'language' => $translation['language'],
+    'source' => $translation['source'],
     'lines' => $lines,
-    'raw' => $row['translation']
+    'raw' => $translation['translation']
 ]);
 
 /**
@@ -129,9 +124,6 @@ function parseTranslationLines(string $text): array {
             ];
             continue;
         }
-
-        // Continuation or unmarked line - append to previous if exists
-        // (Some translations don't have line numbers)
     }
 
     return $result;
