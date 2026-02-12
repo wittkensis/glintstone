@@ -704,7 +704,7 @@ class ATFViewer {
         // Add gloss type legend items if not already present
         const glossLegendItems = [];
 
-        if (hasScholarlyGlosses) {
+        if (hasScholarlyGlosses && !legendContainer.querySelector('.atf-legend__swatch--scholarly-gloss')) {
             glossLegendItems.push(`
                 <span class="atf-legend__item">
                     <span class="atf-legend__swatch atf-legend__swatch--scholarly-gloss">word</span>
@@ -713,7 +713,7 @@ class ATFViewer {
             `);
         }
 
-        if (hasAutomaticGlosses) {
+        if (hasAutomaticGlosses && !legendContainer.querySelector('.atf-legend__swatch--automatic-gloss')) {
             glossLegendItems.push(`
                 <span class="atf-legend__item">
                     <span class="atf-legend__swatch atf-legend__swatch--automatic-gloss">word</span>
