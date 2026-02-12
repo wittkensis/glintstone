@@ -64,6 +64,7 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    position: relative; /* Positioning context for floating legend */
 }
 
 .atf-view-settings {
