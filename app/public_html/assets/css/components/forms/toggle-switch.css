@@ -1,0 +1,99 @@
+/**
+ * Toggle Switch Component
+ * Purpose: iOS-style toggle switch for binary settings
+ * Used on: Any page requiring toggle controls
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   Toggle Switch
+   ========================================================================== */
+
+.toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.toggle-switch input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-switch__slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    transition: all 0.2s var(--ease-in-out);
+    flex-shrink: 0;
+}
+
+.toggle-switch__slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 2px;
+    top: 2px;
+    background: var(--color-text-muted);
+    border-radius: 50%;
+    transition: all 0.2s var(--ease-in-out);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked + .toggle-switch__slider {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+.toggle-switch input:checked + .toggle-switch__slider::before {
+    transform: translateX(20px);
+    background: var(--color-bg);
+}
+
+.toggle-switch:hover .toggle-switch__slider {
+    border-color: var(--color-accent);
+}
+
+.toggle-switch input:focus + .toggle-switch__slider {
+    box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.2);
+}
+
+.toggle-switch input:focus-visible + .toggle-switch__slider {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.toggle-switch__label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-text);
+    letter-spacing: 0.01em;
+}
+
+.toggle-switch input:checked ~ .toggle-switch__label {
+    color: var(--color-accent);
+}
+
+/* Disabled state */
+.toggle-switch input:disabled + .toggle-switch__slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.toggle-switch input:disabled ~ .toggle-switch__label {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.toggle-switch:has(input:disabled) {
+    cursor: not-allowed;
+}
