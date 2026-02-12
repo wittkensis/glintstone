@@ -343,10 +343,11 @@ class ATFViewer {
 
         this.mode = mode;
 
-        // Update button states
-        this.container.querySelectorAll('.atf-mode').forEach(btn => {
-            btn.classList.toggle('atf-mode--active', btn.dataset.mode === mode);
-        });
+        // Update toggle state
+        const toggle = this.container.querySelector('.atf-mode-toggle');
+        if (toggle) {
+            toggle.checked = (mode === 'interactive');
+        }
 
         // Update container class
         this.container.classList.remove('atf-viewer--mode-raw', 'atf-viewer--mode-interactive', 'atf-viewer--mode-parallel');
@@ -403,10 +404,11 @@ class ATFViewer {
                 <div class="atf-viewer__body">
                     <div class="atf-content-column">
                         <div class="atf-view-settings">
-                            <div class="btn-group btn-group-stateful atf-modes">
-                                <button class="btn btn-group-item atf-mode atf-mode--active" data-mode="interactive">Interactive</button>
-                                <button class="btn btn-group-item atf-mode" data-mode="raw">Raw</button>
-                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" class="atf-mode-toggle" checked>
+                                <span class="toggle-switch__slider"></span>
+                                <span class="toggle-switch__label">Interactive ATF</span>
+                            </label>
                         </div>
                         <div class="atf-legend">
                             <div class="atf-legend__items"></div>
@@ -568,9 +570,12 @@ class ATFViewer {
         `;
 
         // Event listeners
-        this.container.querySelectorAll('.atf-mode').forEach(btn => {
-            btn.addEventListener('click', () => this.setMode(btn.dataset.mode));
-        });
+        const modeToggle = this.container.querySelector('.atf-mode-toggle');
+        if (modeToggle) {
+            modeToggle.addEventListener('change', (e) => {
+                this.setMode(e.target.checked ? 'interactive' : 'raw');
+            });
+        }
 
         // Knowledge sidebar icon bar event listeners
         this.container.querySelectorAll('.tabs-nav--vertical-icons .tab-button').forEach(btn => {
