@@ -722,7 +722,7 @@ class ATFViewer {
             glossLegendItems.push(`
                 <span class="atf-legend__item">
                     <span class="atf-legend__swatch atf-legend__swatch--automatic-gloss">word</span>
-                    Automatic gloss (dictionary)
+                    Detected word
                 </span>
             `);
         }
@@ -835,7 +835,7 @@ class ATFViewer {
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
                     </svg>
                     <div class="atf-viewer__footer-text">
-                        <strong>About these translations:</strong> The gray text below each line shows automatic word-by-word glosses from dictionary data. The translation panel shows scholarly translations from published sources. These may differ because glosses are literal word meanings, while translations capture the intended sense in context.
+                        <strong>About these translations:</strong> The gray text below each line shows detected words with dictionary definitions. The translation panel shows scholarly translations from published sources. These may differ because detected words are literal meanings, while translations capture the intended sense in context.
                     </div>
                 </div>
             `;

@@ -693,7 +693,7 @@ class ATFParser {
             $legend[] = ['class' => 'uncertain', 'label' => 'Uncertain', 'symbol' => '?'];
         }
         if ($hasBroken) {
-            $legend[] = ['class' => 'broken', 'label' => 'Broken/reconstructed', 'symbol' => '[...]'];
+            $legend[] = ['class' => 'broken', 'label' => 'Broken', 'symbol' => '[...]'];
         }
         if ($hasInlineTranslation) {
             $legend[] = ['class' => 'translation', 'label' => 'Line translation', 'symbol' => '│'];
