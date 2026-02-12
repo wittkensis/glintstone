@@ -639,8 +639,8 @@ class ATFParser {
         $legend = [];
 
         // Always include definition status
-        $legend[] = ['class' => 'has-definition', 'label' => 'Has definition', 'symbol' => '●'];
-        $legend[] = ['class' => 'no-definition', 'label' => 'No definition', 'symbol' => '○'];
+        $legend[] = ['class' => 'has-definition', 'label' => 'Has definition', 'symbol' => ''];
+        $legend[] = ['class' => 'no-definition', 'label' => 'No definition', 'symbol' => ''];
 
         // Check for determinatives, damage, etc.
         $hasDamage = false;
