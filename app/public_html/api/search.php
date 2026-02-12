@@ -60,7 +60,7 @@ if (!empty($dictionary)) {
     $relevanceScore = calculateCategoryRelevance('dictionary', $query, $dictionary);
     $categories[] = [
         'type' => 'dictionary',
-        'label' => 'Dictionary',
+        'label' => 'Words',
         'count' => count($dictionary),
         'relevance_score' => $relevanceScore,
         'results' => $dictionary

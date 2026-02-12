@@ -56,9 +56,9 @@
 }
 
 .tabs-nav.tabs-nav-compact .tab-button[aria-selected="true"] {
-    background: var(--color-bg-inset);
-    box-shadow: 0 2px 0px inset var(--color-border);
-}
+    background: var(--color-bg-deepest);
+    border-radius: 0;
+    box-shadow: 0 1px 0px inset var(--color-accent-50);}
 .tabs-nav.tabs-nav-compact .tab-button[aria-selected="false"]:hover::after {
     display: none;
 }

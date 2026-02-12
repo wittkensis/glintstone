@@ -22,6 +22,9 @@ $min_frequency = isset($params['min_frequency']) ? (int)$params['min_frequency']
 $sort = $params['sort'] ?? 'sign_id';
 $limit = isset($params['limit']) ? min((int)$params['limit'], 200) : 50;
 $offset = isset($params['offset']) ? (int)$params['offset'] : 0;
+$group_type = $params['group_type'] ?? '';
+$group_value = $params['group_value'] ?? '';
+$has_glyph = $params['has_glyph'] ?? '';
 
 $repo = app()->get(SignRepository::class);
 
@@ -30,6 +33,9 @@ $result = $repo->browse([
     'sign_type' => $sign_type,
     'min_frequency' => $min_frequency,
     'sort' => $sort,
+    'group_type' => $group_type,
+    'group_value' => $group_value,
+    'has_glyph' => $has_glyph,
 ], $limit, $offset);
 
 $signs = [];

@@ -141,6 +141,9 @@ class CSSLoader {
         // Dictionary section
         self::register('page-dictionary', '/assets/css/page-dictionary/index.css', ['components', 'layout']);
 
+        // Signs section
+        self::register('page-signs', '/assets/css/page-signs/index.css', ['components', 'layout']);
+
         // Collections section
         self::register('page-collections', '/assets/css/page-collections/index.css', ['components', 'layout']);
     }

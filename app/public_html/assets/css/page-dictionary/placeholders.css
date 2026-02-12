@@ -210,57 +210,6 @@
     display: flex;
 }
 
-/* ==========================================================================
-   Skeleton Loading (Word List Items)
-   ========================================================================== */
-
-.dict-word-item--skeleton {
-    pointer-events: none;
-}
-
-.dict-word-item--skeleton .dict-word-item__headword {
-    background: var(--color-surface);
-    color: transparent;
-    border-radius: var(--radius-sm);
-    width: 100px;
-    height: 1em;
-}
-
-.dict-word-item--skeleton .dict-word-item__guide-word {
-    background: var(--color-surface);
-    color: transparent;
-    border-radius: var(--radius-sm);
-    width: 150px;
-    height: 1em;
-}
-
-.dict-word-item--skeleton .dict-word-item__badge {
-    background: var(--color-surface);
-    color: transparent;
-    width: 30px;
-}
-
-.dict-word-item--skeleton .dict-word-item__count {
-    background: var(--color-surface);
-    color: transparent;
-    border-radius: var(--radius-sm);
-    width: 40px;
-    height: 1em;
-}
-
-/* Skeleton animation */
-.dict-word-item--skeleton .dict-word-item__headword,
-.dict-word-item--skeleton .dict-word-item__guide-word,
-.dict-word-item--skeleton .dict-word-item__badge,
-.dict-word-item--skeleton .dict-word-item__count {
-    animation: dict-skeleton-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes dict-skeleton-pulse {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.6; }
-}
-
 /* Skeleton detail panel */
 .dict-detail-skeleton {
     padding: var(--space-6);

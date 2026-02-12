@@ -288,7 +288,7 @@ if (!$selectedWordId && !empty($initialWords)) {
 $wordDetail = fetchWordDetail($db, $selectedWordId);
 
 // Page title and CSS
-$pageTitle = 'Dictionary';
+$pageTitle = 'Dictionary - Words';
 require_once __DIR__ . '/../includes/css.php';
 CSSLoader::enqueue('page-dictionary');
 require_once __DIR__ . '/../includes/header.php';

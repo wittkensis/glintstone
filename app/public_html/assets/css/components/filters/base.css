@@ -153,7 +153,8 @@
     overflow-y: auto;
 }
 
-.filter-group[data-expanded="true"] .filter-group-content {
+.filter-group[data-expanded="true"] .filter-group-content,
+.filter-group-content--always-visible {
     display: block;
 }
 

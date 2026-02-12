@@ -45,7 +45,7 @@ function onAnnotationsFetched(data) {
     const checkbox = document.getElementById('annotation-checkbox');
 
     if (toggle) {
-        toggle.style.display = 'flex';
+        toggle.classList.remove('is-hidden');
         if (countBadge) countBadge.textContent = data.count;
 
         // Enable by default, but only apply if image is loaded
@@ -191,13 +191,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (actionsMenu && actionsDropdown && actionsTrigger) {
         actionsTrigger.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isOpen = actionsDropdown.style.display === 'block';
-            actionsDropdown.style.display = isOpen ? 'none' : 'block';
+            const isOpen = actionsDropdown.classList.contains('is-open');
+            actionsDropdown.classList.toggle('is-open', !isOpen);
             actionsTrigger.setAttribute('aria-expanded', !isOpen);
         });
         // Close on outside click
         document.addEventListener('click', () => {
-            actionsDropdown.style.display = 'none';
+            actionsDropdown.classList.remove('is-open');
             actionsTrigger.setAttribute('aria-expanded', 'false');
         });
     }

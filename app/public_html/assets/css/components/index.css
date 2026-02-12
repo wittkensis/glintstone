@@ -11,6 +11,9 @@
 /* Cards (base, tablet, collection) */
 @import url('cards/index.css');
 
+/* List items (base) */
+@import url('list-items/index.css');
+
 /* Filters (base, chevron) */
 @import url('filters/index.css');
 

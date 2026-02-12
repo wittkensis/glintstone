@@ -84,7 +84,7 @@ body:has(.tablet-detail-page) {
     flex-shrink: 0;
     background: var(--color-surface);
     border-right: 1px solid var(--color-border);
-    transition: width var(--transition-slower) var(--ease-in-out);
+    transition: width 0.45s var(--ease-in-out);
     display: flex;
     flex-direction: column;
 }
@@ -105,7 +105,7 @@ body:has(.tablet-detail-page) {
     pointer-events: none;
     z-index: 5;
     opacity: 0;
-    transition: opacity var(--transition-slower) var(--ease-in-out);
+    transition: opacity 0.45s var(--ease-in-out);
 }
 
 /* Collapsed state: 100px thumbnail sidebar alongside ATF */

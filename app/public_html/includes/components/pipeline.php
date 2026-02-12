@@ -84,7 +84,7 @@ if (!function_exists('getPipelineStatusDisplay')) {
 <?php elseif ($variant === 'inline'): ?>
 <?php
 // Build next step label for inline display
-$nextStepLabel = $nextStage ? $stageLabels[$nextStage] : 'Complete';
+$nextStepLabel = $nextStage ? 'Needs ' . $stageLabels[$nextStage] : 'Complete';
 $nextStepHint = $nextStage ? ($pipelineStatus[$nextStage]['next_step'] ?? '') : '';
 ?>
 <div class="pipeline pipeline--inline"

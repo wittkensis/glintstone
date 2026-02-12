@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initCheckboxNavigation();
     initShowMoreButtons();
     initPipelineRadios();
-    initChevronFilter(); // Generic chevron filter for filtered-list-page layout
+    initChevronFilter();
+    initStageFilter();
 });
 
 /**
@@ -140,6 +141,28 @@ function initPipelineRadios() {
             }
 
             window.location.href = '?' + params.toString();
+        });
+    });
+}
+
+/**
+ * Initialize stage filter pill interactions
+ */
+function initStageFilter() {
+    const pills = document.querySelectorAll('.stage-filter__pill');
+    if (pills.length === 0) return;
+
+    pills.forEach(pill => {
+        pill.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const all = Array.from(pills);
+                const i = all.indexOf(pill);
+                const next = e.key === 'ArrowRight'
+                    ? (i + 1) % all.length
+                    : (i - 1 + all.length) % all.length;
+                all[next].focus();
+            }
         });
     });
 }

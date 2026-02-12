@@ -41,6 +41,12 @@ $wordDetail = $wordDetail ?? null;
         </div>
     </header>
 
+    <!-- Section Tabs -->
+    <nav class="dict-browser__subnav" aria-label="Dictionary sections">
+        <a href="/dictionary/signs/" class="dict-browser__subnav-link">Signs</a>
+        <a href="/dictionary/" class="dict-browser__subnav-link active">Words</a>
+    </nav>
+
     <!-- Column 1: Groupings Panel -->
     <aside class="dict-browser__groupings" data-open="false">
         <?php

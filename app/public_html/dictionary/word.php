@@ -351,7 +351,7 @@ require_once __DIR__ . '/../includes/header.php';
             <h2>Cuneiform Signs</h2>
             <div class="sign-breakdown">
                 <?php foreach ($signs as $sign): ?>
-                <a href="/dictionary/sign/<?= urlencode($sign['sign_id']) ?>" class="sign-item">
+                <a href="/dictionary/signs/?sign=<?= urlencode($sign['sign_id']) ?>" class="sign-item">
                     <span class="sign-cuneiform"><?= $sign['utf8'] ?? '' ?></span>
                     <span class="sign-id"><?= htmlspecialchars($sign['sign_id']) ?></span>
                     <span class="sign-value"><?= htmlspecialchars($sign['sign_value']) ?></span>

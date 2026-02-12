@@ -6,5 +6,10 @@
  * Note: Kept minimal. Add utilities as needed.
  */
 
-/* Placeholder for future utility classes */
-/* Examples: flex helpers, spacing utilities, text utilities */
+/* ==========================================================================
+   Visibility
+   ========================================================================== */
+
+.is-hidden {
+    display: none !important;
+}

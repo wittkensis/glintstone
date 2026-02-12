@@ -10,11 +10,16 @@
    ========================================================================== */
 
 .knowledge-sidebar-filters {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
     padding: var(--space-2);
-    background: var(--color-bg);
+    background: rgba(var(--color-bg-inset-rgb), 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: var(--radius-md);
     flex-shrink: 0;
 }

@@ -95,13 +95,9 @@
             const container = document.createElement('div');
             container.className = 'word-detail-container compact';
 
-            // Get help visibility from educational help system (if available)
-            const showHelp = window.educationalHelp ? window.educationalHelp.helpVisible : true;
-
             // Initialize renderer
             const renderer = new WordDetailRenderer({
-                compact: true,  // Compact mode for sidebar
-                showHelp: showHelp
+                compact: true
             });
 
             // Render word detail

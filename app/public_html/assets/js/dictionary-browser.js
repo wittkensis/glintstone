@@ -26,6 +26,10 @@ class DictionaryBrowser {
         this.debounceTimer = null;
         this.debounceDelay = 300;
 
+        // Section descriptions from centralized educational content
+        this._sectionDesc = null;
+        this._sectionDescPromise = null;
+
         this.elements = {
             browser: document.querySelector('.dict-browser'),
             groupings: document.querySelector('.dict-browser__groupings'),
@@ -43,6 +47,35 @@ class DictionaryBrowser {
     init() {
         this.bindEvents();
         this.syncFromURL();
+    }
+
+    /**
+     * Load section descriptions from centralized educational content.
+     * Returns cached result on subsequent calls.
+     */
+    async loadSectionDescriptions() {
+        if (this._sectionDesc) return this._sectionDesc;
+        if (this._sectionDescPromise) return this._sectionDescPromise;
+
+        this._sectionDescPromise = fetch('/api/educational-content.php')
+            .then(r => r.ok ? r.json() : {})
+            .then(data => {
+                this._sectionDesc = data?.section_descriptions || {};
+                return this._sectionDesc;
+            })
+            .catch(() => {
+                this._sectionDesc = {};
+                return this._sectionDesc;
+            });
+
+        return this._sectionDescPromise;
+    }
+
+    /**
+     * Get a section description by key, with fallback.
+     */
+    sd(key) {
+        return this._sectionDesc?.[key] || '';
     }
 
     // =========================================================================
@@ -108,8 +141,8 @@ class DictionaryBrowser {
 
         // Word item clicks (delegated)
         this.elements.wordListItems?.addEventListener('click', (e) => {
-            const item = e.target.closest('.dict-word-item');
-            if (item && !item.classList.contains('dict-word-item--skeleton')) {
+            const item = e.target.closest('.list-item');
+            if (item && !item.classList.contains('list-item--skeleton')) {
                 this.selectWord(item.dataset.entryId);
             }
         });
@@ -117,7 +150,7 @@ class DictionaryBrowser {
         // Keyboard navigation in word list
         this.elements.wordListItems?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-                const item = e.target.closest('.dict-word-item');
+                const item = e.target.closest('.list-item');
                 if (item) {
                     e.preventDefault();
                     this.selectWord(item.dataset.entryId);
@@ -373,47 +406,11 @@ class DictionaryBrowser {
     }
 
     renderWordItem(entry) {
-        const isActive = entry.entry_id === this.state.selectedWordId;
-        const langLabels = {
-            'akk': 'Akkadian', 'akk-x-stdbab': 'Standard Babylonian', 'akk-x-oldbab': 'Old Babylonian',
-            'akk-x-neoass': 'Neo-Assyrian', 'sux': 'Sumerian', 'sux-x-emesal': 'Emesal',
-            'xhu': 'Hurrian', 'uga': 'Ugaritic', 'elx': 'Elamite', 'qpn': 'Names'
-        };
-        const posLabels = {
-            'N': 'Noun', 'V': 'Verb', 'AJ': 'Adjective', 'AV': 'Adverb', 'NU': 'Number',
-            'PRP': 'Preposition', 'PP': 'Possessive Pronoun', 'CNJ': 'Conjunction',
-            'DP': 'Demonstrative', 'IP': 'Pronoun', 'RP': 'Reflexive', 'XP': 'Indefinite Pronoun',
-            'REL': 'Relative', 'QP': 'Interrogative', 'DET': 'Determiner', 'MOD': 'Modal',
-            'J': 'Interjection', 'SBJ': 'Subjunction', 'MA': 'Auxiliary', 'M': 'Morpheme', 'O': 'Other',
-            'V/i': 'Intransitive Verb', 'V/t': 'Transitive Verb',
-            'PN': 'Personal Name', 'DN': 'Divine Name', 'GN': 'Geographic Name', 'SN': 'Settlement Name',
-            'TN': 'Temple Name', 'WN': 'Watercourse Name', 'RN': 'Royal Name', 'EN': 'Ethnic Name',
-            'CN': 'Celestial Name', 'ON': 'Object Name', 'MN': 'Month Name', 'AN': 'Artifact Name',
-            'LN': 'Line Name'
-        };
-        const langLabel = langLabels[entry.language] || langLabels[entry.language?.split('-')[0]] || '';
-        const posLabel = posLabels[entry.pos] || entry.pos || '';
-        const displayName = entry.citation_form || entry.headword;
-
-        // Conditional badge display based on active filter
-        const showPosBadge = this.state.groupType !== 'pos';
-        const showLangBadge = this.state.groupType !== 'language';
-
-        return `
-            <div class="dict-word-item ${isActive ? 'dict-word-item--active' : ''}"
-                 data-entry-id="${this.escapeHtml(entry.entry_id)}"
-                 tabindex="0" role="button">
-                <div class="dict-word-item__header">
-                    <span class="dict-word-item__headword">${this.escapeHtml(displayName)}</span>
-                    ${entry.guide_word ? `<span class="dict-word-item__guide-word">${this.escapeHtml(entry.guide_word)}</span>` : ''}
-                </div>
-                <div class="dict-word-item__meta">
-                    ${showPosBadge && posLabel ? `<span class="dict-word-item__badge dict-word-item__badge--pos">${this.escapeHtml(posLabel)}</span>` : ''}
-                    ${showLangBadge && langLabel ? `<span class="dict-word-item__badge dict-word-item__badge--lang">${this.escapeHtml(langLabel)}</span>` : ''}
-                    <span class="dict-word-item__count">${entry.icount?.toLocaleString() || 0}</span>
-                </div>
-            </div>
-        `;
+        const hideBadge = this.state.groupType !== 'all' ? this.state.groupType : null;
+        return WordListItem.render(entry, {
+            active: entry.entry_id === this.state.selectedWordId,
+            hideBadge
+        });
     }
 
     updateWordCount(showing, total) {
@@ -440,16 +437,16 @@ class DictionaryBrowser {
         if (!entryId || entryId === this.state.selectedWordId) return;
 
         // Update active state in list
-        document.querySelectorAll('.dict-word-item').forEach(item => {
+        document.querySelectorAll('.dict-word-list__items .list-item').forEach(item => {
             const isActive = item.dataset.entryId === entryId;
-            item.classList.toggle('dict-word-item--active', isActive);
+            item.classList.toggle('list-item--active', isActive);
 
             // Add highlight animation if requested
             if (isActive && shouldHighlight) {
-                item.classList.add('dict-word-item--highlight');
+                item.classList.add('list-item--highlight');
                 // Remove highlight class after animation completes
                 setTimeout(() => {
-                    item.classList.remove('dict-word-item--highlight');
+                    item.classList.remove('list-item--highlight');
                 }, 2000);
             }
         });
@@ -475,7 +472,10 @@ class DictionaryBrowser {
         this.elements.detail?.setAttribute('data-loading', 'true');
 
         try {
-            const response = await fetch(`/api/dictionary/word-detail.php?entry_id=${encodeURIComponent(entryId)}`);
+            const [response] = await Promise.all([
+                fetch(`/api/dictionary/word-detail.php?entry_id=${encodeURIComponent(entryId)}`),
+                this.loadSectionDescriptions()
+            ]);
             const data = await response.json();
 
             this.renderWordDetail(data);
@@ -524,7 +524,17 @@ class DictionaryBrowser {
                 <div class="page-header word-header">
                     <div class="page-header-main">
                         <div class="page-header-title">
-                            <h1>${this.escapeHtml(entry.citation_form || entry.headword)}</h1>
+                            <h1>
+                                <span class="word-header__citation">${this.escapeHtml(entry.citation_form || entry.headword)}</span>
+                                <button class="btn btn--icon word-share-btn" data-action="share" data-url="/dictionary/?word=${encodeURIComponent(entry.entry_id)}" title="Copy link to clipboard">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                                        <polyline points="16 6 12 2 8 6"/>
+                                        <line x1="12" y1="2" x2="12" y2="15"/>
+                                    </svg>
+                                </button>
+                            </h1>
+                            ${entry.guide_word ? `<p class="word-header__guide-word">${this.escapeHtml(entry.guide_word)}</p>` : ''}
                         </div>
                     </div>
                 </div>
@@ -532,10 +542,6 @@ class DictionaryBrowser {
                 <!-- Word Metadata -->
                 <div class="word-meta">
                     <dl class="word-meta__row">
-                        <div class="meta-item meta-item--primary">
-                            <dt>Guide Word</dt>
-                            <dd class="meta-guide-word">${entry.guide_word ? this.escapeHtml(entry.guide_word) : '<span class="meta-placeholder">—</span>'}</dd>
-                        </div>
                         <div class="meta-item">
                             <dt>Language</dt>
                             <dd>${this.escapeHtml(langLabel)}</dd>
@@ -574,7 +580,6 @@ class DictionaryBrowser {
                 ${this.renderSigns(data.signs)}
                 ${this.renderRelatedWords(data.related_words)}
                 ${this.renderAttestations(data.attestations?.sample, entry.icount)}
-                ${this.renderCAD(data.cad)}
             </div>
             <div class="dict-loading-overlay">
                 <div class="dict-spinner"></div>
@@ -594,7 +599,7 @@ class DictionaryBrowser {
             return `
                 <section class="word-section">
                     <h2>Attested Forms</h2>
-                    <p class="section-description">Different spellings and grammatical forms found in the corpus, ordered by frequency.</p>
+                    <p class="section-description">${this.sd('attested_forms')}</p>
                     <p class="section-placeholder">No attested forms documented yet.</p>
                 </section>
             `;
@@ -607,16 +612,16 @@ class DictionaryBrowser {
         return `
             <section class="word-section">
                 <h2>Attested Forms <span class="section-count-badge">${variants.length}</span></h2>
-                <p class="section-description">Different spellings and grammatical forms found in the corpus, ordered by frequency.</p>
+                <p class="section-description">${this.sd('attested_forms')}</p>
                 <div class="variants-chart">
                     ${variants.map((v, index) => {
                         const pct = maxCount > 0 ? (v.count / maxCount) * 100 : 0;
                         const isHidden = index >= visibleCount;
                         return `
-                            <div class="variant-bar${isHidden ? ' variant-bar--hidden' : ''}" ${isHidden ? 'style="display: none;"' : ''}>
+                            <div class="variant-bar${isHidden ? ' variant-bar--hidden is-hidden' : ''}">
                                 <span class="variant-form">${this.escapeHtml(v.form)}</span>
                                 <div class="variant-frequency-container">
-                                    <div class="variant-frequency" style="width: ${pct}%"></div>
+                                    <div class="variant-frequency" style="--bar-width: ${pct}%"></div>
                                 </div>
                                 <span class="variant-count">${v.count} attestation${v.count !== 1 ? 's' : ''}</span>
                             </div>
@@ -624,9 +629,9 @@ class DictionaryBrowser {
                     }).join('')}
                 </div>
                 ${hasMore ? `
-                    <button class="btn btn--secondary" data-action="toggle-variants" style="margin-top: var(--space-4);">
+                    <button class="btn btn--secondary btn--section-toggle" data-action="toggle-variants">
                         <span data-show-text>Show all ${variants.length} forms</span>
-                        <span data-hide-text style="display: none;">Show fewer forms</span>
+                        <span data-hide-text class="is-hidden">Show fewer forms</span>
                     </button>
                 ` : ''}
             </section>
@@ -638,7 +643,7 @@ class DictionaryBrowser {
             return `
                 <section class="word-section">
                     <h2>Cuneiform Signs</h2>
-                    <p class="section-description">The signs used to write this word. Click a sign to explore all its readings.</p>
+                    <p class="section-description">${this.sd('cuneiform_signs')}</p>
                     <p class="section-placeholder">No cuneiform signs documented yet.</p>
                 </section>
             `;
@@ -647,14 +652,14 @@ class DictionaryBrowser {
         return `
             <section class="word-section">
                 <h2>Cuneiform Signs <span class="section-count-badge">${signs.length}</span></h2>
-                <p class="section-description">The signs used to write this word. Click a sign to explore all its readings.</p>
+                <p class="section-description">${this.sd('cuneiform_signs')}</p>
                 <div class="sign-breakdown">
                     ${signs.map(s => `
-                        <div class="sign-item">
+                        <a href="/dictionary/signs/?sign=${encodeURIComponent(s.sign_id)}" class="sign-item">
                             <span class="sign-cuneiform">${s.utf8 || ''}</span>
                             <span class="sign-value">${this.escapeHtml(s.sign_value)}</span>
                             ${s.value_type ? `<span class="sign-type">${this.escapeHtml(s.value_type)}</span>` : ''}
-                        </div>
+                        </a>
                     `).join('')}
                 </div>
             </section>
@@ -666,7 +671,7 @@ class DictionaryBrowser {
             return `
                 <section class="word-section">
                     <h2>Tablets</h2>
-                    <p class="section-description">Ancient tablets where this word has been identified in the corpus.</p>
+                    <p class="section-description">${this.sd('tablets')}</p>
                     <p class="section-placeholder">No tablet attestations available yet.</p>
                 </section>
             `;
@@ -678,14 +683,14 @@ class DictionaryBrowser {
         return `
             <section class="word-section">
                 <h2>Tablets <span class="section-count-badge">${attestations.length}</span></h2>
-                <p class="section-description">Ancient tablets where this word has been identified in the corpus.</p>
+                <p class="section-description">${this.sd('tablets')}</p>
                 <div class="tablet-grid" data-tablet-grid>
                     ${attestations.map((a, index) => this.renderTabletCard(a, index >= visibleCount)).join('')}
                 </div>
                 ${hasMore ? `
-                    <button class="btn btn--secondary" data-action="toggle-tablets" style="margin-top: var(--space-4);">
+                    <button class="btn btn--secondary btn--section-toggle" data-action="toggle-tablets">
                         <span data-show-text>Show all ${attestations.length} tablets</span>
-                        <span data-hide-text style="display: none;">Show fewer tablets</span>
+                        <span data-hide-text class="is-hidden">Show fewer tablets</span>
                     </button>
                 ` : `
                     <p class="examples-footer">
@@ -704,9 +709,8 @@ class DictionaryBrowser {
 
         return `
             <a href="/tablets/detail.php?p=${encodeURIComponent(attestation.p_number)}"
-               class="card tablet-card${isHidden ? ' tablet-card--hidden' : ''}"
-               data-p-number="${pNumber}"
-               ${isHidden ? 'style="display: none;"' : ''}>
+               class="card tablet-card${isHidden ? ' tablet-card--hidden is-hidden' : ''}"
+               data-p-number="${pNumber}">
                 <div class="card-image">
                     <img src="/api/thumbnail.php?p=${encodeURIComponent(attestation.p_number)}&size=200"
                          alt="${pNumber}"
@@ -731,7 +735,7 @@ class DictionaryBrowser {
             return `
                 <section class="word-section">
                     <h2>Meanings</h2>
-                    <p class="section-description">Detailed senses with definitions, usage contexts, and frequency data. Different from the guide word above, which is a simple gloss for quick reference.</p>
+                    <p class="section-description">${this.sd('meanings')}</p>
                     <p class="section-placeholder">No meanings documented yet.</p>
                 </section>
             `;
@@ -740,7 +744,8 @@ class DictionaryBrowser {
         return `
             <section class="word-section">
                 <h2>Meanings <span class="section-count-badge">${senses.length}</span></h2>
-                <p class="section-description">Detailed senses with definitions, usage contexts, and frequency data. Different from the guide word above, which is a simple gloss for quick reference.</p>
+                <p class="section-description">${this.sd('meanings')}</p>
+                <p class="section-description">${this.sd('senses_explanation')}</p>
                 <ol class="meanings-list">
                     ${senses.map(sense => `
                         <li class="meaning">
@@ -769,132 +774,32 @@ class DictionaryBrowser {
             return `
                 <section class="word-section">
                     <h2>Related Words</h2>
-                    <p class="section-description">Bilingual equivalents, synonyms, and cognates across Sumerian and Akkadian.</p>
+                    <p class="section-description">${this.sd('related_words')}</p>
                     <p class="section-placeholder">No related words documented yet.</p>
                 </section>
             `;
         }
 
-        const langLabels = {
-            'sux': 'Sumerian', 'sux-x-emesal': 'Emesal', 'akk': 'Akkadian',
-            'akk-x-stdbab': 'Standard Babylonian', 'akk-x-oldbab': 'Old Babylonian',
-            'akk-x-neoass': 'Neo-Assyrian', 'xhu': 'Hurrian', 'uga': 'Ugaritic', 'elx': 'Elamite'
+        const renderGroup = (title, words) => {
+            if (!words || words.length === 0) return '';
+            return `
+                <div class="related-group">
+                    <h3>${title}</h3>
+                    <div class="related-words-grid">
+                        ${words.map(rel => WordListItem.render(rel, { card: true, notes: rel.notes })).join('')}
+                    </div>
+                </div>
+            `;
         };
 
         return `
             <section class="word-section">
                 <h2>Related Words</h2>
-                <p class="section-description">Bilingual equivalents, synonyms, and cognates across Sumerian and Akkadian.</p>
-
-                ${related.translations && related.translations.length > 0 ? `
-                    <div class="related-group">
-                        <h3>Bilingual Equivalents</h3>
-                        <div class="related-words-grid">
-                            ${related.translations.map(rel => `
-                                <a href="/dictionary/?word=${encodeURIComponent(rel.entry_id)}" class="card card-word" data-entry-id="${this.escapeHtml(rel.entry_id)}">
-                                    <div class="card-word__header">
-                                        <span class="card-word__headword">${this.escapeHtml(rel.headword)}</span>
-                                        ${rel.guide_word ? `<span class="card-word__guide-word">${this.escapeHtml(rel.guide_word)}</span>` : ''}
-                                    </div>
-                                    <div class="card-word__meta">
-                                        <span class="card-word__badge card-word__badge--lang">${langLabels[rel.language] || rel.language}</span>
-                                        ${rel.icount ? `<span class="card-word__count">${rel.icount.toLocaleString()}</span>` : ''}
-                                    </div>
-                                    ${rel.notes ? `<div class="card-word__notes">${this.escapeHtml(rel.notes)}</div>` : ''}
-                                </a>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${related.synonyms && related.synonyms.length > 0 ? `
-                    <div class="related-group">
-                        <h3>Synonyms</h3>
-                        <div class="related-words-grid">
-                            ${related.synonyms.map(rel => `
-                                <a href="/dictionary/?word=${encodeURIComponent(rel.entry_id)}" class="card card-word" data-entry-id="${this.escapeHtml(rel.entry_id)}">
-                                    <div class="card-word__header">
-                                        <span class="card-word__headword">${this.escapeHtml(rel.headword)}</span>
-                                        ${rel.guide_word ? `<span class="card-word__guide-word">${this.escapeHtml(rel.guide_word)}</span>` : ''}
-                                    </div>
-                                    <div class="card-word__meta">
-                                        ${rel.icount ? `<span class="card-word__count">${rel.icount.toLocaleString()}</span>` : ''}
-                                    </div>
-                                </a>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${related.cognates && related.cognates.length > 0 ? `
-                    <div class="related-group">
-                        <h3>Cognates</h3>
-                        <div class="related-words-grid">
-                            ${related.cognates.map(rel => `
-                                <a href="/dictionary/?word=${encodeURIComponent(rel.entry_id)}" class="card card-word" data-entry-id="${this.escapeHtml(rel.entry_id)}">
-                                    <div class="card-word__header">
-                                        <span class="card-word__headword">${this.escapeHtml(rel.headword)}</span>
-                                    </div>
-                                    <div class="card-word__meta">
-                                        <span class="card-word__badge card-word__badge--lang">${langLabels[rel.language] || rel.language}</span>
-                                        ${rel.icount ? `<span class="card-word__count">${rel.icount.toLocaleString()}</span>` : ''}
-                                    </div>
-                                </a>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${related.see_also && related.see_also.length > 0 ? `
-                    <div class="related-group">
-                        <h3>See Also</h3>
-                        <div class="related-words-grid">
-                            ${related.see_also.map(rel => `
-                                <a href="/dictionary/?word=${encodeURIComponent(rel.entry_id)}" class="card card-word" data-entry-id="${this.escapeHtml(rel.entry_id)}">
-                                    <div class="card-word__header">
-                                        <span class="card-word__headword">${this.escapeHtml(rel.headword)}</span>
-                                        ${rel.guide_word ? `<span class="card-word__guide-word">${this.escapeHtml(rel.guide_word)}</span>` : ''}
-                                    </div>
-                                    <div class="card-word__meta">
-                                        ${rel.icount ? `<span class="card-word__count">${rel.icount.toLocaleString()}</span>` : ''}
-                                    </div>
-                                </a>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-            </section>
-        `;
-    }
-
-    renderCAD(cad) {
-        if (!cad) {
-            return `
-                <section class="word-section">
-                    <h2>Chicago Assyrian Dictionary</h2>
-                    <p class="section-description">Reference from the authoritative dictionary for Akkadian, published by the Oriental Institute.</p>
-                    <p class="section-placeholder">No CAD reference available.</p>
-                </section>
-            `;
-        }
-
-        return `
-            <section class="word-section">
-                <h2>Chicago Assyrian Dictionary</h2>
-                <p class="section-description">Reference from the authoritative dictionary for Akkadian, published by the Oriental Institute.</p>
-                <div class="cad-content">
-                    <div class="cad-header">
-                        <span class="volume-badge">CAD ${this.escapeHtml(cad.volume)}, pp. ${cad.page_start}${cad.page_end ? `-${cad.page_end}` : ''}</span>
-                        ${cad.pdf_url ? `<a href="${this.escapeHtml(cad.pdf_url)}/page/${cad.page_start}" target="_blank" class="pdf-link">View PDF →</a>` : ''}
-                        ${cad.human_verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
-                    </div>
-                    ${cad.etymology ? `
-                        <div class="cad-etymology">
-                            <strong>Etymology:</strong> ${this.escapeHtml(cad.etymology)}
-                        </div>
-                    ` : ''}
-                    ${cad.semantic_notes ? `<div class="cad-notes">${this.escapeHtml(cad.semantic_notes)}</div>` : ''}
-                </div>
+                <p class="section-description">${this.sd('related_words')}</p>
+                ${renderGroup('Bilingual Equivalents', related.translations)}
+                ${renderGroup('Synonyms', related.synonyms)}
+                ${renderGroup('Cognates', related.cognates)}
+                ${renderGroup('See Also', related.see_also)}
             </section>
         `;
     }
@@ -991,24 +896,18 @@ class DictionaryBrowser {
         const hiddenVariants = section?.querySelectorAll('.variant-bar--hidden');
         if (!hiddenVariants || hiddenVariants.length === 0) return;
 
-        const firstHidden = hiddenVariants[0];
-        const isShowingAll = firstHidden.style.display !== 'none';
+        const isShowingAll = !hiddenVariants[0].classList.contains('is-hidden');
 
         // Toggle visibility of all hidden variants
         hiddenVariants.forEach(variant => {
-            variant.style.display = isShowingAll ? 'none' : '';
+            variant.classList.toggle('is-hidden', isShowingAll);
         });
 
         // Toggle button text
         const showText = toggleBtn.querySelector('[data-show-text]');
         const hideText = toggleBtn.querySelector('[data-hide-text]');
-        if (isShowingAll) {
-            showText.style.display = '';
-            hideText.style.display = 'none';
-        } else {
-            showText.style.display = 'none';
-            hideText.style.display = '';
-        }
+        showText.classList.toggle('is-hidden', !isShowingAll);
+        hideText.classList.toggle('is-hidden', isShowingAll);
     }
 
     handleTabletsToggle(toggleBtn) {
@@ -1016,24 +915,18 @@ class DictionaryBrowser {
         const hiddenTablets = section?.querySelectorAll('.tablet-card--hidden');
         if (!hiddenTablets || hiddenTablets.length === 0) return;
 
-        const firstHidden = hiddenTablets[0];
-        const isShowingAll = firstHidden.style.display !== 'none';
+        const isShowingAll = !hiddenTablets[0].classList.contains('is-hidden');
 
         // Toggle visibility of all hidden tablets
         hiddenTablets.forEach(tablet => {
-            tablet.style.display = isShowingAll ? 'none' : '';
+            tablet.classList.toggle('is-hidden', isShowingAll);
         });
 
         // Toggle button text
         const showText = toggleBtn.querySelector('[data-show-text]');
         const hideText = toggleBtn.querySelector('[data-hide-text]');
-        if (isShowingAll) {
-            showText.style.display = '';
-            hideText.style.display = 'none';
-        } else {
-            showText.style.display = 'none';
-            hideText.style.display = '';
-        }
+        showText.classList.toggle('is-hidden', !isShowingAll);
+        hideText.classList.toggle('is-hidden', isShowingAll);
     }
 
     // =========================================================================

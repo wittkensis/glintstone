@@ -8,12 +8,12 @@ declare(strict_types=1);
 
 namespace Glintstone;
 
-// Define base paths
-define('APP_ROOT', dirname(__DIR__));
-define('SRC_ROOT', __DIR__);
-define('PUBLIC_ROOT', APP_ROOT . '/public_html');
-define('CACHE_ROOT', APP_ROOT . '/cache');
-define('DB_PATH', dirname(APP_ROOT) . '/database/glintstone.db');
+// Define base paths (guarded for multiple inclusion paths)
+if (!defined('APP_ROOT')) define('APP_ROOT', dirname(__DIR__));
+if (!defined('SRC_ROOT')) define('SRC_ROOT', __DIR__);
+if (!defined('PUBLIC_ROOT')) define('PUBLIC_ROOT', APP_ROOT . '/public_html');
+if (!defined('CACHE_ROOT')) define('CACHE_ROOT', APP_ROOT . '/cache');
+if (!defined('DB_PATH')) define('DB_PATH', dirname(APP_ROOT) . '/database/glintstone.db');
 
 // Autoloader for src/ classes
 spl_autoload_register(function (string $class): void {

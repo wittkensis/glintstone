@@ -243,6 +243,22 @@ return [
     ],
 
     /**
+     * Section Descriptions
+     * Short blurbs shown above each word detail section.
+     * Used by: word-detail.php (PHP), word-detail-renderer.js (JS), dictionary-browser.js (JS)
+     * Edit here to update all surfaces at once.
+     */
+    'section_descriptions' => [
+        'meanings' => 'Detailed senses with definitions, usage contexts, and frequency data. Different from the guide word above, which is a simple gloss for quick reference.',
+        'senses_explanation' => 'Many ancient words have multiple related meanings (polysemy). Each sense shows its usage percentage based on corpus analysis.',
+        'attested_forms' => 'Different spellings and grammatical forms found in the corpus, ordered by frequency.',
+        'cuneiform_signs' => 'The signs used to write this word. Click a sign to explore all its readings.',
+        'related_words' => 'Bilingual equivalents, synonyms, and cognates across Sumerian and Akkadian.',
+        'tablets' => 'Ancient tablets where this word has been identified in the corpus.',
+        'cad' => 'Reference from the authoritative dictionary for Akkadian, published by the Oriental Institute.'
+    ],
+
+    /**
      * Cuneiform Writing System Guide
      * For /dictionary/glossary page
      */

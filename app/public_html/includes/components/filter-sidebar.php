@@ -230,7 +230,7 @@ $showPipelineFilter = $showPipelineFilter ?? true;
             <span class="filter-toggle">+</span>
         </button>
         <div class="filter-content" hidden>
-            <div class="filter-group-content" style="display: block;">
+            <div class="filter-group-content filter-group-content--always-visible">
                 <label class="filter-option">
                     <input type="radio" name="pipeline" value="" <?= !$pipeline ? 'checked' : '' ?>>
                     <span class="option-label">All</span>

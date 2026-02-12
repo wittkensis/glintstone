@@ -19,6 +19,10 @@
 // Set defaults
 $embedded = $embedded ?? false;
 
+// Load centralized educational text
+$_edContent = require __DIR__ . '/../../educational-content.php';
+$_sectionDesc = $_edContent['section_descriptions'];
+
 // Language labels (full names, never codes)
 $languageLabels = [
     'sux' => 'Sumerian',
@@ -73,7 +77,7 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
                 <a href="/dictionary/" class="back-link">← Back to Dictionary</a>
                 <?php endif; ?>
                 <h1>
-                    <?= htmlspecialchars($entry['citation_form']) ?>
+                    <span class="word-header__citation"><?= htmlspecialchars($entry['citation_form']) ?></span>
                     <button class="btn btn--icon word-share-btn" data-action="share" data-url="/dictionary/?word=<?= urlencode($entry['entry_id']) ?>" title="Copy link to clipboard">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
@@ -82,6 +86,9 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
                         </svg>
                     </button>
                 </h1>
+                <?php if (!empty($entry['guide_word'])): ?>
+                <p class="word-header__guide-word"><?= htmlspecialchars($entry['guide_word']) ?></p>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -89,10 +96,6 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
     <!-- Word Metadata (follows tablet detail pattern) -->
     <div class="word-meta">
         <dl class="word-meta__row">
-            <div class="meta-item meta-item--primary">
-                <dt>Guide Word</dt>
-                <dd class="meta-guide-word"><?php if (!empty($entry['guide_word'])): ?><?= htmlspecialchars($entry['guide_word']) ?><?php else: ?><span class="meta-placeholder">—</span><?php endif; ?></dd>
-            </div>
             <div class="meta-item">
                 <dt>Language</dt>
                 <dd><?= htmlspecialchars($languageLabel) ?></dd>
@@ -129,7 +132,8 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
     <!-- Meanings (Polysemic Senses) -->
     <section class="word-section">
         <h2>Meanings <?php if (!empty($senses)): ?><span class="section-count-badge"><?= count($senses) ?></span><?php endif; ?></h2>
-        <p class="section-description">Detailed senses with definitions, usage contexts, and frequency data. Different from the guide word above, which is a simple gloss for quick reference.</p>
+        <p class="section-description"><?= $_sectionDesc['meanings'] ?></p>
+        <p class="section-description"><?= $_sectionDesc['senses_explanation'] ?></p>
         <?php if (!empty($senses)): ?>
         <ol class="meanings-list">
             <?php foreach ($senses as $sense): ?>
@@ -163,7 +167,7 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
     ?>
     <section class="word-section">
         <h2>Attested Forms <?php if ($totalForms > 0): ?><span class="section-count-badge"><?= $totalForms ?></span><?php endif; ?></h2>
-        <p class="section-description">Different spellings and grammatical forms found in the corpus, ordered by frequency.</p>
+        <p class="section-description"><?= $_sectionDesc['attested_forms'] ?></p>
         <?php if (!empty($variants)): ?>
         <div class="variants-chart" data-show-all="false">
             <?php foreach (array_slice($variants, 0, $maxFormsToShow) as $variant): ?>
@@ -171,7 +175,7 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
             <div class="variant-bar">
                 <span class="variant-form"><?= htmlspecialchars($variant['form']) ?></span>
                 <div class="variant-frequency-container">
-                    <div class="variant-frequency" style="width: <?= $percentage ?>%"></div>
+                    <div class="variant-frequency" style="--bar-width: <?= $percentage ?>%"></div>
                 </div>
                 <span class="variant-count"><?= $variant['count'] ?> attestations</span>
             </div>
@@ -183,7 +187,7 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
                 <div class="variant-bar">
                     <span class="variant-form"><?= htmlspecialchars($variant['form']) ?></span>
                     <div class="variant-frequency-container">
-                        <div class="variant-frequency" style="width: <?= $percentage ?>%"></div>
+                        <div class="variant-frequency" style="--bar-width: <?= $percentage ?>%"></div>
                     </div>
                     <span class="variant-count"><?= $variant['count'] ?> attestations</span>
                 </div>
@@ -192,7 +196,7 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
             <?php endif; ?>
         </div>
         <?php if ($showMoreNeeded): ?>
-        <button class="show-more-toggle" data-action="toggle-variants" data-show-text="Show all <?= $totalForms ?> forms" data-hide-text="Show less">
+        <button class="btn" data-action="toggle-variants" data-show-text="Show all <?= $totalForms ?> forms" data-hide-text="Show less" style="margin-top: var(--space-4);">
             Show all <?= $totalForms ?> forms
         </button>
         <?php endif; ?>
@@ -204,15 +208,28 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
     <!-- Cuneiform Signs -->
     <section class="word-section">
         <h2>Cuneiform Signs <?php if (!empty($signs)): ?><span class="section-count-badge"><?= count($signs) ?></span><?php endif; ?></h2>
-        <p class="section-description">The signs used to write this word. Click a sign to explore all its readings.</p>
+        <p class="section-description"><?= $_sectionDesc['cuneiform_signs'] ?></p>
         <?php if (!empty($signs)): ?>
-        <div class="sign-breakdown">
+        <div class="related-words-grid">
             <?php foreach ($signs as $sign): ?>
-            <a href="/dictionary/sign/<?= urlencode($sign['sign_id']) ?>" class="sign-item">
-                <span class="sign-cuneiform"><?= $sign['utf8'] ?? '' ?></span>
-                <span class="sign-value"><?= htmlspecialchars($sign['sign_value']) ?></span>
-                <?php if ($sign['value_type']): ?>
-                <span class="sign-type"><?= htmlspecialchars($sign['value_type']) ?></span>
+            <a href="/dictionary/signs/?sign=<?= urlencode($sign['sign_id']) ?>" class="list-item list-item--card sign-card" data-sign-id="<?= htmlspecialchars($sign['sign_id']) ?>">
+                <div class="sign-card__info">
+                    <div class="list-item__header">
+                        <span class="list-item__title"><?= htmlspecialchars($sign['sign_id']) ?></span>
+                        <?php if (!empty($sign['sign_value'])): ?>
+                        <span class="list-item__subtitle"><?= htmlspecialchars($sign['sign_value']) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <?php
+                    $metaParts = [];
+                    if (!empty($sign['value_type'])) $metaParts[] = $sign['value_type'];
+                    if (!empty($sign['sign_type'])) $metaParts[] = $sign['sign_type'];
+                    if (!empty($metaParts)): ?>
+                    <div class="list-item__meta"><?= htmlspecialchars(implode(' · ', $metaParts)) ?></div>
+                    <?php endif; ?>
+                </div>
+                <?php if (!empty($sign['utf8'])): ?>
+                <span class="sign-card__glyph"><?= $sign['utf8'] ?></span>
                 <?php endif; ?>
             </a>
             <?php endforeach; ?>
@@ -229,33 +246,48 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
     ?>
     <section class="word-section">
         <h2>Related Words</h2>
-        <p class="section-description">Bilingual equivalents, synonyms, and cognates across Sumerian and Akkadian.</p>
+        <p class="section-description"><?= $_sectionDesc['related_words'] ?></p>
         <?php if ($hasRelated): ?>
+
+        <?php
+        // Render a related word as a list-item--card
+        $renderRelatedWord = function($rel) use ($languageLabels) {
+            $langLabel = \Glintstone\Data\Labels::getLabel('language', $rel['language'] ?? null);
+            $posLabel = \Glintstone\Data\Labels::getLabel('pos', $rel['pos'] ?? null);
+            $href = '/dictionary/?word=' . urlencode($rel['entry_id']);
+            ?>
+            <a href="<?= $href ?>" class="list-item list-item--card" data-entry-id="<?= htmlspecialchars($rel['entry_id']) ?>">
+                <div class="list-item__header">
+                    <span class="list-item__title"><?= htmlspecialchars($rel['headword']) ?></span>
+                    <?php if (!empty($rel['guide_word'])): ?>
+                    <span class="list-item__subtitle"><?= htmlspecialchars($rel['guide_word']) ?></span>
+                    <?php endif; ?>
+                </div>
+                <div class="list-item__meta">
+                    <?php
+                    $metaParts = [];
+                    if (!empty($posLabel)) $metaParts[] = htmlspecialchars($posLabel);
+                    if (!empty($langLabel)) $metaParts[] = htmlspecialchars($langLabel);
+                    echo implode('<span class="list-item__sep" aria-hidden="true">&middot;</span>', array_map(fn($v) => "<span>{$v}</span>", $metaParts));
+                    ?>
+                    <?php if ($rel['icount']): ?>
+                    <span class="list-item__count"><?= number_format($rel['icount']) ?></span>
+                    <?php endif; ?>
+                </div>
+                <?php if (!empty($rel['notes'])): ?>
+                <div class="list-item__notes"><?= htmlspecialchars($rel['notes']) ?></div>
+                <?php endif; ?>
+            </a>
+            <?php
+        };
+        ?>
 
         <?php if (!empty($related['translations'])): ?>
         <div class="related-group">
             <h3>Bilingual Equivalents</h3>
             <div class="related-words-grid">
                 <?php foreach ($related['translations'] as $rel): ?>
-                <a href="<?= $embedded ? '/dictionary/?word=' . urlencode($rel['entry_id']) : '/dictionary/?word=' . urlencode($rel['entry_id']) ?>"
-                   class="card card-word"
-                   data-entry-id="<?= htmlspecialchars($rel['entry_id']) ?>">
-                    <div class="card-word__header">
-                        <span class="card-word__headword"><?= htmlspecialchars($rel['headword']) ?></span>
-                        <?php if ($rel['guide_word']): ?>
-                        <span class="card-word__guide-word"><?= htmlspecialchars($rel['guide_word']) ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <div class="card-word__meta">
-                        <span class="card-word__badge card-word__badge--lang"><?= htmlspecialchars($languageLabels[$rel['language']] ?? $rel['language']) ?></span>
-                        <?php if ($rel['icount']): ?>
-                        <span class="card-word__count"><?= number_format($rel['icount']) ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <?php if ($rel['notes']): ?>
-                    <div class="card-word__notes"><?= htmlspecialchars($rel['notes']) ?></div>
-                    <?php endif; ?>
-                </a>
+                <?php $renderRelatedWord($rel); ?>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -266,21 +298,7 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
             <h3>Synonyms</h3>
             <div class="related-words-grid">
                 <?php foreach ($related['synonyms'] as $rel): ?>
-                <a href="<?= $embedded ? '/dictionary/?word=' . urlencode($rel['entry_id']) : '/dictionary/?word=' . urlencode($rel['entry_id']) ?>"
-                   class="card card-word"
-                   data-entry-id="<?= htmlspecialchars($rel['entry_id']) ?>">
-                    <div class="card-word__header">
-                        <span class="card-word__headword"><?= htmlspecialchars($rel['headword']) ?></span>
-                        <?php if ($rel['guide_word']): ?>
-                        <span class="card-word__guide-word"><?= htmlspecialchars($rel['guide_word']) ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <div class="card-word__meta">
-                        <?php if ($rel['icount']): ?>
-                        <span class="card-word__count"><?= number_format($rel['icount']) ?></span>
-                        <?php endif; ?>
-                    </div>
-                </a>
+                <?php $renderRelatedWord($rel); ?>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -291,19 +309,7 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
             <h3>Cognates</h3>
             <div class="related-words-grid">
                 <?php foreach ($related['cognates'] as $rel): ?>
-                <a href="<?= $embedded ? '/dictionary/?word=' . urlencode($rel['entry_id']) : '/dictionary/?word=' . urlencode($rel['entry_id']) ?>"
-                   class="card card-word"
-                   data-entry-id="<?= htmlspecialchars($rel['entry_id']) ?>">
-                    <div class="card-word__header">
-                        <span class="card-word__headword"><?= htmlspecialchars($rel['headword']) ?></span>
-                    </div>
-                    <div class="card-word__meta">
-                        <span class="card-word__badge card-word__badge--lang"><?= htmlspecialchars($languageLabels[$rel['language']] ?? $rel['language']) ?></span>
-                        <?php if ($rel['icount']): ?>
-                        <span class="card-word__count"><?= number_format($rel['icount']) ?></span>
-                        <?php endif; ?>
-                    </div>
-                </a>
+                <?php $renderRelatedWord($rel); ?>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -314,21 +320,7 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
             <h3>See Also</h3>
             <div class="related-words-grid">
                 <?php foreach ($related['see_also'] as $rel): ?>
-                <a href="<?= $embedded ? '/dictionary/?word=' . urlencode($rel['entry_id']) : '/dictionary/?word=' . urlencode($rel['entry_id']) ?>"
-                   class="card card-word"
-                   data-entry-id="<?= htmlspecialchars($rel['entry_id']) ?>">
-                    <div class="card-word__header">
-                        <span class="card-word__headword"><?= htmlspecialchars($rel['headword']) ?></span>
-                        <?php if ($rel['guide_word']): ?>
-                        <span class="card-word__guide-word"><?= htmlspecialchars($rel['guide_word']) ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <div class="card-word__meta">
-                        <?php if ($rel['icount']): ?>
-                        <span class="card-word__count"><?= number_format($rel['icount']) ?></span>
-                        <?php endif; ?>
-                    </div>
-                </a>
+                <?php $renderRelatedWord($rel); ?>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -342,7 +334,7 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
     <!-- Tablets -->
     <section class="word-section">
         <h2>Tablets <?php if (!empty($attestations)): ?><span class="section-count-badge"><?= count($attestations) ?></span><?php endif; ?></h2>
-        <p class="section-description">Ancient tablets where this word has been identified in the corpus.</p>
+        <p class="section-description"><?= $_sectionDesc['tablets'] ?></p>
         <?php if (!empty($attestations)): ?>
         <div class="tablet-grid">
             <?php foreach ($attestations as $att): ?>
@@ -360,35 +352,6 @@ $posLabel = $posLabels[$entry['pos']] ?? $entry['pos'];
         </div>
         <?php else: ?>
         <p class="section-placeholder">No tablet attestations available yet.</p>
-        <?php endif; ?>
-    </section>
-
-    <!-- CAD Reference -->
-    <section class="word-section">
-        <h2>Chicago Assyrian Dictionary</h2>
-        <p class="section-description">Reference from the authoritative dictionary for Akkadian, published by the Oriental Institute.</p>
-        <?php if ($cad): ?>
-        <div class="cad-content">
-            <div class="cad-header">
-                <span class="volume-badge">CAD <?= htmlspecialchars($cad['volume']) ?>, pp. <?= $cad['page_start'] ?><?= $cad['page_end'] ? "-{$cad['page_end']}" : '' ?></span>
-                <?php if ($cad['pdf_url']): ?>
-                <a href="<?= htmlspecialchars($cad['pdf_url']) ?>/page/<?= $cad['page_start'] ?>" target="_blank" class="pdf-link">View PDF →</a>
-                <?php endif; ?>
-                <?php if ($cad['human_verified']): ?>
-                <span class="verified-badge">✓ Verified</span>
-                <?php endif; ?>
-            </div>
-            <?php if ($cad['etymology']): ?>
-            <div class="cad-etymology">
-                <strong>Etymology:</strong> <?= htmlspecialchars($cad['etymology']) ?>
-            </div>
-            <?php endif; ?>
-            <?php if ($cad['semantic_notes']): ?>
-            <div class="cad-notes"><?= htmlspecialchars($cad['semantic_notes']) ?></div>
-            <?php endif; ?>
-        </div>
-        <?php else: ?>
-        <p class="section-placeholder">No CAD reference available.</p>
         <?php endif; ?>
     </section>
 </div>

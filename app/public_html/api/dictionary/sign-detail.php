@@ -74,6 +74,22 @@ foreach ($wordRows as $row) {
 // Usage statistics
 $stats = $repo->getStats($sign_id);
 
+// Homophones (signs sharing reading values)
+$homophoneRows = $repo->getHomophones($sign_id);
+$homophones = [];
+foreach ($homophoneRows as $row) {
+    $homophones[] = [
+        'sign_id' => $row['sign_id'],
+        'utf8' => $row['utf8'],
+        'sign_type' => $row['sign_type'],
+        'most_common_value' => $row['most_common_value'],
+        'shared_value' => $row['shared_value'],
+        'value_count' => (int)$row['value_count'],
+        'word_count' => (int)$row['word_count'],
+        'total_occurrences' => (int)$row['total_occurrences'],
+    ];
+}
+
 JsonResponse::success([
     'sign' => [
         'sign_id' => $sign['sign_id'],
@@ -87,6 +103,7 @@ JsonResponse::success([
         'total_unique_words' => $stats['total_unique_words'],
         'showing' => count($words_using_sign)
     ],
+    'homophones' => $homophones,
     'statistics' => [
         'total_values' => count($values['logographic']) + count($values['syllabic']) + count($values['determinative']) + count($values['other']),
         'logographic_values' => count($values['logographic']),

@@ -399,7 +399,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <span>Detect Signs</span>
                     </button>
                     <?php endif; ?>
-                    <label class="annotation-toggle btn btn-small" id="annotation-toggle" style="display: none;">
+                    <label class="annotation-toggle btn btn-small is-hidden" id="annotation-toggle">
                         <input type="checkbox" id="annotation-checkbox">
                         <span>Signs</span>
                         <span class="annotation-badge" id="annotation-count"></span>
@@ -437,6 +437,7 @@ require_once __DIR__ . '/../includes/header.php';
 <script src="/assets/js/pipeline.js"></script>
 <!-- Shared Library Modules -->
 <script src="/assets/js/modules/educational-help.js"></script>
+<script src="/assets/js/modules/list-item-renderers.js"></script>
 <script src="/assets/js/modules/word-detail-renderer.js"></script>
 <!-- ATF Viewer -->
 <script src="/assets/js/atf-viewer.js"></script>

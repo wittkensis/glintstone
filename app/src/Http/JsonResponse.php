@@ -18,10 +18,7 @@ final class JsonResponse
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
 
-        echo json_encode([
-            'success' => true,
-            'data' => $data,
-        ], JSON_UNESCAPED_UNICODE);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
 
         exit;
     }

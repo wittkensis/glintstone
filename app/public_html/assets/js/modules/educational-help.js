@@ -1,66 +1,20 @@
 /**
  * Educational Help System
  *
- * Unified help system serving all users through comprehensive content.
+ * Manages educational content for dictionary and tablet pages:
+ * - Welcome banner in filter sidebar (collapsible)
+ * - Context-sensitive help text
+ * - Centralized educational content loading
  *
- * Manages:
- * - Help tooltip visibility
- * - Welcome banner in sidebar (collapsible)
- * - Context-sensitive help
+ * Help is always visible -- no toggle.
  */
 
 class EducationalHelpSystem {
     constructor() {
         this.welcomeKey = 'cuneiform_welcome_shown';
         this.welcomeCollapsedKey = 'cuneiform_welcome_collapsed';
-        this.helpVisibilityKey = 'cuneiform_help_visible';
-        this.helpVisible = this.loadHelpVisibility();
         this.educationalContent = null;
-    }
-
-    /**
-     * Load help visibility preference
-     */
-    loadHelpVisibility() {
-        const stored = localStorage.getItem(this.helpVisibilityKey);
-        if (stored === null) return true; // Default to visible
-        return stored === 'true';
-    }
-
-    /**
-     * Toggle help visibility
-     */
-    toggleHelpVisibility() {
-        this.helpVisible = !this.helpVisible;
-        localStorage.setItem(this.helpVisibilityKey, this.helpVisible);
-        this.emit('helpVisibilityChanged', this.helpVisible);
-        this.updateHelpElements();
-    }
-
-    /**
-     * Set help visibility explicitly
-     */
-    setHelpVisibility(visible) {
-        this.helpVisible = visible;
-        localStorage.setItem(this.helpVisibilityKey, visible);
-        this.emit('helpVisibilityChanged', visible);
-        this.updateHelpElements();
-    }
-
-    /**
-     * Update all help elements on the page based on visibility preference
-     */
-    updateHelpElements() {
-        document.querySelectorAll('.help-toggle').forEach(button => {
-            button.style.display = this.helpVisible ? '' : 'none';
-        });
-
-        // Hide all open tooltips if help is turned off
-        if (!this.helpVisible) {
-            document.querySelectorAll('.field-help').forEach(help => {
-                help.hidden = true;
-            });
-        }
+        this._loadPromise = null;
     }
 
     /**
@@ -72,19 +26,15 @@ class EducationalHelpSystem {
 
         await this.loadEducationalContent();
 
-        const shown = localStorage.getItem(this.welcomeKey);
         const collapsed = localStorage.getItem(this.welcomeCollapsedKey);
 
-        // Create and add banner to sidebar
         const banner = this.createWelcomeBanner();
         sidebar.insertBefore(banner, sidebar.firstChild);
 
-        // Set initial collapsed state
         if (collapsed === 'true') {
             banner.classList.add('collapsed');
         }
 
-        // Add collapse/expand handler
         const header = banner.querySelector('.banner-header');
         const toggle = banner.querySelector('.collapse-toggle');
 
@@ -92,11 +42,10 @@ class EducationalHelpSystem {
             banner.classList.toggle('collapsed');
             const isCollapsed = banner.classList.contains('collapsed');
             localStorage.setItem(this.welcomeCollapsedKey, isCollapsed);
-            toggle.textContent = isCollapsed ? '+' : '−';
+            toggle.textContent = isCollapsed ? '+' : '\u2212';
         });
 
-        // Mark as shown
-        if (!shown) {
+        if (!localStorage.getItem(this.welcomeKey)) {
             localStorage.setItem(this.welcomeKey, 'true');
         }
     }
@@ -111,8 +60,7 @@ class EducationalHelpSystem {
             features: [
                 'Search by ancient word form OR English meaning',
                 'Filter by language, grammar, or frequency',
-                'Click any word for variants and examples',
-                'Hover ⓘ icons for explanations'
+                'Click any word for variants and examples'
             ]
         };
 
@@ -123,11 +71,8 @@ class EducationalHelpSystem {
 
         banner.innerHTML = `
             <header class="banner-header">
-                <h3>
-                    <span class="icon">ℹ️</span>
-                    ${content.title}
-                </h3>
-                <button class="collapse-toggle" aria-label="Toggle guide">${isCollapsed ? '+' : '−'}</button>
+                <h3>${content.title}</h3>
+                <button class="collapse-toggle" aria-label="Toggle guide">${isCollapsed ? '+' : '\u2212'}</button>
             </header>
             <div class="banner-content">
                 <p>${content.description}</p>
@@ -141,51 +86,51 @@ class EducationalHelpSystem {
     }
 
     /**
-     * Start guided tour
-     */
-    async startGuidedTour() {
-        // TODO: Implement interactive tour using tooltips
-        console.log('Guided tour started');
-        // This could use a library like Shepherd.js or Driver.js
-        // For now, just a placeholder
-    }
-
-    /**
-     * Load educational content from server
+     * Load educational content from server.
+     * Returns cached result on subsequent calls.
      */
     async loadEducationalContent() {
-        if (this.educationalContent) return;
+        if (this.educationalContent) return this.educationalContent;
+        if (this._loadPromise) return this._loadPromise;
 
-        try {
-            const response = await fetch('/includes/educational-content.php');
-            if (!response.ok) throw new Error('Failed to load educational content');
+        this._loadPromise = fetch('/api/educational-content.php')
+            .then(r => {
+                if (!r.ok) throw new Error('Failed to load educational content');
+                return r.json();
+            })
+            .then(data => {
+                this.educationalContent = data;
+                return data;
+            })
+            .catch(error => {
+                console.error('Error loading educational content:', error);
+                this.educationalContent = {};
+                return {};
+            });
 
-            const text = await response.text();
-            this.educationalContent = JSON.parse(text);
-        } catch (error) {
-            console.error('Error loading educational content:', error);
-            this.educationalContent = {};
-        }
+        return this._loadPromise;
     }
 
     /**
      * Get help text for a specific field
      */
     getHelpText(fieldKey) {
-        if (!this.educationalContent || !this.educationalContent.field_help) return '';
+        if (!this.educationalContent?.field_help) return '';
+        return this.educationalContent.field_help[fieldKey] || '';
+    }
 
-        const helpData = this.educationalContent.field_help[fieldKey];
-        return helpData || ''; // Simple string lookup (no more user levels)
+    /**
+     * Get a section description by key
+     */
+    getSectionDescription(key) {
+        if (!this.educationalContent?.section_descriptions) return '';
+        return this.educationalContent.section_descriptions[key] || '';
     }
 
     /**
      * Initialize help system on page load
      */
     init() {
-        // Update help elements based on visibility preference
-        this.updateHelpElements();
-
-        // Initialize welcome banner in sidebar (if on dictionary pages)
         if (document.querySelector('.filtered-list-page') || document.querySelector('.dictionary-word-detail')) {
             this.initWelcomeBanner();
         }

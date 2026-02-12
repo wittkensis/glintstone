@@ -94,25 +94,38 @@ if (!empty($genres)) {
 }
 
 // Pipeline status filters
+// "Stuck at stage" logic: each filter shows tablets at exactly that pipeline frontier,
+// excluding tablets that have progressed further through any path
 if ($pipeline) {
     switch ($pipeline) {
-        // Task-oriented filters (main UI)
+        // Stage filters (main UI) - mutually exclusive categories
         case 'needs_signs':
-            // Has image but no sign annotations - ready for sign recognition
-            $where[] = "ps.has_image = 1 AND (ps.has_sign_annotations IS NULL OR ps.has_sign_annotations = 0)";
+            // Image only, nothing beyond - stuck at the very start
+            $where[] = "ps.has_image = 1
+                AND (ps.has_sign_annotations IS NULL OR ps.has_sign_annotations = 0)
+                AND (ps.has_atf IS NULL OR ps.has_atf = 0)
+                AND (ps.has_translation IS NULL OR ps.has_translation = 0)";
             break;
-        case 'needs_atf':
-            // Has image but no ATF transcription - ready for manual transcription
-            $where[] = "ps.has_image = 1 AND (ps.has_atf IS NULL OR ps.has_atf = 0)";
+        case 'needs_text':
+            // ML sign detection done, but no human transcription yet
+            $where[] = "ps.has_image = 1
+                AND ps.has_sign_annotations = 1
+                AND (ps.has_atf IS NULL OR ps.has_atf = 0)
+                AND (ps.has_translation IS NULL OR ps.has_translation = 0)";
             break;
         case 'needs_translation':
-            // Has ATF but no translation - ready for translation work
-            $where[] = "ps.has_atf = 1 AND (ps.has_translation IS NULL OR ps.has_translation = 0)";
+            // Has transcription, but no translation
+            $where[] = "ps.has_atf = 1
+                AND (ps.has_translation IS NULL OR ps.has_translation = 0)";
+            break;
+        case 'complete':
+            // Has translation (implies full scholarly processing)
+            $where[] = "ps.has_translation = 1";
             break;
 
         // Legacy/API filters (kept for backward compatibility)
-        case 'complete':
-            $where[] = "ps.has_image = 1 AND ps.has_atf = 1 AND ps.has_lemmas = 1 AND ps.has_translation = 1";
+        case 'needs_atf':
+            $where[] = "ps.has_image = 1 AND (ps.has_atf IS NULL OR ps.has_atf = 0)";
             break;
         case 'has_image':
             $where[] = "ps.has_image = 1";
@@ -125,18 +138,6 @@ if ($pipeline) {
             break;
         case 'has_translation':
             $where[] = "ps.has_translation = 1";
-            break;
-        case 'missing_image':
-            $where[] = "(ps.has_image IS NULL OR ps.has_image = 0)";
-            break;
-        case 'missing_atf':
-            $where[] = "(ps.has_atf IS NULL OR ps.has_atf = 0)";
-            break;
-        case 'missing_lemmas':
-            $where[] = "(ps.has_lemmas IS NULL OR ps.has_lemmas = 0)";
-            break;
-        case 'missing_translation':
-            $where[] = "(ps.has_translation IS NULL OR ps.has_translation = 0)";
             break;
         case 'human_transcription':
             $where[] = "ps.has_atf = 1";
@@ -256,17 +257,17 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <?php
-        // Configure task-oriented filter
         $stages = [
-            ['label' => 'All Tablets', 'value' => ''],
-            ['label' => 'Needs Sign Recognition', 'value' => 'needs_signs'],
-            ['label' => 'Needs ATF', 'value' => 'needs_atf'],
-            ['label' => 'Needs Translation', 'value' => 'needs_translation']
+            ['label' => 'All', 'value' => ''],
+            ['label' => 'Needs signs', 'value' => 'needs_signs'],
+            ['label' => 'Needs text', 'value' => 'needs_text'],
+            ['label' => 'Needs translation', 'value' => 'needs_translation'],
+            ['label' => 'Complete', 'value' => 'complete'],
         ];
         $currentValue = $pipeline ?? '';
         $urlParam = 'pipeline';
-        $ariaLabel = 'Filter by task';
-        include __DIR__ . '/../includes/components/chevron-filter.php';
+        $ariaLabel = 'Filter by pipeline stage';
+        include __DIR__ . '/../includes/components/stage-filter.php';
         ?>
 
         <?php if (!empty($activeFilters)): ?>

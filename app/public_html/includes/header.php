@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/icons.php';
 require_once __DIR__ . '/css.php';
+require_once dirname(__DIR__, 2) . '/src/Bootstrap.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,15 +28,17 @@ require_once __DIR__ . '/css.php';
                         <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/>
                         <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
-                    <input type="text" name="q" placeholder="Search tablets, signs, dictionary..." aria-label="Search" aria-expanded="false" autocomplete="off">
+                    <input type="text" name="q" placeholder="Search tablets, signs, words..." aria-label="Search" aria-expanded="false" autocomplete="off">
                 </form>
             </div>
 
             <nav class="header-nav">
                 <a href="/tablets/list.php" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/tablets/') !== false) echo 'active'; ?>">Tablets</a>
                 <a href="/collections/" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/collections/') !== false) echo 'active'; ?>">Collections</a>
-                <a href="/dictionary/" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/dictionary/') !== false) echo 'active'; ?>">Dictionary</a>
+                <a href="/dictionary/signs/" class="nav-link <?php if(strpos($_SERVER['REQUEST_URI'], '/dictionary/') !== false) echo 'active'; ?>">Dictionary</a>
             </nav>
         </div>
     </header>
+    <script><?php echo \Glintstone\Data\Labels::toJavaScript(); ?></script>
+    <script src="/assets/js/modules/list-item-renderers.js"></script>
     <script src="/assets/js/search.js"></script>

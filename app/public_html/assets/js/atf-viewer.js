@@ -164,7 +164,7 @@ class ATFViewer {
             this.container.classList.add('atf-viewer--has-translation');
             const separateTranslationSection = document.querySelector('.translation-section');
             if (separateTranslationSection) {
-                separateTranslationSection.style.display = 'none';
+                separateTranslationSection.classList.add('is-hidden');
             }
         }
     }
@@ -355,7 +355,7 @@ class ATFViewer {
         // Show/hide legend based on mode
         const legendEl = this.container.querySelector('.atf-legend');
         if (legendEl) {
-            legendEl.style.display = mode === 'interactive' ? '' : 'none';
+            legendEl.classList.toggle('is-hidden', mode !== 'interactive');
         }
 
         // Re-render content for mode
@@ -456,7 +456,7 @@ class ATFViewer {
                             <div class="knowledge-sidebar-filters">
                                 <div class="knowledge-sidebar-search">
                                     <input type="text" class="knowledge-sidebar-search__input" placeholder="Search dictionary..." aria-label="Search dictionary">
-                                    <button class="knowledge-sidebar-search__clear" aria-label="Clear search" style="display: none;">&times;</button>
+                                    <button class="knowledge-sidebar-search__clear is-hidden" aria-label="Clear search">&times;</button>
                                 </div>
                                 <select class="knowledge-sidebar-filter" data-filter="language" aria-label="Filter by language">
                                     <option value="">All Languages</option>
@@ -507,20 +507,20 @@ class ATFViewer {
                             </div>
 
                             <!-- Active Filter Chips -->
-                            <div class="knowledge-sidebar-filter-chips" style="display: none;"></div>
+                            <div class="knowledge-sidebar-filter-chips is-hidden"></div>
 
                             <!-- Results List -->
                             <div class="knowledge-sidebar-list">
                                 <div class="knowledge-sidebar-list__items"></div>
-                                <div class="knowledge-sidebar-list__footer" style="display: none;">
+                                <div class="knowledge-sidebar-list__footer is-hidden">
                                     <span class="knowledge-sidebar-list__count"></span>
-                                    <button class="btn btn-sm knowledge-sidebar-list__load-more" style="display: none;">Load more</button>
+                                    <button class="btn btn-sm knowledge-sidebar-list__load-more is-hidden">Load more</button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Word Detail UI (for word clicks) -->
-                        <div class="knowledge-sidebar-word-detail" style="display: none;">
+                        <div class="knowledge-sidebar-word-detail is-hidden">
                             <div class="knowledge-sidebar-word-header">
                                 <button class="knowledge-sidebar-word-header__back" aria-label="Back to browse">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -603,12 +603,12 @@ class ATFViewer {
 
         searchInput.addEventListener('input', (e) => {
             this.searchDictionary(e.target.value);
-            searchClear.style.display = e.target.value ? 'block' : 'none';
+            searchClear.classList.toggle('is-hidden', !e.target.value);
         });
 
         searchClear.addEventListener('click', () => {
             searchInput.value = '';
-            searchClear.style.display = 'none';
+            searchClear.classList.add('is-hidden');
             this.searchDictionary('');
         });
 
@@ -670,7 +670,7 @@ class ATFViewer {
         const legendEl = this.container.querySelector('.atf-legend');
 
         if (!this.legend.length) {
-            legendEl.style.display = 'none';
+            legendEl.classList.add('is-hidden');
             return;
         }
 
@@ -682,7 +682,7 @@ class ATFViewer {
         `).join('');
 
         // Show legend in interactive mode (default)
-        legendEl.style.display = this.mode === 'interactive' ? '' : 'none';
+        legendEl.classList.toggle('is-hidden', this.mode !== 'interactive');
     }
 
     /**
@@ -699,7 +699,7 @@ class ATFViewer {
         const legendEl = this.container.querySelector('.atf-legend');
 
         // Show legend if hidden
-        legendEl.style.display = '';
+        legendEl.classList.remove('is-hidden');
 
         // Add gloss type legend items if not already present
         const glossLegendItems = [];
@@ -1225,13 +1225,8 @@ class ATFViewer {
         const browseUI = this.container.querySelector('.knowledge-sidebar-dictionary');
         const wordUI = this.container.querySelector('.knowledge-sidebar-word-detail');
 
-        if (mode === 'browse') {
-            browseUI.style.display = 'flex';
-            wordUI.style.display = 'none';
-        } else {
-            browseUI.style.display = 'none';
-            wordUI.style.display = 'block';
-        }
+        browseUI.classList.toggle('is-hidden', mode !== 'browse');
+        wordUI.classList.toggle('is-hidden', mode === 'browse');
     }
 
     /**
@@ -1302,7 +1297,7 @@ class ATFViewer {
                     <button class="knowledge-sidebar-filter-chip__remove" data-type="${chip.type}" aria-label="Remove filter">&times;</button>
                 </span>
             `).join('');
-            chipsContainer.style.display = 'flex';
+            chipsContainer.classList.remove('is-hidden');
 
             // Add remove handlers
             chipsContainer.querySelectorAll('.knowledge-sidebar-filter-chip__remove').forEach(btn => {
@@ -1315,7 +1310,7 @@ class ATFViewer {
                 });
             });
         } else {
-            chipsContainer.style.display = 'none';
+            chipsContainer.classList.add('is-hidden');
         }
     }
 
@@ -1367,19 +1362,19 @@ class ATFViewer {
 
             // Show footer and update count
             const footer = this.container.querySelector('.knowledge-sidebar-list__footer');
-            footer.style.display = 'flex';
+            footer.classList.remove('is-hidden');
             const showing = Math.min(this.dictionaryResults.length, this.dictionaryTotalCount);
             countEl.textContent = `Showing ${showing.toLocaleString()} of ${this.dictionaryTotalCount.toLocaleString()}`;
 
             // Show/hide load more button
-            loadMoreBtn.style.display = data.hasMore ? 'inline-block' : 'none';
+            loadMoreBtn.classList.toggle('is-hidden', !data.hasMore);
 
         } catch (err) {
             console.error('Failed to load dictionary page:', err);
             resultsList.innerHTML = '<div class="state-error state-error--compact">Failed to load results</div>';
             // Hide footer on error
             const footer = this.container.querySelector('.knowledge-sidebar-list__footer');
-            footer.style.display = 'none';
+            footer.classList.add('is-hidden');
         }
     }
 
@@ -1394,31 +1389,12 @@ class ATFViewer {
             return;
         }
 
-        resultsList.innerHTML = this.dictionaryResults.map(entry => {
-            const headword = entry.headword || '';
-            const citationForm = entry.citation_form || '';
-            const guideWord = entry.guide_word || '';
-            const pos = entry.pos || '';
-            const language = entry.language || '';
-            const icount = entry.icount || 0;
-
-            // Format display based on language
-            const mainText = citationForm && citationForm !== headword
-                ? `${headword} ${citationForm}`
-                : headword;
-
-            return `
-                <div class="knowledge-sidebar-list__item" data-entry-id="${entry.entry_id}">
-                    <div class="knowledge-sidebar-list__item-title">${mainText}</div>
-                    <div class="knowledge-sidebar-list__item-meta">
-                        ${language} · ${guideWord} · ${pos} · ${icount.toLocaleString()} occurrences
-                    </div>
-                </div>
-            `;
-        }).join('');
+        resultsList.innerHTML = this.dictionaryResults.map(entry =>
+            WordListItem.render(entry, { compact: true })
+        ).join('');
 
         // Add click handlers
-        resultsList.querySelectorAll('.knowledge-sidebar-list__item').forEach(item => {
+        resultsList.querySelectorAll('.list-item').forEach(item => {
             item.addEventListener('click', () => {
                 const entryId = item.dataset.entryId;
                 const entry = this.dictionaryResults.find(e => e.entry_id === entryId);
@@ -1747,7 +1723,7 @@ class ATFViewer {
                         <img src="${thumbnailUrl}"
                              alt="${this.escapeHtml(tablet.designation)}"
                              loading="lazy"
-                             onerror="this.style.display='none'; this.parentElement.classList.add('atf-composite-thumbnail--empty'); this.parentElement.innerHTML='𒀭';">
+                             onerror="this.classList.add('is-hidden'); this.parentElement.classList.add('atf-composite-thumbnail--empty'); this.parentElement.innerHTML='𒀭';">
                     </div>
                     <div class="atf-composite-item__info">
                         <div class="atf-composite-item__pnumber">${this.escapeHtml(tablet.p_number)}</div>

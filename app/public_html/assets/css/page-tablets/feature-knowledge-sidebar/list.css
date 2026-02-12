@@ -3,6 +3,7 @@
  * Purpose: Scrollable results list pattern for knowledge sidebar tabs
  * Used on: Dictionary browse results, research results, etc.
  * Dependencies: core/tokens.css
+ * List items use shared .list-item component (components/list-items/base.css)
  */
 
 /* ==========================================================================
@@ -31,61 +32,21 @@
 }
 
 /* ==========================================================================
-   List Item
-   ========================================================================== */
-
-.knowledge-sidebar-list__item {
-    padding: var(--space-2);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: background var(--transition-fast);
-}
-
-.knowledge-sidebar-list__item:last-child {
-    border-bottom: none;
-}
-
-.knowledge-sidebar-list__item:hover {
-    background: var(--color-bg);
-}
-
-.knowledge-sidebar-list__item--active {
-    background: var(--color-surface);
-    border-left: 2px solid var(--color-accent);
-}
-
-/* ==========================================================================
-   Item Content
-   ========================================================================== */
-
-.knowledge-sidebar-list__item-title {
-    font-weight: 300;
-    color: var(--color-text);
-    margin-bottom: 3px;
-    font-size: 0.875rem;
-    line-height: 1.3;
-}
-.knowledge-sidebar-list__item:hover .knowledge-sidebar-list__item-title {
-    color: var(--color-accent);
-}
-
-.knowledge-sidebar-list__item-meta {
-    font-size: 0.7rem;
-    color: var(--color-text-subtle);
-    line-height: 1.4;
-}
-
-/* ==========================================================================
    Footer
    ========================================================================== */
 
 .knowledge-sidebar-list__footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
     flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background: var(--color-surface);
+    background: rgba(var(--color-bg-inset-rgb), 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-top: 1px solid var(--color-border);
 }
 

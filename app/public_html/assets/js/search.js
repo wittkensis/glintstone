@@ -180,7 +180,7 @@ class UnifiedSearch {
         this.openDropdown();
 
         // Add click handlers
-        content.querySelectorAll('.search-result').forEach((el, idx) => {
+        content.querySelectorAll('[role="option"]').forEach((el, idx) => {
             el.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.selectResult(idx);
@@ -191,29 +191,11 @@ class UnifiedSearch {
     renderResult(type, data) {
         switch (type) {
             case 'tablets':
-                return `
-                    <a href="/tablets/detail.php?p=${encodeURIComponent(data.p_number)}"
-                       class="search-result search-result--tablet"
-                       role="option">
-                        ${data.has_image
-                            ? `<img src="/api/thumbnail.php?p=${encodeURIComponent(data.p_number)}&size=64"
-                                    class="search-result__thumbnail"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                               <div class="search-result__thumbnail-placeholder" style="display: none;">𒀭</div>`
-                            : `<div class="search-result__thumbnail-placeholder">𒀭</div>`
-                        }
-                        <div class="search-result__content">
-                            <div class="search-result__title">${this.escapeHtml(data.p_number)}</div>
-                            <div class="search-result__meta">
-                                ${[data.period, data.provenience, data.genre].filter(Boolean).map(v => this.escapeHtml(v)).join(' · ')}
-                            </div>
-                        </div>
-                    </a>
-                `;
+                return TabletListItem.render(data, { search: true });
 
             case 'signs':
                 return `
-                    <a href="/signs/?sign=${encodeURIComponent(data.sign_id)}"
+                    <a href="/dictionary/signs/?sign=${encodeURIComponent(data.sign_id)}"
                        class="search-result search-result--sign"
                        role="option">
                         <div class="search-result__content">
@@ -227,38 +209,10 @@ class UnifiedSearch {
                 `;
 
             case 'dictionary':
-                return `
-                    <a href="/dictionary/?entry=${encodeURIComponent(data.entry_id)}"
-                       class="search-result search-result--dictionary"
-                       role="option">
-                        <div class="search-result__content">
-                            <div class="search-result__title">
-                                <strong>${this.escapeHtml(data.headword)}</strong>
-                                ${data.pos ? `<span class="search-result__pos">${this.escapeHtml(data.pos)}</span>` : ''}
-                                ${data.language ? `<span class="search-result__lang">${this.escapeHtml(data.language)}</span>` : ''}
-                            </div>
-                            <div class="search-result__meta">
-                                ${data.guide_word ? `"${this.escapeHtml(data.guide_word)}"` : ''}
-                                ${data.icount ? ` · ${data.icount} occurrences` : ''}
-                            </div>
-                        </div>
-                    </a>
-                `;
+                return WordListItem.render(data, { search: true });
 
             case 'collections':
-                return `
-                    <a href="/collections/detail.php?id=${data.collection_id}"
-                       class="search-result search-result--collection"
-                       role="option">
-                        <div class="search-result__content">
-                            <div class="search-result__title">${this.escapeHtml(data.name)}</div>
-                            <div class="search-result__meta">
-                                ${data.tablet_count} tablets
-                                ${data.description ? ` · ${this.escapeHtml(data.description.substring(0, 60))}${data.description.length > 60 ? '...' : ''}` : ''}
-                            </div>
-                        </div>
-                    </a>
-                `;
+                return CollectionListItem.render(data, { search: true });
 
             case 'composites':
                 return `
@@ -283,7 +237,7 @@ class UnifiedSearch {
     handleKeydown(e) {
         if (!this.dropdown.classList.contains('is-open')) return;
 
-        const resultElements = this.dropdown.querySelectorAll('.search-result');
+        const resultElements = this.dropdown.querySelectorAll('[role="option"]');
 
         switch (e.key) {
             case 'ArrowDown':
@@ -327,7 +281,7 @@ class UnifiedSearch {
     }
 
     selectResult(index) {
-        const resultElements = this.dropdown.querySelectorAll('.search-result');
+        const resultElements = this.dropdown.querySelectorAll('[role="option"]');
         if (resultElements[index]) {
             window.location.href = resultElements[index].href;
         }

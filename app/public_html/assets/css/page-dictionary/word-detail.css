@@ -32,7 +32,7 @@
     margin-bottom: var(--space-4);
 }
 
-.dict-browser__detail .word-header .page-header-title h1 {
+.dict-browser__detail .word-header__citation {
     font-size: var(--text-3xl);
 }
 
@@ -44,17 +44,39 @@
    Word Header
    ========================================================================== */
 
-.word-header .page-header-title h1 {
-    font-size: var(--text-4xl);
-    font-weight: var(--font-weight-semibold);
-    margin-bottom: 0;
+.word-header .page-header-title {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: var(--space-1);
+    align-items: start;
 }
 
-.word-header .page-header-title h1 .guide-word {
-    font-size: var(--text-xl);
-    font-weight: var(--font-weight-normal);
+.word-header h1 {
+    display: contents;
+}
+
+.word-header__citation {
+    grid-row: 1;
+    grid-column: 1;
+    font-size: var(--text-4xl);
+    font-weight: var(--font-weight-semibold);
+    align-self: center;
+}
+
+.word-header__guide-word {
+    grid-row: 2;
+    grid-column: 1;
+    font-size: var(--text-lg);
     color: var(--color-text-muted);
-    margin-left: var(--space-2);
+    margin: 0;
+}
+
+.word-share-btn {
+    grid-row: 1;
+    grid-column: 1;
+    justify-self: end;
+    align-self: center;
 }
 
 .word-header .page-header-actions {
@@ -115,19 +137,6 @@
     border-radius: var(--radius-sm);
 }
 
-/* Primary meta item (guide word) */
-.meta-item--primary {
-    flex-basis: 100%;
-    padding-bottom: var(--space-2);
-    margin-bottom: var(--space-2);
-    border-bottom: 1px solid var(--color-border);
-}
-
-.meta-guide-word {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text);
-}
 
 /* More details toggle */
 .word-meta__toggle {
@@ -223,44 +232,10 @@
     font-weight: var(--font-weight-medium);
 }
 
-/* Share button */
-.word-share-btn {
-    margin-left: var(--space-2);
-    opacity: 0.5;
-    padding: var(--space-1);
-    background: none;
-    border: none;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    transition: opacity var(--transition-fast), color var(--transition-fast);
-    vertical-align: middle;
-}
 
-.word-share-btn:hover {
-    opacity: 1;
-    color: var(--color-accent);
-}
+/* Show more/less toggle uses standard .btn class */
 
-/* Show more/less toggle */
-.show-more-toggle {
-    display: block;
-    margin-top: var(--space-4);
-    padding: var(--space-2) var(--space-4);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    color: var(--color-text-muted);
-    font-size: var(--text-xs);
-    cursor: pointer;
-    transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.show-more-toggle:hover {
-    background: var(--color-bg-elevated);
-    color: var(--color-text);
-}
-
-/* Hidden variants */
+/* Hidden variants (container pattern) */
 .variants-hidden {
     display: none;
     flex-direction: column;
@@ -269,6 +244,19 @@
 
 .variants-chart[data-show-all="true"] .variants-hidden {
     display: flex;
+}
+
+/* Hidden individual items (toggle pattern for readings/words) */
+.variants-hidden-item {
+    display: none;
+}
+
+[data-show-all="true"] > .variants-hidden-item {
+    display: grid; /* for variant-bar items */
+}
+
+.related-words-grid[data-show-all="true"] > .variants-hidden-item {
+    display: flex; /* for card items in grid */
 }
 
 /* Toast notification */
@@ -398,7 +386,7 @@
 
 .variant-bar {
     display: grid;
-    grid-template-columns: 140px 1fr auto;
+    grid-template-columns: 140px 1fr;
     align-items: center;
     gap: var(--space-3);
 }
@@ -414,8 +402,10 @@
 }
 
 .variant-frequency-container {
+    grid-column: 2;
+    grid-row: 1;
     background: var(--color-bg-inset);
-    height: 20px;
+    height: 30px;
     border-radius: var(--radius-sm);
     overflow: hidden;
 }
@@ -423,59 +413,57 @@
 .variant-frequency {
     background: var(--color-accent);
     height: 100%;
+    width: var(--bar-width, 0%);
     transition: width var(--transition-slow);
     min-width: 2px;
 }
 
+/* Toggle button for show more/fewer in word sections */
+.btn--section-toggle {
+    margin-top: var(--space-4);
+}
+
 .variant-count {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    z-index: 1;
     font-size: var(--text-xs);
     color: var(--color-text-muted);
-    min-width: 60px;
-    text-align: right;
+    background: var(--color-overlay-heavy);
+    padding: var(--space-0-5) var(--space-2);
+    border-radius: var(--radius-sm);
+    margin-right: var(--space-1);
 }
 
 /* ==========================================================================
-   Cuneiform Signs
+   Cuneiform Sign Cards
+   Used in dictionary word-detail and signs browser homophones/related
    ========================================================================== */
 
-.sign-breakdown {
-    display: flex;
+.sign-card {
+    flex-direction: row;
+    align-items: center;
     gap: var(--space-3);
-    flex-wrap: wrap;
 }
 
-.sign-item {
+.sign-card__info {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
+    gap: var(--space-2);
+}
+
+.sign-card__glyph {
+    flex-shrink: 0;
+    display: flex;
     align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-3);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    color: var(--color-text);
-    transition: border-color var(--transition-fast), background var(--transition-fast);
-    min-width: 80px;
-}
-
-.sign-cuneiform {
-    font-size: var(--text-4xl);
-    line-height: var(--line-height-none);
-}
-
-.sign-value {
-    font-family: var(--font-mono);
-    font-size: var(--text-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text);
-}
-
-.sign-type {
-    font-size: var(--text-xxs);
-    color: var(--color-text-subtle);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    justify-content: center;
+    font-family: 'Noto Sans Cuneiform', serif;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--color-text-muted);
 }
 
 /* ==========================================================================
@@ -497,80 +485,21 @@
     gap: var(--space-3);
 }
 
-/* Card Word Component */
-.card-word {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-3);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    color: var(--color-text);
-    transition: border-color var(--transition-fast), background var(--transition-fast);
+/* 3-column variant for sign detail words */
+.related-words-grid--3col {
+    grid-template-columns: repeat(3, 1fr);
 }
 
-.card-word:hover {
-    border-color: var(--color-accent);
-    background: var(--color-bg-elevated);
+@media (max-width: 900px) {
+    .related-words-grid--3col {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
-.card-word__header {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-0-5);
-}
-
-.card-word__headword {
-    font-weight: var(--font-weight-medium);
-    font-size: var(--text-sm);
-    color: var(--color-text);
-}
-
-.card-word:hover .card-word__headword {
-    color: var(--color-accent);
-}
-
-.card-word__guide-word {
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-    font-weight: var(--font-weight-normal);
-}
-
-.card-word__meta {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-}
-
-.card-word__badge {
-    font-size: var(--text-2xs);
-    font-weight: var(--font-weight-medium);
-    padding: var(--space-0-5) var(--space-2);
-    border-radius: var(--radius-sm);
-    background: var(--color-bg-inset);
-    color: var(--color-text-muted);
-}
-
-.card-word__badge--lang {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-}
-
-.card-word__count {
-    font-size: var(--text-xs);
-    color: var(--color-text-subtle);
-    margin-left: auto;
-}
-
-.card-word__notes {
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-    font-style: italic;
-    padding-top: var(--space-2);
-    border-top: 1px solid var(--color-border);
+@media (max-width: 640px) {
+    .related-words-grid--3col {
+        grid-template-columns: 1fr;
+    }
 }
 
 .examples-footer {
@@ -581,78 +510,20 @@
 }
 
 /* ==========================================================================
-   CAD Reference
-   ========================================================================== */
-
-.cad-content {
-    background: var(--color-surface);
-    border-radius: var(--radius-md);
-    padding: var(--space-4);
-}
-
-.cad-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-3);
-    flex-wrap: wrap;
-    gap: var(--space-3);
-}
-
-.volume-badge {
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--text-sm);
-    color: var(--color-text);
-}
-
-.pdf-link {
-    font-size: var(--text-xs);
-    color: var(--color-accent);
-    text-decoration: none;
-    font-weight: var(--font-weight-medium);
-}
-
-.pdf-link:hover {
-    text-decoration: underline;
-}
-
-.verified-badge {
-    color: var(--color-success);
-    font-size: var(--text-xs);
-}
-
-.cad-etymology,
-.cad-notes {
-    font-size: var(--text-sm);
-    line-height: var(--line-height-loose);
-    color: var(--color-text-secondary);
-    margin-top: var(--space-3);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--color-border);
-}
-
-.cad-etymology strong {
-    color: var(--color-text);
-}
-
-/* ==========================================================================
    Responsive
    ========================================================================== */
 
 @media (max-width: 640px) {
-    .word-header .page-header-title h1 {
+    .word-header__citation {
         font-size: var(--text-2xl);
     }
 
-    .word-header .page-header-title h1 .guide-word {
+    .word-header__guide-word {
         font-size: var(--text-base);
-        display: block;
-        margin-left: 0;
-        margin-top: var(--space-1);
     }
 
     .variant-bar {
-        grid-template-columns: 100px 1fr auto;
+        grid-template-columns: 100px 1fr;
         gap: var(--space-2);
     }
 
@@ -668,16 +539,4 @@
         padding-left: var(--space-4);
     }
 
-    .sign-breakdown {
-        gap: var(--space-2);
-    }
-
-    .sign-item {
-        min-width: 70px;
-        padding: var(--space-2);
-    }
-
-    .sign-cuneiform {
-        font-size: var(--text-4xl);
-    }
 }

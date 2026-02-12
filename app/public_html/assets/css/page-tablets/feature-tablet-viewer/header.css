@@ -80,7 +80,8 @@
 }
 
 .actions-menu:hover .actions-menu__dropdown,
-.actions-menu:focus-within .actions-menu__dropdown {
+.actions-menu:focus-within .actions-menu__dropdown,
+.actions-menu__dropdown.is-open {
     display: block;
 }
 
