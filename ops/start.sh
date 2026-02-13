@@ -2,8 +2,9 @@
 # Start GLINTSTONE and all dependencies
 # Usage: ./start-glintstone.sh
 
-PROJECT_DIR="/Volumes/Portable Storage/CUNEIFORM"
-ML_SERVICE_DIR="$PROJECT_DIR/ml-service"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ML_SERVICE_DIR="$PROJECT_DIR/ml/service"
 PID_FILE="$PROJECT_DIR/.glintstone.pid"
 
 # Colors for output
@@ -58,12 +59,33 @@ fi
 echo -e "${GREEN}✓ Web server running${NC}"
 echo ""
 
-# Step 2: Check if site is linked
+# Step 2: Check if site is linked to the correct directory
+WEB_ROOT="$PROJECT_DIR/app/public_html"
 echo -e "${BLUE}[2/4]${NC} Checking site link..."
-if ! valet links | grep -q "glintstone"; then
+
+VALET_SITES="$HOME/.config/valet/Sites"
+if [ ! -d "$VALET_SITES" ]; then
+    VALET_SITES="$HOME/.valet/Sites"
+fi
+
+NEEDS_LINK=false
+if [ ! -L "$VALET_SITES/glintstone" ]; then
+    NEEDS_LINK=true
     echo -e "${YELLOW}⚠ Site not linked yet${NC}"
-    echo "  → Linking site..."
-    cd "$PROJECT_DIR/app/public_html"
+else
+    CURRENT_TARGET="$(readlink "$VALET_SITES/glintstone")"
+    if [ "$CURRENT_TARGET" != "$WEB_ROOT" ]; then
+        NEEDS_LINK=true
+        echo -e "${YELLOW}⚠ Site linked to wrong directory${NC}"
+        echo "  Current: $CURRENT_TARGET"
+        echo "  Expected: $WEB_ROOT"
+        valet unlink glintstone
+    fi
+fi
+
+if [ "$NEEDS_LINK" = true ]; then
+    echo "  → Linking site to $WEB_ROOT..."
+    cd "$WEB_ROOT"
     valet link glintstone
 fi
 echo -e "${GREEN}✓ Site linked: http://glintstone.test${NC}"

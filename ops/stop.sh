@@ -1,7 +1,8 @@
 #!/bin/bash
 # Stop GLINTSTONE and all dependencies
 
-PROJECT_DIR="/Volumes/Portable Storage/CUNEIFORM"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PID_FILE="$PROJECT_DIR/.glintstone.pid"
 
 echo "Stopping GLINTSTONE services..."

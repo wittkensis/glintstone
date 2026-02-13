@@ -4,11 +4,12 @@
 
 set -e  # Exit on error
 
-PROJECT_DIR="/Volumes/Portable Storage/CUNEIFORM"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WEB_ROOT="$PROJECT_DIR/app/public_html"
 
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║      CUNEIFORM Web Server Setup (Automated)             ║"
+echo "║      GLINTSTONE Web Server Setup (Automated)             ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -78,9 +79,24 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Step 4: Linking Project to Valet..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+# Determine Valet Sites directory
+VALET_SITES="$HOME/.config/valet/Sites"
+if [ ! -d "$VALET_SITES" ]; then
+    VALET_SITES="$HOME/.valet/Sites"
+fi
+
+# Remove stale link if it points to wrong directory
+if [ -L "$VALET_SITES/glintstone" ]; then
+    CURRENT_TARGET="$(readlink "$VALET_SITES/glintstone")"
+    if [ "$CURRENT_TARGET" != "$WEB_ROOT" ]; then
+        echo "  → Removing stale link (pointed to $CURRENT_TARGET)"
+        valet unlink glintstone
+    fi
+fi
+
 cd "$WEB_ROOT"
 valet link glintstone
-echo "✓ Project linked"
+echo "✓ Project linked to $WEB_ROOT"
 echo ""
 
 # Step 5: Verify Setup
