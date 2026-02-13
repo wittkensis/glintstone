@@ -1,5 +1,4 @@
 # Database (managed separately, ~300 MB)
-database/glintstone.db
 database/glintstone.db-shm
 database/glintstone.db-wal
 database/images/
