@@ -78,7 +78,7 @@ All data converges on the **P-number** (CDLI artifact identifier) as the univers
 | Table | Key Columns | Purpose |
 |-------|-------------|---------|
 | `sign_annotations` | p_number (FK), sign_label, bbox (x/y/w/h as %), confidence, source, image_type | Bounding-box detections on tablet images. Sources: compvis, ebl, manual, ml. |
-| `pipeline_status` | p_number (PK), has_image, has_ocr, has_atf, has_lemmas, has_translation, quality_score | Tracks 5-stage completeness per tablet |
+| `pipeline_status` | p_number (PK), has_image, has_ocr, has_atf, has_lemmas, has_translation | Tracks 5-stage completeness per tablet |
 
 ### Layer 6: Application
 
@@ -105,20 +105,6 @@ signs (OGSL) ──────────────────────�
                               └── glossary_forms
 ```
 
-### Quality Score
-
-Each tablet gets a weighted completeness score (0.0 -- 1.0):
-
-```
-quality_score = (has_image * 0.15)
-              + (has_atf * 0.25)
-              + (has_sign_annotations * 0.15)
-              + (has_lemmas * 0.20)
-              + (has_translation * 0.25)
-```
-
-This drives the UI's pipeline visualizations and lets researchers sort tablets by how much work remains.
-
 ---
 
 ## Design Philosophy
@@ -126,7 +112,7 @@ This drives the UI's pipeline visualizations and lets researchers sort tablets b
 - **Pipeline-first visibility** -- every view foregrounds the 5-stage pipeline so researchers immediately see what's complete and what's missing
 - **Data/app separation** -- the SQLite database lives in `database/`, independent of the web app in `app/`. Either can be backed up, moved, or replaced without affecting the other
 - **On-demand fetching** -- images and ATF data are fetched from CDLI when first requested, then cached locally. No massive upfront downloads required
-- **Gap identification** -- quality scores and pipeline indicators highlight where human expertise or ML contribution would have the most impact
+- **Gap identification** -- pipeline indicators highlight where human expertise or ML contribution would have the most impact
 - **Offline-capable** -- core browsing, search, and dictionary features work without external API access
 - **Source provenance** -- every data point tracks its origin (CDLI, ORACC, CompVis, etc.) so researchers can assess reliability
 
