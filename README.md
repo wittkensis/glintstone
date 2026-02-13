@@ -113,7 +113,7 @@ signs (OGSL) ──────────────────────�
 - **Data/app separation** -- the SQLite database lives in `database/`, independent of the web app in `app/`. Either can be backed up, moved, or replaced without affecting the other
 - **On-demand fetching** -- images and ATF data are fetched from CDLI when first requested, then cached locally. No massive upfront downloads required
 - **Gap identification** -- pipeline indicators highlight where human expertise or ML contribution would have the most impact
-- **Offline-capable** -- core browsing, search, and dictionary features work without external API access
+- **Academic attribution** -- every data point traces back to its originating project and the researchers who produced it. Glintstone federates but does not obscure -- the scholars and institutions behind CDLI, ORACC, eBL, and ePSD2 built the foundation this platform stands on, and their contributions must remain visible and credited throughout the interface
 - **Source provenance** -- every data point tracks its origin (CDLI, ORACC, CompVis, etc.) so researchers can assess reliability
 
 ---
