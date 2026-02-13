@@ -1,0 +1,19 @@
+# CAD Digitization Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core extraction
+langextract>=0.1.0
+
+# PDF processing
+pdfplumber>=0.10.0
+PyMuPDF>=1.23.0
+
+# Google AI
+google-generativeai>=0.4.0
+
+# Data processing
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+
+# Database
+# (uses built-in sqlite3)

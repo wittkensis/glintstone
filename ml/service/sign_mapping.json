@@ -1,0 +1,1040 @@
+[
+  {
+    "id": 0,
+    "name": "TU",
+    "unicode": "𒌅",
+    "abz": "ABZ58"
+  },
+  {
+    "id": 1,
+    "name": "|U.GUD|",
+    "unicode": "𒌌",
+    "abz": "ABZ441"
+  },
+  {
+    "id": 2,
+    "name": "TUM",
+    "unicode": "𒌈",
+    "abz": "ABZ207"
+  },
+  {
+    "id": 3,
+    "name": "LA",
+    "unicode": "𒆷",
+    "abz": "ABZ55"
+  },
+  {
+    "id": 4,
+    "name": "TA",
+    "unicode": "𒋫",
+    "abz": "ABZ139"
+  },
+  {
+    "id": 5,
+    "name": "GAR",
+    "unicode": "𒃻",
+    "abz": "ABZ597"
+  },
+  {
+    "id": 6,
+    "name": "GAL",
+    "unicode": "𒃲",
+    "abz": "ABZ343"
+  },
+  {
+    "id": 7,
+    "name": "I",
+    "unicode": "𒄿",
+    "abz": "ABZ142"
+  },
+  {
+    "id": 8,
+    "name": "TI",
+    "unicode": "𒋾",
+    "abz": "ABZ73"
+  },
+  {
+    "id": 9,
+    "name": "LI",
+    "unicode": "𒇷",
+    "abz": "ABZ59"
+  },
+  {
+    "id": 10,
+    "name": "ZA",
+    "unicode": "𒍝",
+    "abz": "ABZ586"
+  },
+  {
+    "id": 11,
+    "name": "A",
+    "unicode": "𒀀",
+    "abz": "ABZ579"
+  },
+  {
+    "id": 12,
+    "name": "DI",
+    "unicode": "𒁲",
+    "abz": "ABZ457"
+  },
+  {
+    "id": 13,
+    "name": "MI",
+    "unicode": "𒈪",
+    "abz": "ABZ427"
+  },
+  {
+    "id": 14,
+    "name": "RI",
+    "unicode": "𒊑",
+    "abz": "ABZ86"
+  },
+  {
+    "id": 15,
+    "name": "IŠ",
+    "unicode": "𒅖",
+    "abz": "ABZ212"
+  },
+  {
+    "id": 16,
+    "name": "BA",
+    "unicode": "𒁀",
+    "abz": "ABZ5"
+  },
+  {
+    "id": 17,
+    "name": "LU",
+    "unicode": "𒇻",
+    "abz": "ABZ537"
+  },
+  {
+    "id": 18,
+    "name": "TE",
+    "unicode": "𒋼",
+    "abz": "ABZ376"
+  },
+  {
+    "id": 19,
+    "name": "DA",
+    "unicode": "𒁕",
+    "abz": "ABZ335"
+  },
+  {
+    "id": 20,
+    "name": "|GUD×KUR|",
+    "unicode": "𒄠",
+    "abz": "ABZ170"
+  },
+  {
+    "id": 21,
+    "name": "MA",
+    "unicode": "𒈠",
+    "abz": "ABZ342"
+  },
+  {
+    "id": 22,
+    "name": "E₂",
+    "unicode": "𒂍",
+    "abz": "ABZ324"
+  },
+  {
+    "id": 23,
+    "name": "DIŠ",
+    "unicode": "𒁹",
+    "abz": "ABZ480"
+  },
+  {
+    "id": 24,
+    "name": "MU",
+    "unicode": "𒈬",
+    "abz": "ABZ61"
+  },
+  {
+    "id": 25,
+    "name": "DU",
+    "unicode": "𒁺",
+    "abz": "ABZ206"
+  },
+  {
+    "id": 26,
+    "name": "ŠU₂",
+    "unicode": "𒋙",
+    "abz": "ABZ545"
+  },
+  {
+    "id": 27,
+    "name": "EN",
+    "unicode": "𒂗",
+    "abz": "ABZ99"
+  },
+  {
+    "id": 28,
+    "name": "KUL",
+    "unicode": "𒆰",
+    "abz": "ABZ72"
+  },
+  {
+    "id": 29,
+    "name": "SI",
+    "unicode": "𒋛",
+    "abz": "ABZ112"
+  },
+  {
+    "id": 30,
+    "name": "|I.A|",
+    "unicode": "𒅀",
+    "abz": "ABZ142a"
+  },
+  {
+    "id": 31,
+    "name": "HI",
+    "unicode": "𒄭",
+    "abz": "ABZ396"
+  },
+  {
+    "id": 32,
+    "name": "MUŠ₃",
+    "unicode": "𒈹",
+    "abz": "ABZ103"
+  },
+  {
+    "id": 33,
+    "name": "AN",
+    "unicode": "𒀭",
+    "abz": "ABZ13"
+  },
+  {
+    "id": 34,
+    "name": "NA",
+    "unicode": "𒈾",
+    "abz": "ABZ70"
+  },
+  {
+    "id": 35,
+    "name": "BAD",
+    "unicode": "𒁁",
+    "abz": "ABZ69"
+  },
+  {
+    "id": 36,
+    "name": "AMAR",
+    "unicode": "𒀫",
+    "abz": "ABZ437"
+  },
+  {
+    "id": 37,
+    "name": "UD",
+    "unicode": "𒌓",
+    "abz": "ABZ381"
+  },
+  {
+    "id": 38,
+    "name": "UnclearSign",
+    "unicode": null,
+    "abz": "NoABZ0"
+  },
+  {
+    "id": 39,
+    "name": "|HI×BAD|",
+    "unicode": "𒄰",
+    "abz": "ABZ279"
+  },
+  {
+    "id": 40,
+    "name": "|UD×(U.U.U)|",
+    "unicode": "𒌗",
+    "abz": "ABZ52"
+  },
+  {
+    "id": 41,
+    "name": "AB",
+    "unicode": "𒀊",
+    "abz": "ABZ128"
+  },
+  {
+    "id": 42,
+    "name": "AK",
+    "unicode": "𒀝",
+    "abz": "ABZ97"
+  },
+  {
+    "id": 43,
+    "name": "LUGAL",
+    "unicode": "𒈗",
+    "abz": "ABZ151"
+  },
+  {
+    "id": 44,
+    "name": "DIN",
+    "unicode": "𒁷",
+    "abz": "ABZ465"
+  },
+  {
+    "id": 45,
+    "name": "KI",
+    "unicode": "𒆠",
+    "abz": "ABZ461"
+  },
+  {
+    "id": 46,
+    "name": "DUN₃@g",
+    "unicode": "𒂆",
+    "abz": "ABZ595"
+  },
+  {
+    "id": 47,
+    "name": "KU₃",
+    "unicode": "𒆬",
+    "abz": "ABZ468"
+  },
+  {
+    "id": 48,
+    "name": "AŠ",
+    "unicode": "𒀸",
+    "abz": "ABZ1"
+  },
+  {
+    "id": 49,
+    "name": "IGI",
+    "unicode": "𒅆",
+    "abz": "ABZ449"
+  },
+  {
+    "id": 50,
+    "name": "U₂",
+    "unicode": "𒌑",
+    "abz": "ABZ318"
+  },
+  {
+    "id": 51,
+    "name": "ŠA₃",
+    "unicode": "𒊮",
+    "abz": "ABZ384"
+  },
+  {
+    "id": 52,
+    "name": "BI",
+    "unicode": "𒁉",
+    "abz": "ABZ214"
+  },
+  {
+    "id": 53,
+    "name": "GUR",
+    "unicode": "𒄥",
+    "abz": "ABZ111"
+  },
+  {
+    "id": 54,
+    "name": "ŠE",
+    "unicode": "𒊺",
+    "abz": "ABZ367"
+  },
+  {
+    "id": 55,
+    "name": "ZI",
+    "unicode": "𒍣",
+    "abz": "ABZ84"
+  },
+  {
+    "id": 56,
+    "name": "GA",
+    "unicode": "𒂵",
+    "abz": "ABZ319"
+  },
+  {
+    "id": 57,
+    "name": "SILA₃",
+    "unicode": "𒋡",
+    "abz": "ABZ62"
+  },
+  {
+    "id": 58,
+    "name": "ŠID",
+    "unicode": "𒋃",
+    "abz": "ABZ314"
+  },
+  {
+    "id": 59,
+    "name": "|SAL.TUG₂|",
+    "unicode": "𒎏",
+    "abz": "ABZ556"
+  },
+  {
+    "id": 60,
+    "name": "SU",
+    "unicode": "𒋢",
+    "abz": "ABZ7"
+  },
+  {
+    "id": 61,
+    "name": "KAK",
+    "unicode": "𒆕",
+    "abz": "ABZ230"
+  },
+  {
+    "id": 62,
+    "name": "MAŠ",
+    "unicode": "𒈦",
+    "abz": "ABZ74"
+  },
+  {
+    "id": 63,
+    "name": "TUR",
+    "unicode": "𒌉",
+    "abz": "ABZ144"
+  },
+  {
+    "id": 64,
+    "name": "ŠEŠ",
+    "unicode": "𒋀",
+    "abz": "ABZ331"
+  },
+  {
+    "id": 65,
+    "name": "LU₂",
+    "unicode": "𒇽",
+    "abz": "ABZ330"
+  },
+  {
+    "id": 66,
+    "name": "IA₂",
+    "unicode": "𒐊",
+    "abz": "ABZ598a"
+  },
+  {
+    "id": 67,
+    "name": "UR",
+    "unicode": "𒌨",
+    "abz": "ABZ575"
+  },
+  {
+    "id": 68,
+    "name": "KAL",
+    "unicode": "𒆗",
+    "abz": "ABZ322"
+  },
+  {
+    "id": 69,
+    "name": "|ŠEŠ.KI|",
+    "unicode": null,
+    "abz": "NoABZ2390"
+  },
+  {
+    "id": 70,
+    "name": "ZU",
+    "unicode": "𒍪",
+    "abz": "ABZ6"
+  },
+  {
+    "id": 71,
+    "name": "ŠU",
+    "unicode": "𒋗",
+    "abz": "ABZ354"
+  },
+  {
+    "id": 72,
+    "name": "NE",
+    "unicode": "𒉈",
+    "abz": "ABZ172"
+  },
+  {
+    "id": 73,
+    "name": "IM",
+    "unicode": "𒅎",
+    "abz": "ABZ399"
+  },
+  {
+    "id": 74,
+    "name": "RA",
+    "unicode": "𒊏",
+    "abz": "ABZ328"
+  },
+  {
+    "id": 75,
+    "name": "|U.U|",
+    "unicode": "𒎙",
+    "abz": "ABZ471"
+  },
+  {
+    "id": 76,
+    "name": "ZAG",
+    "unicode": "𒍠",
+    "abz": "ABZ332"
+  },
+  {
+    "id": 77,
+    "name": "|DIŠ.DIŠ.DIŠ|",
+    "unicode": "𒐈",
+    "abz": "ABZ593"
+  },
+  {
+    "id": 78,
+    "name": "GA₂",
+    "unicode": "𒂷",
+    "abz": "ABZ233"
+  },
+  {
+    "id": 79,
+    "name": "IN",
+    "unicode": "𒅔",
+    "abz": "ABZ148"
+  },
+  {
+    "id": 80,
+    "name": "KIN",
+    "unicode": "𒆥",
+    "abz": "ABZ538"
+  },
+  {
+    "id": 81,
+    "name": "TAR",
+    "unicode": "𒋻",
+    "abz": "ABZ12"
+  },
+  {
+    "id": 82,
+    "name": "MAH",
+    "unicode": "𒈤",
+    "abz": "ABZ57"
+  },
+  {
+    "id": 83,
+    "name": "LAL",
+    "unicode": "𒇲",
+    "abz": "ABZ481"
+  },
+  {
+    "id": 84,
+    "name": "KID",
+    "unicode": "𒆤",
+    "abz": "ABZ313"
+  },
+  {
+    "id": 85,
+    "name": "GABA",
+    "unicode": "𒃮",
+    "abz": "ABZ167"
+  },
+  {
+    "id": 86,
+    "name": "KA",
+    "unicode": "𒅗",
+    "abz": "ABZ15"
+  },
+  {
+    "id": 87,
+    "name": "RU",
+    "unicode": "𒊒",
+    "abz": "ABZ68"
+  },
+  {
+    "id": 88,
+    "name": "ŠA",
+    "unicode": "𒊭",
+    "abz": "ABZ353"
+  },
+  {
+    "id": 89,
+    "name": "|HI×NUN|",
+    "unicode": "𒄴",
+    "abz": "ABZ398"
+  },
+  {
+    "id": 90,
+    "name": "ME",
+    "unicode": "𒈨",
+    "abz": "ABZ532"
+  },
+  {
+    "id": 91,
+    "name": "BU",
+    "unicode": "𒁍",
+    "abz": "ABZ371"
+  },
+  {
+    "id": 92,
+    "name": "NI",
+    "unicode": "𒉌",
+    "abz": "ABZ231"
+  },
+  {
+    "id": 93,
+    "name": "IG",
+    "unicode": "𒅅",
+    "abz": "ABZ80"
+  },
+  {
+    "id": 94,
+    "name": "MES",
+    "unicode": "𒈩",
+    "abz": "ABZ314"
+  },
+  {
+    "id": 95,
+    "name": "PA",
+    "unicode": "𒉺",
+    "abz": "ABZ295"
+  },
+  {
+    "id": 96,
+    "name": "SAG",
+    "unicode": "𒊕",
+    "abz": "ABZ115"
+  },
+  {
+    "id": 97,
+    "name": "U",
+    "unicode": "𒌋",
+    "abz": "ABZ411"
+  },
+  {
+    "id": 98,
+    "name": "E",
+    "unicode": "𒂊",
+    "abz": "ABZ308"
+  },
+  {
+    "id": 99,
+    "name": "GUM",
+    "unicode": "𒄣",
+    "abz": "ABZ191"
+  },
+  {
+    "id": 100,
+    "name": "GIŠ",
+    "unicode": "𒄑",
+    "abz": "ABZ296"
+  },
+  {
+    "id": 101,
+    "name": "|U.KA|",
+    "unicode": null,
+    "abz": "ABZ412"
+  },
+  {
+    "id": 102,
+    "name": "LUM",
+    "unicode": "𒈝",
+    "abz": "ABZ565"
+  },
+  {
+    "id": 103,
+    "name": "|HI×AŠ₂|",
+    "unicode": "𒄯",
+    "abz": "ABZ401"
+  },
+  {
+    "id": 104,
+    "name": "HA",
+    "unicode": "𒄩",
+    "abz": "ABZ589"
+  },
+  {
+    "id": 105,
+    "name": "UŠ",
+    "unicode": "𒍑",
+    "abz": "ABZ211"
+  },
+  {
+    "id": 106,
+    "name": "|U.U.U|",
+    "unicode": "𒌍",
+    "abz": "ABZ472"
+  },
+  {
+    "id": 107,
+    "name": "MIN",
+    "unicode": "𒈫",
+    "abz": "ABZ570"
+  },
+  {
+    "id": 108,
+    "name": "NAM",
+    "unicode": "𒉆",
+    "abz": "ABZ79"
+  },
+  {
+    "id": 109,
+    "name": "NU",
+    "unicode": "𒉡",
+    "abz": "ABZ75"
+  },
+  {
+    "id": 110,
+    "name": "AL",
+    "unicode": "𒀠",
+    "abz": "ABZ298"
+  },
+  {
+    "id": 111,
+    "name": "AB₂",
+    "unicode": "𒀖",
+    "abz": "ABZ420"
+  },
+  {
+    "id": 112,
+    "name": "IB",
+    "unicode": "𒅁",
+    "abz": "ABZ535"
+  },
+  {
+    "id": 113,
+    "name": "UM",
+    "unicode": "𒌝",
+    "abz": "ABZ134"
+  },
+  {
+    "id": 114,
+    "name": "KU",
+    "unicode": "𒆪",
+    "abz": "ABZ536"
+  },
+  {
+    "id": 115,
+    "name": "SUR",
+    "unicode": "𒋩",
+    "abz": "ABZ101"
+  },
+  {
+    "id": 116,
+    "name": "MEŠ",
+    "unicode": "𒎌",
+    "abz": "ABZ533"
+  },
+  {
+    "id": 117,
+    "name": "TUG₂",
+    "unicode": "𒌆",
+    "abz": "ABZ536"
+  },
+  {
+    "id": 118,
+    "name": "TAG",
+    "unicode": "𒋳",
+    "abz": "ABZ126"
+  },
+  {
+    "id": 119,
+    "name": "DIM",
+    "unicode": "𒁴",
+    "abz": "ABZ94"
+  },
+  {
+    "id": 120,
+    "name": "BAL",
+    "unicode": "𒁄",
+    "abz": "ABZ9"
+  },
+  {
+    "id": 121,
+    "name": "IR",
+    "unicode": "𒅕",
+    "abz": "ABZ232"
+  },
+  {
+    "id": 122,
+    "name": "ERIN₂",
+    "unicode": "𒂟",
+    "abz": "ABZ393"
+  },
+  {
+    "id": 123,
+    "name": "PAP",
+    "unicode": "𒉽",
+    "abz": "ABZ60"
+  },
+  {
+    "id": 124,
+    "name": "SA",
+    "unicode": "𒊓",
+    "abz": "ABZ104"
+  },
+  {
+    "id": 125,
+    "name": "|PIRIG×ZA|",
+    "unicode": "𒊍",
+    "abz": "ABZ131"
+  },
+  {
+    "id": 126,
+    "name": "UB",
+    "unicode": "𒌒",
+    "abz": "ABZ306"
+  },
+  {
+    "id": 127,
+    "name": "URU",
+    "unicode": "𒌷",
+    "abz": "ABZ38"
+  },
+  {
+    "id": 128,
+    "name": "|U.5(DIŠ)|",
+    "unicode": null,
+    "abz": "ABZ470"
+  },
+  {
+    "id": 129,
+    "name": "DAM",
+    "unicode": "𒁮",
+    "abz": "ABZ557"
+  },
+  {
+    "id": 130,
+    "name": "GAR₃",
+    "unicode": "𒃼",
+    "abz": "ABZ333"
+  },
+  {
+    "id": 131,
+    "name": "|EN.ZU|",
+    "unicode": null,
+    "abz": "NoABZ921"
+  },
+  {
+    "id": 132,
+    "name": "ZE₂",
+    "unicode": "𒍢",
+    "abz": "ABZ147"
+  },
+  {
+    "id": 133,
+    "name": "AD",
+    "unicode": "𒀜",
+    "abz": "ABZ145"
+  },
+  {
+    "id": 134,
+    "name": "APIN",
+    "unicode": "𒀳",
+    "abz": "ABZ56"
+  },
+  {
+    "id": 135,
+    "name": "EL",
+    "unicode": "𒂖",
+    "abz": "ABZ564"
+  },
+  {
+    "id": 136,
+    "name": "PI",
+    "unicode": "𒉿",
+    "abz": "ABZ383"
+  },
+  {
+    "id": 137,
+    "name": "AŠ@z",
+    "unicode": "𒀹",
+    "abz": "ABZ360"
+  },
+  {
+    "id": 138,
+    "name": "DAR",
+    "unicode": "𒁯",
+    "abz": "ABZ114"
+  },
+  {
+    "id": 139,
+    "name": "DUB",
+    "unicode": "𒁾",
+    "abz": "ABZ138"
+  },
+  {
+    "id": 140,
+    "name": "SAR",
+    "unicode": "𒊬",
+    "abz": "ABZ331e+152i"
+  },
+  {
+    "id": 141,
+    "name": "GUD",
+    "unicode": "𒄞",
+    "abz": "ABZ297"
+  },
+  {
+    "id": 142,
+    "name": "A₂",
+    "unicode": "𒀉",
+    "abz": "ABZ334"
+  },
+  {
+    "id": 143,
+    "name": "KUR",
+    "unicode": "𒆳",
+    "abz": "ABZ366"
+  },
+  {
+    "id": 144,
+    "name": "ARAD",
+    "unicode": "𒀴",
+    "abz": "ABZ50"
+  },
+  {
+    "id": 145,
+    "name": "|IGI.DIB|",
+    "unicode": "𒅇",
+    "abz": "ABZ455"
+  },
+  {
+    "id": 146,
+    "name": "6(DIŠ)",
+    "unicode": "𒐋",
+    "abz": "ABZ598b"
+  },
+  {
+    "id": 147,
+    "name": "AŠ₂",
+    "unicode": "𒀾",
+    "abz": "ABZ339"
+  },
+  {
+    "id": 148,
+    "name": "IL",
+    "unicode": "𒅋",
+    "abz": "ABZ205"
+  },
+  {
+    "id": 149,
+    "name": "HU",
+    "unicode": "𒄷",
+    "abz": "ABZ78"
+  },
+  {
+    "id": 150,
+    "name": "NUN",
+    "unicode": "𒉣",
+    "abz": "ABZ87"
+  },
+  {
+    "id": 151,
+    "name": "SAL",
+    "unicode": "𒊩",
+    "abz": "ABZ554"
+  },
+  {
+    "id": 152,
+    "name": "GI",
+    "unicode": "𒄀",
+    "abz": "ABZ85"
+  },
+  {
+    "id": 153,
+    "name": "EŠ₂",
+    "unicode": "𒂠",
+    "abz": "ABZ536"
+  },
+  {
+    "id": 154,
+    "name": "UN",
+    "unicode": "𒌧",
+    "abz": "ABZ312"
+  },
+  {
+    "id": 155,
+    "name": "TIL",
+    "unicode": "𒌀",
+    "abz": "ABZ69"
+  },
+  {
+    "id": 156,
+    "name": "NIM",
+    "unicode": "𒉏",
+    "abz": "ABZ433"
+  },
+  {
+    "id": 157,
+    "name": "TAB",
+    "unicode": "𒋰",
+    "abz": "ABZ124"
+  },
+  {
+    "id": 158,
+    "name": "SUM",
+    "unicode": "𒋧",
+    "abz": "ABZ164"
+  },
+  {
+    "id": 159,
+    "name": "|3×AN|",
+    "unicode": "𒀯",
+    "abz": "ABZ129a"
+  },
+  {
+    "id": 160,
+    "name": "|NINDA₂×ŠE|",
+    "unicode": "𒉚",
+    "abz": "NoABZ1853"
+  },
+  {
+    "id": 161,
+    "name": "MAŠ₂",
+    "unicode": "𒈧",
+    "abz": "ABZ76"
+  },
+  {
+    "id": 162,
+    "name": "GI₄",
+    "unicode": "𒄄",
+    "abz": "ABZ326"
+  },
+  {
+    "id": 163,
+    "name": "GAN",
+    "unicode": "𒃶",
+    "abz": "ABZ143"
+  },
+  {
+    "id": 164,
+    "name": "DIM₂",
+    "unicode": "𒁶",
+    "abz": "ABZ440"
+  },
+  {
+    "id": 165,
+    "name": "GU",
+    "unicode": "𒄖",
+    "abz": "ABZ559"
+  },
+  {
+    "id": 166,
+    "name": "MAR",
+    "unicode": "𒈥",
+    "abz": "ABZ307"
+  },
+  {
+    "id": 167,
+    "name": "MUŠ",
+    "unicode": "𒈲",
+    "abz": "ABZ374"
+  },
+  {
+    "id": 168,
+    "name": "BAR",
+    "unicode": "𒁇",
+    "abz": "ABZ74"
+  },
+  {
+    "id": 169,
+    "name": "|IGI.RI|",
+    "unicode": "𒅈",
+    "abz": "ABZ451"
+  },
+  {
+    "id": 170,
+    "name": "TUK",
+    "unicode": "𒌇",
+    "abz": "ABZ574"
+  },
+  {
+    "id": 171,
+    "name": "|UD.DU|",
+    "unicode": null,
+    "abz": "NoABZ2174"
+  },
+  {
+    "id": 172,
+    "name": "|LAGAB.LAGAB|",
+    "unicode": null,
+    "abz": "ABZ529"
+  }
+]

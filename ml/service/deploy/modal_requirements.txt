@@ -1,0 +1,27 @@
+# Modal Deployment Requirements for Cuneiform Sign Detection# Note: These are installed via modal_app.py image definition, not via this file directly
+# This file is for documentation purposes to show what's installed in the Modal container
+
+# Core ML - CUDA enabled versions
+torch==2.0.1
+torchvision==0.15.2
+
+# MMDetection stack with CUDA support
+# mmcv-full is installed from custom URL in modal_app.py for CUDA compatibility
+mmcv-full==1.7.1  # Installed from: https://download.openmmlab.com/mmcv/dist/cu118/torch2.0/index.html
+mmengine==0.10.3
+mmdet==3.3.0
+
+# Web framework (for FastAPI endpoints)
+fastapi==0.100.0
+python-multipart==0.0.6
+
+# Image processing
+pillow==10.0.0
+
+# Utilities
+numpy==1.24.3
+
+# System packages (installed via apt):
+# - git
+# - libgl1 (OpenCV dependency)
+# - libglib2.0-0 (OpenCV dependency)

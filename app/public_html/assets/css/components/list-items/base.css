@@ -1,0 +1,287 @@
+/**
+ * Base List Item Component
+ * Purpose: Generic list item for any entity type (words, tablets, collections, etc.)
+ * Used on: Dictionary browser, knowledge sidebar, global search, related words
+ * Dependencies: core/tokens.css, components/badges.css
+ *
+ * Structure:
+ * .list-item
+ *   .list-item__thumbnail (optional -- switches layout to row)
+ *     img | .list-item__thumbnail-text
+ *   .list-item__body (required when thumbnail present)
+ *     .list-item__header
+ *       .list-item__title
+ *       .list-item__subtitle
+ *     .list-item__meta
+ *       .badge.badge--sm (reuses shared badge component)
+ *       .list-item__count
+ *     .list-item__notes (optional)
+ *
+ * Without thumbnail, __header/__meta/__notes sit directly inside .list-item.
+ */
+
+/* ==========================================================================
+   Base List Item
+   ========================================================================== */
+
+.list-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    text-decoration: none;
+    color: var(--color-text);
+}
+
+.list-item:hover {
+    background: var(--color-surface);
+}
+
+/* ==========================================================================
+   Header Row
+   ========================================================================== */
+
+.list-item__header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.list-item__title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+    flex-shrink: 0;
+}
+
+.list-item:hover .list-item__title {
+    color: var(--color-accent);
+}
+
+.list-item__subtitle {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+/* ==========================================================================
+   Meta Row
+   ========================================================================== */
+
+.list-item__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.list-item__sep {
+    color: var(--color-text-subtle);
+}
+
+.list-item__count {
+    margin-left: auto;
+    color: var(--color-text-subtle);
+    font-size: var(--text-xs);
+}
+
+/* ==========================================================================
+   Notes (Optional)
+   ========================================================================== */
+
+.list-item__notes {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-style: italic;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+}
+
+/* ==========================================================================
+   Modifier: Active
+   ========================================================================== */
+
+.list-item--active {
+    background: var(--color-bg);
+    padding-left: calc(var(--space-3) - 3px);
+}
+
+.list-item--active .list-item__title {
+    color: var(--color-accent);
+}
+
+/* ==========================================================================
+   Modifier: Highlight (pulse animation for URL-navigated items)
+   ========================================================================== */
+
+@keyframes list-item-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 transparent; }
+    50% { box-shadow: 0 0 0 4px var(--color-accent-30); }
+}
+
+.list-item--highlight {
+    animation: list-item-pulse 2s ease-out;
+}
+
+/* ==========================================================================
+   Modifier: Compact (for sidebars)
+   ========================================================================== */
+
+.list-item--compact {
+    padding: var(--space-1-5) var(--space-2);
+    gap: 2px;
+}
+
+.list-item--compact .list-item__title {
+    font-weight: 300;
+}
+
+.list-item--compact .list-item__meta {
+    font-size: 0.7rem;
+}
+
+/* ==========================================================================
+   Modifier: Card (for grid contexts like related words)
+   ========================================================================== */
+
+.list-item--card {
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    gap: var(--space-2);
+    transition: border-color var(--transition-fast),
+                background var(--transition-fast);
+}
+
+.list-item--card:hover {
+    border-color: var(--color-accent);
+    background: var(--color-bg-elevated);
+}
+
+/* ==========================================================================
+   Modifier: Search (for search dropdown)
+   ========================================================================== */
+
+.list-item--search {
+    padding: var(--space-3);
+    border-radius: 0;
+}
+
+.list-item--search:hover,
+.list-item--search:focus,
+.list-item--search.is-selected {
+    background: var(--color-accent-15);
+    outline: none;
+}
+
+.list-item--search:active {
+    background: var(--color-accent-25);
+}
+
+/* ==========================================================================
+   Thumbnail (Optional)
+   ========================================================================== */
+
+.list-item:has(.list-item__thumbnail) {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.list-item__thumbnail {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-elevated);
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.list-item__thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.list-item__thumbnail-text {
+    font-family: var(--font-cuneiform);
+    font-size: var(--text-xl);
+    color: var(--color-text-subtle);
+}
+
+/* Body wrapper (groups text content next to thumbnail) */
+.list-item__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+/* Thumbnail size adjustments per modifier */
+.list-item--compact .list-item__thumbnail {
+    width: 32px;
+    height: 32px;
+}
+
+.list-item--compact .list-item__thumbnail-text {
+    font-size: var(--text-lg);
+}
+
+.list-item--search .list-item__thumbnail {
+    width: 48px;
+    height: 48px;
+}
+
+.list-item--search .list-item__thumbnail-text {
+    font-size: var(--text-2xl);
+}
+
+/* ==========================================================================
+   Entity Modifier: Tablet
+   ========================================================================== */
+
+.list-item--tablet .list-item__title {
+    font-family: var(--font-mono);
+}
+
+/* ==========================================================================
+   Modifier: Skeleton Loading
+   ========================================================================== */
+
+.list-item--skeleton {
+    pointer-events: none;
+}
+
+.list-item--skeleton .list-item__title,
+.list-item--skeleton .list-item__subtitle,
+.list-item--skeleton .badge {
+    background: var(--color-surface);
+    color: transparent;
+    border-radius: var(--radius-sm);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.list-item--skeleton .list-item__title {
+    width: 80px;
+}
+
+.list-item--skeleton .list-item__subtitle {
+    width: 120px;
+}
+
+.list-item--skeleton .list-item__thumbnail {
+    animation: pulse 1.5s ease-in-out infinite;
+}

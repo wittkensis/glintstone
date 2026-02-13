@@ -1,92 +1,235 @@
-# GLINTSTONE - Cuneiform Research Database
+# Glintstone
 
-> Explore 389,715+ cuneiform tablets with ML-powered sign detection
+Federated cuneiform research platform. Raw tablet to full translation in a single interface.
 
-## Quick Start
+## Why Glintstone
 
-### First Time Setup (15 minutes)
+Cuneiform research is fragmented across CDLI (catalog and images), ORACC (linguistic annotations), eBL (editions and fragment joining), ePSD2 (dictionaries), and others. No single platform shows you the complete picture for a tablet -- what's been photographed, transliterated, annotated, and translated -- or tells you what's missing.
+
+Glintstone federates these sources into one interface built around a 5-stage pipeline: **Image > OCR > ATF > Lemmas > Translation**. Every tablet shows its pipeline status so you can see at a glance what exists and where gaps remain.
+
+**For Assyriologists:** Unified search across sources, dictionary lookups inline with transliterations, quality transparency per tablet, and gap identification showing where human expertise is needed most.
+
+**For ML researchers:** Structured training data linking sign annotations to linguistic ground truth, a sign detection inference pipeline (DETR), and a schema designed to connect OCR outputs back to lexical databases.
+
+---
+
+## Data Sources
+
+### Integrated
+
+| Source | Provides | Records | Notes |
+|--------|----------|---------|-------|
+| **CDLI** catalog | Tablet metadata (P-numbers, museum numbers, period, provenience, genre, language) | 10,215 artifacts | CSV export from cdli.earth |
+| **CDLI** ATF | Transliterations in ATF format | 135,200 inscriptions | Parsed from `cdliatf_unblocked.atf` (86 MB) |
+| **CDLI** translations | Multi-language translations | 5,599 translations across 9 languages | Extracted from inline `#tr.XX:` markers in ATF |
+| **ORACC/DCCLT** glossaries | Dictionary entries (Sumerian, Akkadian, Old Babylonian, Standard Babylonian, proper nouns) | 21,054 entries, ~40,000 variant forms | From DCCLT gloss-*.json files |
+| **OGSL** (via ORACC) | Cuneiform sign inventory with Unicode codepoints and all known readings | 3,367 signs, ~15,000 sign values | ogsl-sl.json |
+| **ORACC** lemmas | Word-by-word linguistic annotations (citation form, part of speech, language) | 308,610 lemmas | From ORACC project corpora. Only a fraction of available ORACC data is imported -- dozens of project zip archives (rime, ribo, rinap, saao, cams, etcsl, etc.) are publicly available and downloaded to `data/sources/ORACC/` but not yet ingested. This is a high-priority next step. |
+| **CompVis** | Sign bounding-box annotations for ML training | 81 tablets, 8,109 annotations | cuneiform-sign-detection-dataset |
+| **eBL** OCR data | Sign detection training data | Annotated tablet images | cuneiform-ocr-data |
+
+### Not Yet Integrated
+
+| Source | Status |
+|--------|--------|
+| **CAD** (Chicago Assyrian Dictionary) | PDF digitization tools exist (`data/tools/cad-digitization/`), data not yet imported |
+| **Live ML inference** | DETR model trained (173 sign classes, mAP@50 = 43.1%) but runs in mock mode due to mmcv ARM64 incompatibility. Akkademia translation model available but not yet wired to UI. Both are ready to activate with minor infrastructure work. |
+
+---
+
+## Data Schema
+
+All data converges on the **P-number** (CDLI artifact identifier) as the universal join key. Each source contributes a layer to the pipeline.
+
+### Layer 1: Tablet Identity (CDLI)
+
+| Table | Key Columns | Purpose |
+|-------|-------------|---------|
+| `artifacts` | p_number (PK), designation, museum_no, period, provenience, genre, language | Core metadata for every tablet |
+| `composites` | q_number (PK), designation, exemplar_count_cache | Multi-tablet composite texts (Q-numbers) |
+| `artifact_composites` | p_number, q_number (compound PK) | Links individual tablets to composites |
+
+### Layer 2: Text (CDLI ATF)
+
+| Table | Key Columns | Purpose |
+|-------|-------------|---------|
+| `inscriptions` | p_number (FK), atf, transliteration_clean, source, is_latest | Raw ATF markup and searchable clean text. Multiple versions possible; `is_latest=1` marks current. |
+| `translations` | p_number (FK), translation, language, source | Human translations. Languages: en, de, ts, it, fr, es, dk, ca, fa. Unique per (p_number, language, source). |
+
+### Layer 3: Linguistics (ORACC)
+
+| Table | Key Columns | Purpose |
+|-------|-------------|---------|
+| `lemmas` | p_number (FK), lang, cf (citation form), form (tablet spelling), pos | Word-by-word annotations. `form` contains sign tokens with compound signs, determinatives, and subscripts. |
+| `glossary_entries` | entry_id (PK), headword, citation_form, guide_word, language, pos, icount | Dictionary headwords. Languages: sux, akk, akk-x-stdbab, akk-x-oldbab, qpn. |
+| `glossary_forms` | entry_id (FK), form, count | Variant spellings for each dictionary entry |
+
+### Layer 4: Signs (OGSL)
+
+| Table | Key Columns | Purpose |
+|-------|-------------|---------|
+| `signs` | sign_id (PK), utf8, unicode_hex, sign_type, most_common_value | Cuneiform sign inventory. Types: simple, compound (`\|A.AN\|`), variant (`A@g`). |
+| `sign_values` | sign_id (FK), value, sub_index, frequency | All known readings for a sign. Frequency computed from lemma corpus. |
+| `sign_word_usage` | sign_id (FK), entry_id (FK), sign_value, usage_count, value_type | Links signs to dictionary words. `value_type`: logographic, syllabic, or determinative. Derived from parsing lemma forms. |
+
+### Layer 5: Machine Learning
+
+| Table | Key Columns | Purpose |
+|-------|-------------|---------|
+| `sign_annotations` | p_number (FK), sign_label, bbox (x/y/w/h as %), confidence, source, image_type | Bounding-box detections on tablet images. Sources: compvis, ebl, manual, ml. |
+| `pipeline_status` | p_number (PK), has_image, has_ocr, has_atf, has_lemmas, has_translation, quality_score | Tracks 5-stage completeness per tablet |
+
+### Layer 6: Application
+
+| Table | Purpose |
+|-------|---------|
+| `collections`, `collection_members` | User-created tablet groupings |
+| `language_stats`, `period_stats`, `provenience_stats`, `genre_stats` | Pre-aggregated filter counts for UI performance |
+| `museums`, `excavation_sites` | Reference lookup tables (museum codes, site codes) |
+
+### How It Connects
+
+```
+artifacts (P-number) ─────────────────────────────────────────
+  ├── inscriptions         ATF text from CDLI
+  ├── translations         human translations from CDLI ATF
+  ├── lemmas               word annotations from ORACC
+  ├── sign_annotations     bounding boxes from CompVis/eBL/ML
+  ├── pipeline_status      computed completeness
+  └── artifact_composites ── composites (Q-number)
+
+signs (OGSL) ─────────────────────────────────────────────────
+  ├── sign_values          all readings per sign
+  └── sign_word_usage ──── glossary_entries (ORACC/DCCLT)
+                              └── glossary_forms
+```
+
+### Quality Score
+
+Each tablet gets a weighted completeness score (0.0 -- 1.0):
+
+```
+quality_score = (has_image * 0.15)
+              + (has_atf * 0.25)
+              + (has_sign_annotations * 0.15)
+              + (has_lemmas * 0.20)
+              + (has_translation * 0.25)
+```
+
+This drives the UI's pipeline visualizations and lets researchers sort tablets by how much work remains.
+
+---
+
+## Design Philosophy
+
+- **Pipeline-first visibility** -- every view foregrounds the 5-stage pipeline so researchers immediately see what's complete and what's missing
+- **Data/app separation** -- the SQLite database lives in `database/`, independent of the web app in `app/`. Either can be backed up, moved, or replaced without affecting the other
+- **On-demand fetching** -- images and ATF data are fetched from CDLI when first requested, then cached locally. No massive upfront downloads required
+- **Gap identification** -- quality scores and pipeline indicators highlight where human expertise or ML contribution would have the most impact
+- **Offline-capable** -- core browsing, search, and dictionary features work without external API access
+- **Source provenance** -- every data point tracks its origin (CDLI, ORACC, CompVis, etc.) so researchers can assess reliability
+
+---
+
+## Project Structure
+
+```
+CUNEIFORM/
+├── app/
+│   └── public_html/           PHP web application
+│       ├── api/               REST endpoints (ATF, glossary, thumbnails, ML, dictionary)
+│       ├── tablets/           Tablet list, detail, search views
+│       ├── dictionary/        Dictionary and sign browsers
+│       ├── includes/          Shared PHP (db.php, components, helpers)
+│       └── assets/            CSS (Kenilworth tokens), JS (vanilla), images
+│
+├── database/
+│   ├── glintstone.db          SQLite database (~300 MB)
+│   └── images/                Cached tablet images and thumbnails
+│
+├── data/
+│   ├── sources/               Raw source data (see SETUP.md files in each sub-repo)
+│   │   ├── CDLI/              Catalog CSV, ATF file, images
+│   │   ├── ORACC/             Project corpora, glossaries, OGSL
+│   │   ├── eBL/               Electronic Babylonian Literature fragments
+│   │   ├── ePSD2/             Sumerian dictionary data
+│   │   ├── compvis-annotations/   Sign detection dataset (sub-repo)
+│   │   └── ebl-annotations/       OCR training data (sub-repo)
+│   └── tools/
+│       ├── download/          Data fetcher scripts
+│       ├── import/            Database import scripts (Python)
+│       ├── validate/          Data quality checks
+│       ├── cad-digitization/  CAD PDF processing tools
+│       └── image-library/     Image management utilities
+│
+├── ml/
+│   ├── service/               FastAPI sign detection service (localhost:8000)
+│   │   ├── app.py             4 endpoints: /health, /classes, /detect-signs, /detect-signs-by-path
+│   │   ├── inference.py       DETR model wrapper
+│   │   └── sign_mapping.json  173 sign classes with OGSL + Unicode mappings
+│   └── models/                ML model repos (see SETUP.md in each)
+│       ├── akkademia/         Akkadian transliteration (sub-repo)
+│       ├── deepscribe/        Elamite OCR (sub-repo)
+│       └── ebl_ocr/           DETR sign detection checkpoint
+│
+├── ops/
+│   ├── setup.sh               One-time environment setup (~15 min)
+│   ├── start.sh               Start all services (Valet + ML)
+│   ├── stop.sh                Stop all services
+│   └── SERVER-SETUP.md        Manual setup and troubleshooting
+│
+└── RESEARCH/                  Domain research, personas, reference materials
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- macOS with Homebrew
+- PHP 8.4+
+- Python 3.9+ (for ML service)
+- Composer (installed by setup script)
+
+### First-Time Setup
+
 ```bash
-./setup-server.sh
+./ops/setup.sh
 ```
 
-### Daily Use (One Command)
+Installs Homebrew dependencies, Composer, Laravel Valet, and links the project. Takes about 15 minutes.
+
+### Daily Use
+
 ```bash
-./start-glintstone.sh
+./ops/start.sh
 ```
 
-This starts:
-- ✅ Valet web server
-- ✅ ML detection service
-- ✅ Opens browser to http://glintstone.test
+Starts Valet (Nginx + PHP-FPM), the ML detection service, and opens http://glintstone.test.
 
-**To stop:**
-```bash
-./stop-glintstone.sh
-# Or press Ctrl+C in the terminal running start-glintstone.sh
-```
+Press Ctrl+C or run `./ops/stop.sh` to stop everything.
+
+### Data Setup
+
+Source data is not included in the repository. To populate:
+
+1. Download source data using scripts in `data/tools/download/`
+2. Clone sub-repos (see SETUP.md files in `ml/models/` and `data/sources/`)
+3. Run import pipeline: `data/tools/import/run_full_import.sh`
 
 ---
 
-## What's Inside
+## ML Models
 
-- **389,715 artifacts** from CDLI
-- **SQLite database** (297MB)
-- **ML sign detection** (DETR model)
-- **Remote image support** (automatic CDLI download)
-- **Dictionary browser** with linguistic metadata
-- **ATF viewer** with parallel text display
+| Model | Task | Architecture | Training Data | Status |
+|-------|------|-------------|---------------|--------|
+| [Akkademia](https://github.com/gaigutherz/Akkademia) | Akkadian transliteration | BiLSTM (also HMM, MEMM) | RINAP corpora via ORACC | Available, 96.7% accuracy. Not yet connected to UI. |
+| [DeepScribe](https://github.com/oi-deepscribe/deepscribe) | Elamite cuneiform OCR | CNN/ResNet | Persepolis Fortification Archive (100K+ annotations) | Code only, no trained weights. |
+| eBL OCR | Cuneiform sign detection | Deformable DETR + ResNet-50 | eBL annotations (173 classes, 1000 epochs) | Trained (mAP@50 = 43.1%). Mock mode on macOS ARM64. |
 
----
-
-## Access Points
-
-```
-Main Site:       http://glintstone.test
-Tablet Browser:  http://glintstone.test/tablets/detail.php?p=P388097
-Dictionary:      http://glintstone.test/dictionary/
-Collections:     http://glintstone.test/collections/
-ML Detection:    http://glintstone.test/api/ml/detect-signs.php?p=P388097
-```
-
----
-
-## Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `setup-server.sh` | One-time setup (installs Valet) |
-| `start-glintstone.sh` | Start everything |
-| `stop-glintstone.sh` | Stop services |
-| `downgrade-php.sh` | Fix PHP version issues |
-| `test-detection.php` | Test ML without browser |
-
----
-
-## Features Added Today
-
-### 1. Remote Image Support ✨
-- Automatically downloads images from CDLI
-- Streaming download (no memory issues)
-- Works with tablets that don't have local images
-- File: `app/public_html/api/ml/detect-signs.php`
-
-### 2. ML Detection Progress 📊
-- Real-time elapsed time
-- Status messages (Initializing → Loading model → Running)
-- Model metadata display (name, epoch, device, inference time)
-- File: `app/public_html/assets/js/ml-panel.js`
-
-### 3. Enhanced Error Messages 💬
-- Clear explanations when ML service isn't running
-- Helpful hints for common issues
-- Validates image downloads
-- File: `app/public_html/assets/js/ml-panel.js`
-
-### 4. Proper Web Server 🚀
-- Replaced crashing PHP dev server with Valet
-- Handles large SQLite databases
-- Production-quality setup
-- File: `setup-server.sh`
+See `SETUP.md` in each model directory for clone/download instructions.
 
 ---
 
@@ -94,131 +237,32 @@ ML Detection:    http://glintstone.test/api/ml/detect-signs.php?p=P388097
 
 ```
 Browser
-  ↓
+  |
 Valet (Nginx + PHP-FPM)
-  ↓
-┌─────────────────────────┐
-│  GLINTSTONE Backend     │
-│  - SQLite (297MB)       │
-│  - PHP APIs             │
-│  - JavaScript UI        │
-└─────────────────────────┘
-  ↓                    ↓
-CDLI Images      ML Service
-(Remote)         (localhost:8000)
+  |
+  +-- PHP app (app/public_html/)
+  |     |
+  |     +-- SQLite (database/glintstone.db) -- read-only, WAL mode
+  |     |
+  |     +-- CDLI remote (on-demand image/ATF fetch, cached locally)
+  |
+  +-- ML Service (ml/service/, FastAPI on localhost:8000)
+        |
+        +-- DETR model (ml/models/ebl_ocr/)
 ```
 
 ---
 
-## Troubleshooting
+## Links
 
-### Services won't start
-```bash
-# Check status
-valet status
-php -v
-
-# Restart everything
-valet restart
-./stop-glintstone.sh
-./start-glintstone.sh
-```
-
-### ML detection not working
-```bash
-# Check if service is running
-lsof -i :8000
-
-# View logs
-tail -f ml-service.log
-
-# Restart just ML service
-./stop-glintstone.sh
-./start-glintstone.sh
-```
-
-### Site not loading
-```bash
-# Check if linked
-valet links
-
-# Re-link if needed
-cd app/public_html
-valet link glintstone
-```
-
----
-
-## Development
-
-### Database
-- **Location:** `database/glintstone.db`
-- **Size:** 297MB
-- **Records:** 389,715 artifacts
-- **Engine:** SQLite 3
-- **Why SQLite?** Perfect for read-heavy, single-user research databases
-
-### ML Service
-- **Model:** DETR (DEtection TRansformer)
-- **Classes:** 173 cuneiform signs
-- **Framework:** FastAPI + PyTorch
-- **Inference:** CPU (MPS support for Apple Silicon)
-
-### Frontend
-- **Style:** Custom CSS with CSS Grid/Flexbox
-- **JavaScript:** Vanilla JS (no framework)
-- **Components:** Modular, reusable components
-
----
-
-## File Structure
-
-```
-CUNEIFORM/
-├── app/public_html/          # Web application
-│   ├── api/                  # API endpoints
-│   │   └── ml/               # ML detection API
-│   ├── assets/               # CSS, JS, images
-│   ├── collections/          # Collection browser
-│   ├── dictionary/           # Dictionary browser
-│   ├── includes/             # PHP utilities
-│   └── tablets/              # Tablet detail pages
-├── database/                 # SQLite database
-│   ├── glintstone.db         # Main database
-│   └── images/               # Cached tablet images
-├── ml-service/               # FastAPI ML service
-│   ├── app.py                # Main server
-│   ├── inference.py          # Detection logic
-│   └── sign_mapping.json     # Sign classifications
-└── models/                   # ML model checkpoints
-    └── ebl_ocr/              # DETR model
-```
-
----
-
-## Next Steps
-
-- [ ] Add sign search functionality
-- [ ] Implement annotation saving
-- [ ] Add user preferences
-- [ ] Export detection results
-- [ ] Batch processing
-
----
-
-## Credits
-
-- **CDLI:** Cuneiform Digital Library Initiative (data source)
-- **eBL:** electronic Babylonian Library (annotations)
-- **CompVis ML:** Sign detection dataset
-
----
-
-## Support
-
-For issues or questions:
-1. Check `SERVER-SETUP.md` for detailed setup info
-2. View logs: `tail -f ml-service.log`
-3. Check Valet status: `valet status`
-
-**Database works perfectly. Server is solid. ML detection is operational. Happy researching! 🏺✨**
+| Resource | URL |
+|----------|-----|
+| CDLI | https://cdli.earth |
+| ORACC | https://oracc.museum.upenn.edu |
+| eBL | https://www.ebl.lmu.de |
+| ePSD2 | http://oracc.org/epsd2 |
+| OGSL | http://oracc.org/ogsl |
+| Akkademia | https://github.com/gaigutherz/Akkademia |
+| DeepScribe | https://github.com/oi-deepscribe/deepscribe |
+| CompVis annotations | https://github.com/CompVis/cuneiform-sign-detection-dataset |
+| eBL OCR data | https://github.com/ElectronicBabylonianLiterature/cuneiform-ocr-data |

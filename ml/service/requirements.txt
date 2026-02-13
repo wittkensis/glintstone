@@ -1,0 +1,22 @@
+# ML Service for Cuneiform Sign Detection
+# Requires Python 3.10+
+
+# Core ML
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Web framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+python-multipart>=0.0.6
+
+# Image processing
+pillow>=10.0.0
+
+# MMDetection for DETR inference (trained with mmengine)
+# Note: mmcv-full is needed for full functionality, but mmcv-lite works for inference
+mmengine>=0.10.0
+mmdet>=3.0.0
+
+# Utilities
+numpy>=1.24.0
