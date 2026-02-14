@@ -44,49 +44,49 @@ All data converges on the **P-number** (CDLI artifact identifier) as the univers
 
 ### Layer 1: Tablet Identity (CDLI)
 
-| Table | Key Columns | Purpose |
-|-------|-------------|---------|
-| `artifacts` | p_number (PK), designation, museum_no, period, provenience, genre, language | Core metadata for every tablet |
-| `composites` | q_number (PK), designation, exemplar_count_cache | Multi-tablet composite texts (Q-numbers) |
-| `artifact_composites` | p_number, q_number (compound PK) | Links individual tablets to composites |
+| Table | Key Columns | Source | Purpose |
+|-------|-------------|--------|---------|
+| `artifacts` | p_number (PK), designation, museum_no, period, provenience, genre, language | cdli_cat.csv + ATF stubs | Core metadata for every tablet |
+| `composites` | q_number (PK), designation, exemplar_count_cache | CDLI ATF headers | Multi-tablet composite texts (Q-numbers) |
+| `artifact_composites` | p_number, q_number (compound PK) | CDLI ATF headers | Links individual tablets to composites |
 
 ### Layer 2: Text (CDLI ATF)
 
-| Table | Key Columns | Purpose |
-|-------|-------------|---------|
-| `inscriptions` | p_number (FK), atf, transliteration_clean, source, is_latest | Raw ATF markup and searchable clean text. Multiple versions possible; `is_latest=1` marks current. |
-| `translations` | p_number (FK), translation, language, source | Human translations. Languages: en, de, ts, it, fr, es, dk, ca, fa. Unique per (p_number, language, source). |
+| Table | Key Columns | Source | Purpose |
+|-------|-------------|--------|---------|
+| `inscriptions` | p_number (FK), atf, transliteration_clean, source, is_latest | cdliatf_unblocked.atf | Raw ATF markup and searchable clean text. Multiple versions possible; `is_latest=1` marks current. |
+| `translations` | p_number (FK), translation, language, source | `#tr.XX:` lines in ATF | Human translations. Languages: en, de, ts, it, fr, es, dk, ca, fa. Unique per (p_number, language, source). |
 
 ### Layer 3: Linguistics (ORACC)
 
-| Table | Key Columns | Purpose |
-|-------|-------------|---------|
-| `lemmas` | p_number (FK), lang, cf (citation form), form (tablet spelling), pos | Word-by-word annotations. `form` contains sign tokens with compound signs, determinatives, and subscripts. |
-| `glossary_entries` | entry_id (PK), headword, citation_form, guide_word, language, pos, icount | Dictionary headwords. Languages: sux, akk, akk-x-stdbab, akk-x-oldbab, qpn. |
-| `glossary_forms` | entry_id (FK), form, count | Variant spellings for each dictionary entry |
+| Table | Key Columns | Source | Purpose |
+|-------|-------------|--------|---------|
+| `lemmas` | p_number (FK), lang, cf (citation form), form (tablet spelling), pos | ORACC corpusjson | Word-by-word annotations. `form` contains sign tokens with compound signs, determinatives, and subscripts. |
+| `glossary_entries` | entry_id (PK), headword, citation_form, guide_word, language, pos, icount | DCCLT gloss-*.json | Dictionary headwords. Languages: sux, akk, akk-x-stdbab, akk-x-oldbab, qpn. |
+| `glossary_forms` | entry_id (FK), form, count | DCCLT gloss-*.json | Variant spellings for each dictionary entry |
 
 ### Layer 4: Signs (OGSL)
 
-| Table | Key Columns | Purpose |
-|-------|-------------|---------|
-| `signs` | sign_id (PK), utf8, unicode_hex, sign_type, most_common_value | Cuneiform sign inventory. Types: simple, compound (`\|A.AN\|`), variant (`A@g`). |
-| `sign_values` | sign_id (FK), value, sub_index, frequency | All known readings for a sign. Frequency computed from lemma corpus. |
-| `sign_word_usage` | sign_id (FK), entry_id (FK), sign_value, usage_count, value_type | Links signs to dictionary words. `value_type`: logographic, syllabic, or determinative. Derived from parsing lemma forms. |
+| Table | Key Columns | Source | Purpose |
+|-------|-------------|--------|---------|
+| `signs` | sign_id (PK), utf8, unicode_hex, sign_type, most_common_value | ogsl-sl.json | Cuneiform sign inventory. Types: simple, compound (`\|A.AN\|`), variant (`A@g`). |
+| `sign_values` | sign_id (FK), value, sub_index, frequency | ogsl-sl.json + computed | All known readings for a sign. Frequency computed from lemma corpus. |
+| `sign_word_usage` | sign_id (FK), entry_id (FK), sign_value, usage_count, value_type | Derived (lemmas x glossary) | Links signs to dictionary words. `value_type`: logographic, syllabic, or determinative. Derived from parsing lemma forms. |
 
 ### Layer 5: Machine Learning
 
-| Table | Key Columns | Purpose |
-|-------|-------------|---------|
-| `sign_annotations` | p_number (FK), sign_label, bbox (x/y/w/h as %), confidence, source, image_type | Bounding-box detections on tablet images. Sources: compvis, ebl, manual, ml. |
-| `pipeline_status` | p_number (PK), has_image, has_ocr, has_atf, has_lemmas, has_translation | Tracks 5-stage completeness per tablet |
+| Table | Key Columns | Source | Purpose |
+|-------|-------------|--------|---------|
+| `sign_annotations` | p_number (FK), sign_label, bbox (x/y/w/h as %), confidence, source, image_type | CompVis, eBL, ML inference | Bounding-box detections on tablet images. Sources: compvis, ebl, manual, ml. |
+| `pipeline_status` | p_number (PK), has_image, has_ocr, has_atf, has_lemmas, has_translation | Computed | Tracks 5-stage completeness per tablet |
 
 ### Layer 6: Application
 
-| Table | Purpose |
-|-------|---------|
-| `collections`, `collection_members` | User-created tablet groupings |
-| `language_stats`, `period_stats`, `provenience_stats`, `genre_stats` | Pre-aggregated filter counts for UI performance |
-| `museums`, `excavation_sites` | Reference lookup tables (museum codes, site codes) |
+| Table | Source | Purpose |
+|-------|--------|---------|
+| `collections`, `collection_members` | User-generated | User-created tablet groupings |
+| `language_stats`, `period_stats`, `provenience_stats`, `genre_stats` | Computed | Pre-aggregated filter counts for UI performance |
+| `museums`, `excavation_sites` | CDLI catalog | Reference lookup tables (museum codes, site codes) |
 
 ### How It Connects
 
