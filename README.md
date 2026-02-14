@@ -20,7 +20,7 @@ Glintstone federates these sources into one interface built around a 5-stage pip
 
 | Source | Provides | Records | Notes |
 |--------|----------|---------|-------|
-| **CDLI** catalog | Tablet metadata (P-numbers, museum numbers, period, provenience, genre, language) | 10,215 artifacts | CSV export from cdli.earth |
+| **CDLI** catalog | Tablet metadata (P-numbers, museum numbers, period, provenience, genre, language) | 353,283 artifacts | CSV export from cdli.earth. ATF import adds ~33k stub records for P-numbers not in catalog, bringing total to ~389k. |
 | **CDLI** ATF | Transliterations in ATF format | 135,200 inscriptions | Parsed from `cdliatf_unblocked.atf` (86 MB) |
 | **CDLI** translations | Multi-language translations | 5,599 translations across 9 languages | Extracted from inline `#tr.XX:` markers in ATF |
 | **ORACC/DCCLT** glossaries | Dictionary entries (Sumerian, Akkadian, Old Babylonian, Standard Babylonian, proper nouns) | 21,054 entries, ~40,000 variant forms | From DCCLT gloss-*.json files |
