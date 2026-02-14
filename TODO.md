@@ -8,6 +8,7 @@ Data
 - Add academic referencess and CDLI profile links
 - Add academic publishing associations
 - Add demo placeholders for future added contributions
+- Make sure aggregations are updated and kept up-to-date moving forward (x_stats tables)
 
 Resources to Review
 - https://compvis.github.io/cuneiform-sign-detection-code/
