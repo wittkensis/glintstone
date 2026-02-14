@@ -1,0 +1,331 @@
+source:
+  name: ORACC Project Catalogues
+  origin: https://oracc.museum.upenn.edu
+  local_path: sources/ORACC/{project}/json/{project}/catalogue.json
+  format: json
+  license: CC0
+  projects_with_data: [dcclt, saao, rinap, hbtin, dccmt, ribo, epsd2, riao, etcsri, blms]
+  last_pulled: 2026-02-04 (dcclt-ribo), 2026-02-14 (epsd2-blms)
+  notes: >
+    Each ORACC project has its own catalogue.json. Field availability varies by project.
+    Core fields are consistent; optional fields depend on genre, period, and editorial depth.
+    Keyed by P-number (or Q-number for composites).
+
+envelope:
+  type:
+    type: string
+    value: catalogue
+  project:
+    type: string
+  source:
+    type: string (URL)
+  license:
+    type: string
+  UTC-timestamp:
+    type: string (ISO 8601)
+  members:
+    type: object
+    description: Map of P-number -> metadata object
+
+fields:
+  # Always present
+  id_text:
+    type: string
+    nullable: false
+    description: P-number or Q-number
+    sample: "P000001"
+    maps_to_table: artifacts.p_number
+    maps_to_layer: identity
+
+  project:
+    type: string
+    nullable: false
+    description: ORACC project abbreviation
+    sample: "dcclt"
+    maps_to_table: ~
+    maps_to_layer: provenance
+
+  designation:
+    type: string
+    nullable: false
+    description: Text designation
+    sample: "CDLI Lexical 000002, ex. 065"
+    maps_to_table: artifacts.designation
+    maps_to_layer: identity
+
+  langs:
+    type: string
+    nullable: false
+    description: Language bitmask (hex)
+    sample: "0x01000000"
+    maps_to_table: ~
+    maps_to_layer: identity
+    notes: Encodes which languages appear in text. Not human-readable without decoding.
+
+  # Common optional fields
+  museum_no:
+    type: string
+    nullable: true
+    sample: "VAT 01533"
+    maps_to_table: artifacts.museum_no
+    maps_to_layer: identity
+
+  collection:
+    type: string
+    nullable: true
+    sample: "Vorderasiatisches Museum, Berlin, Germany"
+    maps_to_table: museums
+    maps_to_layer: identity
+
+  provenience:
+    type: string
+    nullable: true
+    sample: "Uruk"
+    maps_to_table: artifacts.provenience
+    maps_to_layer: identity
+    notes: ORACC uses bare site name without "(mod. X)" suffix that CDLI uses.
+
+  pleiades_id:
+    type: string
+    nullable: true
+    description: Pleiades gazetteer ID for the site
+    sample: "912986"
+    maps_to_table: excavation_sites (enrichment)
+    maps_to_layer: identity
+    notes: Enables geolocation via Pleiades API. Links to oracc-geojson.yaml.
+
+  pleiades_coord:
+    type: string
+    nullable: true
+    description: Coordinates as JSON array string
+    sample: "[45.6372,31.3225]"
+    maps_to_layer: identity
+
+  period:
+    type: string
+    nullable: true
+    sample: "Uruk III"
+    maps_to_table: artifacts.period
+    maps_to_layer: identity
+    notes: ORACC omits date ranges that CDLI includes.
+
+  genre:
+    type: string
+    nullable: true
+    sample: "Lexical"
+    maps_to_table: artifacts.genre
+    maps_to_layer: identity
+
+  subgenre:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  supergenre:
+    type: string
+    nullable: true
+    description: High-level genre code
+    sample: "LEX"
+    maps_to_layer: identity
+    notes: "Values: LEX, LIT, ROY, ADM, LET, SCI, etc."
+
+  language:
+    type: string
+    nullable: true
+    sample: "Sumerian"
+    maps_to_table: artifacts.language
+    maps_to_layer: identity
+
+  material:
+    type: string
+    nullable: true
+    sample: "clay"
+    maps_to_layer: physical
+
+  object_type:
+    type: string
+    nullable: true
+    sample: "tablet"
+    maps_to_layer: physical
+
+  # Dimensions
+  height:
+    type: string
+    nullable: true
+    maps_to_layer: physical
+
+  width:
+    type: string
+    nullable: true
+    maps_to_layer: physical
+
+  thickness:
+    type: string
+    nullable: true
+    maps_to_layer: physical
+
+  # Publication
+  primary_publication:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  publication_history:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  publication_date:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  author:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  # Excavation
+  excavation_no:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  findspot_square:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  findspot_remarks:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  # Project-specific fields
+  atf_source:
+    type: string
+    nullable: true
+    maps_to_layer: provenance
+
+  xproject:
+    type: string
+    nullable: true
+    description: Cross-project reference
+    sample: "CDLI"
+    maps_to_layer: provenance
+
+  uri:
+    type: string
+    nullable: true
+    description: Canonical URL for text
+    maps_to_layer: identity
+
+  public:
+    type: string
+    nullable: true
+    description: Whether text is publicly available
+    values: ["yes", "no"]
+    maps_to_layer: provenance
+
+  credits:
+    type: string
+    nullable: true
+    description: Academic attribution
+    maps_to_layer: provenance
+
+  trans:
+    type: string
+    nullable: true
+    description: Language code of available translation
+    sample: "en"
+    maps_to_layer: semantic
+
+  # Royal inscription specific
+  ruler:
+    type: string
+    nullable: true
+    description: Named ruler (for royal inscriptions)
+    maps_to_layer: identity
+    notes: Only present in rinap, ribo, riao, etcsri
+
+  dynastic_seat:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  popular_name:
+    type: string
+    nullable: true
+    description: Common name for well-known texts
+    maps_to_layer: identity
+
+  # Script metadata
+  script:
+    type: string
+    nullable: true
+    maps_to_layer: graphemic
+
+  script_type:
+    type: string
+    nullable: true
+    maps_to_layer: graphemic
+
+  script_remarks:
+    type: string
+    nullable: true
+    maps_to_layer: graphemic
+
+  # Other
+  date_of_origin:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  exemplars:
+    type: string
+    nullable: true
+    description: Number of known exemplars (for composites)
+    maps_to_layer: identity
+
+  images:
+    type: array
+    nullable: true
+    description: Image references (usually empty in JSON export)
+    maps_to_layer: physical
+
+  author_remarks:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+field_variability:
+  always_present: [id_text, project, designation, langs]
+  common: [museum_no, provenience, period, genre, language, material]
+  royal_inscriptions_only: [ruler, dynastic_seat, popular_name]
+  with_pleiades: [pleiades_id, pleiades_coord]
+  projects_with_pleiades: [ribo, rinap, riao, etcsri, saao]
+
+cross_references:
+  - field: id_text
+    overlaps_with: cdli-catalog.yaml#id
+    relationship: identical (P-number)
+
+  - field: designation
+    overlaps_with: cdli-catalog.yaml#designation
+    relationship: equivalent
+
+  - field: museum_no
+    overlaps_with: cdli-catalog.yaml#museum_no
+    relationship: equivalent
+
+  - field: provenience
+    overlaps_with: cdli-catalog.yaml#provenience
+    relationship: equivalent (different formatting)
+
+  - field: pleiades_id
+    overlaps_with: oracc-geojson.yaml#pleiades_id
+    relationship: identical
+
+  - field: id_text
+    overlaps_with: oracc-corpus.yaml#textid
+    relationship: identical (links catalogue to corpus)

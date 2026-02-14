@@ -1,0 +1,226 @@
+source:
+  name: CompVis Cuneiform Sign Detection Dataset
+  origin: https://github.com/CompVis/cuneiform-sign-detection-dataset
+  local_path: sources/compvis-annotations/
+  format: csv (3 file types)
+  license: MIT
+  record_count: 81 tablets, 8109 sign annotations, 186 sign classes
+  last_pulled: 2026-02-05 (git clone, HEAD=77d8e03)
+  notes: >
+    Bounding box annotations for cuneiform sign detection on Neo-Assyrian tablets.
+    Three CSV types: bounding boxes, transliterations, and segments. Uses MZL sign
+    numbers (Borger's Mesopotamisches Zeichenlexikon). Focused on SAA corpus.
+
+file_types:
+
+  bounding_box_annotations:
+    path: annotations/bbox_annotations_*.csv
+    description: Sign-level bounding boxes on tablet images
+    fields:
+      segm_idx:
+        type: integer
+        nullable: false
+        description: Segment identifier (links to segments file)
+        maps_to_layer: physical
+
+      tablet_CDLI:
+        type: string
+        nullable: false
+        description: CDLI P-number
+        sample: "P334894"
+        maps_to_table: sign_annotations.p_number
+        maps_to_layer: identity
+
+      view_desc:
+        type: string
+        nullable: false
+        description: Which surface of the tablet
+        values: [Obv, Rev, Lo.E., Up.E., Le.E., Ri.E.]
+        maps_to_table: sign_annotations.surface
+        maps_to_layer: physical
+        notes: "Obv=obverse, Rev=reverse, Lo.E.=lower edge, etc."
+
+      collection:
+        type: string
+        nullable: false
+        description: Source corpus/dataset split
+        values: [saa01, saa05, saa08, saa10, saa13, saa16, train, test]
+        maps_to_layer: provenance
+
+      mzl_label:
+        type: integer
+        nullable: false
+        description: MZL sign number (Borger's numbering)
+        sample: 839
+        maps_to_table: sign_annotations.sign_label (after OGSL mapping)
+        maps_to_layer: graphemic
+        notes: >
+          MZL numbers are NOT the same as OGSL names. Need concordance table.
+          MZL 839 = sign name in Borger's sign list.
+
+      train_label:
+        type: integer
+        nullable: false
+        description: ML training label (mapped integer for model)
+        sample: 11
+        maps_to_layer: ml
+        notes: Internal label for ML training. Not linguistically meaningful.
+
+      bbox:
+        type: string (JSON array)
+        nullable: false
+        description: Absolute bounding box [x1, y1, x2, y2] in composite image pixels
+        sample: "[805, 1979, 871, 2055]"
+        maps_to_layer: physical
+
+      relative_bbox:
+        type: string (JSON array)
+        nullable: false
+        description: Bounding box relative to segment [x1, y1, x2, y2]
+        sample: "[165, 60, 231, 136]"
+        maps_to_table: sign_annotations.bbox_x/y/w/h (after conversion to %)
+        maps_to_layer: physical
+        notes: Current DB stores as percentages (0-100) for resolution independence.
+
+  transliterations:
+    path: transliterations/transliterations_*.csv
+    description: Sign-by-sign transliteration with position and damage status
+    fields:
+      segm_idx:
+        type: integer
+        nullable: false
+        maps_to_layer: physical
+
+      tablet_CDLI:
+        type: string
+        nullable: false
+        maps_to_layer: identity
+
+      view_desc:
+        type: string
+        nullable: false
+        maps_to_layer: physical
+
+      rec_idx:
+        type: integer
+        nullable: false
+        description: Record index (overall position)
+        maps_to_layer: reading
+
+      line_idx:
+        type: integer
+        nullable: false
+        description: Line number on this surface
+        maps_to_table: sign_annotations.line_number
+        maps_to_layer: reading
+
+      pos_idx:
+        type: integer
+        nullable: false
+        description: Position within line (1-indexed)
+        maps_to_table: sign_annotations.position_in_line
+        maps_to_layer: reading
+
+      train_label:
+        type: integer
+        nullable: false
+        maps_to_layer: ml
+
+      mzl_label:
+        type: integer
+        nullable: false
+        maps_to_layer: graphemic
+
+      status:
+        type: integer
+        nullable: false
+        description: Sign condition/certainty
+        values:
+          0: background (not a sign)
+          1: normal (intact, readable)
+          2: broken or uncertain
+        maps_to_layer: physical
+        notes: >
+          Maps to v2 schema confidence/damage tracking.
+          0 = ignore, 1 = high confidence, 2 = physical damage affects reading.
+
+  segments:
+    path: segments/tablet_segments_*.csv
+    description: Tablet image segments (crops of surfaces)
+    fields:
+      segm_idx:
+        type: integer
+        nullable: false
+        description: Segment ID (join key to other files)
+
+      tablet_CDLI:
+        type: string
+        nullable: false
+        maps_to_layer: identity
+
+      view_desc:
+        type: string
+        nullable: false
+        maps_to_layer: physical
+
+      collection:
+        type: string
+        nullable: false
+        maps_to_layer: provenance
+
+      bbox:
+        type: string (JSON array)
+        nullable: false
+        description: Segment bounding box in composite image
+        maps_to_layer: physical
+
+      scale:
+        type: float
+        nullable: false
+        description: Estimated scale factor (target ~128px avg sign height)
+        maps_to_layer: physical
+
+      assigned:
+        type: boolean
+        nullable: false
+        description: Whether segment is assigned to a surface view
+        maps_to_layer: physical
+
+dataset_coverage:
+  period: Neo-Assyrian
+  corpus: SAA (State Archives of Assyria) volumes 1, 5, 8, 10, 13, 16
+  tablets: 81 annotated with bboxes
+  tablets_with_transliterations: 1745
+  signs_annotated: 8109
+  signs_in_transliterations: 185399
+  sign_classes: 186
+
+cross_references:
+  - field: tablet_CDLI
+    overlaps_with: cdli-catalog.yaml#id (P-number)
+    relationship: identical
+
+  - field: mzl_label
+    overlaps_with: ogsl-signlist.yaml#sign_name
+    relationship: requires-mapping (MZL number -> OGSL name concordance needed)
+
+  - field: mzl_label
+    overlaps_with: ebl-annotations.yaml#abz_number
+    relationship: related (both Borger numbering systems, MZL supersedes ABZ)
+
+  - field: view_desc
+    overlaps_with: cdli-atf.yaml#surface
+    relationship: equivalent (Obv=@obverse, Rev=@reverse, etc.)
+
+  - field: status
+    overlaps_with: cdli-atf.yaml#damage_markers
+    relationship: conceptual (integer code vs inline text markers)
+
+v2_schema_notes: >
+  CompVis data feeds the Physical and Graphemic layers.
+  - Bounding boxes = physical sign location on tablet
+  - MZL labels = sign identification (graphemic)
+  - Status codes = damage/confidence (physical -> reading confidence)
+  - Line/position indices = reading order
+  Key gap: No linguistic annotation (no lemmatization, no readings — just sign IDs).
+  Must be linked to ATF/corpus data via P-number + line number alignment.

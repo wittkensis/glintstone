@@ -1,0 +1,209 @@
+source:
+  name: OGSL (Oracc Global Sign List)
+  origin: https://oracc.museum.upenn.edu/ogsl
+  local_path: sources/ORACC/ogsl/json/ogsl/ogsl-sl.json
+  format: json
+  license: CC0
+  record_count: 3367 signs, ~15000 sign values
+  last_pulled: 2026-02-04
+  notes: >
+    The canonical cuneiform sign inventory. Every sign has a name, possible readings
+    (values), Unicode codepoint, and GDL structural description. This is the Rosetta Stone
+    linking physical signs to linguistic readings. CDL corpus data references OGSL via OIDs.
+
+envelope:
+  type:
+    type: string
+    value: signlist
+  project:
+    type: string
+    value: ogsl
+  signs:
+    type: object
+    description: Map of sign_name -> sign definition
+
+fields:
+
+  sign_name:
+    type: string (object key)
+    nullable: false
+    description: Canonical sign name. Used as key in the signs map.
+    samples: ["A", "A@g", "|A.AN|", "|A.EDIN.LAL|"]
+    maps_to_table: signs.sign_id
+    maps_to_layer: graphemic
+    naming_patterns:
+      simple: "A"
+      modified: "A@g"
+      compound: "|A.AN|"
+      complex_compound: "|A.EDIN.LAL|"
+    modifiers:
+      "@g": gunu (additional wedges)
+      "@t": tenu (rotated)
+      "@s": sheshig (additional marks)
+      "@n": nutillu (incomplete)
+      "@180": rotated 180 degrees
+
+  values:
+    type: array of string
+    nullable: true
+    description: All known reading values for this sign
+    sample: ["a", "dur5", "e4", "ea"]
+    maps_to_table: sign_values
+    maps_to_layer: reading
+    notes: >
+      This is sign polyvalence — one sign, many readings. The v2 schema needs
+      context rules for when each reading applies (language, period, genre, function).
+      OGSL lists them all without context.
+
+  gdl:
+    type: array
+    description: Grapheme Description Language definition of the sign structure
+    maps_to_layer: graphemic
+    node_types:
+
+      simple:
+        description: Single sign reference
+        fields:
+          s:
+            type: string
+            description: Sign name
+            sample: "A"
+
+      compound:
+        description: Sign composed of multiple components
+        fields:
+          c:
+            type: string
+            description: Compound name
+            sample: "|A.AN|"
+          seq:
+            type: array
+            description: Ordered components
+            item_fields:
+              s:
+                type: string
+                nullable: true
+                description: Component sign name
+              r:
+                type: string
+                nullable: true
+                description: Numeric component
+              o:
+                type: string
+                nullable: true
+                description: Spatial operator between components
+                values: [beside, above, contains, over, crossing, opposing, behind]
+                notes: >
+                  Describes how components are arranged on the clay.
+                  beside = left-to-right, above = top-to-bottom,
+                  contains = one sign inscribed inside another.
+
+      modified:
+        description: Variant of a base sign
+        fields:
+          form:
+            type: string
+            description: Modified form name
+            sample: "A@g"
+          mods:
+            type: array
+            description: Modifications applied
+            item_fields:
+              b:
+                type: string
+                description: Base sign
+              m:
+                type: string
+                description: Modification type code
+
+  # Unicode mapping
+  utf8:
+    type: string
+    nullable: true
+    description: Unicode cuneiform character
+    sample: "\U00012000"
+    maps_to_table: signs.utf8
+    maps_to_layer: graphemic
+    notes: Not all signs have Unicode assignments (especially rare compounds).
+
+  hex:
+    type: string
+    nullable: true
+    description: Unicode hex codepoint
+    sample: "12000"
+    maps_to_table: signs.unicode_hex
+    maps_to_layer: graphemic
+
+  uname:
+    type: string
+    nullable: true
+    description: Official Unicode character name
+    sample: "CUNEIFORM SIGN A"
+    maps_to_table: signs.uname
+    maps_to_layer: graphemic
+
+  uphase:
+    type: string
+    nullable: true
+    description: Unicode version when this sign was added
+    sample: "5.0"
+    maps_to_layer: graphemic
+
+sign_type_classification:
+  simple:
+    description: Single sign with direct Unicode mapping
+    sample: "A"
+    count: ~2000
+  compound:
+    description: Multi-sign combination, pipe-delimited
+    sample: "|A.AN|"
+    count: ~1000
+    notes: Some compounds have Unicode, many don't.
+  modified:
+    description: Variant of a base sign (gunu, tenu, etc.)
+    sample: "A@g"
+    count: ~400
+
+cross_references:
+  - field: sign_name
+    overlaps_with: oracc-corpus.yaml#gdl[].oid
+    relationship: referenced-by (corpus GDL signs reference OGSL by OID)
+
+  - field: values[]
+    overlaps_with: oracc-corpus.yaml#gdl[].v
+    relationship: defines (OGSL defines which readings are valid for each sign)
+
+  - field: utf8/hex
+    overlaps_with: epsd2-reference.yaml#unicode_signs
+    relationship: equivalent (same Unicode data, different packaging)
+
+  - field: sign_name
+    overlaps_with: compvis-annotations.yaml#mzl_label
+    relationship: requires-mapping (MZL numbers need OGSL<->MZL concordance)
+
+  - field: sign_name
+    overlaps_with: ebl-annotations.yaml#sign_reading + abz_number
+    relationship: requires-mapping (ABZ numbers need OGSL<->ABZ concordance)
+
+sign_list_alignment:
+  description: >
+    Multiple sign numbering systems exist. OGSL uses names. Other sources use numbers.
+    A concordance table is needed to link them.
+  systems:
+    OGSL: Sign names (A, AN, DU3). Used by ORACC corpus data.
+    MZL: Borger's MesZL numbers (integers). Used by CompVis annotations.
+    ABZ: Borger's ABZ numbers (integers). Used by eBL annotations.
+    Unicode: U+12000 range. Used for display.
+    LAK: Deimel's LAK numbers. Used in archaic sign studies.
+    REC: Thureau-Dangin numbers. Older scholarship.
+  notes: >
+    No single source provides a complete concordance. The v2 schema should include
+    a sign_concordance table mapping between all numbering systems.
+
+v2_schema_notes: >
+  OGSL is the foundation of the Graphemic layer. Key gaps vs v2 proposal:
+  - No period/region information (sign forms change over 3000 years)
+  - No frequency data per reading (can't determine "most common" reading)
+  - No function classification per reading (logographic vs syllabographic vs determinative)
+  - No sign-form images (physical appearance varies by era and scribal school)
+  - Values list is flat — no context for when each reading applies

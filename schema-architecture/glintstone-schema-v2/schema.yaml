@@ -1,0 +1,601 @@
+# Glintstone Schema v2 — Proposed Unified Pipeline Schema
+# STATUS: PLACEHOLDER — Design phase, not yet implemented
+#
+# Synthesizes:
+#   - 11 source schemas (schema-architecture/source-schemas/)
+#   - v1 current schema (schema-architecture/glintstone-schema-v1/)
+#   - Linguistics research (RESEARCH/Linguistics Schema/v2/ Phase 1 + Phase 2)
+#
+# Design principles:
+#   1. Layered: Physical → Graphemic → Reading → Linguistic → Semantic
+#   2. Multi-source: Every annotation carries provenance (who said it, when, confidence)
+#   3. Competing interpretations: Multiple readings/lemmatizations per token
+#   4. Language-polymorphic: Morphology slots adapt to Sumerian/Akkadian/Hittite/Elamite
+#   5. Concordance-first: Sign systems (OGSL/MZL/ABZ/Unicode) unified at schema level
+
+meta:
+  engine: SQLite
+  status: design
+  feeds_from:
+    - cdli-catalog (identity)
+    - cdli-atf (reading)
+    - oracc-catalogue (identity enrichment)
+    - oracc-corpus (reading + linguistic)
+    - oracc-glossary (dictionary)
+    - ogsl-signlist (graphemic)
+    - oracc-geojson (geographic)
+    - compvis-annotations (physical)
+    - ebl-annotations (physical)
+    - epsd2-reference (reference)
+    - BabyLemmatizer output (linguistic, future)
+    - ML OCR models (physical, future)
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 0: IDENTITY — What is this artifact?
+# Sources: cdli-catalog, cdli-api, oracc-catalogue, oracc-geojson
+# ═══════════════════════════════════════════════════════════
+
+tables:
+
+  artifacts:
+    description: >
+      Physical artifacts. Superset of v1 — expands from 16 to ~40 columns.
+      Merges CDLI catalog + ORACC catalogue + geojson enrichment.
+    columns:
+      p_number: { type: TEXT, pk: true }
+      designation: { type: TEXT }
+      # Physical description
+      museum_no: { type: TEXT }
+      excavation_no: { type: TEXT }
+      material: { type: TEXT }
+      object_type: { type: TEXT }
+      width: { type: REAL }
+      height: { type: REAL }
+      thickness: { type: REAL }
+      seal_id: { type: TEXT, new: true, source: cdli-catalog (not imported in v1) }
+      # Classification
+      period: { type: TEXT }
+      period_normalized: { type: TEXT, new: true, description: "Canonical period without date ranges" }
+      provenience: { type: TEXT }
+      provenience_normalized: { type: TEXT, new: true, description: "Ancient name only, no 'mod. X'" }
+      genre: { type: TEXT }
+      subgenre: { type: TEXT, new: true, source: oracc-catalogue }
+      supergenre: { type: TEXT, new: true, source: oracc-catalogue }
+      language: { type: TEXT }
+      languages: { type: TEXT, new: true, description: "All languages in text (ORACC langs field)" }
+      # Geographic
+      pleiades_id: { type: TEXT, new: true, source: oracc-geojson }
+      latitude: { type: REAL, new: true, source: oracc-geojson }
+      longitude: { type: REAL, new: true, source: oracc-geojson }
+      # Publication
+      primary_publication: { type: TEXT, new: true, source: cdli-catalog }
+      collection: { type: TEXT, new: true, source: cdli-catalog }
+      dates_referenced: { type: TEXT, new: true, source: cdli-catalog }
+      # Provenance tracking
+      cdli_updated_at: { type: TIMESTAMP, new: true }
+      oracc_projects: { type: TEXT, new: true, description: "Which ORACC projects include this text" }
+    decision_needed: >
+      How to handle conflicting metadata between CDLI and ORACC?
+      Option A: CDLI is authoritative, ORACC overrides specific fields.
+      Option B: Store both with source attribution.
+
+  composites:
+    description: Composite/ideal texts assembled from exemplars
+    columns:
+      q_number: { type: TEXT, pk: true }
+      designation: { type: TEXT }
+      language: { type: TEXT }
+      period: { type: TEXT }
+      genre: { type: TEXT }
+      exemplar_count: { type: INTEGER }
+
+  artifact_composites:
+    description: Join table linking artifacts to composites
+    columns:
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      q_number: { type: TEXT, fk: composites.q_number }
+      line_ref: { type: TEXT }
+    constraints: [PRIMARY KEY(p_number, q_number)]
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 1: PHYSICAL — Where are signs on the artifact?
+# Sources: compvis-annotations, ebl-annotations, ML models
+# ═══════════════════════════════════════════════════════════
+
+  surfaces:
+    description: >
+      NEW TABLE. Decompose tablets into surfaces (obverse, reverse, edges).
+      Currently implicit in v1 (surface is a text field on sign_annotations).
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      surface_type: { type: TEXT, values: [obverse, reverse, left_edge, right_edge, top_edge, bottom_edge, seal] }
+      image_path: { type: TEXT }
+      image_width: { type: INTEGER }
+      image_height: { type: INTEGER }
+    constraints: [UNIQUE(p_number, surface_type)]
+    decision_needed: >
+      Should columns be their own table? CDLI ATF has @column markers.
+      Some tablets have multiple columns per surface.
+
+  sign_annotations:
+    description: >
+      Bounding box annotations with unified coordinate system.
+      Adds annotation provenance vs v1.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      surface_id: { type: INTEGER, fk: surfaces.id, new: true }
+      sign_id: { type: TEXT, fk: signs.sign_id, new: true, description: "Resolved OGSL name" }
+      # Coordinates as percentages (resolution-independent)
+      bbox_x: { type: REAL, description: "0-100%" }
+      bbox_y: { type: REAL, description: "0-100%" }
+      bbox_w: { type: REAL, description: "0-100%" }
+      bbox_h: { type: REAL, description: "0-100%" }
+      # Reading order
+      line_number: { type: INTEGER }
+      position_in_line: { type: INTEGER }
+      # Damage
+      damage_status: { type: TEXT, values: [intact, damaged, missing, illegible], new: true }
+      # Provenance
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id, new: true }
+      confidence: { type: REAL }
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 2: GRAPHEMIC — What signs are present?
+# Sources: ogsl-signlist, epsd2-reference, ebl-annotations
+# ═══════════════════════════════════════════════════════════
+
+  signs:
+    description: >
+      Cuneiform sign inventory. Adds concordance columns vs v1.
+    columns:
+      sign_id: { type: TEXT, pk: true, description: "OGSL canonical name" }
+      utf8: { type: TEXT }
+      unicode_hex: { type: TEXT }
+      unicode_decimal: { type: INTEGER }
+      uname: { type: TEXT }
+      uphase: { type: TEXT }
+      sign_type: { type: TEXT, values: [simple, compound, modified] }
+      # Concordance numbers (NEW)
+      mzl_number: { type: INTEGER, new: true, description: "Borger MZL number (for CompVis)" }
+      abz_number: { type: TEXT, new: true, description: "Borger ABZ number (for eBL)" }
+      lak_number: { type: INTEGER, new: true, description: "Deimel LAK number" }
+      # GDL structure (NEW — stored as JSON, not just sign_type string)
+      gdl_definition: { type: TEXT, new: true, description: "JSON GDL tree from OGSL" }
+      # Computed
+      most_common_value: { type: TEXT }
+      total_corpus_frequency: { type: INTEGER, new: true }
+
+  sign_values:
+    description: >
+      Sign reading values. Adds context fields vs v1.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      sign_id: { type: TEXT, fk: signs.sign_id }
+      value: { type: TEXT }
+      sub_index: { type: INTEGER }
+      value_type: { type: TEXT, values: [logographic, syllabic, determinative, numeric] }
+      # Context for when this reading applies (NEW)
+      language_context: { type: TEXT, new: true, description: "sux, akk, or null (any)" }
+      period_context: { type: TEXT, new: true, description: "Period range where this reading is attested" }
+      frequency: { type: INTEGER, description: "Computed from corpus attestations" }
+    decision_needed: >
+      How granular should context be? Per-language? Per-period? Per-genre?
+      Risk of combinatorial explosion vs usefulness.
+
+  sign_variants:
+    description: Sign variant forms (gunu, tenu, etc.)
+    columns:
+      variant_id: { type: TEXT, pk: true }
+      base_sign: { type: TEXT, fk: signs.sign_id }
+      modifier_type: { type: TEXT, values: [gunu, tenu, sheshig, nutillu, rotated] }
+      modifier_code: { type: TEXT, description: "@g, @t, @s, @n, @180" }
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 3: READING — How are signs read in context?
+# Sources: cdli-atf, oracc-corpus (GDL + reading layer)
+# ═══════════════════════════════════════════════════════════
+
+  text_lines:
+    description: >
+      NEW TABLE. Decompose ATF from text blobs into per-line records.
+      Each line belongs to a surface and has an ordered sequence of tokens.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      surface_id: { type: INTEGER, fk: surfaces.id }
+      line_number: { type: INTEGER }
+      raw_atf: { type: TEXT, description: "Original ATF line text" }
+      is_ruling: { type: INTEGER, default: 0, description: "Ruling line (separator)" }
+      is_blank: { type: INTEGER, default: 0 }
+      source: { type: TEXT, values: [cdli, oracc] }
+    constraints: [UNIQUE(p_number, surface_id, line_number, source)]
+
+  tokens:
+    description: >
+      NEW TABLE. Central unit linking all layers. Each token is one word or
+      sign-group in a line. This is the hub that physical annotations,
+      readings, and linguistic analyses all point to.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      line_id: { type: INTEGER, fk: text_lines.id }
+      position: { type: INTEGER, description: "Position within line (1-indexed)" }
+      form: { type: TEXT, description: "Transliterated form as written" }
+      # Sign-level decomposition (from ORACC GDL)
+      gdl_json: { type: TEXT, new: true, description: "GDL sign tree for this token (JSON)" }
+      # Reading
+      reading: { type: TEXT, description: "Phonetic/logographic reading" }
+      sign_function: { type: TEXT, new: true, values: [logographic, syllabographic, determinative, numeric, mixed] }
+      # Language at token level
+      lang: { type: TEXT, description: "ISO language code (sux, akk, akk-x-stdbab, etc.)" }
+      # Damage/certainty
+      damage: { type: TEXT, values: [intact, damaged, missing, illegible] }
+      reading_confidence: { type: REAL, new: true }
+    decision_needed: >
+      Should GDL be stored as JSON on the token, or normalized into a
+      sign_instances join table? JSON is simpler; normalized enables queries
+      like "find all tokens containing sign AN".
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 4: LINGUISTIC — What do the words mean?
+# Sources: oracc-corpus (lemma nodes), oracc-glossary, BabyLemmatizer
+# ═══════════════════════════════════════════════════════════
+
+  lemmatizations:
+    description: >
+      REPLACES v1 lemmas table. Supports MULTIPLE lemmatizations per token
+      with provenance. v1 stored one flat record; v2 stores competing analyses.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      token_id: { type: INTEGER, fk: tokens.id }
+      # Lemma identification
+      citation_form: { type: TEXT, description: "cf — dictionary headword form" }
+      guide_word: { type: TEXT, description: "gw — English gloss" }
+      sense: { type: TEXT, new: true, description: "Disambiguated sense from ORACC" }
+      pos: { type: TEXT, description: "UPOS part of speech" }
+      epos: { type: TEXT, description: "Effective POS (for logograms)" }
+      # Normalization
+      norm: { type: TEXT, new: true, description: "norm0 — normalized Akkadian form" }
+      base: { type: TEXT, new: true, description: "Sign base underlying the reading" }
+      # Full ORACC signature
+      signature: { type: TEXT, new: true, description: "Full @project%lang:form=cf[gw//sense]POS'ePOS$norm/base#morph" }
+      # Morphology (opaque string from ORACC; structured decomposition in morphology table)
+      morph_raw: { type: TEXT, new: true, description: "Raw ORACC morph string" }
+      # Provenance
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      confidence: { type: REAL }
+      is_consensus: { type: INTEGER, default: 0, new: true, description: "Chosen as best analysis" }
+      # Link to dictionary
+      entry_id: { type: TEXT, fk: glossary_entries.entry_id, new: true }
+    notes: >
+      Multiple rows per token_id when competing analyses exist.
+      is_consensus flags the editorially chosen or highest-confidence one.
+
+  morphology:
+    description: >
+      NEW TABLE. Structured morphological decomposition.
+      Language-polymorphic: different columns used per language family.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      lemmatization_id: { type: INTEGER, fk: lemmatizations.id }
+      language_family: { type: TEXT, values: [sumerian, akkadian, hittite, elamite, other] }
+      # Akkadian (Semitic templatic morphology)
+      root: { type: TEXT, description: "Triconsonantal root (e.g. š-p-r)" }
+      stem: { type: TEXT, description: "G/D/Š/N verbal stem" }
+      tense: { type: TEXT }
+      person: { type: TEXT }
+      number: { type: TEXT }
+      gender: { type: TEXT }
+      # Sumerian (agglutinative slot-based)
+      conjugation_prefix: { type: TEXT, description: "mu-, i-, ba-, bi-, etc." }
+      dimensional_prefixes: { type: TEXT, description: "-na-, -da-, -ni-, etc." }
+      stem_form: { type: TEXT }
+      pronominal_suffix: { type: TEXT }
+      aspect: { type: TEXT }
+      transitivity: { type: TEXT }
+      # Shared
+      case: { type: TEXT }
+      state: { type: TEXT, description: "Akkadian: construct/absolute/bound" }
+    decision_needed: >
+      Sumerian verbal morphology framework is contested (Jagersma vs Zólyomi
+      vs Edzard). Which slot model do we encode? May need to support multiple
+      frameworks as competing annotations — same provenance model as lemmatizations.
+
+  translations:
+    description: >
+      Expanded from v1. Adds line-level translations alongside whole-text.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      line_id: { type: INTEGER, fk: text_lines.id, nullable: true, new: true }
+      translation: { type: TEXT }
+      language: { type: TEXT, default: "en" }
+      source: { type: TEXT }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id, new: true }
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 5: SEMANTIC — Higher-level meaning
+# Sources: oracc-glossary (senses), editorial/ML (future)
+# ═══════════════════════════════════════════════════════════
+
+  glossary_entries:
+    description: Dictionary headwords (expanded to ingest all ORACC projects)
+    columns:
+      entry_id: { type: TEXT, pk: true }
+      headword: { type: TEXT }
+      citation_form: { type: TEXT }
+      guide_word: { type: TEXT }
+      language: { type: TEXT }
+      pos: { type: TEXT }
+      icount: { type: INTEGER }
+      project: { type: TEXT }
+      normalized_headword: { type: TEXT }
+      # New fields from ORACC glossary
+      periods: { type: TEXT, new: true, description: "JSON array of attested periods" }
+      norms: { type: TEXT, new: true, description: "JSON array of normalized forms" }
+
+  glossary_forms:
+    description: Attested spelling forms for glossary entries
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      form: { type: TEXT }
+      count: { type: INTEGER }
+      norm: { type: TEXT, new: true }
+      lang: { type: TEXT, new: true }
+
+  glossary_senses:
+    description: Sense hierarchy per entry (carry forward from v1)
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      sense_number: { type: INTEGER }
+      guide_word: { type: TEXT }
+      definition: { type: TEXT }
+      pos: { type: TEXT, new: true, description: "POS can differ per sense" }
+      signatures: { type: TEXT, new: true, description: "JSON array of ORACC sigs attesting this sense" }
+
+  glossary_relationships:
+    description: Cross-references between entries (carry forward from v1)
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      from_entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      to_entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      relationship_type: { type: TEXT }
+      notes: { type: TEXT }
+      confidence: { type: TEXT }
+
+  semantic_fields:
+    description: Hierarchical semantic taxonomy (carry forward from v1)
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      name: { type: TEXT, unique: true }
+      description: { type: TEXT }
+      parent_field_id: { type: INTEGER, fk: semantic_fields.id }
+
+  intertextuality_links:
+    description: >
+      NEW TABLE. Cross-text relationships: parallel passages,
+      quotations, formulaic expressions.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      source_token_start: { type: INTEGER, fk: tokens.id }
+      source_token_end: { type: INTEGER, fk: tokens.id }
+      target_token_start: { type: INTEGER, fk: tokens.id }
+      target_token_end: { type: INTEGER, fk: tokens.id }
+      link_type: { type: TEXT, values: [parallel, quotation, formula, duplicate, commentary] }
+      confidence: { type: REAL }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+    decision_needed: >
+      Should this link tokens (fine-grained) or lines (simpler)?
+      ORACC scores operate at line level. Token-level is more powerful but
+      harder to create.
+
+# ═══════════════════════════════════════════════════════════
+# PROVENANCE — Who said what, when, and how confident?
+# ═══════════════════════════════════════════════════════════
+
+  annotation_runs:
+    description: >
+      NEW TABLE. Every annotation (sign detection, lemmatization, translation)
+      is linked to a run that records its source. Enables competing
+      interpretations and model comparison.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      source_type: { type: TEXT, values: [human, model, hybrid, import] }
+      source_name: { type: TEXT, description: "e.g. 'ORACC/dcclt', 'BabyLemmatizer v2.2', 'CompVis DETR'" }
+      model_version: { type: TEXT, nullable: true }
+      created_at: { type: TIMESTAMP }
+      corpus_scope: { type: TEXT, description: "Which texts were processed" }
+      notes: { type: TEXT }
+    notes: >
+      This is what v1 completely lacks. Every annotation in v2 traces back
+      to who/what created it. Enables: "show me where ORACC and BabyLemmatizer
+      disagree" or "which readings are only from ML, not human-verified?"
+
+# ═══════════════════════════════════════════════════════════
+# REFERENCE / LOOKUP (carried forward + expanded)
+# ═══════════════════════════════════════════════════════════
+
+  museums:
+    description: Museum code lookup (carry forward)
+    columns: { code: TEXT pk, name: TEXT, city: TEXT, country: TEXT, latitude: REAL new, longitude: REAL new }
+
+  excavation_sites:
+    description: Archaeological sites (enriched with coordinates)
+    columns:
+      code: { type: TEXT, pk: true }
+      name: { type: TEXT }
+      ancient_name: { type: TEXT }
+      modern_country: { type: TEXT }
+      pleiades_id: { type: TEXT, new: true }
+      latitude: { type: REAL, new: true }
+      longitude: { type: REAL, new: true }
+
+  cad_entries:
+    description: CAD digitized entries (carry forward from v1, tables exist but empty)
+    status: future — depends on CAD digitization pipeline
+    columns: "(same as v1)"
+
+  pipeline_status:
+    description: >
+      Per-tablet completeness. Expanded to track per-layer status.
+    columns:
+      p_number: { type: TEXT, pk: true, fk: artifacts.p_number }
+      # Per-layer tracking (NEW)
+      physical_complete: { type: REAL, new: true, description: "0.0-1.0 completion of physical layer" }
+      graphemic_complete: { type: REAL, new: true }
+      reading_complete: { type: REAL, new: true }
+      linguistic_complete: { type: REAL, new: true }
+      semantic_complete: { type: REAL, new: true }
+      # Legacy boolean flags
+      has_image: { type: INTEGER, default: 0 }
+      has_atf: { type: INTEGER, default: 0 }
+      has_lemmas: { type: INTEGER, default: 0 }
+      has_translation: { type: INTEGER, default: 0 }
+      has_sign_annotations: { type: INTEGER, default: 0 }
+      quality_score: { type: REAL }
+      last_updated: { type: TIMESTAMP }
+
+  import_log:
+    description: Data import history (carry forward, expanded)
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      source: { type: TEXT }
+      file_path: { type: TEXT }
+      records_imported: { type: INTEGER }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id, new: true }
+      imported_at: { type: TIMESTAMP }
+
+# ═══════════════════════════════════════════════════════════
+# USER FEATURES (carried forward)
+# ═══════════════════════════════════════════════════════════
+
+  collections:
+    description: User-created artifact groupings (carry forward)
+    columns:
+      collection_id: { type: INTEGER, pk: true }
+      name: { type: TEXT }
+      description: { type: TEXT }
+      image_path: { type: TEXT }
+      created_at: { type: TIMESTAMP }
+      updated_at: { type: TIMESTAMP }
+
+  collection_members:
+    columns:
+      collection_id: { type: INTEGER, fk: collections.collection_id }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+    constraints: [PRIMARY KEY(collection_id, p_number)]
+
+# ═══════════════════════════════════════════════════════════
+# MIGRATION PATH: v1 → v2
+# ═══════════════════════════════════════════════════════════
+
+migration_notes:
+  overview: >
+    v2 is additive — no v1 data is discarded. New tables are added,
+    existing tables gain columns, and text blobs get decomposed into
+    normalized structures.
+
+  steps:
+    - name: Add concordance columns to signs
+      tables: [signs]
+      risk: low
+      description: Add mzl_number, abz_number, lak_number. Populate from ebl.txt + manual curation.
+
+    - name: Create surfaces table
+      tables: [surfaces]
+      risk: low
+      description: Parse existing surface data from inscriptions ATF and sign_annotations.surface.
+
+    - name: Decompose ATF into text_lines
+      tables: [text_lines]
+      risk: medium
+      description: >
+        Parse inscriptions.atf into per-line records. Requires ATF parser.
+        Keep inscriptions table for backward compatibility initially.
+
+    - name: Create tokens from CDL data
+      tables: [tokens]
+      risk: medium
+      description: >
+        Parse ORACC corpusjson CDL nodes into token records. For CDLI-only
+        texts (no ORACC), tokenize ATF lines.
+
+    - name: Migrate lemmas to lemmatizations
+      tables: [lemmatizations]
+      risk: low
+      description: >
+        Copy v1 lemmas into lemmatizations with annotation_run pointing to
+        "ORACC/dcclt import". Add signature, morph, base, norm, sense fields.
+
+    - name: Create annotation_runs
+      tables: [annotation_runs]
+      risk: low
+      description: >
+        Create retroactive annotation_run records for existing data
+        (CDLI import, ORACC/dcclt import, CompVis import).
+
+    - name: Import remaining ORACC projects
+      tables: [lemmatizations, tokens, text_lines, glossary_entries]
+      risk: low
+      description: >
+        Load etcsri, blms, hbtin, rinap, saao, ribo, riao, epsd2 data.
+        Each gets its own annotation_run.
+
+    - name: Build sign concordance
+      tables: [signs]
+      risk: high (requires manual curation)
+      description: >
+        Populate mzl_number and abz_number on signs table.
+        Enables eBL annotation import and CompVis label resolution.
+
+    - name: Create morphology table
+      tables: [morphology]
+      risk: medium
+      description: >
+        Parse ORACC morph strings into structured slots. Language-specific
+        parsing rules needed for Sumerian vs Akkadian.
+
+# ═══════════════════════════════════════════════════════════
+# OPEN QUESTIONS
+# ═══════════════════════════════════════════════════════════
+
+open_questions:
+  - question: "JSON columns vs normalized tables for GDL?"
+    context: >
+      GDL sign trees on tokens could be JSON blobs (simple, flexible) or
+      normalized into a sign_instances table (queryable, more complex).
+    leaning: JSON for v2.0, normalize later if query patterns demand it.
+
+  - question: "Which Sumerian morphology framework?"
+    context: >
+      Jagersma, Zólyomi, and Edzard disagree on verbal chain slot structure.
+      The schema must either pick one or support multiple via competing annotations.
+    leaning: Support multiple via annotation_runs provenance model.
+
+  - question: "How to handle texts with CDLI ATF but no ORACC lemmatization?"
+    context: >
+      127,700 texts have ATF but no lemmas (94.5%). Tokens exist but
+      lemmatization table is empty for them. Is that acceptable?
+    leaning: Yes — tokens are still useful for reading-layer queries and future ML.
+
+  - question: "Separate tables per language morphology vs one polymorphic table?"
+    context: >
+      Sumerian needs slot columns (conjugation_prefix, dimensional_prefixes).
+      Akkadian needs root/pattern columns. Using one table means many NULLs.
+    leaning: >
+      One polymorphic table with language_family discriminator. NULLs are
+      acceptable in SQLite. Avoids join complexity for cross-language queries.
+
+  - question: "Should translations link to lines or tokens?"
+    context: >
+      Current data has line-level translations. v2 research proposes token-level.
+      No source currently provides token-level alignment.
+    leaning: Line-level for now (line_id FK). Token-level is future ML work.
+
+  - question: "How to version ORACC data across releases?"
+    context: >
+      ORACC projects update periodically. A text's lemmatization may change.
+      annotation_runs tracks when data was imported, but not diff tracking.
+    leaning: New annotation_run per import. Old data kept, is_consensus updated.

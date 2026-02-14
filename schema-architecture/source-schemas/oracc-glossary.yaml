@@ -1,0 +1,339 @@
+source:
+  name: ORACC Glossaries
+  origin: https://oracc.museum.upenn.edu
+  local_path: sources/ORACC/{project}/json/{project}/gloss-{lang}.json
+  format: json
+  license: CC0
+  last_pulled: 2026-02-04 (dcclt), 2026-02-14 (epsd2, etcsri, blms)
+  notes: >
+    Dictionary data organized by project and language. Each file is a complete
+    glossary for one language within one project. Entry richness varies by project.
+    epsd2/gloss-sux.json (1.8 GB) is the most comprehensive Sumerian dictionary.
+
+available_glossaries:
+  dcclt:
+    languages: [sux, akk, akk-x-stdbab, qpn, sux-x-emesal, xhu, uga, elx]
+    total_entries: ~21,000
+    notes: Currently the only imported glossary data.
+  epsd2:
+    languages: [sux]
+    total_entries: Very large (1.8 GB file)
+    notes: Comprehensive Sumerian dictionary. Not yet imported.
+  saao:
+    languages: [akk, akk-x-neoass, akk-x-neobab, akk-x-stdbab, akk-x-midass, qpn]
+    notes: Richest Akkadian dialect coverage. 134 MB akk glossary.
+  rinap:
+    languages: [akk, sux, qpn]
+    notes: 69 MB Akkadian glossary.
+  ribo:
+    languages: [akk, sux, qpn]
+  hbtin:
+    languages: [qpn]
+    notes: Proper names only. Late Babylonian dialect not in glossary.
+  dccmt:
+    languages: [akk-x-oldbab, akk-x-stdbab, qpn]
+  etcsri:
+    languages: [sux, qpn]
+  blms:
+    languages: [sux, akk, akk-x-stdbab, sux-x-emesal, qpn]
+    notes: Only source for Emesal (women's dialect of Sumerian) outside dcclt.
+
+language_codes:
+  sux: Sumerian
+  sux-x-emesal: Emesal (Sumerian women's/cultic dialect)
+  akk: Akkadian (generic)
+  akk-x-oldbab: Old Babylonian
+  akk-x-stdbab: Standard Babylonian (literary)
+  akk-x-neoass: Neo-Assyrian
+  akk-x-neobab: Neo-Babylonian
+  akk-x-midass: Middle Assyrian
+  akk-x-mbperi: Middle Babylonian peripheral
+  akk-x-earakk: Early Akkadian
+  akk-x-ltebab: Late Babylonian (hbtin only)
+  qpn: Proper names (cross-linguistic)
+  xhu: Hurrian
+  uga: Ugaritic
+  elx: Elamite
+
+envelope:
+  type:
+    type: string
+    value: glossary
+  project:
+    type: string
+  lang:
+    type: string
+    description: Language code
+  entries:
+    type: array
+    description: Array of dictionary entries
+
+fields:
+
+  entry:
+    description: One dictionary headword with all its data
+
+    headword:
+      type: string
+      nullable: false
+      description: Canonical headword in format "cf[gw]POS"
+      sample: "a[arm]N"
+      maps_to_table: glossary_entries.headword
+      maps_to_layer: linguistic
+
+    id:
+      type: string
+      nullable: false
+      description: ORACC OID (persistent identifier)
+      sample: "o0023086"
+      maps_to_table: glossary_entries.entry_id
+      maps_to_layer: identity
+      notes: Stable across project rebuilds. Can be used as cross-project reference.
+
+    cf:
+      type: string
+      nullable: false
+      description: Citation form (dictionary lemma)
+      sample: "a"
+      maps_to_table: glossary_entries.citation_form
+      maps_to_layer: linguistic
+
+    gw:
+      type: string
+      nullable: false
+      description: Guide word (primary gloss)
+      sample: "arm"
+      maps_to_table: glossary_entries.guide_word
+      maps_to_layer: linguistic
+
+    pos:
+      type: string
+      nullable: false
+      description: Part of speech
+      sample: "N"
+      maps_to_table: glossary_entries.pos
+      maps_to_layer: linguistic
+
+    icount:
+      type: string
+      nullable: false
+      description: Instance count (how many times attested in this project)
+      sample: "42"
+      maps_to_table: glossary_entries.icount
+      maps_to_layer: linguistic
+      notes: String type but always numeric. Useful for frequency analysis.
+
+    ipct:
+      type: string
+      nullable: false
+      description: Instance percentage within project
+      sample: "0.02"
+      maps_to_layer: linguistic
+
+    xis:
+      type: string
+      nullable: false
+      description: Cross-reference index string
+      maps_to_layer: identity
+
+    dc_title:
+      type: string
+      nullable: true
+      description: Dublin Core title (display name)
+      maps_to_layer: linguistic
+
+    # Variant forms
+    forms:
+      type: array
+      description: All attested spellings of this word
+      maps_to_table: glossary_forms
+      maps_to_layer: graphemic
+      item_fields:
+        type:
+          type: string
+          value: "form"
+        id:
+          type: string
+        n:
+          type: string
+          description: Orthographic form as written
+          sample: "a"
+          maps_to_table: glossary_forms.form
+        c:
+          type: string
+          description: Numeric code
+        icount:
+          type: string
+          description: How many times this spelling appears
+          maps_to_table: glossary_forms.count
+        ipct:
+          type: string
+        xis:
+          type: string
+
+    # Normalizations
+    norms:
+      type: array
+      nullable: true
+      description: Normalized forms (phonological representations)
+      maps_to_layer: linguistic
+      item_fields:
+        id:
+          type: string
+        n:
+          type: string
+          description: Normalized form
+          sample: "a"
+        icount:
+          type: string
+        forms:
+          type: array
+          description: Which orthographic forms map to this normalization
+          item_fields:
+            type:
+              type: string
+              value: normform
+            n:
+              type: string
+            ref:
+              type: string
+              description: References a form ID from the forms array
+            cbd_id:
+              type: string
+
+    # Polysemy (senses)
+    senses:
+      type: array
+      nullable: true
+      description: Distinct meanings of this word
+      maps_to_table: glossary_senses
+      maps_to_layer: semantic
+      item_fields:
+        type:
+          type: string
+          value: "sense"
+        id:
+          type: string
+        num:
+          type: string
+          description: Sense number
+          sample: "1."
+        pos:
+          type: string
+          description: POS for this specific sense (may differ from entry POS)
+        mng:
+          type: string
+          description: Meaning/gloss for this sense
+          sample: "arm"
+          maps_to_table: glossary_senses.meaning
+        ok:
+          type: string
+          nullable: true
+          description: Verification flag
+          values: ["1"]
+        forms:
+          type: array
+          description: Forms attested with this sense
+        norms:
+          type: array
+          description: Normalizations for this sense
+        sigs:
+          type: array
+          description: Full signature strings attested for this sense
+          item_fields:
+            type:
+              type: string
+              value: sig
+            sig:
+              type: string
+              description: Complete lemmatization signature
+              notes: Same format as oracc-corpus.yaml signature_format
+
+    # Temporal distribution
+    periods:
+      type: array
+      nullable: true
+      description: Which historical periods this word is attested in
+      maps_to_layer: linguistic
+      item_fields:
+        p:
+          type: string
+          description: Period name
+          sample: "Old Babylonian"
+          notes: >
+            Critical for v2 schema: period tracking enables diachronic analysis
+            (how word usage changes over 3000+ years)
+        icount:
+          type: string
+        ipct:
+          type: string
+
+    # Compound references (not all projects)
+    see-compounds:
+      type: array
+      nullable: true
+      description: Compound expressions containing this word
+      maps_to_layer: linguistic
+      item_fields:
+        xcpd:
+          type: string
+          description: Compound expression
+        eref:
+          type: string
+          description: OID of the compound entry
+
+    # Compound parts (saao dialect glossaries)
+    compound:
+      type: array
+      nullable: true
+      description: Component parts of a compound word (saao only)
+      maps_to_layer: linguistic
+      notes: Only present in saao dialect-specific glossaries.
+      item_fields:
+        type:
+          type: string
+          value: cpd
+        primary:
+          type: string
+          nullable: true
+          description: "1" marks head of compound
+        partsig:
+          type: string
+        ref:
+          type: string
+        cf:
+          type: string
+        gw:
+          type: string
+        mng:
+          type: string
+        pos:
+          type: string
+        epos:
+          type: string
+
+cross_references:
+  - field: entry.cf + entry.gw + entry.pos
+    overlaps_with: oracc-corpus.yaml#f.cf + f.gw + f.pos
+    relationship: defines (glossary defines what corpus tokens reference)
+
+  - field: entry.id (OID)
+    overlaps_with: oracc-corpus.yaml#exosig (contains entry reference)
+    relationship: referenced-by
+
+  - field: forms[].n
+    overlaps_with: oracc-corpus.yaml#f.form
+    relationship: instance-of (corpus forms are instances of glossary forms)
+
+  - field: entry.cf
+    overlaps_with: epsd2-reference.yaml#cad_headword (via normalization)
+    relationship: equivalent (different dictionary traditions for same words)
+
+v2_schema_notes: >
+  Glossary data maps primarily to the Linguistic layer. Key gaps vs v2 proposal:
+  - No competing interpretations per entry (one authority per project)
+  - No explicit confidence on senses
+  - Period data exists but isn't linked to specific sign forms (can't track how
+    spelling of a word changes over time)
+  - No cross-project deduplication (same word may have different entries in dcclt vs epsd2)
+  - Emesal dialect tracked as separate language code, not as register/sociolect metadata

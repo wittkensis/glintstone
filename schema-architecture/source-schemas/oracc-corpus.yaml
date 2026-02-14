@@ -1,0 +1,457 @@
+source:
+  name: ORACC Corpus (CDL Format)
+  origin: https://oracc.museum.upenn.edu
+  local_path: sources/ORACC/{project}/json/{project}/corpusjson/*.json
+  format: json (Cuneiform Document Language)
+  license: CC0
+  record_count: ~7,500 files across projects (dcclt 4980, etcsri 1456, hbtin 487, dccmt 252, blms 229, rinap 48)
+  last_pulled: 2026-02-04 (dcclt), 2026-02-14 (others)
+  notes: >
+    The most complex data structure. Each file is one text edition in CDL (Cuneiform
+    Document Language) format — a nested tree of containers, delimiters, and lemma nodes.
+    This is where transliteration meets linguistic annotation. Every word has sign-level
+    GDL (Grapheme Description Language) data plus lemmatization when available.
+    Maps to multiple v2 schema layers simultaneously.
+
+envelope:
+  type:
+    type: string
+    value: cdl
+  project:
+    type: string
+  textid:
+    type: string
+    description: P-number or Q-number
+    maps_to_table: lemmas.p_number
+    maps_to_layer: identity
+  cdl:
+    type: array
+    description: Root array of CDL nodes (the text tree)
+
+# CDL is a recursive tree. Three node types:
+
+node_types:
+
+  container:
+    marker: 'node: "c"'
+    description: >
+      Groups content into structural units. Recursive — containers hold
+      other containers, delimiters, and lemma nodes.
+    fields:
+      node:
+        type: string
+        value: "c"
+      type:
+        type: string
+        values: [text, discourse, sentence]
+        description: Structural level
+        maps_to_layer: reading
+      id:
+        type: string
+        description: Hierarchical ID (e.g. "Q002268.U1")
+      subtype:
+        type: string
+        nullable: true
+        values: [body]
+      implicit:
+        type: string
+        nullable: true
+        values: ["yes"]
+      tag:
+        type: string
+        nullable: true
+        values: ["#auto"]
+      label:
+        type: string
+        nullable: true
+        description: Line label (e.g. "o i 1")
+      cdl:
+        type: array
+        description: Child nodes (recursive)
+
+  delimiter:
+    marker: 'node: "d"'
+    description: >
+      Marks structural boundaries — surfaces, columns, lines, fields.
+      Does not contain text content.
+    fields:
+      node:
+        type: string
+        value: "d"
+      type:
+        type: string
+        values: [object, surface, column, line-start, field-start, field-end, cell-start, cell-end]
+        maps_to_layer: physical
+      subtype:
+        type: string
+        nullable: true
+        values: [tablet, obverse, reverse, left, right, top, bottom, wp, eq]
+        maps_to_layer: physical
+        notes: wp = word/phrase boundary, eq = equation/equivalence
+      ref:
+        type: string
+        nullable: true
+        description: Reference ID for this structural position
+      n:
+        type: string
+        nullable: true
+        description: Number (column or line number)
+        sample: "1"
+      label:
+        type: string
+        nullable: true
+        description: Human-readable label
+        sample: "o i 1" (obverse column i line 1)
+
+  lemma:
+    marker: 'node: "l"'
+    description: >
+      A single word/token with full linguistic annotation. This is the core data unit.
+      Contains graphemic (GDL), reading, and linguistic layers all in one node.
+    fields:
+      node:
+        type: string
+        value: "l"
+      id:
+        type: string
+        description: Unique lemma node ID
+      ref:
+        type: string
+        description: Position reference within text
+      frag:
+        type: string
+        nullable: true
+        description: Raw cuneiform fragment text (for unlemmatized tokens)
+        maps_to_layer: reading
+      inst:
+        type: string
+        nullable: true
+        description: Brief instance signature
+        sample: "sabitum[musical instrument]"
+        maps_to_layer: linguistic
+        notes: Format "cf[gw]" — quick reference to dictionary entry
+      exosig:
+        type: string
+        nullable: true
+        description: Full external signature with complete lemmatization
+        sample: "@dcclt%sux:{gesz}sa-bi2-tum=sabitum[instrument//a musical instrument]N'N$sabitum/{gesz}sa-bi2-tum#~"
+        maps_to_layer: linguistic
+        notes: >
+          Format: @project%lang:form=cf[gw//sense]POS'ePOS$norm/base#morph
+          This single string encodes the entire linguistic analysis.
+      exoprj:
+        type: string
+        nullable: true
+        description: External project providing the lemmatization
+        sample: "epsd2"
+        maps_to_layer: provenance
+      exolng:
+        type: string
+        nullable: true
+        description: External language code
+        sample: "sux"
+        maps_to_layer: linguistic
+      ftype:
+        type: string
+        nullable: true
+        description: Field type context
+        values: [wp, eq]
+        notes: wp = word/phrase context, eq = equivalence (in lexical lists)
+
+      # The f (form) block — main linguistic content
+      f:
+        type: object
+        description: >
+          Form block. Contains graphemic, reading, and linguistic data for this token.
+          This is where sign-level and word-level data meet.
+        fields:
+          lang:
+            type: string
+            nullable: false
+            description: Language code for this token
+            values: [sux, akk, akk-x-stdbab, akk-x-oldbab, akk-x-neoass, akk-x-neobab, akk-x-midass, akk-x-mbperi, akk-x-earakk, qpc, qpn, xhu, uga, elx, hit, arc, grc, sux-x-emesal]
+            maps_to_table: lemmas.lang
+            maps_to_layer: linguistic
+            notes: >
+              Critical for v2 schema: a single text may contain tokens in multiple
+              languages (Sumerograms in Akkadian text, Akkadograms in Hittite, etc.)
+
+          form:
+            type: string
+            nullable: false
+            description: Graphemic form as written on tablet
+            sample: "{gesz}sa-bi2-tum"
+            maps_to_table: lemmas.form
+            maps_to_layer: reading
+            notes: >
+              Contains compound signs, determinatives, subscripts.
+              This is what BabyLemmatizer receives as input.
+
+          delim:
+            type: string
+            nullable: true
+            description: Delimiter after this word
+            sample: " "
+            maps_to_layer: reading
+
+          # Linguistic annotation (present when lemmatized)
+          cf:
+            type: string
+            nullable: true
+            description: Citation form (dictionary headword)
+            sample: "sabitum"
+            maps_to_table: lemmas.cf -> glossary_entries.citation_form
+            maps_to_layer: linguistic
+            notes: >
+              The lemma. Maps to glossary entry. This is the BabyLemmatizer output.
+
+          gw:
+            type: string
+            nullable: true
+            description: Guide word (brief gloss)
+            sample: "a musical instrument"
+            maps_to_table: lemmas.gw -> glossary_entries.guide_word
+            maps_to_layer: linguistic
+
+          sense:
+            type: string
+            nullable: true
+            description: Specific sense (more precise than gw)
+            sample: "a musical instrument"
+            maps_to_table: glossary_senses.mng
+            maps_to_layer: semantic
+
+          pos:
+            type: string
+            nullable: true
+            description: Part of speech
+            values: [N, V/i, V/t, AJ, AV, NU, PRP, CNJ, DET, IP, PP, RP, REL, MOD, SBJ, J, XP, PN, DN, GN, RN, TN, WN, MN, ON, AN, FN, EN, LN, QN, SN, YN, u, X]
+            maps_to_table: lemmas.pos
+            maps_to_layer: linguistic
+            notes: >
+              PN=personal name, DN=divine name, GN=geographic name, RN=royal name,
+              TN=temple name, WN=watercourse name, etc. Proper noun subtypes critical
+              for historical/cultural analysis.
+
+          epos:
+            type: string
+            nullable: true
+            description: Effective POS after compounding
+            maps_to_table: ~
+            maps_to_layer: linguistic
+            notes: May differ from pos when word functions differently in compound.
+
+          base:
+            type: string
+            nullable: true
+            description: Base form
+            sample: "{gesz}sa-bi2-tum"
+            maps_to_layer: linguistic
+
+          morph:
+            type: string
+            nullable: true
+            description: Morphological analysis codes
+            sample: "~;*a,ngu"
+            maps_to_layer: linguistic
+            notes: >
+              ~ = stem only. Comma-separated morphemes within word,
+              semicolon at compound boundaries. Language-specific encoding.
+              V2 schema proposes language-polymorphic morphology slots instead.
+
+          norm0:
+            type: string
+            nullable: true
+            description: Normalization with morphology
+            sample: "sabitum"
+            maps_to_layer: linguistic
+
+          sig:
+            type: string
+            nullable: true
+            description: Full signature string
+            maps_to_layer: linguistic
+
+          # GDL (Grapheme Description Language) — sign-level data
+          gdl:
+            type: array
+            nullable: false
+            description: >
+              Array of sign-level graphemic data. Each element is one cuneiform sign
+              with its reading, Unicode representation, and OGSL identifier.
+              This is the graphemic layer of the v2 schema.
+            maps_to_layer: graphemic
+            item_types:
+
+              simple_sign:
+                fields:
+                  v:
+                    type: string
+                    description: Reading value chosen for this sign
+                    sample: "sa"
+                    maps_to_layer: reading
+                    notes: The reading decision — which of the sign's many possible values applies here.
+                  s:
+                    type: string
+                    nullable: true
+                    description: Sign name (when reading as logogram)
+                    sample: "DU3"
+                  n:
+                    type: string
+                    nullable: true
+                    description: Numeric value
+                  oid:
+                    type: string
+                    description: OGSL sign identifier
+                    sample: "o0000217"
+                    maps_to_table: signs.sign_id (via ogsl-signlist.yaml)
+                    maps_to_layer: graphemic
+                    notes: Universal cross-reference to OGSL sign database.
+                  gdl_sign:
+                    type: string
+                    description: Canonical sign name in GDL
+                    maps_to_layer: graphemic
+                  form:
+                    type: string
+                    nullable: true
+                    description: Form with subscripts
+                    sample: "bi₂"
+                  utf8:
+                    type: string
+                    description: Unicode cuneiform character
+                    sample: "\U00012049"
+                    maps_to_table: signs.utf8
+                    maps_to_layer: graphemic
+                  key:
+                    type: string
+                    description: Composite key
+                  id:
+                    type: string
+                    description: Position ID within GDL array
+                  delim:
+                    type: string
+                    nullable: true
+                    description: Delimiter to next sign
+                    values: ["-", ".", " "]
+                  break:
+                    type: string
+                    nullable: true
+                    values: [damaged, missing]
+                    maps_to_layer: physical
+                    notes: Sign-level damage information. Feeds confidence scoring.
+                  breakStart:
+                    type: string
+                    nullable: true
+                  breakEnd:
+                    type: string
+                    nullable: true
+                  ho:
+                    type: string
+                    nullable: true
+                    description: Half-open bracket (partial damage)
+                  hc:
+                    type: string
+                    nullable: true
+                    description: Half-close bracket
+
+              determinative:
+                description: >
+                  Silent classifier signs. Written but not pronounced.
+                  Critical for sign function classification in v2 schema.
+                fields:
+                  det:
+                    type: string
+                    values: [semantic, phonetic]
+                    maps_to_layer: reading
+                    notes: >
+                      Semantic determinatives classify meaning (divine, place, wood, etc.)
+                      Phonetic complements confirm pronunciation.
+                  pos:
+                    type: string
+                    values: [pre, post]
+                    description: Whether determinative comes before or after the word
+                  seq:
+                    type: array
+                    description: The sign(s) making up the determinative
+                    notes: Nested GDL signs within the determinative.
+
+              number:
+                fields:
+                  n:
+                    type: string
+                    description: Numeric value
+                  x:
+                    type: string
+                    nullable: true
+                    values: [ellipsis]
+
+      # Contextual properties
+      props:
+        type: array
+        nullable: true
+        description: Environmental context properties
+        item_fields:
+          name:
+            type: string
+            values: [field, discourse]
+          group:
+            type: string
+            value: env
+          value:
+            type: string
+            nullable: true
+
+signature_format:
+  description: >
+    ORACC uses a signature string encoding the full linguistic analysis of a token.
+    Understanding this format is critical for parsing lemmatization data.
+  pattern: "@project%lang:form=cf[gw//sense]POS'ePOS$norm/base#morph"
+  example: "@dcclt%sux:{gesz}sa-bi2-tum=sabitum[instrument//a musical instrument]N'N$sabitum/{gesz}sa-bi2-tum#~"
+  components:
+    project: "dcclt"
+    lang: "sux"
+    form: "{gesz}sa-bi2-tum"
+    cf: "sabitum"
+    gw: "instrument"
+    sense: "a musical instrument"
+    pos: "N"
+    epos: "N"
+    norm: "sabitum"
+    base: "{gesz}sa-bi2-tum"
+    morph: "~"
+
+cross_references:
+  - field: textid
+    overlaps_with: oracc-catalogue.yaml#id_text
+    relationship: identical
+
+  - field: f.cf + f.gw + f.pos
+    overlaps_with: oracc-glossary.yaml#entry (headword, cf, gw, pos)
+    relationship: instance-of (corpus tokens reference glossary entries)
+
+  - field: gdl[].oid
+    overlaps_with: ogsl-signlist.yaml#sign_name
+    relationship: references (GDL signs point to OGSL entries)
+
+  - field: f.form
+    overlaps_with: cdli-atf.yaml#sign_tokens
+    relationship: equivalent (different encoding of same transliteration)
+
+  - field: gdl[].break
+    overlaps_with: cdli-atf.yaml#damage_markers
+    relationship: equivalent (structured vs inline damage notation)
+
+v2_schema_mapping:
+  notes: >
+    The CDL format is the richest source and spans 4 of 5 proposed v2 layers:
+    - Physical: delimiter nodes (surface, column, line), break markers
+    - Graphemic: GDL array (signs, compounds, determinatives, Unicode)
+    - Reading: form field (transliteration choices), v/s fields (which reading chosen)
+    - Linguistic: cf, gw, pos, morph, sig (lemmatization)
+    - Semantic: sense field, translations (if present)
+
+    What CDL does NOT provide that v2 proposes:
+    - Competing interpretations (CDL stores one analysis per token)
+    - Annotation provenance/confidence (no scores, no tool attribution)
+    - Language-polymorphic morphology (morph is an opaque string, not parsed slots)
+    - Period/region-specific reading rules

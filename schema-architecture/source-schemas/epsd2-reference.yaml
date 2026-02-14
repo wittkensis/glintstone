@@ -1,0 +1,192 @@
+source:
+  name: ePSD2 Reference Data (standalone)
+  origin: Multiple (unicode.org, oracc.org, ISAC)
+  local_path: sources/ePSD2/
+  format: mixed (json, txt, html)
+  license: Various
+  last_pulled: 2026-02-04
+  notes: >
+    Standalone reference data separate from the ORACC/epsd2 project corpus.
+    Includes Unicode cuneiform character data, CAD dictionary index, and ATF
+    format specification. Useful for sign-to-character mapping and dictionary
+    cross-referencing.
+
+file_types:
+
+  unicode_cuneiform_signs:
+    path: sources/ePSD2/unicode/cuneiform-signs.json
+    description: Complete Unicode cuneiform sign inventory with metadata
+    fields:
+      totalSigns:
+        type: integer
+        description: Total number of cuneiform signs in Unicode
+
+      ranges:
+        type: array
+        description: Unicode block ranges for cuneiform
+        item_fields:
+          name:
+            type: string
+            sample: "Sumero-Akkadian Cuneiform"
+          start:
+            type: string
+            sample: "U+12000"
+          end:
+            type: string
+            sample: "U+123FF"
+        notes: >
+          Three blocks: Cuneiform (U+12000-123FF), Cuneiform Numbers (U+12400-1247F),
+          Early Dynastic Cuneiform (U+12480-1254F).
+
+      signs:
+        type: array
+        description: Individual sign entries
+        item_fields:
+          codePoint:
+            type: string
+            description: Unicode code point
+            sample: "U+12000"
+            maps_to_table: signs.unicode_hex
+            maps_to_layer: graphemic
+
+          decimal:
+            type: integer
+            description: Decimal code point value
+            sample: 73728
+            maps_to_layer: graphemic
+
+          character:
+            type: string
+            description: The actual Unicode character
+            sample: "\U00012000"
+            maps_to_table: signs.utf8
+            maps_to_layer: graphemic
+
+          name:
+            type: string
+            description: Official Unicode character name
+            sample: "CUNEIFORM SIGN A"
+            maps_to_table: signs.uname
+            maps_to_layer: graphemic
+
+  unicode_derived_names:
+    path: sources/ePSD2/unicode/DerivedName.txt
+    description: Unicode character names from unicode.org
+    format: "codepoint ; name" (semicolon-separated)
+    sample: "12000 ; CUNEIFORM SIGN A"
+    maps_to_layer: graphemic
+    notes: Comprehensive but includes all Unicode, not just cuneiform.
+
+  unicode_blocks:
+    path: sources/ePSD2/unicode/Blocks.txt
+    description: Unicode block definitions
+    format: "start..end; block_name"
+    sample: "12000..123FF; Cuneiform"
+    maps_to_layer: graphemic
+
+  cad_index:
+    path: sources/ePSD2/cad/cad-index.json
+    description: Chicago Assyrian Dictionary volume index
+    fields:
+      title:
+        type: string
+        value: "Chicago Assyrian Dictionary"
+      abbreviation:
+        type: string
+        value: "CAD"
+      volumes:
+        type: array
+        item_fields:
+          letter:
+            type: string
+            description: Alphabetical letter of this volume
+            sample: "A"
+          part:
+            type: integer
+            description: Part number (some letters have multiple volumes)
+            sample: 1
+          abbrev:
+            type: string
+            description: Volume abbreviation
+            sample: "A"
+          isacUrl:
+            type: string
+            description: URL at ISAC (Institute for the Study of Ancient Cultures)
+            maps_to_layer: provenance
+          archiveUrl:
+            type: string
+            description: URL at Internet Archive
+            maps_to_layer: provenance
+    maps_to_table: cad_entries (future)
+    maps_to_layer: linguistic
+    notes: >
+      Index only — no dictionary content yet. PDFs at these URLs contain the actual
+      dictionary entries. Tools for extracting them exist in data/tools/cad-digitization/.
+      CAD headwords would cross-reference with ORACC glossary citation forms.
+
+  atf_quick_reference:
+    path: sources/ePSD2/atf/atf-quick-reference.json
+    description: ATF format conventions and special characters
+    fields:
+      determinatives:
+        type: object
+        description: Determinative codes and their meanings
+        values:
+          "{d}": divine name
+          "{m}": male personal name
+          "{f}": female personal name
+          "{ki}": place name
+          "{gesz}": wooden object
+          "{gi}": reed object
+          "{kusz}": leather object
+          "{tug2}": textile
+          "{urudu}": copper/bronze object
+          "{na4}": stone object
+          "{sze}": grain
+        maps_to_layer: reading
+        notes: >
+          Determinatives are the bridge between graphemic and reading layers.
+          They're written signs that aren't pronounced — they classify the word
+          that follows. The v2 schema must track sign function (logographic,
+          syllabographic, determinative) per token.
+
+      damage_notation:
+        type: object
+        values:
+          "[...]": completely broken/missing
+          "x": illegible sign
+          "?": uncertain reading (appended to sign)
+          "#": damaged sign
+        maps_to_layer: physical
+        notes: Maps to confidence scoring in v2 schema.
+
+  atf_primer:
+    path: sources/ePSD2/atf/atf-primer.html
+    description: HTML reference for ATF format (from ORACC documentation)
+    format: html
+    maps_to_layer: reading
+    notes: Specification document, not data. Useful for building ATF parsers.
+
+cross_references:
+  - field: unicode signs
+    overlaps_with: ogsl-signlist.yaml#utf8, #hex, #uname
+    relationship: identical (same Unicode data, different packaging)
+
+  - field: cad_index volumes
+    overlaps_with: oracc-glossary.yaml#entry.cf
+    relationship: complementary (CAD and ORACC glossaries cover same vocabulary from different scholarly traditions)
+
+  - field: determinatives
+    overlaps_with: oracc-corpus.yaml#gdl[].det
+    relationship: defines (reference doc for what corpus data encodes)
+
+  - field: damage_notation
+    overlaps_with: cdli-atf.yaml#damage_markers
+    relationship: defines (reference doc for ATF conventions)
+
+v2_schema_notes: >
+  This source is primarily reference material rather than corpus data.
+  - Unicode data fills the Graphemic layer (sign display)
+  - CAD index points to future Linguistic layer enrichment
+  - ATF conventions define how Reading layer data is encoded
+  - Determinative list is critical for sign function classification

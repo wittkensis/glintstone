@@ -1,0 +1,548 @@
+source:
+  name: CDLI Catalog CSV
+  origin: https://github.com/cdli-gh/data
+  local_path: sources/CDLI/metadata/cdli_cat.csv
+  format: csv
+  license: CC0
+  record_count: 353283
+  last_pulled: 2026-02-04
+  notes: >
+    Bulk dump from CDLI. Last upstream update Aug 2022.
+    Primary source for tablet identity metadata. 64 columns, most optional.
+    P-number is derived from row position (id field), not an explicit column.
+
+fields:
+  id:
+    type: integer
+    nullable: false
+    description: Sequential artifact ID (maps to P-number as P + zero-padded id)
+    sample: 1
+    maps_to_table: artifacts.id
+    maps_to_layer: identity
+
+  designation:
+    type: string
+    nullable: false
+    description: Primary text designation
+    sample: "CDLI Lexical 000002, ex. 065"
+    maps_to_table: artifacts.designation
+    maps_to_layer: identity
+
+  museum_no:
+    type: string
+    nullable: false
+    description: Museum accession number. Formats vary by institution.
+    sample: "VAT 01533"
+    maps_to_table: artifacts.museum_no
+    maps_to_layer: identity
+    notes: "Prefixes: VAT (Berlin), BM (British Museum), IM (Iraq Museum), AO (Louvre), etc."
+
+  collection:
+    type: string
+    nullable: false
+    description: Holding institution full name
+    sample: "Vorderasiatisches Museum, Berlin, Germany"
+    maps_to_table: museums (derived)
+    maps_to_layer: identity
+
+  period:
+    type: string
+    nullable: false
+    description: Archaeological/historical period with approximate dates
+    sample: "Uruk III (ca. 3200-3000 BC)"
+    maps_to_table: artifacts.period
+    maps_to_layer: identity
+    notes: Includes date ranges in parentheses. ~50 distinct values.
+
+  provenience:
+    type: string
+    nullable: false
+    description: Archaeological site with modern name
+    sample: "Uruk (mod. Warka)"
+    maps_to_table: artifacts.provenience
+    maps_to_layer: identity
+    notes: Format "Ancient (mod. Modern)" is common but not universal.
+
+  genre:
+    type: string
+    nullable: false
+    description: Text genre classification
+    sample: "Lexical"
+    maps_to_table: artifacts.genre
+    maps_to_layer: identity
+    notes: "Common values: Administrative, Lexical, Literary, Royal Inscription, Legal, Letter, Mathematical, Scientific, School"
+
+  language:
+    type: string
+    nullable: false
+    description: Primary language of text
+    sample: "undetermined"
+    maps_to_table: artifacts.language
+    maps_to_layer: identity
+    notes: "Values: Sumerian, Akkadian, undetermined, Hittite, Elamite, etc."
+
+  object_type:
+    type: string
+    nullable: false
+    description: Physical object type
+    sample: "tablet"
+    maps_to_table: artifacts.object_type
+    maps_to_layer: physical
+    notes: "Values: tablet, envelope, prism, cylinder, cone, brick, seal, bulla, etc."
+
+  material:
+    type: string
+    nullable: false
+    description: Material composition
+    sample: "clay"
+    maps_to_table: artifacts.material
+    maps_to_layer: physical
+
+  # Dimensions
+  height:
+    type: string
+    nullable: true
+    description: Height in mm (as string, may contain "?" for unknown)
+    sample: "31"
+    maps_to_table: artifacts.height
+    maps_to_layer: physical
+
+  width:
+    type: string
+    nullable: true
+    description: Width in mm
+    sample: "61"
+    maps_to_table: artifacts.width
+    maps_to_layer: physical
+
+  thickness:
+    type: string
+    nullable: true
+    description: Thickness in mm
+    sample: "18"
+    maps_to_table: artifacts.thickness
+    maps_to_layer: physical
+
+  # Identifiers
+  ark_number:
+    type: string
+    nullable: false
+    description: ARK persistent identifier
+    sample: "21198/zz001q0dtm"
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  composite_id:
+    type: string
+    nullable: true
+    description: Q-number(s) for composite texts. Multiple separated by comma.
+    sample: "Q000002, Q000026"
+    maps_to_table: artifact_composites
+    maps_to_layer: identity
+    notes: Format Q + 6 digits. One tablet may belong to multiple composites.
+
+  excavation_no:
+    type: string
+    nullable: true
+    description: Excavation field number
+    sample: "W 06435,a"
+    maps_to_table: artifacts.excavation_no
+    maps_to_layer: identity
+
+  # Publication
+  primary_publication:
+    type: string
+    nullable: false
+    description: Primary publication reference
+    sample: "CDLI Lexical 000002, ex. 065"
+    maps_to_table: artifacts.primary_publication
+    maps_to_layer: identity
+
+  publication_date:
+    type: string
+    nullable: true
+    description: Publication year
+    sample: "1993"
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  publication_history:
+    type: string
+    nullable: true
+    description: Full publication history with references
+    sample: "Englund, Robert K. & Nissen, Hans J., ATU 3 (1993)..."
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  author:
+    type: string
+    nullable: true
+    description: Primary author or editor
+    sample: "Englund, Robert K."
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  atf_source:
+    type: string
+    nullable: false
+    description: Who provided the ATF transliteration
+    sample: "Englund, Robert K."
+    maps_to_table: ~
+    maps_to_layer: provenance
+
+  translation_source:
+    type: string
+    nullable: false
+    description: Translation availability
+    sample: "no translation"
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  # Dating
+  date_of_origin:
+    type: string
+    nullable: true
+    description: Original date of the text
+    sample: "00.00.00.00"
+    maps_to_table: ~
+    maps_to_layer: identity
+    notes: Often generic placeholder. Real dating comes from period field.
+
+  date_entered:
+    type: string
+    nullable: false
+    description: When record was added to CDLI
+    sample: "12/4/2001"
+    maps_to_table: ~
+    maps_to_layer: provenance
+
+  date_updated:
+    type: string
+    nullable: false
+    description: Last update in CDLI
+    sample: "2020-03-14"
+    maps_to_table: ~
+    maps_to_layer: provenance
+
+  # Excavation context
+  findspot_square:
+    type: string
+    nullable: true
+    description: Excavation grid square
+    sample: "M XVIII,?"
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  findspot_remarks:
+    type: string
+    nullable: true
+    description: Findspot description (German or English)
+    sample: "auf Hugeloberflache in der Nahe des Sudbaues"
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  stratigraphic_level:
+    type: string
+    nullable: true
+    description: Stratigraphic context
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  # Subgenre
+  subgenre:
+    type: string
+    nullable: true
+    description: Specific text type within genre
+    sample: "Archaic Lu2 A (witness)"
+    maps_to_table: artifacts.subgenre
+    maps_to_layer: identity
+
+  subgenre_remarks:
+    type: string
+    nullable: true
+    description: Subgenre notes, may include category codes
+    sample: "Text category: 15-09; Foreign ID: LVO 9"
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  # Condition
+  object_preservation:
+    type: string
+    nullable: true
+    description: Overall preservation state
+    maps_to_table: ~
+    maps_to_layer: physical
+
+  surface_preservation:
+    type: string
+    nullable: true
+    description: Surface condition
+    maps_to_table: ~
+    maps_to_layer: physical
+
+  condition_description:
+    type: string
+    nullable: true
+    description: Free-text condition notes
+    maps_to_table: ~
+    maps_to_layer: physical
+
+  # Seals
+  seal_id:
+    type: string
+    nullable: true
+    description: Seal identifier (S-number)
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  seal_information:
+    type: string
+    nullable: true
+    description: Seal description
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  # Images
+  photo_up:
+    type: string
+    nullable: true
+    description: Photo upload info (resolution + date)
+    sample: "600ppi 20160630"
+    maps_to_table: ~
+    maps_to_layer: physical
+
+  lineart_up:
+    type: string
+    nullable: true
+    description: Line drawing upload info
+    sample: "150ppi 20160630"
+    maps_to_table: ~
+    maps_to_layer: physical
+
+  # Various remarks fields (all nullable strings)
+  author_remarks:
+    type: string
+    nullable: true
+    description: Philological notes from author
+    sample: "31x61x18; Lu A 14-16.30-32.48-50"
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  date_remarks:
+    type: string
+    nullable: true
+    description: Dating commentary
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  period_remarks:
+    type: string
+    nullable: true
+    description: Period dating notes
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  provenience_remarks:
+    type: string
+    nullable: true
+    description: Provenience notes
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  text_remarks:
+    type: string
+    nullable: true
+    description: Text-specific notes
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  object_remarks:
+    type: string
+    nullable: true
+    description: General object notes
+    maps_to_table: ~
+    maps_to_layer: physical
+
+  # Miscellaneous
+  accession_no:
+    type: string
+    nullable: true
+    description: Accession identifier
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  accounting_period:
+    type: string
+    nullable: true
+    description: Accounting period for administrative texts
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  acquisition_history:
+    type: string
+    nullable: true
+    description: How artifact was acquired
+    sample: "purchased tablet"
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  alternative_years:
+    type: string
+    nullable: true
+    description: Alternative dating
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  cdli_collation:
+    type: string
+    nullable: true
+    description: Collation information
+    maps_to_table: ~
+    maps_to_layer: provenance
+
+  cdli_comments:
+    type: string
+    nullable: true
+    description: CDLI editorial comments
+    maps_to_table: ~
+    maps_to_layer: provenance
+
+  citation:
+    type: string
+    nullable: true
+    description: Citation reference
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  dates_referenced:
+    type: string
+    nullable: false
+    description: Referenced dates in text
+    sample: "00.00.00.00"
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  db_source:
+    type: string
+    nullable: false
+    description: Original database source identifier
+    sample: "20011204 protocuneiform_catalogue"
+    maps_to_table: ~
+    maps_to_layer: provenance
+
+  electronic_publication:
+    type: string
+    nullable: true
+    description: Electronic publication reference
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  elevation:
+    type: string
+    nullable: true
+    description: Excavation elevation
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  external_id:
+    type: string
+    nullable: true
+    description: External database identifier
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  google_earth_collection:
+    type: string
+    nullable: true
+    description: GPS coordinates for collection location
+    sample: "51 31.162' N, 00 7.627' W"
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  google_earth_provenience:
+    type: string
+    nullable: true
+    description: GPS coordinates for provenience
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  id_text:
+    type: integer
+    nullable: false
+    description: Text identifier
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  id_text2:
+    type: integer
+    nullable: false
+    description: Secondary text identifier (usually 0)
+    maps_to_table: ~
+    maps_to_layer: identity
+
+  join_information:
+    type: string
+    nullable: true
+    description: Fragment join information
+    sample: "P000015 lead, single entry"
+    maps_to_table: ~
+    maps_to_layer: identity
+    notes: Links fragments of the same tablet. Relevant for physical reconstruction.
+
+  published_collation:
+    type: string
+    nullable: true
+    description: Published collation reference
+    maps_to_table: ~
+    maps_to_layer: provenance
+
+  # Legacy fields
+  dumb:
+    type: string
+    nullable: true
+    description: Legacy field (always null)
+    maps_to_table: ~
+    maps_to_layer: ~
+
+  dumb2:
+    type: string
+    nullable: true
+    description: Legacy field (always null)
+    maps_to_table: ~
+    maps_to_layer: ~
+
+  atf_up:
+    type: string
+    nullable: true
+    description: ATF upload indicator
+    maps_to_table: ~
+    maps_to_layer: provenance
+
+cross_references:
+  - field: designation
+    overlaps_with: oracc-catalogue.yaml#designation
+    relationship: equivalent
+
+  - field: museum_no
+    overlaps_with: oracc-catalogue.yaml#museum_no
+    relationship: equivalent
+
+  - field: period
+    overlaps_with: oracc-catalogue.yaml#period
+    relationship: equivalent (but CDLI includes date ranges in parens, ORACC doesn't)
+
+  - field: provenience
+    overlaps_with: oracc-catalogue.yaml#provenience
+    relationship: equivalent (but different formatting of modern names)
+
+  - field: genre
+    overlaps_with: oracc-catalogue.yaml#genre
+    relationship: equivalent
+
+  - field: language
+    overlaps_with: oracc-catalogue.yaml#language
+    relationship: subset (CDLI uses full names, ORACC uses codes)
+
+  - field: composite_id
+    overlaps_with: cdli-atf.yaml#composite_ref
+    relationship: identical (Q-numbers)

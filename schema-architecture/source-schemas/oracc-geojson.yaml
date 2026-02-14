@@ -1,0 +1,156 @@
+source:
+  name: ORACC Geographic Catalogue (GeoJSON)
+  origin: https://oracc.museum.upenn.edu
+  local_path: sources/ORACC/{project}/json/{project}/cat.geojson
+  format: geojson
+  license: CC0
+  projects_with_data: [ribo, rinap, riao, etcsri, saao, hbtin]
+  last_pulled: 2026-02-04 (ribo, rinap, saao), 2026-02-14 (riao, etcsri)
+  notes: >
+    GeoJSON FeatureCollection mapping texts to archaeological sites via Pleiades
+    coordinates. Only includes texts with known provenience. Subset of catalogue data
+    enriched with geolocation.
+
+envelope:
+  type:
+    type: string
+    value: FeatureCollection
+  features:
+    type: array
+
+fields:
+
+  geometry:
+    type: object
+    description: GeoJSON Point geometry
+    fields:
+      type:
+        type: string
+        value: Point
+      coordinates:
+        type: array [longitude, latitude]
+        sample: [45.6372, 31.3225]
+        maps_to_table: excavation_sites (enrichment)
+        maps_to_layer: identity
+
+  properties:
+    type: object
+    description: Text metadata (mirrors catalogue.json fields)
+    fields:
+      cdli_id:
+        type: string
+        description: P-number (some projects use this field name)
+        maps_to_table: artifacts.p_number
+        maps_to_layer: identity
+
+      designation:
+        type: string
+        maps_to_layer: identity
+
+      display_name:
+        type: string
+        description: Human-readable display name
+        maps_to_layer: identity
+
+      provenience:
+        type: string
+        maps_to_layer: identity
+
+      pleiades_id:
+        type: string
+        description: Pleiades gazetteer identifier
+        sample: "912986"
+        maps_to_layer: identity
+        notes: Links to https://pleiades.stoa.org/places/{id}
+
+      pleiades_coord:
+        type: string
+        description: Coordinates as JSON string "[lon,lat]"
+        maps_to_layer: identity
+
+      period:
+        type: string
+        maps_to_layer: identity
+
+      genre:
+        type: string
+        maps_to_layer: identity
+
+      supergenre:
+        type: string
+        maps_to_layer: identity
+
+      language:
+        type: string
+        maps_to_layer: identity
+
+      # Royal inscription specific
+      ruler:
+        type: string
+        nullable: true
+        maps_to_layer: identity
+
+      dynastic_seat:
+        type: string
+        nullable: true
+        maps_to_layer: identity
+
+      # Additional metadata (variable by project)
+      collection:
+        type: string
+        nullable: true
+      credits:
+        type: string
+        nullable: true
+      date_of_origin:
+        type: string
+        nullable: true
+      exemplars:
+        type: string
+        nullable: true
+      material:
+        type: string
+        nullable: true
+      object_type:
+        type: string
+        nullable: true
+      popular_name:
+        type: string
+        nullable: true
+      primary_publication:
+        type: string
+        nullable: true
+      script:
+        type: string
+        nullable: true
+      subgenre:
+        type: string
+        nullable: true
+      id_composite:
+        type: string
+        nullable: true
+        description: Q-number for composite texts
+      trans:
+        type: string
+        nullable: true
+        description: Translation language available
+
+cross_references:
+  - field: properties (all fields)
+    overlaps_with: oracc-catalogue.yaml (corresponding fields)
+    relationship: subset (geojson only includes texts with coordinates)
+
+  - field: pleiades_id
+    overlaps_with: oracc-catalogue.yaml#pleiades_id
+    relationship: identical
+
+  - field: geometry.coordinates
+    overlaps_with: cdli-api.yaml#collections[].collection.location_*
+    relationship: complementary (CDLI geolocates museums, ORACC geolocates find sites)
+
+v2_schema_notes: >
+  Geographic data enriches the Identity layer. Enables map-based exploration.
+  Not directly relevant to linguistic layers but valuable for:
+  - Regional dialect analysis (correlate language features with geography)
+  - Scribal school identification (provenience clusters)
+  - Trade route reconstruction (administrative text distribution)

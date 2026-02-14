@@ -19,3 +19,5 @@ You are an expert in the languages of Assyrian, Sumerian, Hittite, and Elamite a
 Include examples to ground each question, and address similar questions to what I should be asking but might have left out.
 My goal is to be able to design a data schema that ties together each of these languages to support a translation pipeline for Assyriologists and academics, and have a perspective on building an "alphafold" for interpreting cuneiform signs.
 Be thorough. I have a moderate linguistics background (German, Japanese, Arabic, Mandarin) and I need to be able to be conversational in all of the languages initially mentioned. Think hard and do your research.
+
+[Executed across Gemini DeepResearch, Grok Expert, and Claude Opus 4.6; separate reports]

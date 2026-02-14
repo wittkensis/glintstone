@@ -1,0 +1,296 @@
+source:
+  name: CDLI REST API (JSON)
+  origin: https://cdli.earth/artifacts
+  local_path: sources/CDLI/catalogue/batch-00000.json
+  format: json
+  license: CC0
+  record_count: 100 (only a sample; production uses CSV)
+  last_pulled: 2026-02-04
+  notes: >
+    JSON API response from cdli.earth. Richer structure than CSV with nested
+    objects for publications, collections, composites, and more. Only 100 records
+    downloaded for prototyping. Not used in production import pipeline.
+
+envelope:
+  count:
+    type: integer
+    description: Number of records in response
+  offset:
+    type: integer
+    description: Pagination offset
+  data:
+    type: array
+    description: Array of artifact objects
+
+fields:
+  id:
+    type: integer
+    nullable: false
+    description: Primary artifact ID
+    maps_to_table: artifacts.id
+    maps_to_layer: identity
+
+  designation:
+    type: string
+    nullable: false
+    description: Primary designation
+    maps_to_table: artifacts.designation
+    maps_to_layer: identity
+
+  museum_no:
+    type: string
+    nullable: true
+    maps_to_table: artifacts.museum_no
+    maps_to_layer: identity
+
+  excavation_no:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  height:
+    type: string
+    nullable: true
+    maps_to_layer: physical
+
+  width:
+    type: string
+    nullable: true
+    maps_to_layer: physical
+
+  thickness:
+    type: string
+    nullable: true
+    maps_to_layer: physical
+
+  findspot_comments:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  findspot_square:
+    type: string
+    nullable: true
+    maps_to_layer: identity
+
+  dates_referenced:
+    type: string
+    nullable: false
+    maps_to_layer: identity
+
+  created_by:
+    type: integer
+    nullable: false
+    description: CDLI user ID of creator
+    maps_to_layer: provenance
+
+  # Nested objects
+  inscription:
+    type: object
+    nullable: true
+    description: ATF inscription data
+    maps_to_table: inscriptions
+    maps_to_layer: text
+    fields:
+      id:
+        type: integer
+      artifact_id:
+        type: integer
+      atf:
+        type: string
+        description: Full ATF text
+      transliteration:
+        type: string
+        nullable: true
+      transliteration_clean:
+        type: string
+        nullable: true
+        description: Searchable plain text (signs stripped of markup)
+      transliteration_for_search:
+        type: string
+        nullable: true
+      is_atf2conll_diff_resolved:
+        type: boolean
+        description: Whether ATF-to-CoNLL conversion issues were resolved
+        maps_to_layer: provenance
+        notes: Relevant to BabyLemmatizer integration (CoNLL-U as interchange)
+      is_latest:
+        type: boolean
+        description: Marks current version (supports versioning)
+
+  composites:
+    type: array
+    description: Composite text relationships
+    maps_to_table: artifact_composites, composites
+    maps_to_layer: identity
+    item_fields:
+      composite_no:
+        type: string
+        description: Q-number
+        sample: "Q000002"
+      composite.designation:
+        type: string
+      composite.dates_referenced:
+        type: string
+
+  publications:
+    type: array
+    description: Publication references
+    maps_to_table: ~ (not currently imported)
+    maps_to_layer: provenance
+    item_fields:
+      exact_reference:
+        type: string
+      publication_type:
+        type: string
+      publication.designation:
+        type: string
+      publication.bibtexkey:
+        type: string
+      publication.year:
+        type: string
+      publication.title:
+        type: string
+      publication.publisher:
+        type: string
+      publication.series:
+        type: string
+
+  collections:
+    type: array
+    description: Holding institutions with geolocation
+    maps_to_table: museums (partial)
+    maps_to_layer: identity
+    item_fields:
+      collection.collection:
+        type: string
+        description: Institution name
+      collection.collection_url:
+        type: string
+      collection.country_iso:
+        type: string
+      collection.location_longitude_wgs1984:
+        type: float
+      collection.location_latitude_wgs1984:
+        type: float
+
+  materials:
+    type: array
+    maps_to_layer: physical
+    item_fields:
+      material.material:
+        type: string
+
+  languages:
+    type: array
+    maps_to_layer: identity
+    item_fields:
+      language.language:
+        type: string
+        description: Full language name
+      language.inline_code:
+        type: string
+        description: Short code used in ATF
+
+  genres:
+    type: array
+    maps_to_layer: identity
+    item_fields:
+      genre.genre:
+        type: string
+
+  external_resources:
+    type: array
+    description: Links to other databases (ORACC, eBL, etc.)
+    maps_to_layer: identity
+    item_fields:
+      external_resource_key:
+        type: string
+        description: P-number in external system
+      external_resource.external_resource:
+        type: string
+        description: Database name
+      external_resource.base_url:
+        type: string
+      external_resource.abbrev:
+        type: string
+
+  artifact_type:
+    type: object
+    maps_to_layer: physical
+    fields:
+      artifact_type:
+        type: string
+        sample: "tablet"
+      parent_id:
+        type: integer
+        description: Hierarchical type classification
+
+  period:
+    type: object
+    maps_to_layer: identity
+    fields:
+      sequence:
+        type: integer
+        description: Chronological ordering
+      period:
+        type: string
+
+  provenience:
+    type: object
+    maps_to_layer: identity
+    fields:
+      provenience:
+        type: string
+      location_id:
+        type: integer
+      place_id:
+        type: integer
+      region_id:
+        type: integer
+
+  # Empty arrays in sample (may populate for other records)
+  seals:
+    type: array
+    maps_to_layer: physical
+
+  impressions:
+    type: array
+    maps_to_layer: physical
+
+  witnesses:
+    type: array
+    maps_to_layer: identity
+
+  material_colors:
+    type: array
+    maps_to_layer: physical
+
+  material_aspects:
+    type: array
+    maps_to_layer: physical
+
+  dates:
+    type: array
+    maps_to_layer: identity
+
+unique_vs_csv:
+  only_in_api:
+    - inscription (full ATF inline with versioning)
+    - publications (structured bibliography)
+    - collections (with geolocation)
+    - external_resources (cross-database links)
+    - witnesses
+    - is_atf2conll_diff_resolved (CoNLL conversion flag)
+  only_in_csv:
+    - ark_number
+    - author_remarks, date_remarks, period_remarks (detailed notes)
+    - seal_id, seal_information
+    - photo_up, lineart_up (image metadata)
+    - ~30 additional remark/metadata columns
+
+cross_references:
+  - field: external_resources
+    overlaps_with: oracc-catalogue.yaml (via P-number linkage)
+    relationship: cross-database link
+    notes: API explicitly lists which ORACC projects reference each tablet.

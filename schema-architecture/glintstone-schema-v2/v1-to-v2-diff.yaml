@@ -1,0 +1,97 @@
+# v1 → v2 Schema Diff
+# Quick reference for what changes between schema versions.
+
+tables_added:
+  - surfaces: "Explicit surface decomposition (was implicit text field)"
+  - text_lines: "Per-line ATF records (was monolithic text blob)"
+  - tokens: "Central hub linking all layers (did not exist)"
+  - lemmatizations: "Replaces lemmas — supports competing analyses"
+  - morphology: "Structured morphological decomposition (was opaque string)"
+  - annotation_runs: "Provenance tracking for all annotations (did not exist)"
+  - intertextuality_links: "Cross-text relationships (did not exist)"
+
+tables_removed:
+  - lemmas: "Replaced by lemmatizations + tokens"
+  - inscriptions: "Replaced by text_lines (may keep temporarily for backward compat)"
+  - sign_word_usage: "Derivable from tokens + lemmatizations join"
+  - language_stats: "Derivable from artifacts (materialized view instead)"
+  - period_stats: "Derivable from artifacts (materialized view instead)"
+  - provenience_stats: "Derivable from artifacts (materialized view instead)"
+  - genre_stats: "Derivable from artifacts (materialized view instead)"
+
+tables_expanded:
+  artifacts:
+    added_columns: [period_normalized, provenience_normalized, subgenre, supergenre, languages, pleiades_id, latitude, longitude, primary_publication, collection, dates_referenced, seal_id, cdli_updated_at, oracc_projects]
+    removed_columns: []
+
+  signs:
+    added_columns: [mzl_number, abz_number, lak_number, gdl_definition, total_corpus_frequency]
+    removed_columns: []
+
+  sign_values:
+    added_columns: [language_context, period_context]
+    removed_columns: []
+
+  sign_annotations:
+    added_columns: [surface_id, sign_id (resolved OGSL), damage_status, annotation_run_id]
+    removed_columns: [p_number (now via surface_id → p_number), image_type, ref_image_width, ref_image_height (now on surfaces)]
+
+  glossary_entries:
+    added_columns: [periods, norms]
+    removed_columns: [semantic_category (moved to semantic_fields join)]
+
+  glossary_forms:
+    added_columns: [norm, lang]
+
+  glossary_senses:
+    added_columns: [pos, signatures]
+    removed_columns: [usage_context, frequency_percentage, example_lemma_ids]
+
+  translations:
+    added_columns: [line_id, annotation_run_id]
+
+  pipeline_status:
+    added_columns: [physical_complete, graphemic_complete, reading_complete, linguistic_complete, semantic_complete]
+    removed_columns: [ocr_confidence, ocr_model, atf_source, lemma_coverage, translation_consensus (now derivable)]
+
+  museums:
+    added_columns: [latitude, longitude]
+
+  excavation_sites:
+    added_columns: [pleiades_id, latitude, longitude]
+
+  import_log:
+    added_columns: [annotation_run_id]
+
+tables_unchanged:
+  - composites
+  - artifact_composites
+  - sign_variants
+  - glossary_relationships
+  - semantic_fields
+  - glossary_semantic_fields
+  - cad_entries
+  - cad_meanings
+  - cad_examples
+  - collections
+  - collection_members
+  - external_resources
+
+key_architectural_shifts:
+  - from: "One lemmatization per word"
+    to: "Multiple competing lemmatizations per token with provenance"
+
+  - from: "ATF as text blob on inscriptions table"
+    to: "Decomposed into surfaces → text_lines → tokens"
+
+  - from: "No annotation source tracking"
+    to: "Every annotation links to annotation_runs (human/model/import)"
+
+  - from: "Sign identity by mixed label formats"
+    to: "All sign references resolved to OGSL sign_id via concordance"
+
+  - from: "Flat metadata"
+    to: "Layered completeness tracking (physical/graphemic/reading/linguistic/semantic)"
+
+  - from: "Opaque morph string"
+    to: "Structured morphology table with language-specific slots"

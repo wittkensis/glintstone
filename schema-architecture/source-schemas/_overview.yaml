@@ -1,0 +1,696 @@
+# Cross-Source Schema Overview
+# Synthesizes all 11 source schemas into a unified mapping
+# for designing the v2 linguistics schema.
+
+# ─────────────────────────────────────────────────────────
+# SECTION 1: Source Inventory
+# ─────────────────────────────────────────────────────────
+
+sources:
+  cdli-catalog:
+    schema_file: cdli-catalog.yaml
+    format: csv (64 columns)
+    records: 353,283
+    primary_content: Tablet identity metadata
+    key_fields: [id/P-number, designation, museum_no, period, provenience, genre, language, material, object_type]
+    unique_contribution: >
+      Largest artifact inventory. Only source with 353k P-numbers. Museum locations,
+      acquisition history, physical dimensions, seal impressions.
+
+  cdli-atf:
+    schema_file: cdli-atf.yaml
+    format: atf (line-oriented)
+    records: 135,200 texts (3.5M lines)
+    primary_content: Raw transliterations + inline translations
+    key_fields: [P-number, surface, line_number, transliteration, translation]
+    unique_contribution: >
+      Broadest text coverage (135k texts vs ORACC's ~8k). No lemmatization —
+      raw sign readings only. Inline translations in English, German, etc.
+
+  cdli-api:
+    schema_file: cdli-api.yaml
+    format: json (nested)
+    records: 100 (sample only)
+    primary_content: Enriched artifact metadata
+    key_fields: [id, designation, inscription, composites, publications, collections, period, provenience]
+    unique_contribution: >
+      Structured publication/collection data. Museum geolocation. Not used in
+      production pipeline — CSV is primary import source.
+
+  oracc-catalogue:
+    schema_file: oracc-catalogue.yaml
+    format: json
+    records: Variable per project (~10 projects)
+    primary_content: Project-specific text metadata
+    key_fields: [id_text, designation, period, provenience, genre, language, langs, pleiades_id]
+    unique_contribution: >
+      Pleiades geographic IDs. Project-specific editorial metadata.
+      Multi-language field (langs) listing all languages in a text.
+
+  oracc-corpus:
+    schema_file: oracc-corpus.yaml
+    format: json (CDL tree)
+    records: ~7,500 text files
+    primary_content: Lemmatized text editions with sign-level GDL
+    key_fields: [textid, cdl nodes (c/d/l), lemma.f (lang, form, cf, gw, sense, pos, epos, base, morph, norm0, sig)]
+    unique_contribution: >
+      ONLY source with full linguistic annotation: lemmatization, morphology,
+      sense disambiguation, sign-level GDL with OIDs. The richest data per text.
+
+  oracc-glossary:
+    schema_file: oracc-glossary.yaml
+    format: json
+    records: ~21k entries (dcclt), 1.8 GB (epsd2 Sumerian)
+    primary_content: Dictionary entries with forms, senses, attestation counts
+    key_fields: [headword, cf, gw, pos, forms[], norms[], senses[], periods[], icount]
+    unique_contribution: >
+      Only dictionary/lexicon data. Attestation frequencies (icount/ipct).
+      Period-specific usage tracking. Sense hierarchy with signature links.
+
+  ogsl-signlist:
+    schema_file: ogsl-signlist.yaml
+    format: json
+    records: 3,367 signs, ~15,000 values
+    primary_content: Canonical sign inventory with readings
+    key_fields: [sign_name, values[], gdl[], utf8, hex, uname]
+    unique_contribution: >
+      Canonical sign ↔ reading mapping. GDL structural definitions.
+      Unicode assignments. Foundation for all sign identification.
+
+  oracc-geojson:
+    schema_file: oracc-geojson.yaml
+    format: geojson
+    records: Variable per project (6 projects have data)
+    primary_content: Archaeological site coordinates for texts
+    key_fields: [geometry.coordinates, pleiades_id, provenience, period, genre]
+    unique_contribution: >
+      Only source with geographic coordinates for find sites.
+      Pleiades gazetteer integration.
+
+  compvis-annotations:
+    schema_file: compvis-annotations.yaml
+    format: csv (3 types)
+    records: 81 tablets, 8,109 sign annotations, 186 classes
+    primary_content: Sign bounding boxes on tablet images
+    key_fields: [tablet_CDLI, mzl_label, bbox, relative_bbox, status, line_idx, pos_idx]
+    unique_contribution: >
+      Sign-level bounding boxes with MZL identification. Damage status codes.
+      Line/position ordering. Neo-Assyrian SAA corpus focus.
+
+  ebl-annotations:
+    schema_file: ebl-annotations.yaml
+    format: mixed (txt, images, configs)
+    records: 173 sign classes, variable annotation counts
+    primary_content: OCR training data with sign detection ground truth
+    key_fields: [x, y, width, height, sign_reading, sign_name, abz_number, unicode_char]
+    unique_contribution: >
+      eBL sign name ↔ ABZ ↔ Unicode concordance. Cropped sign images.
+      DETR model training configs.
+
+  epsd2-reference:
+    schema_file: epsd2-reference.yaml
+    format: mixed (json, txt, html)
+    primary_content: Reference data (Unicode signs, CAD index, ATF spec)
+    key_fields: [codePoint, character, name, determinatives, damage_notation]
+    unique_contribution: >
+      Complete Unicode cuneiform inventory. CAD volume index with URLs.
+      ATF determinative and damage notation reference.
+
+# ─────────────────────────────────────────────────────────
+# SECTION 2: Layer Coverage Matrix
+# ─────────────────────────────────────────────────────────
+# v2 research layers: Physical → Graphemic → Reading → Linguistic → Semantic
+# Plus: Identity (metadata) and ML (training)
+
+layer_coverage:
+
+  identity:
+    description: Tablet ID, provenance, period, genre, physical description
+    sources:
+      cdli-catalog: primary (353k artifacts, 64 metadata fields)
+      cdli-api: enriched (publications, collections, museum geolocation)
+      oracc-catalogue: supplementary (project-specific metadata, Pleiades IDs)
+      oracc-geojson: enrichment (find-site coordinates)
+      compvis-annotations: partial (tablet_CDLI P-numbers, SAA corpus only)
+    gap_vs_v2: >
+      No competing-provenance model. Single authoritative record per artifact.
+      v2 proposes tracking provenance confidence and conflicting attributions.
+
+  physical:
+    description: Tablet surface, sign bounding boxes, damage, image coordinates
+    sources:
+      compvis-annotations: primary (bboxes, segments, damage status 0/1/2)
+      ebl-annotations: primary (bboxes, damage via ? suffix and UnclearSign)
+      cdli-atf: partial (surface markers @obverse/@reverse, damage notation [...] # ?)
+      oracc-corpus: partial (break markers in GDL: missing, damage)
+    gap_vs_v2: >
+      No 3D tablet models. No temporal damage tracking (condition over time).
+      CompVis and eBL use different coordinate systems (not yet unified).
+      v2 proposes resolution-independent coordinates (percentages) — CompVis
+      uses absolute pixels, eBL uses absolute pixels.
+
+  graphemic:
+    description: Sign identification, Unicode mapping, sign structure
+    sources:
+      ogsl-signlist: canonical (3,367 signs, GDL definitions, Unicode)
+      oracc-corpus: per-token (GDL nodes with OIDs linking to OGSL)
+      compvis-annotations: per-bbox (MZL numbers, need concordance to OGSL)
+      ebl-annotations: per-bbox (eBL names + ABZ numbers, need concordance)
+      epsd2-reference: reference (Unicode inventory, character names)
+    gap_vs_v2: >
+      No period-specific sign forms (same sign looks different in OB vs NA).
+      No sign-form images linked to OGSL entries.
+      No frequency data for sign variants.
+      Concordance chain (OGSL ↔ MZL ↔ ABZ) must be built — no single source provides it.
+
+  reading:
+    description: How signs are read — syllabographic, logographic, determinative
+    sources:
+      ogsl-signlist: defines (all valid readings per sign, no context)
+      oracc-corpus: per-token (GDL v field = chosen reading, det nodes for determinatives)
+      cdli-atf: per-line (raw transliteration with readings, no sign-level tagging)
+      epsd2-reference: reference (determinative list, ATF reading conventions)
+    gap_vs_v2: >
+      No sign function classification per token (logographic vs syllabographic vs determinative).
+      OGSL lists ALL readings without context for when each applies.
+      No reading confidence scores.
+      v2 proposes: sign_function enum, context-dependent reading rules, reading provenance.
+
+  linguistic:
+    description: Lemmatization, morphology, sense, normalization
+    sources:
+      oracc-corpus: primary (lemma nodes with cf, gw, sense, pos, epos, base, morph, norm0)
+      oracc-glossary: dictionary (headwords, forms, senses, attestation counts)
+    gap_vs_v2: >
+      ONLY ORACC provides linguistic annotation — all other sources lack it entirely.
+      Coverage: ~7,500 texts vs 135,000 in CDLI ATF (5.5% coverage).
+      No competing interpretations. Each ORACC text has ONE editorial reading.
+      v2 proposes: multiple competing lemmatizations per token, annotation provenance,
+      structured morphology slots (prefix chain, stem, suffixes) instead of opaque morph strings,
+      logographic opacity tracking (how transparent is the sign-to-meaning mapping).
+
+  semantic:
+    description: Translation, cross-text relationships, thematic classification
+    sources:
+      cdli-atf: partial (inline translations #tr.en:, #tr.de:, etc.)
+      oracc-corpus: partial (translation nodes in CDL tree)
+      oracc-glossary: partial (sense meanings in English)
+    gap_vs_v2: >
+      No structured semantic roles or thematic ontology.
+      Translations are free text, not aligned to tokens.
+      v2 proposes: token-level translation alignment, semantic role labeling,
+      cross-text intertextuality links (parallel passages, quotations, formulae).
+
+  ml:
+    description: Training labels, model configs, detection metadata
+    sources:
+      compvis-annotations: primary (train_label, ML splits, DETR training)
+      ebl-annotations: primary (sign class labels, DETR configs, cropped images)
+    gap_vs_v2: >
+      No unified label space (CompVis uses MZL integers, eBL uses name strings).
+      No model provenance tracking (which model produced which annotation).
+      v2 proposes: annotation_source field on every record (human vs model vs hybrid).
+
+# ─────────────────────────────────────────────────────────
+# SECTION 3: Field Overlap Matrix
+# ─────────────────────────────────────────────────────────
+# Fields that appear in multiple sources — alignment needed
+
+field_overlaps:
+
+  p_number:
+    description: Primary artifact identifier (P######)
+    sources:
+      cdli-catalog: id (integer, must zero-pad to 6 digits and prefix "P")
+      cdli-atf: "&P######" header line
+      cdli-api: id (integer)
+      oracc-catalogue: id_text (string, already "P######")
+      oracc-corpus: textid (string, "P######" or "Q######")
+      compvis-annotations: tablet_CDLI (string, "P######")
+    alignment: Straightforward — format differences only. CDLI uses integer, ORACC uses string.
+
+  designation:
+    description: Human-readable text name
+    sources:
+      cdli-catalog: designation (free text)
+      cdli-api: designation (free text)
+      oracc-catalogue: designation (free text, different editorial style)
+    alignment: >
+      Same concept, different editorial conventions. CDLI uses "CDLI Lexical 000002, ex. 065"
+      style; ORACC uses "OB Nippur Lu = ša" style. Not reliably joinable on this field.
+
+  period:
+    description: Historical period classification
+    sources:
+      cdli-catalog: period (includes date ranges, e.g. "Old Babylonian (ca. 1900-1600 BC)")
+      cdli-api: period.name (structured object)
+      oracc-catalogue: period (plain name, e.g. "Old Babylonian")
+      oracc-geojson: period (same as catalogue)
+    alignment: >
+      CDLI includes date ranges in the string. ORACC uses plain period names.
+      Need normalization table mapping variants to canonical periods.
+
+  provenience:
+    description: Archaeological find site
+    sources:
+      cdli-catalog: provenience (includes "mod. X" modern names, e.g. "Nippur (mod. Nuffar)")
+      cdli-api: provenience.name (structured)
+      oracc-catalogue: provenience (plain ancient name, e.g. "Nippur")
+      oracc-geojson: provenience + pleiades_id + coordinates
+    alignment: >
+      CDLI includes modern names in parentheses. ORACC uses ancient names only.
+      GeoJSON adds coordinates. Pleiades ID is the best join key where available.
+
+  language:
+    description: Text language(s)
+    sources:
+      cdli-catalog: language (single string, e.g. "Sumerian")
+      oracc-catalogue: language (single), langs (space-separated codes, e.g. "akk-x-stdbab sux")
+      oracc-corpus: lemma.f.lang (per-token, ISO-style codes)
+      oracc-glossary: lang (per-file, one glossary per language)
+    alignment: >
+      CDLI uses full English names. ORACC uses ISO-style codes.
+      ORACC has per-token language (critical for bilingual texts).
+      See language_codes section below.
+
+  genre:
+    description: Text genre classification
+    sources:
+      cdli-catalog: genre (e.g. "Administrative")
+      oracc-catalogue: genre + subgenre + supergenre (hierarchical)
+      oracc-geojson: genre + supergenre
+    alignment: >
+      ORACC has a three-level genre hierarchy; CDLI is flat.
+      Terms mostly align but not 1:1.
+
+  surface:
+    description: Which face of the tablet
+    sources:
+      cdli-atf: "@obverse", "@reverse", "@left", "@right", "@top", "@bottom", "@seal"
+      oracc-corpus: CDL container label ("o" for obverse, "r" for reverse, etc.)
+      compvis-annotations: view_desc ("Obv", "Rev", "Lo.E.", "Up.E.", "Le.E.", "Ri.E.")
+    alignment: >
+      Three different abbreviation systems for the same concept.
+      ATF uses @-prefixed full words, ORACC uses single letters, CompVis uses abbreviated words.
+
+  sign_identity:
+    description: Which cuneiform sign is present
+    sources:
+      ogsl-signlist: sign_name (canonical, e.g. "A", "|A.AN|")
+      oracc-corpus: gdl[].s or gdl[].v (sign name or reading value, linked by OID)
+      compvis-annotations: mzl_label (integer, Borger MZL number)
+      ebl-annotations: sign_reading (eBL name), abz_number (Borger ABZ number)
+    alignment: >
+      CRITICAL GAP. Four different identification systems:
+      - OGSL names (strings) — used by ORACC corpus
+      - MZL numbers (integers) — used by CompVis
+      - ABZ numbers (integers) — used by eBL
+      - Unicode code points — used for display
+      No single source provides a complete concordance. Must be built.
+
+  unicode:
+    description: Unicode cuneiform character
+    sources:
+      ogsl-signlist: utf8 (character), hex (codepoint), uname (character name)
+      epsd2-reference: character, codePoint, name (from unicode.org)
+      ebl-annotations: unicode_char (from ebl.txt mapping)
+      oracc-corpus: gdl[].utf8 (per-sign in corpus text)
+    alignment: Identical data from different packagings. OGSL is the canonical source.
+
+  damage_status:
+    description: Physical condition / reading certainty of a sign
+    sources:
+      cdli-atf: inline markers ([...] = missing, # = damaged, ? = uncertain, x = illegible)
+      oracc-corpus: gdl break markers (missing, damage, flags) + status_rp
+      compvis-annotations: status integer (0=background, 1=intact, 2=broken/uncertain)
+      ebl-annotations: suffix ? (partial), "UnclearSign" (illegible)
+    alignment: >
+      Four different damage encodings. All distinguish ~3 states (intact/damaged/missing)
+      but use different representations. Unification needed.
+
+  bounding_box:
+    description: Sign location on tablet image
+    sources:
+      compvis-annotations: bbox [x1,y1,x2,y2] absolute pixels; relative_bbox per segment
+      ebl-annotations: x,y,width,height absolute pixels
+    alignment: >
+      CompVis uses corner coordinates (x1,y1,x2,y2). eBL uses origin+dimensions (x,y,w,h).
+      Neither uses resolution-independent coordinates. Current DB stores as percentages.
+
+# ─────────────────────────────────────────────────────────
+# SECTION 4: Sign List Alignment
+# ─────────────────────────────────────────────────────────
+
+sign_list_concordance:
+  description: >
+    Multiple sign numbering/naming systems exist across sources. A concordance
+    table mapping between them is critical for merging data.
+
+  systems:
+    OGSL:
+      type: names (strings)
+      source: ogsl-signlist.yaml
+      used_by: [oracc-corpus (via OID), oracc-glossary (base field)]
+      count: 3,367 signs
+      sample: "A", "|A.AN|", "A@g"
+
+    MZL:
+      type: integers
+      source: compvis-annotations.yaml
+      used_by: [compvis-annotations (mzl_label), ebl-annotations (mzl.txt)]
+      count: ~900 (in Borger's MesZL)
+      sample: 839
+
+    ABZ:
+      type: integers (prefixed "ABZ")
+      source: ebl-annotations.yaml
+      used_by: [ebl-annotations (ebl.txt abz_number)]
+      count: ~600 (in Borger's ABZ)
+      sample: "ABZ579"
+
+    Unicode:
+      type: hex code points
+      source: ogsl-signlist.yaml, epsd2-reference.yaml
+      used_by: [all display contexts]
+      count: ~1,200 assigned characters
+      sample: "U+12000"
+
+    LAK:
+      type: integers
+      source: none in current data
+      used_by: [archaic sign studies, not in current pipeline]
+      notes: Deimel's LAK numbers. Would need external concordance.
+
+    REC:
+      type: integers
+      source: none in current data
+      used_by: [older scholarship references]
+      notes: Thureau-Dangin numbers. Historical interest only.
+
+  available_partial_concordances:
+    - source: ebl-annotations (ebl.txt)
+      maps: eBL name → ABZ number → Unicode character
+      coverage: 173 sign classes
+
+    - source: ebl-annotations (mzl.txt)
+      maps: MZL number → readings
+      coverage: partial
+
+    - source: ogsl-signlist
+      maps: OGSL name → Unicode (utf8/hex)
+      coverage: ~2,000 of 3,367 signs have Unicode
+
+  missing_concordances:
+    - MZL number → OGSL name (needed for CompVis integration)
+    - ABZ number → OGSL name (needed for eBL integration)
+    - ABZ number → MZL number (needed to unify Borger systems)
+    - Complete MZL → Unicode (only partial via eBL)
+
+  proposed_table:
+    name: sign_concordance
+    fields:
+      ogsl_name: string (primary key, canonical)
+      mzl_number: integer (nullable)
+      abz_number: integer (nullable)
+      unicode_hex: string (nullable)
+      unicode_char: string (nullable)
+      lak_number: integer (nullable)
+    notes: >
+      Must be built from multiple partial sources + manual curation.
+      Borger's MesZL book (not digitized) is the authoritative MZL↔name mapping.
+      eBL's ebl.txt provides partial ABZ↔Unicode. OGSL provides name↔Unicode.
+
+# ─────────────────────────────────────────────────────────
+# SECTION 5: Language Code Inventory
+# ─────────────────────────────────────────────────────────
+
+language_codes:
+  description: >
+    ORACC uses ISO 639-style codes with x- extensions for dialects.
+    CDLI uses full English names. Mapping is needed.
+
+  inventory:
+    sux:
+      full_name: Sumerian
+      cdli_name: Sumerian
+      sources: [oracc-corpus, oracc-glossary (dcclt, epsd2, etcsri, blms, ribo, rinap)]
+      notes: Primary language of the project. Most annotated.
+
+    sux-x-emesal:
+      full_name: Emesal (Sumerian dialect)
+      cdli_name: Sumerian
+      sources: [oracc-glossary (dcclt, blms)]
+      notes: >
+        Women's/cultic dialect of Sumerian. Not distinguished in CDLI.
+        ORACC tracks it as separate language code.
+
+    akk:
+      full_name: Akkadian
+      cdli_name: Akkadian
+      sources: [oracc-corpus, oracc-glossary (dcclt, saao, rinap, ribo, blms)]
+
+    akk-x-stdbab:
+      full_name: Standard Babylonian
+      cdli_name: Akkadian
+      sources: [oracc-glossary (dcclt, saao, blms)]
+      notes: Literary dialect used across periods.
+
+    akk-x-oldbab:
+      full_name: Old Babylonian Akkadian
+      cdli_name: Akkadian
+      sources: [oracc-glossary (dcclt)]
+
+    akk-x-neoass:
+      full_name: Neo-Assyrian
+      cdli_name: Akkadian
+      sources: [oracc-glossary (saao)]
+
+    akk-x-neobab:
+      full_name: Neo-Babylonian
+      cdli_name: Akkadian
+      sources: [oracc-glossary (saao)]
+
+    akk-x-midass:
+      full_name: Middle Assyrian
+      cdli_name: Akkadian
+      sources: [oracc-glossary (saao)]
+
+    qpn:
+      full_name: Proper Nouns (quasi-language)
+      cdli_name: n/a
+      sources: [oracc-glossary (dcclt, saao, rinap, ribo, riao, etcsri)]
+      notes: >
+        Not a real language — ORACC convention for proper nouns (divine names,
+        personal names, place names) that cross language boundaries.
+
+    xhu:
+      full_name: Hurrian
+      cdli_name: Hurrian
+      sources: [oracc-glossary (dcclt)]
+
+    uga:
+      full_name: Ugaritic
+      cdli_name: Ugaritic
+      sources: [oracc-glossary (dcclt)]
+
+    elx:
+      full_name: Elamite
+      cdli_name: Elamite
+      sources: [oracc-glossary (dcclt)]
+
+  cdli_additional:
+    description: Languages in CDLI catalog not (yet) in ORACC glossaries
+    names: [Hittite, Eblaite, Old Persian, Egyptian, Greek, Aramaic, Urartian, Luwian]
+    notes: CDLI uses full English names without dialect codes.
+
+# ─────────────────────────────────────────────────────────
+# SECTION 6: Gaps — What v2 Research Proposes That No Source Provides
+# ─────────────────────────────────────────────────────────
+
+v2_gaps:
+  description: >
+    Features proposed in RESEARCH/Linguistics Schema/v2/ Phase 1 and Phase 2
+    that cannot be derived from any current source. These require new data
+    structures, editorial input, or computational derivation.
+
+  competing_interpretations:
+    v2_proposal: >
+      Multiple scholars may read the same sign/word differently. Track all
+      interpretations with annotation provenance (who, when, confidence).
+    current_reality: >
+      Every source provides exactly ONE reading per token. ORACC editors choose
+      one interpretation; CDLI ATF has one transliteration per text.
+    what_to_build: >
+      annotation_provenance table linking interpretations to sources/editors.
+      Version tracking for when readings change between ORACC releases.
+
+  structured_morphology:
+    v2_proposal: >
+      Decompose morphology into discrete slots: prefix chain, stem, suffixes,
+      enclitic particles. Support Sumerian slot-based and Akkadian templatic morphology.
+    current_reality: >
+      ORACC morph field is an opaque string (e.g. "~,n" or "N1~v,N1~v").
+      No structured decomposition. BabyLemmatizer produces CoNLL-U FEATS
+      but only for a subset of texts.
+    what_to_build: >
+      morphology_slots table with language-specific parsing of the morph string.
+      Sumerian: prefix_chain, dimensional_prefixes, stem, pronominal_suffixes.
+      Akkadian: root, pattern, G/D/Sh/N stem, tense, person, number, gender.
+
+  sign_function_classification:
+    v2_proposal: >
+      For each sign token, classify as logographic, syllabographic, determinative,
+      or numeric. Track logographic opacity (how transparent is sign→meaning).
+    current_reality: >
+      ORACC GDL marks determinatives (det nodes) but doesn't classify remaining
+      signs as logographic vs syllabographic. OGSL lists all readings without
+      function context.
+    what_to_build: >
+      sign_function enum on each token. Derivable for determinatives (GDL det nodes)
+      and partially for numbers (GDL n nodes). Logographic vs syllabographic requires
+      language-specific rules (Sumerian signs are more often logographic; Akkadian
+      signs are more often syllabographic).
+
+  period_specific_sign_forms:
+    v2_proposal: >
+      Sign shapes change across 3,000 years. Track which visual form a sign
+      takes in each period (Old Babylonian cuneiform looks different from
+      Neo-Assyrian cuneiform).
+    current_reality: >
+      OGSL has one entry per sign with no period variants. CompVis covers only
+      Neo-Assyrian. No source links sign forms to periods.
+    what_to_build: >
+      sign_period_variants table linking signs to period-specific glyph images
+      or descriptions. Would require digitization of paleography reference works.
+
+  token_level_translation_alignment:
+    v2_proposal: >
+      Align translations to individual tokens/phrases, not just whole lines.
+    current_reality: >
+      CDLI translations are per-line. ORACC translations are per-line or per-unit.
+      No sub-line alignment exists in any source.
+    what_to_build: >
+      translation_alignment table mapping translation spans to token ranges.
+      Would require editorial work or ML alignment models.
+
+  cross_text_intertextuality:
+    v2_proposal: >
+      Link parallel passages, quotations, formulaic expressions across texts.
+    current_reality: >
+      ORACC composite texts (Q-numbers) link exemplars (P-numbers) but don't
+      mark specific parallel passages. CDLI ATF >>Q markers reference composites
+      but only at line level.
+    what_to_build: >
+      intertextuality_links table mapping text spans to related passages.
+      ORACC's score mechanism (parallel text alignment) is a starting point
+      but not exported in the JSON data.
+
+  reading_confidence_scores:
+    v2_proposal: >
+      Numeric confidence for each reading, reflecting damage, ambiguity,
+      and editorial certainty.
+    current_reality: >
+      CompVis: binary (1=intact, 2=damaged). eBL: suffix ? or UnclearSign.
+      CDLI ATF: inline markers. ORACC: break flags. None provide numeric scores.
+    what_to_build: >
+      confidence float field on each token. Derivable from damage markers
+      (intact=1.0, damaged=0.5, missing=0.0) but finer gradation needs ML
+      or editorial annotation.
+
+  logographic_opacity:
+    v2_proposal: >
+      Classify how transparently a sign maps to meaning in context.
+      Full opacity (pure logogram) vs partial (rebus) vs none (syllabogram).
+    current_reality: No source provides this. Novel annotation requirement.
+    what_to_build: >
+      opacity enum or float on logographic tokens. Requires linguistic expertise
+      to define criteria and annotate.
+
+# ─────────────────────────────────────────────────────────
+# SECTION 7: Data Volume Summary
+# ─────────────────────────────────────────────────────────
+
+data_volumes:
+  artifacts: 353,283 (CDLI catalog — most comprehensive)
+  texts_with_transliteration: 135,200 (CDLI ATF)
+  texts_with_lemmatization: ~7,500 (ORACC corpus — 5.5% of ATF texts)
+  glossary_entries: ~21,000 (dcclt) + very large (epsd2)
+  sign_definitions: 3,367 (OGSL)
+  sign_values: ~15,000 (OGSL)
+  bbox_annotations: 8,109 (CompVis) + variable (eBL)
+  tablets_with_bboxes: 81 (CompVis)
+  sign_classes_ml: 186 (CompVis) + 173 (eBL)
+  geographic_features: variable (~6 ORACC projects have geojson)
+
+# ─────────────────────────────────────────────────────────
+# SECTION 8: Recommended Import Priority
+# ─────────────────────────────────────────────────────────
+
+import_priority:
+  description: >
+    Suggested order for expanding the database beyond current imports.
+    Based on unique value added and dependency ordering.
+
+  tier_1_foundation:
+    - source: ogsl-signlist
+      status: imported
+      reason: Sign definitions needed by everything else
+
+    - source: cdli-catalog
+      status: imported
+      reason: Artifact inventory — all other data references P-numbers
+
+    - source: cdli-atf
+      status: imported
+      reason: Broadest text coverage
+
+    - source: oracc-corpus (dcclt)
+      status: imported
+      reason: Lemmatized text data
+
+    - source: oracc-glossary (dcclt)
+      status: imported
+      reason: Dictionary data
+
+  tier_2_expand_coverage:
+    - source: oracc-corpus (remaining projects)
+      status: extracted, not imported
+      reason: More lemmatized texts (etcsri 1,456 + blms 229 + hbtin 487 + rinap 48)
+
+    - source: oracc-glossary (epsd2)
+      status: extracted, not imported
+      reason: Comprehensive Sumerian dictionary (1.8 GB). Massive lexical enrichment.
+
+    - source: oracc-glossary (saao)
+      status: extracted, not imported
+      reason: Richest Akkadian dialect coverage.
+
+    - source: oracc-catalogue (all projects)
+      status: extracted, not imported
+      reason: Project-specific metadata + Pleiades IDs
+
+  tier_3_enrich:
+    - source: oracc-geojson
+      status: extracted, not imported
+      reason: Geographic coordinates for map features
+
+    - source: sign_concordance (to be built)
+      status: does not exist yet
+      reason: Required to merge CompVis/eBL annotations with OGSL-based data
+
+    - source: compvis-annotations
+      status: imported
+      reason: Sign bounding boxes (already in DB)
+
+    - source: ebl-annotations
+      status: not imported
+      reason: Additional sign detection data. Blocked on concordance table.
+
+  tier_4_reference:
+    - source: epsd2-reference
+      status: partially used
+      reason: Unicode data already covered by OGSL. CAD index is future enrichment.
+
+    - source: cdli-api
+      status: sample only
+      reason: Publication/collection data. Low priority — CSV covers core needs.

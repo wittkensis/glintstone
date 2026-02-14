@@ -1,0 +1,178 @@
+source:
+  name: CDLI ATF Transliterations
+  origin: https://github.com/cdli-gh/data
+  local_path: sources/CDLI/metadata/cdliatf_unblocked.atf
+  format: atf
+  license: CC0
+  record_count: 135200 texts (3,559,111 lines)
+  last_pulled: 2026-02-04
+  notes: >
+    ASCII Text Format — the standard interchange format for cuneiform transliterations.
+    Each text begins with &P-number header. Structured by object surfaces, columns, and lines.
+    Inline translation markers (#tr.XX:) provide human translations.
+
+# ATF is not tabular — it's a line-oriented format with protocol markers.
+# This schema documents the marker types and line structures.
+
+protocol_markers:
+
+  text_header:
+    pattern: "&P######"
+    description: Text identifier. Format "&" + P-number + " = " + designation
+    sample: "&P000001 = CDLI Lexical 000002, ex. 065"
+    maps_to_table: inscriptions.p_number
+    maps_to_layer: identity
+    notes: Also serves as record delimiter between texts.
+
+  language_declaration:
+    pattern: "#atf: lang XXX"
+    description: Language code for the text
+    sample: "#atf: lang qpc"
+    maps_to_table: inscriptions (inferred language)
+    maps_to_layer: identity
+    values:
+      - sux        # Sumerian
+      - akk        # Akkadian
+      - qpc        # Proto-Cuneiform
+      - hit        # Hittite
+      - elx        # Elamite
+      - arc        # Aramaic
+      - grc        # Greek
+
+  object_type:
+    pattern: "@object"
+    description: Physical object type
+    values: ["@tablet", "@envelope", "@prism", "@cylinder", "@bulla", "@seal"]
+    maps_to_table: artifacts.object_type
+    maps_to_layer: physical
+
+  surface:
+    pattern: "@surface"
+    description: Which surface of the object
+    values: ["@obverse", "@reverse", "@left", "@right", "@top", "@bottom", "@edge", "@surface"]
+    maps_to_table: ~
+    maps_to_layer: physical
+    notes: Defines the physical face being read.
+
+  column:
+    pattern: "@column N"
+    description: Column number on a surface
+    sample: "@column 1"
+    maps_to_table: ~
+    maps_to_layer: physical
+
+  damage_state:
+    pattern: "$ description"
+    description: Physical condition of a section
+    values: ["$ beginning broken", "$ rest broken", "$ broken", "$ blank space", "$ n lines broken", "$ ruling", "$ seal impression"]
+    maps_to_table: ~
+    maps_to_layer: physical
+    notes: Indicates where text is physically lost or blank.
+
+  composite_ref:
+    pattern: ">>Q###### NNN"
+    description: Links this line to a composite text line number
+    sample: ">>Q000002 014"
+    maps_to_table: artifact_composites (Q-number linkage)
+    maps_to_layer: identity
+    notes: Q-number + line number. Maps individual witnesses to composite edition.
+
+  translation:
+    pattern: "#tr.XX: text"
+    description: Inline translation. XX = ISO language code.
+    sample: "#tr.en: The house of the god"
+    maps_to_table: translations (p_number, language, text)
+    maps_to_layer: semantic
+    language_codes:
+      - en  # English
+      - de  # German
+      - ts  # ? (transliteration scheme)
+      - it  # Italian
+      - fr  # French
+      - es  # Spanish
+      - dk  # Danish
+      - ca  # Catalan
+      - fa  # Persian
+
+  comment:
+    pattern: "# text"
+    description: Editorial comment (not part of transliteration)
+    maps_to_table: ~
+    maps_to_layer: provenance
+
+line_structure:
+  description: >
+    Transliteration lines follow the pattern:
+    [line_number][.] [content]
+    Line numbers may have prime marks (') for uncertain numbering.
+
+  line_number:
+    type: string
+    description: Line number, optionally primed
+    sample: "1.", "2'.", "1'."
+    maps_to_layer: reading
+    notes: Prime (') indicates damaged or uncertain line numbering.
+
+  sign_tokens:
+    description: Space-separated cuneiform sign readings
+    types:
+      simple_sign:
+        sample: "GAL"
+        maps_to_layer: graphemic
+
+      sign_with_index:
+        sample: "du₃"
+        description: Subscript number distinguishes homophonous signs
+        maps_to_layer: graphemic
+        notes: Critical for Sumerian (du vs du₃ = different words)
+
+      compound_sign:
+        sample: "|USZ~b&USZ~b|"
+        description: Pipe-delimited compound sign notation
+        maps_to_layer: graphemic
+
+      determinative:
+        sample: "{d}", "{m}", "{f}", "{ki}", "{gesz}"
+        description: Silent classifiers (divine, male, female, place, wood)
+        maps_to_layer: reading
+        notes: Determinatives are written but not pronounced. Critical for sign function classification.
+
+      number:
+        sample: "1(N01)", "3(N57)"
+        description: Numeric notation with system identifier
+        maps_to_layer: reading
+
+  damage_markers:
+    broken: "[...]"
+    damaged: "#"
+    uncertain: "?"
+    illegible: "x"
+    maps_to_layer: physical
+    notes: >
+      These directly feed confidence scoring in the v2 schema.
+      [...] = completely lost, # = partially damaged, ? = reading uncertain.
+
+  separators:
+    hyphen: "-"
+    dot: "."
+    space: " "
+    description: >
+      Hyphen joins signs within a word. Dot separates numeric components.
+      Space separates words.
+
+cross_references:
+  - field: text_header (P-number)
+    overlaps_with: cdli-catalog.yaml#id
+    relationship: identical
+
+  - field: composite_ref (Q-number)
+    overlaps_with: cdli-catalog.yaml#composite_id
+    relationship: identical
+
+  - field: language_declaration
+    overlaps_with: cdli-catalog.yaml#language
+    relationship: equivalent (codes vs full names)
+
+  - field: damage_markers
+    overlaps_with: compvis-annotations.yaml#status
+    relationship: conceptual (both track physical damage, different representations)

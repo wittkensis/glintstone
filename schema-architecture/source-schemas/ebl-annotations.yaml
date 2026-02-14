@@ -1,0 +1,185 @@
+source:
+  name: eBL Cuneiform OCR Data
+  origin: https://github.com/ElectronicBabylonianLiterature/cuneiform-ocr-data
+  local_path: sources/ebl-annotations/
+  format: mixed (text, images, JSON configs)
+  license: MIT
+  record_count: 173 sign classes (for DETR model), variable annotation counts
+  last_pulled: 2026-02-05 (git clone, HEAD=ffaee6f)
+  notes: >
+    Training data for the Deformable DETR sign detection model. Includes cropped sign
+    images, ground truth annotations, and sign name mappings. Uses eBL/ABZ sign numbering.
+    Our trained model (ml/models/ebl_ocr/) was trained on this data.
+
+file_types:
+
+  ground_truth_annotations:
+    path: cuneiform_ocr_data/annotations/gt_*.txt
+    description: Per-image bounding box + sign reading annotations
+    format: "x,y,width,height,sign_reading" (one line per sign)
+    fields:
+      x:
+        type: integer
+        nullable: false
+        description: Top-left x coordinate (pixels)
+        maps_to_table: sign_annotations.bbox_x (after % conversion)
+        maps_to_layer: physical
+
+      y:
+        type: integer
+        nullable: false
+        description: Top-left y coordinate (pixels)
+        maps_to_table: sign_annotations.bbox_y
+        maps_to_layer: physical
+
+      width:
+        type: integer
+        nullable: false
+        description: Bounding box width (pixels)
+        maps_to_table: sign_annotations.bbox_w
+        maps_to_layer: physical
+
+      height:
+        type: integer
+        nullable: false
+        description: Bounding box height (pixels)
+        maps_to_table: sign_annotations.bbox_h
+        maps_to_layer: physical
+
+      sign_reading:
+        type: string
+        nullable: false
+        description: Sign reading or name
+        sample: "KUR"
+        maps_to_table: sign_annotations.sign_label
+        maps_to_layer: graphemic
+        special_values:
+          "?": Suffix indicating partially broken/uncertain sign (e.g. "AN?")
+          "UnclearSign": Illegible sign — cannot be identified
+        notes: >
+          Uses eBL sign names which need mapping to OGSL.
+          Damage notation differs from CompVis (suffix ? vs integer status code).
+
+  sign_mapping_ebl:
+    path: cuneiform_ocr_data/ebl.txt
+    description: eBL sign name to ABZ number to Unicode mapping
+    format: "sign_name ABZ_number unicode_char" (tab-separated)
+    fields:
+      sign_name:
+        type: string
+        description: eBL canonical sign name
+        sample: "A"
+        maps_to_layer: graphemic
+
+      abz_number:
+        type: string
+        description: Borger's ABZ sign number
+        sample: "ABZ579"
+        maps_to_layer: graphemic
+        notes: >
+          ABZ is the older Borger numbering. MZL (used by CompVis) supersedes it.
+          Both come from Borger's sign lists.
+
+      unicode_char:
+        type: string
+        description: Unicode cuneiform character
+        sample: "\U00012000"
+        maps_to_table: signs.utf8
+        maps_to_layer: graphemic
+
+  sign_mapping_mzl:
+    path: cuneiform_ocr_data/mzl.txt
+    description: MZL number to sign readings mapping
+    format: "mzl_number reading1 reading2 ..."
+    fields:
+      mzl_number:
+        type: integer
+        description: Borger's MZL sign number
+        maps_to_layer: graphemic
+
+      readings:
+        type: array of string
+        description: Known readings for this sign in MZL
+        maps_to_layer: reading
+
+  cropped_sign_images:
+    path: crop_ocr_signs/{sign_class}/
+    description: Cropped individual sign images organized by class
+    format: PNG/JPG images
+    maps_to_layer: physical
+    notes: >
+      Used for sign classification training. Each subdirectory is a sign class.
+      Image filenames encode source tablet and position.
+
+  detection_configs:
+    path: configs/
+    description: Training configuration files for DETR model
+    format: Python config files (mmdetection)
+    fields:
+      num_classes:
+        type: integer
+        sample: 173
+      model:
+        type: string
+        sample: "deformable_detr"
+      backbone:
+        type: string
+        sample: "resnet50"
+    maps_to_layer: ml
+
+output_formats:
+  description: >
+    The fetch_ocr_data.sh script can produce data in multiple formats.
+  formats:
+    ICDAR2015:
+      description: Text detection format (per-image text file)
+      use_case: Sign detection training
+    COCO2017:
+      description: Object detection JSON format
+      use_case: Standard DETR/YOLO training
+      fields:
+        images: [{id, file_name, width, height}]
+        annotations: [{id, image_id, category_id, bbox, area}]
+        categories: [{id, name}]
+    classification:
+      description: Directory-per-class image organization
+      use_case: Sign classification/recognition
+
+damage_representation:
+  description: How eBL encodes sign damage/uncertainty
+  intact: "KUR" (no suffix)
+  partial: "KUR?" (question mark suffix)
+  illegible: "UnclearSign"
+  notes: >
+    Three states vs CompVis's three states (0/1/2).
+    Mapping: intact=1, partial=2, UnclearSign=not annotated.
+
+cross_references:
+  - field: sign_reading
+    overlaps_with: ogsl-signlist.yaml#sign_name
+    relationship: equivalent (eBL names generally match OGSL, some exceptions)
+
+  - field: abz_number
+    overlaps_with: compvis-annotations.yaml#mzl_label
+    relationship: related (ABZ and MZL are successive editions of Borger's sign list)
+
+  - field: unicode_char
+    overlaps_with: ogsl-signlist.yaml#utf8
+    relationship: identical
+
+  - field: ground_truth (x, y, w, h)
+    overlaps_with: compvis-annotations.yaml#bbox
+    relationship: analogous (both are bounding boxes, different coordinate systems)
+
+  - field: damage notation (?)
+    overlaps_with: compvis-annotations.yaml#status
+    relationship: conceptual (suffix notation vs integer codes)
+
+v2_schema_notes: >
+  eBL data feeds the Physical and Graphemic layers, same as CompVis.
+  Key difference: eBL uses sign readings (linguistic labels) while CompVis uses
+  MZL numbers (catalog numbers). Both need mapping to OGSL.
+  The ebl.txt mapping file is a partial concordance (eBL -> ABZ -> Unicode)
+  but doesn't map to OGSL names directly. Need to build:
+    eBL name -> ABZ -> MZL -> OGSL name -> Unicode
+  This concordance chain is critical for merging annotations from both sources.

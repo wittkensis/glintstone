@@ -1,0 +1,488 @@
+# Glintstone Schema v1 — Current Database
+# SQLite schema as of 2026-02-14 (migrations through 003_remove_smart_collections)
+#
+# This documents the EXISTING schema. It was designed for a Tauri desktop app
+# focused on browsing/searching tablets with basic linguistic lookup.
+# Not designed for multi-layer annotation, competing interpretations, or
+# cross-source data fusion.
+
+meta:
+  engine: SQLite
+  migrations: 000 through 003
+  tables: 27
+  views: 4
+  design_philosophy: >
+    Flat, import-oriented. Each source maps to one or two tables.
+    No layered annotation model. Single authoritative record per entity.
+    Optimized for search/browse, not linguistic analysis.
+
+# ─────────────────────────────────────────────────────────
+# CORE ARTIFACT TABLES
+# ─────────────────────────────────────────────────────────
+
+tables:
+
+  artifacts:
+    description: Primary tablet/object inventory (from CDLI catalog)
+    source: cdli-catalog
+    row_count: ~353,000
+    columns:
+      p_number: { type: TEXT, pk: true, description: "P######" }
+      designation: { type: TEXT }
+      museum_no: { type: TEXT }
+      excavation_no: { type: TEXT }
+      findspot_square: { type: TEXT }
+      material: { type: TEXT }
+      object_type: { type: TEXT }
+      period: { type: TEXT }
+      provenience: { type: TEXT }
+      genre: { type: TEXT }
+      language: { type: TEXT }
+      width: { type: REAL }
+      height: { type: REAL }
+      thickness: { type: REAL }
+      image_path: { type: TEXT }
+      created_at: { type: TIMESTAMP, default: CURRENT_TIMESTAMP }
+    indexes: [designation, period, language, genre, museum_no, excavation_no, provenience]
+    v1_limitations: >
+      Only 16 of CDLI's 64 columns imported. Missing: collection, dates_referenced,
+      seal_id, composite info, publication data, subgenre, CDLI comments.
+      No ORACC catalogue metadata (pleiades, langs, project-specific fields).
+
+  inscriptions:
+    description: ATF transliterations (one per tablet, with source tracking)
+    source: cdli-atf
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      atf: { type: TEXT, description: "Raw ATF text" }
+      transliteration_clean: { type: TEXT, description: "Cleaned transliteration" }
+      is_latest: { type: INTEGER, default: 1 }
+      source: { type: TEXT, default: "cdli" }
+    indexes: [p_number]
+    v1_limitations: >
+      ATF stored as monolithic text blob. No per-line, per-surface, or per-sign
+      decomposition. Cannot query individual lines or surfaces without parsing.
+      No ORACC CDL data stored — only raw ATF strings.
+
+  translations:
+    description: Full-text translations per tablet
+    source: cdli-atf (inline #tr. markers)
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      translation: { type: TEXT }
+      language: { type: TEXT, default: "en" }
+      source: { type: TEXT, default: "cdli" }
+      created_at: { type: TIMESTAMP }
+    constraints: [UNIQUE(p_number, language, source)]
+    indexes: [p_number]
+    v1_limitations: >
+      Whole-text translations. No line-level or token-level alignment.
+      No competing translations from different scholars.
+
+  lemmas:
+    description: Per-word linguistic annotations (from ORACC CDL)
+    source: oracc-corpus
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      line_no: { type: INTEGER }
+      word_no: { type: INTEGER }
+      form: { type: TEXT }
+      cf: { type: TEXT, description: "Citation form" }
+      gw: { type: TEXT, description: "Guide word" }
+      pos: { type: TEXT, description: "Part of speech" }
+      epos: { type: TEXT }
+      lang: { type: TEXT }
+    indexes: [p_number, cf, form]
+    v1_limitations: >
+      Missing from ORACC CDL: base, morph, norm0, sense, sig (full signature),
+      GDL sign-level data, OIDs. No morphological decomposition.
+      No annotation provenance (which ORACC project, which editor).
+      Only dcclt project imported — other projects extracted but not loaded.
+
+# ─────────────────────────────────────────────────────────
+# COMPOSITE TEXTS
+# ─────────────────────────────────────────────────────────
+
+  composites:
+    description: Composite/ideal texts assembled from multiple exemplars
+    source: cdli-atf (>>Q markers)
+    columns:
+      q_number: { type: TEXT, pk: true }
+      designation: { type: TEXT }
+      artifact_comments: { type: TEXT }
+      created_by: { type: INTEGER }
+      periods_cache: { type: TEXT }
+      proveniences_cache: { type: TEXT }
+      genres_cache: { type: TEXT }
+      exemplar_count_cache: { type: INTEGER, default: 0 }
+      metadata_updated_at: { type: TIMESTAMP }
+    v1_limitations: >
+      Cache fields denormalized for UI performance. No structured
+      relationship to ORACC score (parallel text alignment) data.
+
+  artifact_composites:
+    description: Join table linking artifacts to composites
+    columns:
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      q_number: { type: TEXT, fk: composites.q_number }
+      line_ref: { type: TEXT }
+    constraints: [PRIMARY KEY (p_number, q_number)]
+
+# ─────────────────────────────────────────────────────────
+# SIGN SYSTEM
+# ─────────────────────────────────────────────────────────
+
+  signs:
+    description: Cuneiform sign inventory (from OGSL)
+    source: ogsl-signlist
+    row_count: ~3,367
+    columns:
+      sign_id: { type: TEXT, pk: true, description: "OGSL sign name (e.g. A, |A.AN|)" }
+      utf8: { type: TEXT }
+      unicode_hex: { type: TEXT }
+      unicode_decimal: { type: INTEGER }
+      uphase: { type: TEXT }
+      uname: { type: TEXT }
+      sign_type: { type: TEXT, values: [simple, compound, variant] }
+      most_common_value: { type: TEXT }
+    indexes: [utf8]
+    v1_limitations: >
+      No GDL structural definitions stored. No period-specific sign forms.
+      No MZL/ABZ concordance numbers.
+      most_common_value has no frequency backing — editorial guess.
+
+  sign_values:
+    description: Sign reading values (polyvalence)
+    source: ogsl-signlist
+    row_count: ~15,000
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      sign_id: { type: TEXT, fk: signs.sign_id }
+      value: { type: TEXT }
+      sub_index: { type: INTEGER }
+      value_type: { type: TEXT, values: [logographic, syllabic, determinative] }
+      frequency: { type: INTEGER, default: 0 }
+    indexes: [sign_id, value]
+    v1_limitations: >
+      Flat value list with no context for when each reading applies.
+      value_type classification incomplete (many NULL).
+      frequency field mostly 0 — not computed from corpus data.
+
+  sign_variants:
+    description: Sign variant forms (gunu, tenu, etc.)
+    source: ogsl-signlist
+    columns:
+      variant_id: { type: TEXT, pk: true }
+      base_sign: { type: TEXT, fk: signs.sign_id }
+      modifiers: { type: TEXT }
+
+  sign_annotations:
+    description: Bounding box annotations on tablet images
+    source: compvis-annotations, ebl-annotations
+    row_count: ~8,100
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      sign_label: { type: TEXT }
+      bbox_x: { type: REAL, description: "X position as percentage 0-100" }
+      bbox_y: { type: REAL, description: "Y position as percentage 0-100" }
+      bbox_width: { type: REAL }
+      bbox_height: { type: REAL }
+      confidence: { type: REAL }
+      surface: { type: TEXT }
+      atf_line: { type: INTEGER }
+      source: { type: TEXT, values: [compvis, ebl, manual, ml] }
+      image_type: { type: TEXT, default: "photo" }
+      created_at: { type: TIMESTAMP }
+      ref_image_width: { type: INTEGER }
+      ref_image_height: { type: INTEGER }
+    indexes: [p_number, source]
+    v1_limitations: >
+      sign_label uses mixed formats — OGSL names from some sources, MZL
+      numbers from CompVis (stored as strings). No concordance resolution.
+      Only CompVis data imported. eBL data blocked on sign name mapping.
+
+  sign_word_usage:
+    description: Links signs to glossary entries where they appear
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      sign_id: { type: TEXT, fk: signs.sign_id }
+      sign_value: { type: TEXT }
+      entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      usage_count: { type: INTEGER, default: 0 }
+      value_type: { type: TEXT }
+    constraints: [UNIQUE(sign_id, entry_id, sign_value)]
+    indexes: [sign_id, entry_id]
+
+# ─────────────────────────────────────────────────────────
+# GLOSSARY & DICTIONARY
+# ─────────────────────────────────────────────────────────
+
+  glossary_entries:
+    description: Dictionary headwords (from ORACC glossaries)
+    source: oracc-glossary
+    columns:
+      entry_id: { type: TEXT, pk: true }
+      headword: { type: TEXT }
+      citation_form: { type: TEXT }
+      guide_word: { type: TEXT }
+      language: { type: TEXT }
+      pos: { type: TEXT }
+      icount: { type: INTEGER }
+      project: { type: TEXT }
+      normalized_headword: { type: TEXT }
+      semantic_category: { type: TEXT }
+    indexes: [headword, language, citation_form, normalized_headword]
+    v1_limitations: >
+      Only dcclt glossary imported. Missing: epsd2 (1.8 GB Sumerian),
+      saao (Akkadian dialects), rinap, ribo, blms, etcsri glossaries.
+      No period-specific usage data. No norms[] or periods[] from source.
+
+  glossary_forms:
+    description: Attested spelling forms for glossary entries
+    source: oracc-glossary
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      form: { type: TEXT }
+      count: { type: INTEGER }
+    indexes: [entry_id, form]
+
+  glossary_senses:
+    description: Meaning senses per glossary entry
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      sense_number: { type: INTEGER }
+      guide_word: { type: TEXT }
+      definition: { type: TEXT }
+      usage_context: { type: TEXT }
+      semantic_category: { type: TEXT }
+      frequency_percentage: { type: REAL }
+      example_lemma_ids: { type: TEXT }
+    constraints: [UNIQUE(entry_id, sense_number)]
+
+  glossary_relationships:
+    description: Cross-references between glossary entries
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      from_entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      to_entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      relationship_type: { type: TEXT, values: [synonym, antonym, translation, cognate, etymology_source, semantic_field, compound_contains, see_also] }
+      notes: { type: TEXT }
+      confidence: { type: TEXT, default: "verified" }
+      created_at: { type: TIMESTAMP }
+    constraints: [UNIQUE(from_entry_id, to_entry_id, relationship_type)]
+
+  semantic_fields:
+    description: Hierarchical semantic category taxonomy
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      name: { type: TEXT, unique: true }
+      description: { type: TEXT }
+      parent_field_id: { type: INTEGER, fk: semantic_fields.id }
+
+  glossary_semantic_fields:
+    description: Many-to-many join for entries and semantic fields
+    columns:
+      entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      field_id: { type: INTEGER, fk: semantic_fields.id }
+    constraints: [PRIMARY KEY(entry_id, field_id)]
+
+# ─────────────────────────────────────────────────────────
+# CAD (Chicago Assyrian Dictionary)
+# ─────────────────────────────────────────────────────────
+
+  cad_entries:
+    description: Digitized CAD dictionary entries (future — tables exist but empty)
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      volume: { type: TEXT }
+      page_start: { type: INTEGER }
+      page_end: { type: INTEGER }
+      headword: { type: TEXT }
+      headword_normalized: { type: TEXT }
+      transliteration_variants: { type: TEXT, description: "JSON array" }
+      cuneiform: { type: TEXT }
+      etymology: { type: TEXT }
+      semantic_notes: { type: TEXT }
+      bibliography: { type: TEXT, description: "JSON array" }
+      compounds: { type: TEXT, description: "JSON array" }
+      related_forms: { type: TEXT, description: "JSON array" }
+      oracc_entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      pdf_url: { type: TEXT }
+      extraction_quality: { type: REAL }
+      human_verified: { type: INTEGER, default: 0 }
+      extracted_at: { type: TIMESTAMP }
+      verified_at: { type: TIMESTAMP }
+
+  cad_meanings:
+    description: Sense entries within a CAD headword
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      cad_entry_id: { type: INTEGER, fk: cad_entries.id }
+      sense_number: { type: INTEGER }
+      definition: { type: TEXT }
+      usage_context: { type: TEXT }
+      semantic_category: { type: TEXT }
+
+  cad_examples:
+    description: Usage examples cited in CAD
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      cad_meaning_id: { type: INTEGER, fk: cad_meanings.id }
+      example_text: { type: TEXT }
+      translation: { type: TEXT }
+      citation: { type: TEXT }
+      citation_expanded: { type: TEXT }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+
+# ─────────────────────────────────────────────────────────
+# PIPELINE & TRACKING
+# ─────────────────────────────────────────────────────────
+
+  pipeline_status:
+    description: Per-tablet data completeness tracker
+    columns:
+      p_number: { type: TEXT, pk: true, fk: artifacts.p_number }
+      has_image: { type: INTEGER, default: 0 }
+      has_ocr: { type: INTEGER, default: 0 }
+      ocr_confidence: { type: REAL }
+      ocr_model: { type: TEXT }
+      has_atf: { type: INTEGER, default: 0 }
+      atf_source: { type: TEXT }
+      has_lemmas: { type: INTEGER, default: 0 }
+      lemma_coverage: { type: REAL }
+      has_translation: { type: INTEGER, default: 0 }
+      translation_consensus: { type: REAL }
+      quality_score: { type: REAL }
+      last_updated: { type: TIMESTAMP }
+      has_sign_annotations: { type: INTEGER, default: 0 }
+    indexes: [quality_score, has_sign_annotations]
+    v1_limitations: >
+      Tracks boolean presence, not granular completeness.
+      No per-layer confidence. No annotation provenance.
+
+  import_log:
+    description: Data import history
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      source: { type: TEXT }
+      file_path: { type: TEXT }
+      records_imported: { type: INTEGER }
+      imported_at: { type: TIMESTAMP }
+
+# ─────────────────────────────────────────────────────────
+# LOOKUP / REFERENCE TABLES
+# ─────────────────────────────────────────────────────────
+
+  museums:
+    description: Museum code lookup
+    columns:
+      code: { type: TEXT, pk: true }
+      name: { type: TEXT }
+      city: { type: TEXT }
+      country: { type: TEXT }
+      updated_at: { type: INTEGER }
+
+  excavation_sites:
+    description: Excavation site lookup
+    columns:
+      code: { type: TEXT, pk: true }
+      name: { type: TEXT }
+      ancient_name: { type: TEXT }
+      modern_country: { type: TEXT }
+      updated_at: { type: INTEGER }
+
+  language_stats:
+    columns: { language: TEXT pk, root_language: TEXT, tablet_count: INTEGER, updated_at: INTEGER }
+
+  period_stats:
+    columns: { period: TEXT pk, period_group: TEXT, sort_order: INTEGER, tablet_count: INTEGER, updated_at: INTEGER }
+
+  provenience_stats:
+    columns: { provenience: TEXT pk, region: TEXT, subregion: TEXT, tablet_count: INTEGER, updated_at: INTEGER }
+
+  genre_stats:
+    columns: { genre: TEXT pk, category: TEXT, tablet_count: INTEGER, updated_at: INTEGER }
+
+# ─────────────────────────────────────────────────────────
+# COLLECTIONS (User-created groupings)
+# ─────────────────────────────────────────────────────────
+
+  collections:
+    columns:
+      collection_id: { type: INTEGER, pk: true, autoincrement: true }
+      name: { type: TEXT }
+      description: { type: TEXT }
+      created_at: { type: TIMESTAMP }
+      updated_at: { type: TIMESTAMP }
+      image_path: { type: TEXT }
+
+  collection_members:
+    columns:
+      collection_id: { type: INTEGER, fk: collections.collection_id }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      added_at: { type: TIMESTAMP }
+    constraints: [PRIMARY KEY(collection_id, p_number), ON DELETE CASCADE]
+
+# ─────────────────────────────────────────────────────────
+# EXTERNAL RESOURCES
+# ─────────────────────────────────────────────────────────
+
+  external_resources:
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      resource_name: { type: TEXT }
+      resource_key: { type: TEXT }
+      base_url: { type: TEXT }
+
+# ─────────────────────────────────────────────────────────
+# VIEWS
+# ─────────────────────────────────────────────────────────
+
+views:
+
+  annotation_coverage:
+    description: Per-tablet annotation summary
+    columns: [p_number, designation, annotation_count, sources]
+
+  digitization_overview:
+    description: Aggregate counts of digitization stages
+    columns: [total_tablets, human_transcription, machine_ocr, both, any_digitization]
+
+  glossary_enriched:
+    description: Glossary entries with computed variant/usage counts
+    columns: [entry_id, headword, citation_form, guide_word, language, pos, icount, project, normalized_headword, semantic_category, variant_count, tablet_count]
+
+  sign_usage_summary:
+    description: Per-sign aggregated usage statistics
+    columns: [sign_id, utf8, value_count, word_count, total_occurrences]
+
+# ─────────────────────────────────────────────────────────
+# SUMMARY: What v1 does well vs what it lacks
+# ─────────────────────────────────────────────────────────
+
+strengths:
+  - Comprehensive artifact inventory (353k tablets)
+  - Basic search/browse optimized (indexes on all filter columns)
+  - Sign system with values and annotations
+  - Glossary with senses, relationships, semantic fields
+  - Pipeline status tracking per tablet
+  - User collections for organizing research
+
+limitations:
+  - ATF stored as text blobs (no per-line/per-sign queryability)
+  - Only 1 ORACC project imported (dcclt) of ~10 available
+  - No GDL sign-level data from ORACC corpus
+  - No morphological decomposition (morph, base, norm0 fields not imported)
+  - No sign concordance (OGSL/MZL/ABZ mapping)
+  - No competing interpretations or annotation provenance
+  - No geographic data (geojson not imported)
+  - No per-layer confidence model
+  - No cross-text intertextuality links
+  - Flat structure — not layered for multi-source annotation fusion
