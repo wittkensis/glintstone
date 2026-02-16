@@ -1,0 +1,1863 @@
+openapi: 3.0.3
+info:
+  title: Glintstone API
+  description: |
+    Cuneiform studies database API. Serves artifact metadata, sign inventories,
+    glossary data, and annotation layers with full provenance tracking.
+
+    All responses include a `sources` array showing which data sources contributed.
+    When eBL-sourced data is present, `required_attributions` is included.
+  version: 2.0.0
+  contact:
+    name: Glintstone
+
+servers:
+  - url: /api/v2
+
+# ═══════════════════════════════════════════════════════════
+# PATHS
+# ═══════════════════════════════════════════════════════════
+
+paths:
+
+  # ── Artifacts ──────────────────────────────────────────
+
+  /artifacts/{p_number}:
+    get:
+      operationId: getArtifact
+      summary: Artifact detail with pipeline status
+      tags: [Artifacts]
+      parameters:
+        - $ref: '#/components/parameters/PNumber'
+      responses:
+        '200':
+          description: Artifact found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_ArtifactDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /artifacts/search:
+    get:
+      operationId: searchArtifacts
+      summary: Filtered artifact search with pagination
+      tags: [Artifacts]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Free-text search across P-number, designation, transliteration. Use `||` to OR multiple terms.
+        - name: languages
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+          style: form
+          explode: true
+          description: Filter by language (LIKE match)
+        - name: periods
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+          style: form
+          explode: true
+          description: Filter by period (exact match)
+        - name: sites
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+          style: form
+          explode: true
+          description: Filter by provenience (LIKE match)
+        - name: genres
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+          style: form
+          explode: true
+          description: Filter by genre (LIKE match)
+        - name: pipeline
+          in: query
+          schema:
+            type: string
+            enum:
+              - complete
+              - has_image
+              - has_translation
+              - has_atf
+              - has_lemmas
+              - any_digitization
+              - human_transcription
+              - machine_ocr
+              - no_digitization
+              - needs_signs
+              - needs_atf
+              - needs_translation
+          description: Filter by pipeline completeness
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated artifact results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_PaginatedArtifactSummary'
+
+  /artifacts/{p_number}/text:
+    get:
+      operationId: getArtifactText
+      summary: Decomposed text structure (surfaces -> lines -> tokens)
+      tags: [Artifacts, Text]
+      parameters:
+        - $ref: '#/components/parameters/PNumber'
+      responses:
+        '200':
+          description: Hierarchical text decomposition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_ArtifactText'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /artifacts/{p_number}/readings:
+    get:
+      operationId: getArtifactReadings
+      summary: Competing token readings with provenance
+      tags: [Artifacts, Text]
+      parameters:
+        - $ref: '#/components/parameters/PNumber'
+      responses:
+        '200':
+          description: All token readings for this artifact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_ArtifactReadings'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /artifacts/{p_number}/annotations:
+    get:
+      operationId: getArtifactAnnotations
+      summary: Sign bounding boxes per surface
+      tags: [Artifacts, Annotations]
+      parameters:
+        - $ref: '#/components/parameters/PNumber'
+      responses:
+        '200':
+          description: Sign annotations with bounding boxes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_ArtifactAnnotations'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /artifacts/{p_number}/translations:
+    get:
+      operationId: getArtifactTranslations
+      summary: Line-level translations with source attribution
+      tags: [Artifacts, Text]
+      parameters:
+        - $ref: '#/components/parameters/PNumber'
+      responses:
+        '200':
+          description: Translations grouped by language
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_TranslationList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /artifacts/{p_number}/editions:
+    get:
+      operationId: getArtifactEditions
+      summary: Publication history
+      tags: [Artifacts, Citations]
+      parameters:
+        - $ref: '#/components/parameters/PNumber'
+      responses:
+        '200':
+          description: All editions linking this artifact to publications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_EditionList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /artifacts/{p_number}/identifiers:
+    get:
+      operationId: getArtifactIdentifiers
+      summary: All known identifiers (museum nos, excavation nos, ARKs, etc.)
+      tags: [Artifacts, Citations]
+      parameters:
+        - $ref: '#/components/parameters/PNumber'
+      responses:
+        '200':
+          description: Identifier concordance for this artifact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_IdentifierList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Signs ──────────────────────────────────────────────
+
+  /signs/{sign_id}:
+    get:
+      operationId: getSign
+      summary: Sign detail with values, homophones, word usage
+      tags: [Signs]
+      parameters:
+        - name: sign_id
+          in: path
+          required: true
+          schema: { type: string }
+          description: OGSL canonical name (e.g., "A", "AN", "|A.AN|")
+      responses:
+        '200':
+          description: Sign with values and usage data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_SignDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /signs/browse:
+    get:
+      operationId: browseSigns
+      summary: Filtered sign browsing
+      tags: [Signs]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Search by sign_id or value
+        - name: sign_type
+          in: query
+          schema:
+            type: string
+            enum: [simple, compound, variant]
+        - name: has_glyph
+          in: query
+          schema:
+            type: string
+            enum: ['yes', 'no']
+        - name: group_type
+          in: query
+          schema:
+            type: string
+            enum: [polyphony, usage, word_count]
+          description: Group filter dimension
+        - name: group_value
+          in: query
+          schema: { type: string }
+          description: Value within group (e.g., "2-5" for polyphony)
+        - name: min_frequency
+          in: query
+          schema: { type: integer, minimum: 0 }
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [sign_id, frequency, value_count, word_count]
+            default: sign_id
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated sign results with group counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_PaginatedSignBrowse'
+
+  # ── Glossary ───────────────────────────────────────────
+
+  /glossary/{entry_id}:
+    get:
+      operationId: getGlossaryEntry
+      summary: Word detail with variants, senses, attestations
+      tags: [Glossary]
+      parameters:
+        - name: entry_id
+          in: path
+          required: true
+          schema: { type: string }
+          description: ORACC glossary OID
+      responses:
+        '200':
+          description: Full word detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_GlossaryDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /glossary/browse:
+    get:
+      operationId: browseGlossary
+      summary: Filtered dictionary browsing
+      tags: [Glossary]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Search headword or citation form
+        - name: language
+          in: query
+          schema: { type: string }
+          description: Filter by language code (e.g., sux, akk)
+        - name: pos
+          in: query
+          schema: { type: string }
+          description: Part of speech filter
+        - name: frequency
+          in: query
+          schema:
+            type: string
+            enum: ['1', '2-10', '11-100', '101-500', '500+']
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated glossary results with group counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_PaginatedGlossaryBrowse'
+
+  /glossary/search:
+    get:
+      operationId: searchGlossary
+      summary: Text search across glossary headwords
+      tags: [Glossary]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - name: language
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        '200':
+          description: Matching glossary entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_GlossarySearchResults'
+
+  # ── Tokens ─────────────────────────────────────────────
+
+  /tokens/{token_id}/readings:
+    get:
+      operationId: getTokenReadings
+      summary: Competing readings for a single token
+      tags: [Tokens]
+      parameters:
+        - name: token_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: All readings for this token position
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_TokenReadingList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tokens/{token_id}/lemmatizations:
+    get:
+      operationId: getTokenLemmatizations
+      summary: Competing linguistic analyses for a token
+      tags: [Tokens]
+      parameters:
+        - name: token_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: All lemmatizations for this token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_LemmatizationList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Entities (Knowledge Graph) ─────────────────────────
+
+  /entities:
+    get:
+      operationId: browseEntities
+      summary: Named entity browse/search
+      tags: [Entities]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: entity_type
+          in: query
+          schema:
+            type: string
+            enum: [person, deity, place, temple, watercourse, month, royal_name, object, field, agricultural, celestial, quarter, ethnic, settlement]
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated entity results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_PaginatedEntityList'
+
+  /entities/{id}/mentions:
+    get:
+      operationId: getEntityMentions
+      summary: Corpus locations where entity appears
+      tags: [Entities]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Token/line references for this entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_PaginatedEntityMentions'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /entities/{id}/relationships:
+    get:
+      operationId: getEntityRelationships
+      summary: Knowledge graph edges for an entity
+      tags: [Entities]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Relationships to other entities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedResponse_EntityRelationships'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Collections ────────────────────────────────────────
+
+  /collections:
+    get:
+      operationId: listCollections
+      summary: List user collections
+      tags: [Collections]
+      responses:
+        '200':
+          description: All collections with tablet counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CollectionSummary'
+    post:
+      operationId: createCollection
+      summary: Create a collection
+      tags: [Collections]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectionCreate'
+      responses:
+        '201':
+          description: Collection created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionSummary'
+
+  /collections/{collection_id}:
+    get:
+      operationId: getCollection
+      summary: Collection detail with paginated tablets
+      tags: [Collections]
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema: { type: integer }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Collection with tablet list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateCollection
+      summary: Update collection metadata
+      tags: [Collections]
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectionUpdate'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      operationId: deleteCollection
+      summary: Delete a collection
+      tags: [Collections]
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Deleted
+
+  /collections/{collection_id}/tablets:
+    post:
+      operationId: addTabletsToCollection
+      summary: Add tablets to collection
+      tags: [Collections]
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [p_numbers]
+              properties:
+                p_numbers:
+                  type: array
+                  items: { type: string, pattern: '^P\d{6,7}$' }
+      responses:
+        '200':
+          description: Tablets added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  added: { type: integer }
+
+  /collections/{collection_id}/tablets/{p_number}:
+    delete:
+      operationId: removeTabletFromCollection
+      summary: Remove tablet from collection
+      tags: [Collections]
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema: { type: integer }
+        - $ref: '#/components/parameters/PNumber'
+      responses:
+        '204':
+          description: Removed
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Provenance ─────────────────────────────────────────
+
+  /provenance/annotation-runs:
+    get:
+      operationId: listAnnotationRuns
+      summary: Data source tracking — all annotation runs
+      tags: [Provenance]
+      parameters:
+        - name: source_type
+          in: query
+          schema:
+            type: string
+            enum: [human, model, hybrid, import]
+        - name: source_name
+          in: query
+          schema: { type: string }
+          description: Filter by source name (e.g., "oracc:dcclt", "cdli:catalog")
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated annotation runs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_AnnotationRunList'
+
+  /provenance/source-stats:
+    get:
+      operationId: getSourceStats
+      summary: Coverage statistics by data source
+      tags: [Provenance]
+      responses:
+        '200':
+          description: Per-source coverage counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sources:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SourceCoverage'
+
+  # ── Concordance ────────────────────────────────────────
+
+  /concordance/signs:
+    get:
+      operationId: lookupSignConcordance
+      summary: OGSL <-> MZL <-> ABZ <-> Unicode sign lookup
+      tags: [Concordance]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+          description: Sign name, MZL number, ABZ number, or Unicode character
+      responses:
+        '200':
+          description: Concordance matches
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SignConcordanceEntry'
+
+  /concordance/languages:
+    get:
+      operationId: lookupLanguageConcordance
+      summary: CDLI <-> ORACC language code mapping
+      tags: [Concordance]
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+          description: Search by name or code
+      responses:
+        '200':
+          description: Language mappings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  languages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LanguageMapping'
+
+  /concordance/periods:
+    get:
+      operationId: lookupPeriodConcordance
+      summary: Canonical period lookup with date ranges
+      tags: [Concordance]
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+          description: Search by period name
+      responses:
+        '200':
+          description: Period mappings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  periods:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PeriodMapping'
+
+# ═══════════════════════════════════════════════════════════
+# COMPONENTS
+# ═══════════════════════════════════════════════════════════
+
+components:
+
+  # ── Parameters ─────────────────────────────────────────
+
+  parameters:
+    PNumber:
+      name: p_number
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^P\d{6,7}$'
+      description: CDLI P-number (e.g., "P000001")
+
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    PerPage:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 24
+
+  # ── Responses ──────────────────────────────────────────
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+
+  # ── Schemas ────────────────────────────────────────────
+
+  schemas:
+
+    # ── Sourced response wrappers ────────────────────────
+
+    SourceInfo:
+      type: object
+      required: [source, imported_at]
+      properties:
+        source:
+          type: string
+          description: 'Source identifier (e.g., "cdli:catalog", "oracc:dcclt")'
+        imported_at:
+          type: string
+          format: date
+        fields:
+          type: array
+          items: { type: string }
+          description: Which fields came from this source
+
+    # Generic sourced wrapper — concrete types below use allOf
+    SourcedEnvelope:
+      type: object
+      required: [data, sources]
+      properties:
+        data: {}
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+          description: Required when eBL-sourced data is included
+
+    PaginationMeta:
+      type: object
+      required: [total, page, per_page, total_pages]
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        per_page: { type: integer }
+        total_pages: { type: integer }
+
+    # ── Artifact schemas ─────────────────────────────────
+
+    ArtifactSummary:
+      type: object
+      required: [p_number]
+      properties:
+        p_number: { type: string }
+        designation: { type: string }
+        period: { type: string }
+        period_normalized: { type: string }
+        provenience: { type: string }
+        genre: { type: string }
+        language: { type: string }
+        material: { type: string }
+        object_type: { type: string }
+        has_image: { type: boolean }
+        has_atf: { type: boolean }
+        has_lemmas: { type: boolean }
+        has_translation: { type: boolean }
+        has_sign_annotations: { type: boolean }
+        quality_score: { type: number, format: float }
+
+    ArtifactDetail:
+      allOf:
+        - $ref: '#/components/schemas/ArtifactSummary'
+        - type: object
+          properties:
+            museum_no: { type: string }
+            excavation_no: { type: string }
+            findspot_square: { type: string }
+            width: { type: number, format: float }
+            height: { type: number, format: float }
+            thickness: { type: number, format: float }
+            seal_id: { type: string }
+            subgenre: { type: string }
+            supergenre: { type: string }
+            languages:
+              type: array
+              items: { type: string }
+            pleiades_id: { type: string }
+            latitude: { type: number, format: double }
+            longitude: { type: number, format: double }
+            primary_publication: { type: string }
+            collection: { type: string }
+            dates_referenced: { type: string }
+            oracc_projects:
+              type: array
+              items: { type: string }
+            image_path: { type: string }
+            pipeline:
+              $ref: '#/components/schemas/PipelineStatus'
+            composites:
+              type: array
+              items:
+                $ref: '#/components/schemas/CompositeRef'
+            external_resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExternalResource'
+
+    PipelineStatus:
+      type: object
+      properties:
+        has_image: { type: boolean }
+        has_ocr: { type: boolean }
+        has_atf: { type: boolean }
+        has_lemmas: { type: boolean }
+        has_translation: { type: boolean }
+        has_sign_annotations: { type: boolean }
+        quality_score: { type: number, format: float }
+        physical_complete: { type: boolean }
+        graphemic_complete: { type: boolean }
+        reading_complete: { type: boolean }
+        linguistic_complete: { type: boolean }
+        semantic_complete: { type: boolean }
+
+    CompositeRef:
+      type: object
+      properties:
+        q_number: { type: string }
+        designation: { type: string }
+        line_ref: { type: string }
+
+    ExternalResource:
+      type: object
+      properties:
+        resource_name: { type: string }
+        resource_key: { type: string }
+        base_url: { type: string }
+
+    # ── Text decomposition ───────────────────────────────
+
+    Surface:
+      type: object
+      required: [id, surface_type]
+      properties:
+        id: { type: integer }
+        surface_type:
+          type: string
+          enum: [obverse, reverse, left_edge, right_edge, top_edge, bottom_edge, seal, unknown]
+        image_path: { type: string }
+        image_width: { type: integer }
+        image_height: { type: integer }
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/TextLine'
+
+    TextLine:
+      type: object
+      required: [id, line_number]
+      properties:
+        id: { type: integer }
+        line_number: { type: integer }
+        raw_atf: { type: string }
+        is_ruling: { type: boolean }
+        is_blank: { type: boolean }
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/Token'
+
+    Token:
+      type: object
+      required: [id, position]
+      properties:
+        id: { type: integer }
+        position: { type: integer }
+        gdl_json: { type: object }
+        lang: { type: string }
+
+    # ── Readings & lemmatizations ────────────────────────
+
+    TokenReading:
+      type: object
+      required: [id, token_id]
+      properties:
+        id: { type: integer }
+        token_id: { type: integer }
+        form: { type: string }
+        reading: { type: string }
+        sign_function:
+          type: string
+          enum: [logographic, syllabographic, determinative, numeric, mixed]
+        damage:
+          type: string
+          enum: [intact, damaged, missing, uncertain]
+        confidence: { type: number, format: float, minimum: 0, maximum: 1 }
+        is_consensus: { type: boolean }
+        annotation_run:
+          $ref: '#/components/schemas/AnnotationRunRef'
+
+    Lemmatization:
+      type: object
+      required: [id, token_id]
+      properties:
+        id: { type: integer }
+        token_id: { type: integer }
+        citation_form: { type: string }
+        guide_word: { type: string }
+        sense: { type: string }
+        pos: { type: string }
+        epos: { type: string }
+        norm: { type: string }
+        base: { type: string }
+        signature: { type: string }
+        morph_raw: { type: string }
+        entry_id: { type: string, description: Linked glossary entry OID }
+        confidence: { type: number, format: float, minimum: 0, maximum: 1 }
+        is_consensus: { type: boolean }
+        annotation_run:
+          $ref: '#/components/schemas/AnnotationRunRef'
+        morphology:
+          $ref: '#/components/schemas/Morphology'
+
+    Morphology:
+      type: object
+      properties:
+        language_family:
+          type: string
+          enum: [sumerian, akkadian]
+        # Akkadian
+        root: { type: string }
+        stem: { type: string }
+        tense: { type: string }
+        person: { type: string }
+        number: { type: string }
+        gender: { type: string }
+        # Sumerian
+        conjugation_prefix: { type: string }
+        dimensional_prefixes: { type: string }
+        stem_form: { type: string }
+        pronominal_suffix: { type: string }
+        aspect: { type: string }
+        transitivity: { type: string }
+        case: { type: string }
+        state: { type: string }
+
+    # ── Sign annotations ─────────────────────────────────
+
+    SignAnnotation:
+      type: object
+      required: [id, surface_id]
+      properties:
+        id: { type: integer }
+        surface_id: { type: integer }
+        sign_id: { type: string, description: Resolved OGSL name }
+        bbox_x: { type: number, format: float, description: 0-100% }
+        bbox_y: { type: number, format: float, description: 0-100% }
+        bbox_w: { type: number, format: float, description: 0-100% }
+        bbox_h: { type: number, format: float, description: 0-100% }
+        line_number: { type: integer }
+        position_in_line: { type: integer }
+        damage_status:
+          type: string
+          enum: [intact, damaged, missing]
+        confidence: { type: number, format: float, minimum: 0, maximum: 1 }
+        annotation_run:
+          $ref: '#/components/schemas/AnnotationRunRef'
+
+    # ── Translations ─────────────────────────────────────
+
+    Translation:
+      type: object
+      required: [id, p_number, translation, language]
+      properties:
+        id: { type: integer }
+        p_number: { type: string }
+        line_id: { type: integer, nullable: true, description: NULL for whole-text translations }
+        translation: { type: string }
+        language: { type: string, description: ISO code (en, de, fr) }
+        annotation_run:
+          $ref: '#/components/schemas/AnnotationRunRef'
+
+    # ── Editions & identifiers ───────────────────────────
+
+    ArtifactEdition:
+      type: object
+      required: [id, p_number, publication_id]
+      properties:
+        id: { type: integer }
+        p_number: { type: string }
+        publication_id: { type: integer }
+        publication:
+          $ref: '#/components/schemas/PublicationRef'
+        reference_string: { type: string }
+        page_start: { type: string }
+        plate_no: { type: string }
+        item_no: { type: string }
+        edition_type:
+          $ref: '#/components/schemas/EditionType'
+        is_current_edition: { type: boolean }
+        confidence: { type: number, format: float, minimum: 0, maximum: 1 }
+
+    PublicationRef:
+      type: object
+      properties:
+        id: { type: integer }
+        bibtex_key: { type: string }
+        title: { type: string }
+        short_title: { type: string }
+        year: { type: integer }
+        authors: { type: string }
+        doi: { type: string }
+        publication_type:
+          type: string
+          enum: [monograph, journal_article, chapter, digital_edition, conference_paper, thesis, proceedings, report, unpublished, other]
+
+    EditionType:
+      type: string
+      enum:
+        - full_edition
+        - hand_copy
+        - photograph_only
+        - catalog_entry
+        - brief_mention
+        - collation
+        - translation_only
+        - commentary
+
+    ArtifactIdentifier:
+      type: object
+      required: [id, p_number, identifier_type, identifier_value]
+      properties:
+        id: { type: integer }
+        p_number: { type: string }
+        identifier_type:
+          type: string
+          enum: [museum_no, excavation_no, accession_no, publication, cdli_designation, oracc_project, ark, collection_no, seal_id]
+        identifier_value: { type: string }
+        identifier_normalized: { type: string }
+        authority: { type: string }
+        is_current: { type: boolean }
+        confidence: { type: number, format: float, minimum: 0, maximum: 1 }
+        note: { type: string }
+
+    # ── Signs ────────────────────────────────────────────
+
+    SignDetail:
+      type: object
+      required: [sign_id]
+      properties:
+        sign_id: { type: string }
+        utf8: { type: string }
+        unicode_hex: { type: string }
+        unicode_decimal: { type: integer }
+        uphase: { type: string }
+        uname: { type: string }
+        sign_type:
+          type: string
+          enum: [simple, compound, variant]
+        most_common_value: { type: string }
+        mzl_number: { type: integer }
+        abz_number: { type: integer }
+        lak_number: { type: integer }
+        total_corpus_frequency: { type: integer }
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignValue'
+        homophones:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomophoneEntry'
+        word_usage:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignWordUsage'
+        stats:
+          $ref: '#/components/schemas/SignStats'
+
+    SignSummary:
+      type: object
+      required: [sign_id]
+      properties:
+        sign_id: { type: string }
+        utf8: { type: string }
+        sign_type: { type: string }
+        most_common_value: { type: string }
+        value_count: { type: integer }
+        word_count: { type: integer }
+        total_occurrences: { type: integer }
+
+    SignValue:
+      type: object
+      required: [value]
+      properties:
+        value: { type: string }
+        value_type:
+          type: string
+          enum: [logographic, syllabic, determinative, numeric]
+        frequency: { type: integer }
+        language_context: { type: string }
+        period_context: { type: string }
+
+    HomophoneEntry:
+      type: object
+      properties:
+        sign_id: { type: string }
+        utf8: { type: string }
+        shared_value: { type: string }
+        value_count: { type: integer }
+        word_count: { type: integer }
+        total_occurrences: { type: integer }
+
+    SignWordUsage:
+      type: object
+      properties:
+        sign_value: { type: string }
+        value_type: { type: string }
+        usage_count: { type: integer }
+        entry_id: { type: string }
+        headword: { type: string }
+        guide_word: { type: string }
+        pos: { type: string }
+        language: { type: string }
+        icount: { type: integer }
+
+    SignStats:
+      type: object
+      properties:
+        total_unique_words: { type: integer }
+        total_corpus_occurrences: { type: integer }
+
+    SignGroupCounts:
+      type: object
+      properties:
+        total: { type: integer }
+        polyphony:
+          type: object
+          additionalProperties: { type: integer }
+        usage:
+          type: object
+          additionalProperties: { type: integer }
+        word_count:
+          type: object
+          additionalProperties: { type: integer }
+        sign_type:
+          type: object
+          additionalProperties: { type: integer }
+        has_glyph:
+          type: object
+          additionalProperties: { type: integer }
+
+    # ── Glossary ─────────────────────────────────────────
+
+    GlossaryEntry:
+      type: object
+      required: [entry_id, headword]
+      properties:
+        entry_id: { type: string }
+        headword: { type: string }
+        citation_form: { type: string }
+        guide_word: { type: string }
+        language: { type: string }
+        pos: { type: string }
+        icount: { type: integer }
+        project: { type: string }
+        periods:
+          type: array
+          items: { type: string }
+        norms:
+          type: array
+          items: { type: string }
+
+    GlossaryDetail:
+      type: object
+      required: [entry]
+      properties:
+        entry:
+          $ref: '#/components/schemas/GlossaryEntry'
+        variants:
+          type: array
+          items:
+            type: object
+            properties:
+              form: { type: string }
+              icount: { type: integer }
+              norm: { type: string }
+              lang: { type: string }
+        senses:
+          type: array
+          items:
+            type: object
+            properties:
+              sense_number: { type: integer }
+              guide_word: { type: string }
+              definition: { type: string }
+              pos: { type: string }
+              signatures:
+                type: array
+                items: { type: string }
+        signs:
+          type: array
+          items:
+            type: object
+            properties:
+              sign_id: { type: string }
+              usage_count: { type: integer }
+        attestations:
+          type: array
+          items:
+            $ref: '#/components/schemas/GlossaryAttestation'
+        related:
+          type: array
+          items:
+            type: object
+            properties:
+              related_entry_id: { type: string }
+              relationship_type: { type: string }
+              headword: { type: string }
+              guide_word: { type: string }
+              language: { type: string }
+              pos: { type: string }
+
+    GlossaryAttestation:
+      type: object
+      properties:
+        p_number: { type: string }
+        period: { type: string }
+        provenience: { type: string }
+        genre: { type: string }
+        line_ref: { type: string }
+        context: { type: string }
+
+    GlossaryGroupCounts:
+      type: object
+      properties:
+        pos:
+          type: array
+          items:
+            type: object
+            properties:
+              pos: { type: string }
+              count: { type: integer }
+        language:
+          type: array
+          items:
+            type: object
+            properties:
+              language: { type: string }
+              count: { type: integer }
+        frequency:
+          type: array
+          items:
+            type: object
+            properties:
+              frequency_range: { type: string }
+              count: { type: integer }
+
+    # ── Entities ─────────────────────────────────────────
+
+    NamedEntity:
+      type: object
+      required: [id, name, entity_type]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        entity_type:
+          type: string
+          enum: [person, deity, place, temple, watercourse, month, royal_name, object, field, agricultural, celestial, quarter, ethnic, settlement]
+        glossary_entry_ids:
+          type: array
+          items: { type: string }
+        authority_links:
+          type: array
+          items:
+            type: object
+            properties:
+              authority: { type: string, description: 'wikidata, viaf, pleiades, geonames' }
+              external_id: { type: string }
+              url: { type: string }
+
+    EntityMention:
+      type: object
+      properties:
+        id: { type: integer }
+        entity_id: { type: integer }
+        token_id: { type: integer }
+        line_id: { type: integer }
+        p_number: { type: string }
+        designation: { type: string }
+        line_number: { type: integer }
+        surface_type: { type: string }
+        mention_type: { type: string }
+        context: { type: string, description: Surrounding ATF text }
+
+    EntityRelationship:
+      type: object
+      properties:
+        id: { type: integer }
+        subject_id: { type: integer }
+        subject_name: { type: string }
+        predicate: { type: string, description: 'Tier 1 controlled vocab (e.g., "child_of", "ruler_of")' }
+        object_id: { type: integer }
+        object_name: { type: string }
+        object_type: { type: string }
+        period_scope: { type: string }
+        confidence: { type: number, format: float, minimum: 0, maximum: 1 }
+        annotation_run:
+          $ref: '#/components/schemas/AnnotationRunRef'
+
+    # ── Provenance ───────────────────────────────────────
+
+    AnnotationRunRef:
+      type: object
+      description: Compact provenance reference embedded in annotation responses
+      properties:
+        id: { type: integer }
+        source_type:
+          type: string
+          enum: [human, model, hybrid, import]
+        source_name: { type: string }
+        method:
+          type: string
+          enum: [api_fetch, import, web_scrape, manual, model]
+        run_at: { type: string, format: date-time }
+        scholar_name: { type: string, nullable: true }
+
+    AnnotationRun:
+      allOf:
+        - $ref: '#/components/schemas/AnnotationRunRef'
+        - type: object
+          properties:
+            scholar_id: { type: integer, nullable: true }
+            publication_id: { type: integer, nullable: true }
+            publication_ref: { type: string, nullable: true }
+            total_annotations: { type: integer }
+
+    SourceCoverage:
+      type: object
+      properties:
+        source_name: { type: string }
+        source_type: { type: string }
+        artifact_count: { type: integer }
+        annotation_count: { type: integer }
+        last_import: { type: string, format: date-time }
+
+    # ── Concordance ──────────────────────────────────────
+
+    SignConcordanceEntry:
+      type: object
+      properties:
+        sign_id: { type: string, description: OGSL canonical name }
+        utf8: { type: string }
+        unicode_hex: { type: string }
+        mzl_number: { type: integer }
+        abz_number: { type: integer }
+        lak_number: { type: integer }
+        uname: { type: string }
+
+    LanguageMapping:
+      type: object
+      properties:
+        cdli_name: { type: string, description: 'e.g., "Sumerian"' }
+        oracc_code: { type: string, description: 'e.g., "sux"' }
+        full_name: { type: string }
+        family:
+          type: string
+          enum: [sumerian, semitic, elamite, hurrian, hittite, other]
+
+    PeriodMapping:
+      type: object
+      properties:
+        raw_period: { type: string }
+        canonical: { type: string }
+        date_start_bce: { type: integer }
+        date_end_bce: { type: integer }
+
+    # ── Collections ──────────────────────────────────────
+
+    CollectionSummary:
+      type: object
+      required: [collection_id, name]
+      properties:
+        collection_id: { type: integer }
+        name: { type: string }
+        description: { type: string }
+        image_path: { type: string }
+        tablet_count: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CollectionDetail:
+      allOf:
+        - $ref: '#/components/schemas/CollectionSummary'
+        - type: object
+          properties:
+            tablets:
+              $ref: '#/components/schemas/PaginatedArtifactSummaryData'
+
+    CollectionCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        image_path: { type: string }
+
+    CollectionUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        image_path: { type: string }
+
+    # ── Annotation type enum ─────────────────────────────
+
+    AnnotationType:
+      type: string
+      enum:
+        - reading
+        - lemmatization
+        - sign_detection
+        - translation
+        - bibliography
+        - commentary
+        - correction
+        - question
+
+    # ── Composed response types ──────────────────────────
+    # Sourced wrappers for each endpoint
+
+    SourcedResponse_ArtifactDetail:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          $ref: '#/components/schemas/ArtifactDetail'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    PaginatedArtifactSummaryData:
+      type: object
+      required: [items, pagination]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArtifactSummary'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    SourcedResponse_PaginatedArtifactSummary:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          $ref: '#/components/schemas/PaginatedArtifactSummaryData'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_ArtifactText:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: object
+          properties:
+            p_number: { type: string }
+            surfaces:
+              type: array
+              items:
+                $ref: '#/components/schemas/Surface'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_ArtifactReadings:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: object
+          properties:
+            p_number: { type: string }
+            readings:
+              type: array
+              items:
+                $ref: '#/components/schemas/TokenReading'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_ArtifactAnnotations:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: object
+          properties:
+            p_number: { type: string }
+            surfaces:
+              type: array
+              items:
+                type: object
+                properties:
+                  surface_id: { type: integer }
+                  surface_type: { type: string }
+                  image_path: { type: string }
+                  image_width: { type: integer }
+                  image_height: { type: integer }
+                  annotations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SignAnnotation'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_TranslationList:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Translation'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_EditionList:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArtifactEdition'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_IdentifierList:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArtifactIdentifier'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_SignDetail:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          $ref: '#/components/schemas/SignDetail'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_PaginatedSignBrowse:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/SignSummary'
+            pagination:
+              $ref: '#/components/schemas/PaginationMeta'
+            group_counts:
+              $ref: '#/components/schemas/SignGroupCounts'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_GlossaryDetail:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          $ref: '#/components/schemas/GlossaryDetail'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_PaginatedGlossaryBrowse:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/GlossaryEntry'
+            pagination:
+              $ref: '#/components/schemas/PaginationMeta'
+            group_counts:
+              $ref: '#/components/schemas/GlossaryGroupCounts'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_GlossarySearchResults:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GlossaryEntry'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_TokenReadingList:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: object
+          properties:
+            token_id: { type: integer }
+            readings:
+              type: array
+              items:
+                $ref: '#/components/schemas/TokenReading'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_LemmatizationList:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: object
+          properties:
+            token_id: { type: integer }
+            lemmatizations:
+              type: array
+              items:
+                $ref: '#/components/schemas/Lemmatization'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_PaginatedEntityList:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/NamedEntity'
+            pagination:
+              $ref: '#/components/schemas/PaginationMeta'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_PaginatedEntityMentions:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: object
+          properties:
+            entity:
+              $ref: '#/components/schemas/NamedEntity'
+            mentions:
+              type: array
+              items:
+                $ref: '#/components/schemas/EntityMention'
+            pagination:
+              $ref: '#/components/schemas/PaginationMeta'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    SourcedResponse_EntityRelationships:
+      type: object
+      required: [data, sources]
+      properties:
+        data:
+          type: object
+          properties:
+            entity:
+              $ref: '#/components/schemas/NamedEntity'
+            relationships:
+              type: array
+              items:
+                $ref: '#/components/schemas/EntityRelationship'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+        required_attributions:
+          type: array
+          items: { type: string }
+
+    PaginatedResponse_AnnotationRunList:
+      type: object
+      required: [items, pagination]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnotationRun'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'

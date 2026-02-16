@@ -1,0 +1,523 @@
+# Source-to-v2 Mapping
+# For every v2 table: which sources feed it, exact field mapping,
+# transform rules, source priority, and data completeness.
+#
+# Data completeness rates from live database (314 MB, 389,715 artifacts).
+# Confidence: 0.95 (rates derived from real SQL queries).
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 0: IDENTITY
+# ═══════════════════════════════════════════════════════════
+
+artifacts:
+  primary_source: cdli-catalog
+  secondary_sources: [oracc-catalogue, oracc-geojson]
+  row_count: 389,715
+  field_mapping:
+    p_number:         { from: "cdli_cat.csv → id", transform: "P{int:06d}", null_rate: 0% }
+    designation:      { from: "cdli_cat.csv → designation", null_rate: 0.1% }
+    museum_no:        { from: "cdli_cat.csv → museum_no", null_rate: 9.2% }
+    excavation_no:    { from: "cdli_cat.csv → excavation_no", null_rate: 68% }
+    material:         { from: "cdli_cat.csv → material", null_rate: 7.6% }
+    object_type:      { from: "cdli_cat.csv → object_type", null_rate: 2.1% }
+    width:            { from: "cdli_cat.csv → width", null_rate: 82% }
+    height:           { from: "cdli_cat.csv → height", null_rate: 82% }
+    thickness:        { from: "cdli_cat.csv → thickness", null_rate: 91% }
+    seal_id:          { from: "cdli_cat.csv → seal_id", null_rate: 97%, new: true }
+    period:           { from: "cdli_cat.csv → period", null_rate: 1.8% }
+    period_normalized:
+      from: "cdli_cat.csv → period"
+      transform: "Regex strip '(ca. ...)' and '?' suffix, map via period_canon"
+      null_rate: 1.8%
+      new: true
+    provenience:      { from: "cdli_cat.csv → provenience", null_rate: 3.1% }
+    provenience_normalized:
+      from: "cdli_cat.csv → provenience"
+      transform: "Regex strip '(mod. ...)' and '?' suffix via provenience_canon"
+      null_rate: 3.1%
+      new: true
+    genre:            { from: "cdli_cat.csv → genre", null_rate: 1.4% }
+    subgenre:         { from: "oracc-catalogue → genre", null_rate: ~95%, new: true }
+    supergenre:       { from: "oracc-catalogue → supergenre", null_rate: ~95%, new: true }
+    language:         { from: "cdli_cat.csv → language", null_rate: 5.2% }
+    languages:        { from: "cdli_cat.csv → language", transform: "Split on '; ' to JSON array", new: true }
+    pleiades_id:      { from: "oracc-geojson → properties.pleiades_id", null_rate: ~97%, new: true }
+    latitude:         { from: "oracc-geojson → geometry.coordinates[1]", null_rate: ~97%, new: true }
+    longitude:        { from: "oracc-geojson → geometry.coordinates[0]", null_rate: ~97%, new: true }
+    primary_publication: { from: "cdli_cat.csv → primary_publication", null_rate: ~40%, new: true }
+    collection:       { from: "cdli_cat.csv → collection", null_rate: ~30%, new: true }
+    dates_referenced: { from: "cdli_cat.csv → dates_referenced", null_rate: ~85%, new: true }
+    cdli_updated_at:  { from: "cdli_cat.csv → date_updated", null_rate: ~10%, new: true }
+    oracc_projects:   { from: "oracc-catalogue membership", transform: "JSON array of project abbreviations", null_rate: ~98%, new: true }
+    annotation_run_id: { from: "retroactive import record", new: true }
+  source_priority: "CDLI is authoritative for all identity fields. ORACC enriches subgenre, supergenre, geo coords, and oracc_projects."
+  conflict_resolution: "CDLI period/provenience/genre always primary. ORACC overrides stored as separate oracc_* columns (see Issue 3C in plan)."
+
+artifact_identifiers:
+  primary_source: "artifacts table (museum_no, excavation_no)"
+  secondary_sources: [cdli-catalog, oracc-catalogue]
+  estimated_rows: "~500k (1-3 identifiers per artifact)"
+  field_mapping:
+    p_number:               { from: "artifacts.p_number" }
+    identifier_type:        { from: "column origin", values: [museum_no, excavation_no, accession_no, publication, cdli_designation, oracc_project, ark, collection_no, seal_id] }
+    identifier_value:       { from: "artifacts.museum_no or .excavation_no or .primary_publication" }
+    identifier_normalized:  { transform: "lowercase, collapse whitespace, strip diacritics" }
+    authority:              { transform: "Infer from identifier format: BM→british_museum, YBC→yale_babylonian, etc." }
+    is_current:             { default: 1 }
+    annotation_run_id:      { from: "retroactive import record" }
+    confidence:             { default: 1.0 }
+  seed_rule: "One row per non-NULL museum_no, excavation_no, primary_publication, seal_id on artifacts."
+
+composites:
+  primary_source: cdli-atf
+  row_count: 857
+  field_mapping:
+    q_number:       { from: "ATF >>Q markers" }
+    designation:    { from: "ATF composite name" }
+    language:       { derived: "FROM artifact_composites JOIN artifacts" }
+    period:         { derived: "FROM artifact_composites JOIN artifacts" }
+    genre:          { derived: "FROM artifact_composites JOIN artifacts" }
+    exemplar_count: { derived: "COUNT(artifact_composites WHERE q_number = ?)" }
+  note: "v2 removes periods_cache/proveniences_cache/genres_cache. Derived via SQL view."
+
+artifact_composites:
+  primary_source: cdli-atf
+  row_count: 3,771
+  field_mapping:
+    p_number: { from: "ATF text P-number" }
+    q_number: { from: "ATF >>Q reference" }
+    line_ref: { from: "ATF line specification after >>Q" }
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 1: PHYSICAL
+# ═══════════════════════════════════════════════════════════
+
+surfaces:
+  primary_source: cdli-atf
+  secondary_sources: [compvis-annotations, oracc-corpus]
+  estimated_rows: "~300k (2-4 surfaces per inscribed artifact)"
+  field_mapping:
+    p_number:     { from: "ATF @surface marker or compvis view_desc" }
+    surface_type: { from: "ATF marker", transform: "via surface_canon: @obverse→obverse, @reverse→reverse, @left→left_edge, etc." }
+    image_path:   { from: "file system scan: data/images/{p_number}_{surface}.jpg" }
+    image_width:  { from: "image metadata (PIL/Pillow)" }
+    image_height: { from: "image metadata (PIL/Pillow)" }
+  surface_canon_rules:
+    "@obverse": obverse
+    "@reverse": reverse
+    "@left": left_edge
+    "@right": right_edge
+    "@top": top_edge
+    "@bottom": bottom_edge
+    "@seal": seal
+    "Obv": obverse
+    "o": obverse
+    "r": reverse
+    "Rev": reverse
+    "": unknown
+
+sign_annotations:
+  primary_source: compvis-annotations
+  row_count: 11,070
+  field_mapping:
+    surface_id:       { from: "compvis → surface + p_number", transform: "JOIN surfaces ON p_number + surface_type" }
+    sign_id:          { from: "compvis → label (MZL number)", transform: "MZL→OGSL concordance lookup (Issue 5)", null_rate_post_concordance: "~3% unresolved" }
+    bbox_x:           { from: "compvis → x", transform: "/ image_width * 100" }
+    bbox_y:           { from: "compvis → y", transform: "/ image_height * 100" }
+    bbox_w:           { from: "compvis → w", transform: "/ image_width * 100" }
+    bbox_h:           { from: "compvis → h", transform: "/ image_height * 100" }
+    line_number:      { from: "compvis → line_idx" }
+    position_in_line: { from: "compvis → column_idx" }
+    damage_status:    { default: "intact", new: true }
+    annotation_run_id: { from: "compvis import annotation_run" }
+    confidence:       { from: "compvis → confidence" }
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 2: GRAPHEMIC
+# ═══════════════════════════════════════════════════════════
+
+signs:
+  primary_source: ogsl-signlist
+  secondary_sources: [ebl-annotations, epsd2-reference]
+  row_count: 3,367
+  field_mapping:
+    sign_id:           { from: "ogsl → sign name (canonical)" }
+    utf8:              { from: "ogsl → utf8" }
+    unicode_hex:       { from: "ogsl → uhex" }
+    unicode_decimal:   { from: "ogsl → ucode" }
+    uname:             { from: "ogsl → uname" }
+    uphase:            { from: "ogsl → uphase" }
+    sign_type:         { from: "ogsl → type (simple/compound/modified)" }
+    mzl_number:        { from: "ebl mzl.txt or concordance build", null_rate: "~10%", new: true }
+    abz_number:        { from: "ebl ebl.txt → ABZ field", null_rate: "~15%", new: true }
+    lak_number:        { from: "ogsl → lak (where available)", null_rate: "~70%", new: true }
+    gdl_definition:    { from: "ogsl → gdl JSON tree", new: true }
+    most_common_value: { derived: "FROM sign_values ORDER BY frequency DESC LIMIT 1" }
+    total_corpus_frequency: { derived: "COUNT(token_readings WHERE resolved sign_id = ?)", new: true }
+
+sign_values:
+  primary_source: ogsl-signlist
+  row_count: 10,312
+  field_mapping:
+    sign_id:          { from: "ogsl → parent sign name" }
+    value:            { from: "ogsl → values[].v" }
+    sub_index:        { from: "ogsl → values[].num" }
+    value_type:       { from: "ogsl → values[].type", transform: "syllabic/logographic/determinative/numeric" }
+    language_context:  { from: "ogsl → values[].lang or oracc corpus attestation", null_rate: "~50%", new: true }
+    period_context:    { from: "oracc corpus attestation analysis", null_rate: "~80%", new: true }
+    frequency:         { derived: "COUNT from corpus" }
+
+sign_variants:
+  primary_source: ogsl-signlist
+  field_mapping:
+    variant_id:    { from: "ogsl → variant identifier" }
+    base_sign:     { from: "ogsl → parent sign" }
+    modifier_type: { from: "ogsl → modifier (@g, @t, etc.)" }
+    modifier_code: { from: "ogsl → raw modifier code" }
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 3: READING
+# ═══════════════════════════════════════════════════════════
+
+text_lines:
+  primary_source: cdli-atf
+  secondary_sources: [oracc-corpus]
+  estimated_rows: "~2M (avg ~15 lines per inscribed artifact)"
+  field_mapping:
+    p_number:    { from: "ATF file → P-number header" }
+    surface_id:  { from: "ATF @surface markers → surfaces.id lookup" }
+    line_number: { from: "ATF line numbering (1., 2., etc.)" }
+    raw_atf:     { from: "ATF line content (full line text)" }
+    is_ruling:   { from: "ATF $ ruling markers" }
+    is_blank:    { from: "ATF $ blank markers" }
+    source:      { value: "cdli for ATF-derived, oracc for CDL-derived (2,215 orphan texts)" }
+  note: "For 2,215 ORACC texts without CDLI ATF (Issue 8), text_lines built from ORACC CDL line nodes."
+
+tokens:
+  primary_source: oracc-corpus
+  secondary_sources: [cdli-atf]
+  estimated_rows: "~308k (from v1 lemmas) + ATF-only tokens"
+  field_mapping:
+    line_id:  { from: "text_lines.id via p_number + surface + line_number matching" }
+    position: { from: "ORACC CDL node order within line" }
+    gdl_json: { from: "ORACC CDL → gdl subtree (JSON serialization)" }
+    lang:     { from: "ORACC CDL → lang attribute on form node" }
+  note: "Token is purely positional in v2. Reading data (form, reading, damage) moved to token_readings."
+
+token_readings:
+  primary_source: oracc-corpus
+  secondary_sources: [cdli-atf]
+  estimated_rows: "~308k initial (one reading per token from ORACC)"
+  field_mapping:
+    token_id:         { from: "tokens.id" }
+    form:             { from: "ORACC CDL → f.form" }
+    reading:          { from: "ORACC CDL → f.form (reading interpretation)" }
+    sign_function:    { from: "ORACC GDL analysis", values: [logographic, syllabographic, determinative, numeric, mixed] }
+    damage:           { from: "ORACC CDL → flags", transform: "x→missing, #→damaged, ?→uncertain, else→intact" }
+    annotation_run_id: { from: "ORACC import annotation_run" }
+    confidence:       { default: 0.9 }
+    is_consensus:     { default: 1, note: "First reading is consensus by default" }
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 4: LINGUISTIC
+# ═══════════════════════════════════════════════════════════
+
+lemmatizations:
+  primary_source: oracc-corpus
+  estimated_rows: "~86,659 (only tokens with cf != NULL and cf != 'X', per Issue 4)"
+  field_mapping:
+    token_id:         { from: "tokens.id" }
+    citation_form:    { from: "ORACC CDL → f.cf" }
+    guide_word:       { from: "ORACC CDL → f.gw" }
+    sense:            { from: "ORACC CDL → f.sense", null_rate: "~60%", new: true }
+    pos:              { from: "ORACC CDL → f.pos" }
+    epos:             { from: "ORACC CDL → f.epos" }
+    norm:             { from: "ORACC CDL → f.norm0 or f.norm", null_rate: "~40%", new: true }
+    base:             { from: "ORACC CDL → f.base", null_rate: "~50%", new: true }
+    signature:        { from: "ORACC CDL → full signature string", new: true }
+    morph_raw:        { from: "ORACC CDL → f.morph", null_rate: "~30%", new: true }
+    annotation_run_id: { from: "ORACC import annotation_run" }
+    confidence:       { default: 0.95 }
+    is_consensus:     { default: 1 }
+    entry_id:         { from: "Match to glossary_entries via cf+gw+pos+lang", new: true }
+  import_rule: "Only create lemmatization if cf IS NOT NULL AND cf != '' AND cf != 'X'. All 308k tokens get token rows; only 86,659 get lemmatization rows."
+
+morphology:
+  primary_source: oracc-corpus
+  estimated_rows: "~50k (lemmatizations with non-empty morph field)"
+  field_mapping:
+    lemmatization_id: { from: "lemmatizations.id" }
+    language_family:  { from: "tokens.lang", transform: "sux→sumerian, akk/akk-x-*→akkadian" }
+    # Akkadian slots
+    root:   { from: "morph string parser (Semitic root extraction)" }
+    stem:   { from: "morph string → G/D/Sh/N prefix" }
+    tense:  { from: "morph string → tense marker" }
+    person: { from: "morph string → person marker" }
+    number: { from: "morph string → number marker" }
+    gender: { from: "morph string → gender marker" }
+    # Sumerian slots
+    conjugation_prefix:   { from: "morph string → mu-/i-/ba-/bi-" }
+    dimensional_prefixes: { from: "morph string → dimensional chain" }
+    stem_form:            { from: "morph string → verbal stem" }
+    pronominal_suffix:    { from: "morph string → enclitic pronoun" }
+    aspect:               { from: "morph string → aspect" }
+    transitivity:         { from: "morph string → transitive/intransitive" }
+    case:                 { from: "morph string → case marker" }
+    state:                { from: "morph string → construct/absolute/bound" }
+  note: "Morph parsing is language-specific. Sumerian uses Jagersma-style slot model. Akkadian uses Semitic template decomposition."
+
+translations:
+  primary_source: cdli-atf
+  secondary_sources: [oracc-corpus]
+  row_count: 5,597
+  field_mapping:
+    p_number:         { from: "ATF header P-number" }
+    line_id:          { from: "text_lines.id if line-level translation; NULL for whole-text", new: true }
+    translation:      { from: "ATF #tr.XX: line content" }
+    language:         { from: "ATF #tr.XX → XX language code", transform: "en, de, fr, etc." }
+    annotation_run_id: { from: "cdli:atf annotation_run (replaces v1 source column)", new: true }
+  source_migration: "v1 source='cdli' → v2 annotation_run_id pointing to cdli:atf import run. No data loss (Issue 11)."
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 5: SEMANTIC
+# ═══════════════════════════════════════════════════════════
+
+glossary_entries:
+  primary_source: oracc-glossary
+  row_count: 21,054
+  field_mapping:
+    entry_id:            { from: "ORACC glossary → oid" }
+    headword:            { from: "ORACC glossary → headword" }
+    citation_form:       { from: "ORACC glossary → cf" }
+    guide_word:          { from: "ORACC glossary → gw" }
+    language:            { from: "ORACC glossary filename (gloss-sux.json → sux)" }
+    pos:                 { from: "ORACC glossary → pos" }
+    icount:              { from: "ORACC glossary → icount" }
+    project:             { from: "ORACC project name", transform: "Fix v1 'extracted'/'json' labels → actual project names (dcclt, saao, etc.)" }
+    normalized_headword: { transform: "lowercase, strip diacritics" }
+    periods:             { from: "ORACC glossary → periods[]", transform: "JSON array", new: true }
+    norms:               { from: "ORACC glossary → norms[]", transform: "JSON array", new: true }
+  dedup_strategy: "Keep ALL entries from all projects. UNIQUE(headword, language, project). 1,726 cross-project duplicates are expected (Issue 12)."
+
+glossary_forms:
+  primary_source: oracc-glossary
+  row_count: 57,236
+  field_mapping:
+    entry_id: { from: "parent glossary_entries.entry_id" }
+    form:     { from: "ORACC glossary → forms[].n" }
+    count:    { from: "ORACC glossary → forms[].icount" }
+    norm:     { from: "ORACC glossary → forms[].norm", new: true }
+    lang:     { from: "ORACC glossary → forms[].lang", new: true }
+
+glossary_senses:
+  primary_source: oracc-glossary
+  row_count: "0 in v1 (Issue 9). Expected ~15k from ORACC senses[] arrays."
+  field_mapping:
+    entry_id:     { from: "parent glossary_entries.entry_id" }
+    sense_number: { from: "ORACC glossary → senses[] array index + 1" }
+    guide_word:   { from: "ORACC glossary → senses[].mng" }
+    definition:   { from: "ORACC glossary → senses[].mng (same as guide_word for now)" }
+    pos:          { from: "ORACC glossary → senses[].pos", new: true }
+    signatures:   { from: "ORACC glossary → senses[].forms[].sig", transform: "JSON array", new: true }
+  note: "v1 import script never populated this table. v2 must parse senses[] from every ORACC glossary entry."
+
+named_entities:
+  primary_source: "derived from glossary_entries"
+  estimated_rows: "~3,000-5,000"
+  field_mapping:
+    name:           { from: "glossary_entries.citation_form WHERE pos IN ('PN','DN','GN','TN','WN','MN','RN','ON','LN','FN','AN','QN','EN','SN')" }
+    entity_type:    { from: "glossary_entries.pos", transform: "PN→person, DN→deity, GN→place, TN→temple, etc." }
+    glossary_entry_ids: { from: "All matching entries across projects", transform: "JSON array for cross-project dedup" }
+  dedup_strategy: "Dedup by headword+language across projects. Link back to ALL source entries."
+
+entity_mentions:
+  primary_source: "derived from lemmatizations"
+  estimated_rows: "~20k+"
+  field_mapping:
+    entity_id:  { from: "named_entities.id via lemmatization.entry_id → glossary_entries.pos match" }
+    token_id:   { from: "lemmatizations.token_id" }
+    line_id:    { from: "tokens.line_id" }
+    mention_type: { from: "glossary_entries.pos" }
+
+# ═══════════════════════════════════════════════════════════
+# PROVENANCE
+# ═══════════════════════════════════════════════════════════
+
+scholars:
+  primary_source: "CITATION PIPELINE (phases 01, 04, 06, 09)"
+  sources:
+    - "CDLI API → publication author parsing (01_cdli_publications.py)"
+    - "ORACC credits fields (04_oracc_editions.py)"
+    - "OpenAlex → ORCID backfill (06_enrich_openalex.py)"
+    - "CDLI Who's Who + Wikipedia (09_import_scholars_directory.py)"
+  estimated_rows: "2,000-5,000"
+  field_mapping:
+    name:                { from: "author string parsing via lib/name_normalizer.py" }
+    orcid:               { from: "OpenAlex authorship records" }
+    institution:         { from: "future enrichment" }
+    expertise_periods:   { from: "future enrichment" }
+    expertise_languages: { from: "future enrichment" }
+    active_since:        { from: "Who's Who birth year / Wikipedia dates" }
+
+annotation_runs:
+  primary_source: "every import phase creates one+"
+  field_mapping:
+    source_type: { values: [human, model, hybrid, import] }
+    source_name: { values: ["CDLI - cdli.earth", "CDLI", "eBL - Electronic Babylonian Literature", "ORACC/{project}", "OpenAlex", "KeiBi - Keilschriftbibliographie", "Semantic Scholar", "CDLI Wiki", "Wikipedia", "CompVis", "cdli:atf", "cdli:catalog", "oracc:dcclt", etc.] }
+    method:      { values: [api_fetch, import, web_scrape, manual, model], constraint: "CHECK" }
+    scholar_id:  { nullable: true, description: "NULL for import/model runs" }
+    publication_id: { nullable: true, description: "structured FK to publications table" }
+    publication_ref: { nullable: true, description: "freetext fallback for unresolved citations" }
+
+# ═══════════════════════════════════════════════════════════
+# CITATION RESOLUTION (ALREADY BUILT — citation pipeline)
+# ═══════════════════════════════════════════════════════════
+
+publications:
+  primary_source: "CITATION PIPELINE (01_cdli_publications.py)"
+  secondary_sources: [ebl_api, oracc_projects, openalex, keibi]
+  estimated_rows: "20k-120k depending on KeiBi acquisition"
+  field_mapping:
+    bibtex_key:       { from: "CDLI API → bibtexkey (canonical), prefixed for other sources", convention: "cdli: canonical, keibi:, oracc:, ebl:, openalex:" }
+    doi:              { from: "CDLI API or OpenAlex backfill" }
+    title:            { from: "CDLI API → title" }
+    short_title:      { from: "CDLI API → designation (e.g., 'ATU 3', 'RIME 4')" }
+    publication_type: { from: "CDLI API → entry_type_id", transform: "via CDLI_ENTRY_TYPE_MAP in lib/bibtex_parser.py", values: [monograph, journal_article, chapter, digital_edition, conference_paper, thesis, proceedings, report, unpublished, other] }
+    year:             { from: "CDLI API → year" }
+    series_key:       { from: "CDLI API → designation", transform: "parse_series_designation() in lib/bibtex_parser.py" }
+    volume_in_series: { from: "CDLI API → number or parsed from designation" }
+    authors:          { from: "CDLI API → author/editor fields (semicolon-separated)" }
+    editors:          { from: "CDLI API → editor fields" }
+    publisher:        { from: "CDLI API → publisher" }
+    place:            { from: "CDLI API → address" }
+    url:              { from: "ORACC project URL" }
+    oracc_project:    { from: "ORACC project abbreviation" }
+    supersedes_id:    { from: "10_seed_supersessions.py manual curation" }
+    superseded_scope: { from: "10_seed_supersessions.py" }
+    annotation_run_id: { from: "per-source import annotation_run" }
+  dedup_strategy: "Cascading: DOI(1.0) → bibtex_key(0.95) → title+year fuzzy(0.8) → short_title+volume(0.9). Below 0.7 → _dedup_candidates for manual review."
+
+publication_authors:
+  primary_source: "CITATION PIPELINE (01, 03, 04)"
+  field_mapping:
+    publication_id: { from: "publications.id" }
+    scholar_id:     { from: "scholars.id via name normalization match" }
+    role:           { values: [author, editor, translator, contributor] }
+    position:       { from: "parsing order in author string" }
+  constraint: "UNIQUE(publication_id, scholar_id, role)"
+
+artifact_editions:
+  primary_source: "CITATION PIPELINE (02_cdli_artifact_editions.py)"
+  secondary_sources: [cdli_csv, oracc_catalogues, ebl_fragments]
+  estimated_rows: "~500k"
+  field_mapping:
+    p_number:            { from: "CDLI API → artifact entity_id → P-number" }
+    publication_id:      { from: "CDLI API → publication_id → publications.id" }
+    reference_string:    { from: "CDLI API → exact_reference" }
+    reference_normalized: { transform: "lowercase, strip whitespace" }
+    page_start:          { from: "CDLIClient._parse_reference()" }
+    plate_no:            { from: "CDLIClient._parse_reference()" }
+    item_no:             { from: "CDLIClient._parse_reference()" }
+    edition_type:        { from: "CDLI API → publication_type", transform: "primary→full_edition, else→catalog_entry", values: [full_edition, hand_copy, photograph_only, catalog_entry, brief_mention, collation, translation_only, commentary] }
+    is_current_edition:  { from: "10_seed_supersessions.py algorithmic (newest full_edition, confidence >= 0.7)" }
+    annotation_run_id:   { from: "per-source import annotation_run" }
+    confidence:          { tiered: "API=1.0, CSV Tier 1=1.0/0.5, Tier 2=0.7/0.4, Tier 3 unparsed=0.3" }
+  import_strategy: "CDLI API first (confidence 1.0). CSV only for artifacts NOT covered by API. Dedup on UNIQUE(p_number, publication_id, reference_string)."
+
+scholarly_annotations:
+  primary_source: "CITATION PIPELINE (05_cdli_csv_supplementary.py)"
+  estimated_rows: "~20,928"
+  field_mapping:
+    artifact_id:      { from: "CDLI CSV → id (P-number)" }
+    annotation_type:  { value: "bibliography" }
+    content:          { from: "CDLI CSV → citation field (raw text)" }
+    annotation_run_id: { from: "CDLI supplementary import annotation_run" }
+    confidence:       { default: 0.8 }
+    visibility:       { default: "public" }
+
+fragment_joins:
+  primary_source: "CITATION PIPELINE (05_cdli_csv_supplementary.py)"
+  estimated_rows: "~7,367"
+  field_mapping:
+    fragment_a:       { from: "CDLI CSV → join_information (P-number, alphabetically first)" }
+    fragment_b:       { from: "CDLI CSV → join_information (P-number, alphabetically second)" }
+    join_type:        { default: "uncertain" }
+    annotation_run_id: { from: "CDLI supplementary import annotation_run" }
+    confidence:       { default: 0.6 }
+    note:             { from: "raw join_information string" }
+  constraint: "UNIQUE(fragment_a, fragment_b). Alphabetical ordering enforced (a < b)."
+  note: "join_group_id left NULL — groups are for curated multi-fragment reconstructions."
+
+# ═══════════════════════════════════════════════════════════
+# LOOKUP / NORMALIZATION TABLES (NEW)
+# ═══════════════════════════════════════════════════════════
+
+period_canon:
+  source: "manual curation + regex extraction from artifacts.period"
+  estimated_rows: "~60"
+  field_mapping:
+    raw_period:     { from: "DISTINCT artifacts.period values" }
+    canonical:      { transform: "Strip '(ca. ...)' date ranges and '?' suffix" }
+    date_start_bce: { manual: "approximate BCE start date" }
+    date_end_bce:   { manual: "approximate BCE end date" }
+
+language_map:
+  source: "manual curation from CDLI + ORACC inventories"
+  estimated_rows: "~30"
+  field_mapping:
+    cdli_name:  { from: "CDLI CSV language values (e.g., 'Sumerian', 'Akkadian')" }
+    oracc_code: { from: "ORACC ISO codes (e.g., 'sux', 'akk', 'akk-x-stdbab')" }
+    full_name:  { value: "human-readable full name" }
+    family:     { values: [sumerian, semitic, elamite, hurrian, hittite, other] }
+
+genre_canon:
+  source: "manual curation from artifacts.genre"
+  estimated_rows: "~40"
+  field_mapping:
+    raw_genre:  { from: "DISTINCT artifacts.genre values (case-insensitive)" }
+    canonical:  { transform: "Title-case normalization" }
+    supergenre: { manual: "high-level grouping" }
+
+provenience_canon:
+  source: "manual curation + regex extraction"
+  estimated_rows: "~200"
+  field_mapping:
+    raw_provenience: { from: "DISTINCT artifacts.provenience values" }
+    ancient_name:    { transform: "Extract text before '(mod. ...)'" }
+    modern_name:     { transform: "Extract text inside '(mod. ...)'" }
+    pleiades_id:     { from: "oracc-geojson or manual" }
+
+surface_canon:
+  source: "manual curation"
+  estimated_rows: "~15"
+  field_mapping:
+    raw_surface: { from: "ATF markers + compvis surface values" }
+    canonical:   { values: [obverse, reverse, left_edge, right_edge, top_edge, bottom_edge, seal, unknown] }
+
+# ═══════════════════════════════════════════════════════════
+# TABLES UNCHANGED FROM v1
+# ═══════════════════════════════════════════════════════════
+
+unchanged_tables:
+  - collections: "User-created collections. Carry forward unchanged."
+  - collection_members: "Join table. Carry forward unchanged."
+  - external_resources: "Links to external sites. Carry forward unchanged."
+  - cad_entries: "Chicago Assyrian Dictionary entries. Carry forward unchanged."
+  - cad_meanings: "CAD meaning records. Carry forward unchanged."
+  - cad_examples: "CAD example citations. Carry forward unchanged."
+  - glossary_relationships: "Cross-references between entries. Carry forward unchanged."
+  - semantic_fields: "Semantic taxonomy. Carry forward unchanged."
+  - glossary_semantic_fields: "Join table. Carry forward unchanged."
+
+# ═══════════════════════════════════════════════════════════
+# TABLES REMOVED IN v2
+# ═══════════════════════════════════════════════════════════
+
+removed_tables:
+  lemmas: "Replaced by tokens + token_readings + lemmatizations (3-table decomposition)"
+  inscriptions: "Replaced by surfaces + text_lines"
+  sign_word_usage: "Derivable from tokens + lemmatizations JOIN"
+  language_stats: "Materialized view mv_language_stats"
+  period_stats: "Materialized view mv_period_stats"
+  provenience_stats: "Materialized view mv_provenience_stats"
+  genre_stats: "Materialized view mv_genre_stats"

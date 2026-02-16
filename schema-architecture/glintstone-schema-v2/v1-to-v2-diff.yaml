@@ -60,9 +60,24 @@ tables_added:
   - artifact_editions: "Links artifacts to publications with page/plate refs, is_current_edition consensus flag, per-artifact supersedes chain"
   - artifact_edition_evidence: "Evidence for artifact-publication links"
   - artifact_edition_decisions: "Audit trail for is_current_edition designation"
+  # Normalization Lookup Tables (from pressure testing)
+  - period_canon: "Maps 46+ raw period formats to canonical names with BCE date ranges"
+  - language_map: "Maps CDLI English names to ORACC ISO codes (Sumerian↔sux, Akkadian↔akk)"
+  - genre_canon: "Normalizes genre case inconsistency to title-case canonical forms"
+  - provenience_canon: "Separates ancient/modern site names, links to Pleiades"
+  - surface_canon: "Unifies surface naming across ATF (@obverse), CompVis, ORACC"
+  # Bibliometric (from citation pipeline review)
+  - publication_citations: "Publication-to-publication citation links from Semantic Scholar"
+  # Pipeline Internal (not in v2 schema proper)
+  - _dedup_candidates: "Staging table for cross-source publication dedup (pipeline-internal, droppable)"
 
 views_added:
   - scholarly_annotations_w3c: "W3C Web Annotation Data Model export for federation"
+  - mv_language_stats: "Materialized view replacing v1 language_stats table"
+  - mv_period_stats: "Materialized view replacing v1 period_stats table"
+  - mv_provenience_stats: "Materialized view replacing v1 provenience_stats table"
+  - mv_genre_stats: "Materialized view replacing v1 genre_stats table"
+  - mv_pipeline_overview: "Dashboard view of data completeness by pipeline layer"
 
 tables_removed:
   - lemmas: "Replaced by lemmatizations + tokens"
@@ -75,8 +90,9 @@ tables_removed:
 
 tables_expanded:
   artifacts:
-    added_columns: [period_normalized, provenience_normalized, subgenre, supergenre, languages, pleiades_id, latitude, longitude, primary_publication, collection, dates_referenced, seal_id, cdli_updated_at, oracc_projects]
+    added_columns: [period_normalized, provenience_normalized, subgenre, supergenre, languages, pleiades_id, latitude, longitude, primary_publication, collection, dates_referenced, seal_id, cdli_updated_at, oracc_projects, annotation_run_id]
     removed_columns: []
+    notes: "annotation_run_id added per pipeline review (unified provenance via annotation_runs, not data_source column)"
 
   signs:
     added_columns: [mzl_number, abz_number, lak_number, gdl_definition, total_corpus_frequency]
@@ -91,8 +107,9 @@ tables_expanded:
     removed_columns: [p_number (now via surface_id → p_number), image_type, ref_image_width, ref_image_height (now on surfaces)]
 
   glossary_entries:
-    added_columns: [periods, norms]
+    added_columns: [periods, norms, annotation_run_id]
     removed_columns: [semantic_category (moved to semantic_fields join)]
+    notes: "annotation_run_id added per pipeline review (unified provenance)"
 
   glossary_forms:
     added_columns: [norm, lang]
@@ -195,3 +212,16 @@ key_architectural_shifts:
 
   - from: "Freetext publication_ref on annotation_runs"
     to: "Structured publication_id FK alongside freetext fallback — every reading/lemmatization/annotation can link to a real bibliographic record"
+
+  # Added from pressure testing & citation pipeline review
+  - from: "No normalization lookup tables"
+    to: "period_canon, language_map, genre_canon, provenience_canon, surface_canon — standardize 46+ period formats, language codes, genres, site names, surface names"
+
+  - from: "No cross-source publication deduplication"
+    to: "Cascading dedup (DOI→bibtex_key→title+year→short_title+volume) with _dedup_candidates staging table, source-prefixed bibtex_keys (keibi:, oracc:, ebl:, openalex:)"
+
+  - from: "No citation graph data"
+    to: "publication_citations table for Semantic Scholar bibliometric edges, cited_by_count on publications"
+
+  - from: "data_source column proposed for provenance"
+    to: "Withdrawn — annotation_runs.source_name is the single provenance system. annotation_run_id FK added to artifacts and glossary_entries."

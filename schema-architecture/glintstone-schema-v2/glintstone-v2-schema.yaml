@@ -12,6 +12,15 @@
 #   3. Competing interpretations: Multiple readings/lemmatizations per token
 #   4. Language-polymorphic: Morphology slots adapt to Sumerian/Akkadian/Hittite/Elamite
 #   5. Concordance-first: Sign systems (OGSL/MZL/ABZ/Unicode) unified at schema level
+#
+# Related documentation:
+#   - data-sources.md: Per-source field mappings, licenses, access methods
+#   - data-quality.md: Trust architecture, competing interpretations, evidence chains
+#   - ml-integration.md: BabyLemmatizer/DETR/Akkademia integration details
+#   - data-issues.md: 12 critical issues found in pressure testing, with fixes
+#   - import-pipeline.yaml: 19-step ETL spec with validation per step
+#   - source-to-v2-mapping.yaml: Field-level source→target mappings with null rates
+#   - citation-pipeline-summary.md: Citation sourcing pipeline (9 sources, already built)
 
 meta:
   engine: SQLite
@@ -39,6 +48,14 @@ meta:
 tables:
 
   artifacts:
+    # ORIGIN: Primary: cdli_cat.csv (353k rows). Secondary: oracc-catalogue (subgenre, supergenre),
+    #         oracc-geojson (Pleiades coords). See source-to-v2-mapping.yaml for field-level detail.
+    # CONNECTS: Universal join key (p_number) for all downstream tables. FK target for inscriptions,
+    #           translations, lemmatizations (via tokens→text_lines), sign_annotations (via surfaces),
+    #           artifact_identifiers, artifact_editions, artifact_composites, pipeline_status.
+    # TRADE-OFF: CDLI authoritative for identity fields. ORACC enrichment stored in separate columns
+    #            (subgenre, supergenre, pleiades_id) rather than overwriting CDLI values. Preserves
+    #            both raw and normalized period/provenience/genre for auditability (data-issues.md #1,#3,#6).
     description: >
       Physical artifacts. Superset of v1 — expands from 16 to ~40 columns.
       Merges CDLI catalog + ORACC catalogue + geojson enrichment.
@@ -101,6 +118,12 @@ tables:
   # --- Citation Resolution: Identity Concordance ---
 
   artifact_identifiers:
+    # ORIGIN: Seeded from artifacts.museum_no, .excavation_no, .primary_publication, .seal_id.
+    #         Enriched by CDLI API, ORACC catalogue cross-refs, eBL fragment identifiers.
+    # CONNECTS: FK to artifacts.p_number. Referenced by artifact_identifier_evidence/decisions.
+    #           Fast identifier→P-number lookup via idx_ai_normalized index.
+    # TRADE-OFF: Dual resolution path — identifiers appear here (fast lookup) AND in
+    #            artifact_editions (rich metadata). Denormalization accepted for query performance.
     description: >
       NEW TABLE. N:1 alias concordance for artifacts. Every identifier
       resolving to a P-number: museum numbers, excavation numbers,
@@ -171,6 +194,12 @@ tables:
 # ═══════════════════════════════════════════════════════════
 
   surfaces:
+    # ORIGIN: cdli-atf @surface markers (primary), compvis-annotations view_desc, oracc-corpus surface refs.
+    #         Normalized via surface_canon lookup (data-issues.md #6 pattern). ~300k rows estimated.
+    # CONNECTS: FK to artifacts.p_number. Referenced by sign_annotations.surface_id, text_lines.surface_id.
+    #           Bridges physical layer (sign locations on surfaces) to reading layer (text lines on surfaces).
+    # TRADE-OFF: Columns not modeled as separate table (some tablets have multiple columns per surface).
+    #            Flagged as open question — may add columns table if ORACC CDL column data is imported.
     description: >
       NEW TABLE. Decompose tablets into surfaces (obverse, reverse, edges).
       Currently implicit in v1 (surface is a text field on sign_annotations).
@@ -187,6 +216,12 @@ tables:
       Some tablets have multiple columns per surface.
 
   sign_annotations:
+    # ORIGIN: compvis-annotations (11,070 rows, MZL labels), ebl-annotations (future), ML inference (future).
+    #         MZL→OGSL concordance required for sign_id resolution (data-issues.md #5). ~3% unresolvable.
+    # CONNECTS: FK to surfaces.id and signs.sign_id. Referenced by sign_annotation_evidence.
+    #           Links physical layer (where a sign is on the image) to graphemic layer (what sign it is).
+    # TRADE-OFF: Coordinates as percentages (0-100%) rather than pixels for resolution independence.
+    #            Requires image dimensions at import time. See source-to-v2-mapping.yaml for transform.
     description: >
       Bounding box annotations with unified coordinate system.
       Adds annotation provenance vs v1.
@@ -215,6 +250,13 @@ tables:
 # ═══════════════════════════════════════════════════════════
 
   signs:
+    # ORIGIN: ogsl-signlist (3,367 signs). Concordance from ebl-annotations (ABZ), manual curation (MZL).
+    #         Unicode codepoints serve as bridge for auto-matching MZL↔OGSL↔ABZ (data-issues.md #5).
+    # CONNECTS: PK sign_id referenced by sign_annotations.sign_id, sign_values.sign_id,
+    #           sign_variants.base_sign, sign_word_usage.sign_id, token_readings (via form→sign lookup).
+    # TRADE-OFF: GDL stored as JSON (gdl_definition) not normalized tables. Simpler import, but
+    #            compound sign queries (e.g., "all tokens containing AN") require JSON parsing.
+    #            Concordance gap: ~200-400 MZL numbers unresolvable to OGSL after auto-matching.
     description: >
       Cuneiform sign inventory. Adds concordance columns vs v1.
     columns:
@@ -266,6 +308,13 @@ tables:
 # ═══════════════════════════════════════════════════════════
 
   text_lines:
+    # ORIGIN: cdli-atf (primary, ~2M lines from 135k texts), oracc-corpus CDL (2,215 orphan texts
+    #         with ORACC data but no CDLI ATF — built from CDL line structure, data-issues.md #8).
+    # CONNECTS: FK to artifacts.p_number and surfaces.id. Parent of tokens (tokens.line_id).
+    #           Referenced by translations.line_id for line-level translations.
+    # TRADE-OFF: Major v2 redesign — v1 stored ATF as monolithic text blobs on inscriptions table.
+    #            Per-line decomposition enables line-level queries, translation alignment, and
+    #            token-level drill-down. Requires ATF parser at import time.
     description: >
       NEW TABLE. Decompose ATF from text blobs into per-line records.
       Each line belongs to a surface and has an ordered sequence of tokens.
@@ -281,6 +330,13 @@ tables:
     constraints: [UNIQUE(p_number, surface_id, line_number, source)]
 
   tokens:
+    # ORIGIN: oracc-corpus CDL nodes (primary, ~5M tokens). For CDLI-only texts, tokenized
+    #         from ATF lines. BabyLemmatizer output also targets this table (ml-integration.md).
+    # CONNECTS: FK to text_lines.id. Parent of token_readings and lemmatizations (both via token_id).
+    #           Central positional anchor — all reading and linguistic data hangs off token positions.
+    # TRADE-OFF: Token is purely positional. All reading data (form, reading, damage, confidence)
+    #            moved to token_readings table. Cost: one extra JOIN for every display. Benefit:
+    #            competing readings from different scholars/models coexist cleanly. See data-quality.md.
     description: >
       NEW TABLE. Positional anchor linking all layers. Each token is one word
       or sign-group in a line. Reading data (form, reading, damage) lives in
@@ -305,6 +361,13 @@ tables:
       like "find all tokens containing sign AN".
 
   token_readings:
+    # ORIGIN: oracc-corpus (GDL reading data), cdli-atf (initial reading), Akkademia model (future),
+    #         scholarly collation/hand_copy. Each source creates its own annotation_run.
+    # CONNECTS: FK to tokens.id. Referenced by token_reading_evidence, token_reading_decisions,
+    #           token_reading_discussion_threads. Links reading layer to trust infrastructure.
+    # TRADE-OFF: Multiple rows per token_id by design. is_consensus flag marks the best reading
+    #            (at most one per token). Extra storage and JOIN cost vs. clean competing interpretations.
+    #            See data-quality.md for consensus mechanism and decision audit trails.
     description: >
       NEW TABLE. Competing transliterations of the same token position.
       Parallels lemmatizations (multiple linguistic analyses per token) but
@@ -334,6 +397,14 @@ tables:
 # ═══════════════════════════════════════════════════════════
 
   lemmatizations:
+    # ORIGIN: oracc-corpus (primary, ~86k with real identifications — data-issues.md #4 filters out
+    #         221k damaged/unread X-tokens). BabyLemmatizer output (future, via CoNLL-U import —
+    #         see ml-integration.md). Maps CoNLL-U LEMMA→citation_form, UPOS→pos, XPOS→epos.
+    # CONNECTS: FK to tokens.id and glossary_entries.entry_id. Referenced by lemmatization_evidence,
+    #           lemmatization_decisions, lemmatization_discussion_threads, morphology.lemmatization_id.
+    # TRADE-OFF: Multiple rows per token_id. ORACC human annotations default to is_consensus=1.
+    #            BabyLemmatizer output stored as competing analysis (is_consensus=0) unless no human
+    #            annotation exists. Full ORACC signature preserved for lossless round-trip.
     description: >
       REPLACES v1 lemmas table. Supports MULTIPLE lemmatizations per token
       with provenance. v1 stored one flat record; v2 stores competing analyses.
@@ -364,6 +435,15 @@ tables:
       is_consensus flags the editorially chosen or highest-confidence one.
 
   morphology:
+    # ORIGIN: oracc-corpus morph strings (parsed into structured slots), BabyLemmatizer FEATS
+    #         output (CoNLL-U Key=Value pairs — see ml-integration.md). ~50k rows estimated.
+    # CONNECTS: FK to lemmatizations.id. One morphology row per lemmatization.
+    # TRADE-OFF: Single polymorphic table with language_family discriminator rather than separate
+    #            tables per language. Akkadian uses root/stem/tense columns; Sumerian uses
+    #            conjugation_prefix/dimensional_prefixes slots. Many NULLs per row, but avoids
+    #            JOIN complexity for cross-language morphological queries. Sumerian framework
+    #            is contested (Jagersma vs Zolyomi vs Edzard) — multiple analyses supported
+    #            via same competing-annotation pattern as lemmatizations.
     description: >
       NEW TABLE. Structured morphological decomposition.
       Language-polymorphic: different columns used per language family.
@@ -411,6 +491,13 @@ tables:
 # ═══════════════════════════════════════════════════════════
 
   glossary_entries:
+    # ORIGIN: ORACC glossary JSON from all projects (~21k entries, ~40k variant forms).
+    #         ePSD2 (1.8 GB Sumerian dictionary). Future: CAD digitized entries.
+    # CONNECTS: Referenced by glossary_forms.entry_id, glossary_senses.entry_id,
+    #           lemmatizations.entry_id, named_entities.glossary_entry_id, sign_word_usage.entry_id.
+    # TRADE-OFF: Cross-project dedup uses UNIQUE(headword, language, project) — keeps all entries
+    #            with source attribution rather than merging (data-issues.md #12). 1,726 duplicate pairs
+    #            identified; all preserved with correct project names (not import-method labels).
     description: Dictionary headwords (expanded to ingest all ORACC projects)
     columns:
       entry_id: { type: TEXT, pk: true }
@@ -437,6 +524,9 @@ tables:
       lang: { type: TEXT, new: true }
 
   glossary_senses:
+    # ORIGIN: ORACC glossary JSON senses[] arrays (data-issues.md #9 — 0 rows in v1, data exists
+    #         in source). 5,271 Sumerian entries have senses. Each sense has mng, icount, pos, forms[].
+    # CONNECTS: FK to glossary_entries.entry_id. Referenced by lemmatizations (via sense matching).
     description: Sense hierarchy per entry (carry forward from v1)
     columns:
       id: { type: INTEGER, pk: true, autoincrement: true }
@@ -488,6 +578,14 @@ tables:
 # ═══════════════════════════════════════════════════════════
 
   scholars:
+    # ORIGIN: ORACC project metadata (editors/contributors), CDLI publication author parsing,
+    #         OpenAlex ORCID backfill, Who's Who in Cuneiform Studies (~500-1000), Wikipedia (~200).
+    #         See citation-pipeline-summary.md for sourcing pipeline. Estimated 2,000-5,000 records.
+    # CONNECTS: Referenced by annotation_runs.scholar_id, publication_authors.scholar_id,
+    #           evidence tables (added_by), decision tables (decided_by), discussion_posts.scholar_id.
+    # TRADE-OFF: Name dedup is hard (diacritics, particles, initials). Cascading match:
+    #            ORCID exact > surname+initials normalized > full name fuzzy. ORCID is authoritative
+    #            when available (~10-20% coverage via OpenAlex). See data-quality.md.
     description: >
       NEW TABLE. Individual scholarly contributors to the corpus.
       Enables trust queries: who made this reading, what's their expertise,
@@ -502,6 +600,15 @@ tables:
       active_since: { type: TEXT, nullable: true, description: "Year of first publication" }
 
   annotation_runs:
+    # ORIGIN: Created by every import step and every annotation action. Retroactive records
+    #         created for all v1 data (13 records for existing CDLI/ORACC/CompVis imports).
+    #         See import-pipeline.yaml shared.annotation_run for field specifications.
+    # CONNECTS: annotation_run_id FK on nearly every table in the schema. This is the provenance
+    #           backbone — a single JOIN answers "who produced this data, when, and how?"
+    #           FK to scholars.id (NULL for ML/import), publications.id (NULL until matched).
+    # TRADE-OFF: One provenance system for everything (human, ML, import). Simpler than parallel
+    #            tracking. publication_ref TEXT fallback for unresolved citations alongside
+    #            structured publication_id FK (incremental migration). See data-quality.md.
     description: >
       NEW TABLE. Every annotation (sign detection, lemmatization, translation)
       is linked to a run that records its source. Enables competing
@@ -534,6 +641,14 @@ tables:
   # --- Publications Registry ---
 
   publications:
+    # ORIGIN: CDLI API (16,725 pubs), eBL API (CSL-JSON), ORACC projects (12 digital editions),
+    #         OpenAlex (5-20k), KeiBi (~90k). See citation-pipeline-summary.md for full pipeline.
+    # CONNECTS: Referenced by artifact_editions.publication_id, publication_authors.publication_id,
+    #           annotation_runs.publication_id, publication_citations (citing/cited). Self-referential
+    #           supersedes_id for publication-level supersession chains.
+    # TRADE-OFF: bibtex_key prefixed by authority (cdli:, oracc:, ebl:, openalex:, keibi:) to avoid
+    #            cross-source collisions. Dedup cascade: DOI(1.0) > bibtex_key(0.95) > title+year(0.8).
+    #            Below 0.7 → _dedup_candidates staging table for manual review. See data-quality.md.
     description: >
       NEW TABLE. Structured bibliographic records for Assyriology
       publications. Monograph series (RIME, SAA, RINAP, VAB), journal
@@ -800,6 +915,14 @@ tables:
       notes: { type: TEXT, nullable: true }
 
   fragment_joins:
+    # ORIGIN: CDLI CSV join_information field (7,367 rows). eBL fragment joins (future).
+    #         See citation-pipeline-summary.md for import details.
+    # CONNECTS: FK to artifacts (fragment_a, fragment_b), join_groups.id. Referenced by
+    #           fragment_join_evidence, fragment_join_decisions, fragment_join_discussion_threads.
+    # TRADE-OFF: Pairwise links rather than transitive closure. For 3-fragment tablet (A+B+C),
+    #            up to 3 rows (A-B, B-C, A-C). join_groups aggregates pairwise links into
+    #            reconstructed tablets. Full trust pipeline because false joins contaminate
+    #            all downstream layers (readings, lemmatizations, translations).
     description: >
       NEW TABLE. Physical connections between artifacts. Each row asserts
       two P-numbers are fragments of the same original tablet. Pairwise
@@ -1006,6 +1129,12 @@ tables:
   # --- Solution 1: Named Entity Registry ---
 
   named_entities:
+    # ORIGIN: Derived from glossary_entries WHERE pos IN (PN, DN, GN, TN, RN, WN, MN, EN, SN, FN).
+    #         Current corpus yields ~1,836 unique entities. DN (divine names) dominates: 1,401 unique.
+    # CONNECTS: Referenced by entity_mentions.entity_id, entity_relationships (subject/object),
+    #           entity_aliases, authority_links.entity_id. FK to glossary_entries.entry_id for dedup.
+    # TRADE-OFF: ORACC OID (glossary_entry_id) as primary dedup key. Cross-project dedup relies on
+    #            matching headword+language when OIDs differ. entity_aliases table handles post-hoc merges.
     description: >
       NEW TABLE. Graph nodes — persons, deities, places, institutions,
       and other named entities extracted from lemmatizations. Primary
@@ -1129,6 +1258,14 @@ tables:
       - { predicate: same_as, category: identity, is_symmetric: 1, description: "Cross-system identity assertion" }
 
   entity_relationships:
+    # ORIGIN: Manual scholarly assertions (primary), Semantic Scholar citation graphs (partial),
+    #         future prosopographic database imports. Mostly empty at import time — grows with use.
+    # CONNECTS: FK to named_entities (subject_id, object_id), relationship_predicates (predicate_enum),
+    #           entity_mentions (source_mention_id). Full evidence/decision infrastructure.
+    # TRADE-OFF: Hybrid predicate governance balances schema control with scholarly flexibility.
+    #            Tier 1 (13 stable predicates) uses FK constraint. Tier 2-3 (volatile) uses freetext
+    #            with category:predicate pattern. CHECK constraint ensures exactly one is set.
+    #            Temporal scope uses period names (all artifacts have one) with optional BCE dates (~5%).
     description: >
       NEW TABLE. Knowledge graph edges between named entities.
       Hybrid predicate governance: Tier 1 stable predicates use
@@ -1192,6 +1329,13 @@ tables:
   # --- Solution 3: Authority Reconciliation ---
 
   authority_links:
+    # ORIGIN: Seeded from artifacts.pleiades_id and excavation_sites.pleiades_id (existing data).
+    #         Future: Wikidata, VIAF, GeoNames reconciliation from Wikipedia scrape and manual curation.
+    # CONNECTS: FK to named_entities.id. Referenced by authority_reconciliation_disputes.
+    #           Enables federated queries across Glintstone, Wikidata, Pleiades, etc.
+    # TRADE-OFF: Reconciliation is a scholarly act — wrong links pollute downstream queries.
+    #            match_type captures certainty (exact/broad/narrow/related/uncertain).
+    #            is_accepted flag requires community verification before links are trusted.
     description: >
       NEW TABLE. Maps named entities to external authority identifiers
       (Wikidata, VIAF, Pleiades, GeoNames, PeriodO). Reconciliation is
@@ -1301,6 +1445,12 @@ views:
     columns: "(same as v1)"
 
   pipeline_status:
+    # ORIGIN: Computed/derived from all other tables. Refreshed as materialized view (step 19
+    #         of import-pipeline.yaml). Expanded from v1 boolean flags to continuous 0.0-1.0 scores.
+    # CONNECTS: FK to artifacts.p_number. Core of the pipeline-first visibility principle —
+    #           every UI view foregrounds pipeline status so researchers see gaps at a glance.
+    # TRADE-OFF: Denormalized for query performance. Legacy boolean flags kept for backward
+    #            compatibility with v1 UI. New per-layer REAL scores enable finer-grained tracking.
     description: >
       Per-tablet completeness. Expanded to track per-layer status.
     columns:
@@ -1546,6 +1696,173 @@ migration_notes:
         existing publication_ref TEXT. Incrementally match existing
         publication_ref values to publications records. NULL until
         matched; freetext stays as fallback.
+
+# ═══════════════════════════════════════════════════════════
+# NORMALIZATION LOOKUP TABLES (NEW — from pressure testing)
+# Fixes Issues 1, 2, 3, 6 from data quality review
+# ═══════════════════════════════════════════════════════════
+
+  period_canon:
+    label: "Period Name Lookup"
+    description: "Maps 46+ raw period formats to canonical names (Issue 1)"
+    columns:
+      raw_period:     { type: TEXT, pk: true, description: "Exact string from CDLI CSV" }
+      canonical:      { type: TEXT, not_null: true, description: "Stripped of '(ca. ...)' and '?'" }
+      date_start_bce: { type: INTEGER, nullable: true }
+      date_end_bce:   { type: INTEGER, nullable: true }
+      sort_order:     { type: INTEGER, description: "Chronological sorting" }
+
+  language_map:
+    label: "Language Code Lookup"
+    description: "Maps CDLI English names to ORACC ISO codes (Issue 2)"
+    columns:
+      cdli_name:  { type: TEXT, pk: true, description: "CDLI value: 'Sumerian', 'Akkadian'" }
+      oracc_code: { type: TEXT, not_null: true, description: "ORACC value: 'sux', 'akk'" }
+      full_name:  { type: TEXT }
+      family:     { type: TEXT, values: [sumerian, semitic, elamite, hurrian, hittite, other] }
+
+  genre_canon:
+    label: "Genre Name Lookup"
+    description: "Normalizes genre case inconsistency (Issue 3)"
+    columns:
+      raw_genre:  { type: TEXT, pk: true }
+      canonical:  { type: TEXT, not_null: true, description: "Title-case form" }
+      supergenre: { type: TEXT, nullable: true }
+
+  provenience_canon:
+    label: "Site Name Lookup"
+    description: "Separates ancient/modern site names (Issue 6)"
+    columns:
+      raw_provenience: { type: TEXT, pk: true }
+      ancient_name:    { type: TEXT, not_null: true }
+      modern_name:     { type: TEXT, nullable: true }
+      pleiades_id:     { type: TEXT, nullable: true }
+
+  surface_canon:
+    label: "Surface Name Lookup"
+    description: "Unifies surface naming across ATF, CompVis, ORACC"
+    columns:
+      raw_surface: { type: TEXT, pk: true }
+      canonical:   { type: TEXT, not_null: true, values: [obverse, reverse, left_edge, right_edge, top_edge, bottom_edge, seal, unknown] }
+
+# ═══════════════════════════════════════════════════════════
+# BIBLIOMETRIC TABLE (NEW — from citation pipeline review)
+# ═══════════════════════════════════════════════════════════
+
+  publication_citations:
+    label: "Citation Graph"
+    description: "Publication-to-publication citation links from Semantic Scholar"
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      citing_id: { type: INTEGER, fk: publications.id, not_null: true }
+      cited_id:  { type: INTEGER, fk: publications.id, not_null: true }
+    constraints:
+      - "UNIQUE(citing_id, cited_id)"
+    note: "Populated by 08_enrich_semantic_scholar.py. Separate from entity_relationships which is for domain entities."
+
+# ═══════════════════════════════════════════════════════════
+# CHECK CONSTRAINTS (NEW — from pipeline review)
+# ═══════════════════════════════════════════════════════════
+
+check_constraints:
+  annotation_runs_method:
+    table: annotation_runs
+    column: method
+    constraint: "CHECK(method IN ('api_fetch', 'import', 'web_scrape', 'manual', 'model', 'hand_copy', 'photograph', 'collation', 'autopsy', 'RTI', '3D_scan', 'ML_model'))"
+
+  publications_type:
+    table: publications
+    column: publication_type
+    constraint: "CHECK(publication_type IN ('monograph', 'journal_article', 'chapter', 'digital_edition', 'conference_paper', 'thesis', 'proceedings', 'report', 'unpublished', 'other', 'edited_volume', 'series_volume', 'museum_catalog', 'dissertation', 'hand_copy_publication'))"
+    note: "Pipeline uses subset: monograph, journal_article, chapter, digital_edition, conference_paper, thesis, proceedings, report, unpublished, other"
+
+  artifact_editions_type:
+    table: artifact_editions
+    column: edition_type
+    constraint: "CHECK(edition_type IN ('full_edition', 'hand_copy', 'photograph_only', 'catalog_entry', 'brief_mention', 'collation', 'translation_only', 'commentary'))"
+
+# ═══════════════════════════════════════════════════════════
+# PLAIN-LANGUAGE LABELS
+# For every table, a label and description accessible to non-specialists.
+# ═══════════════════════════════════════════════════════════
+
+labels:
+  # Layer 0: Identity
+  artifacts:           { label: "Tablets & Objects", description: "Physical artifacts — clay tablets, cylinders, prisms, etc." }
+  composites:          { label: "Reconstructed Texts", description: "Scholarly reconstructions combining multiple tablet copies" }
+  artifact_composites: { label: "Tablet-to-Text Links", description: "Which tablets contain copies of which texts" }
+  artifact_identifiers: { label: "Object ID Lookup", description: "All known identifiers for an artifact (museum numbers, excavation numbers, etc.)" }
+
+  # Layer 1: Physical
+  surfaces:          { label: "Tablet Surfaces", description: "Front, back, and edges of a tablet" }
+  sign_annotations:  { label: "Sign Locations on Images", description: "Bounding boxes marking where signs appear on tablet photographs" }
+
+  # Layer 2: Graphemic
+  signs:         { label: "Cuneiform Sign List", description: "Master list of all cuneiform signs with cross-system concordance" }
+  sign_values:   { label: "Sign Readings", description: "How each sign can be read (a single sign may have many readings)" }
+  sign_variants: { label: "Sign Variants", description: "Visual modifications of signs (added strokes, rotations, etc.)" }
+
+  # Layer 3: Reading
+  text_lines:     { label: "Text Lines", description: "Individual lines of text on a tablet surface" }
+  tokens:         { label: "Words & Signs", description: "Individual words or sign-groups within a text line" }
+  token_readings: { label: "Sign Readings (Competing)", description: "How scholars read a specific sign — may have multiple competing interpretations" }
+
+  # Layer 4: Linguistic
+  lemmatizations: { label: "Word-by-Word Analysis", description: "Identifying what each word means — dictionary form, meaning, grammar" }
+  morphology:     { label: "Grammar Breakdown", description: "Detailed grammatical analysis — roots, prefixes, suffixes, tense, person" }
+  translations:   { label: "Translations", description: "English (or other language) translations of tablet texts" }
+
+  # Layer 5: Semantic
+  glossary_entries:       { label: "Dictionary Entries", description: "Sumerian and Akkadian dictionary headwords" }
+  glossary_forms:         { label: "Spelling Variants", description: "Different ways a word was written across time and place" }
+  glossary_senses:        { label: "Word Meanings", description: "Individual meanings of a word (like 'bank' = river bank vs. financial bank)" }
+  named_entities:         { label: "People, Gods & Places", description: "Named individuals, deities, cities, and temples mentioned in texts" }
+  entity_mentions:        { label: "Where Names Appear", description: "Every occurrence of a named entity across the corpus" }
+  entity_relationships:   { label: "Who Knows Whom", description: "Relationships between entities — rulers and cities, gods and temples" }
+  intertextuality_links:  { label: "Cross-Text Connections", description: "Parallel passages, quotations, and shared formulas across texts" }
+
+  # Provenance
+  scholars:       { label: "Scholars", description: "Researchers who have contributed readings, analyses, or publications" }
+  annotation_runs: { label: "Data Source Tracking", description: "Records where each piece of data came from and when it was imported" }
+
+  # Citation Resolution
+  publications:        { label: "Bibliography", description: "Published books, articles, and digital editions in Assyriology" }
+  publication_authors: { label: "Who Wrote What", description: "Links scholars to their publications" }
+  artifact_editions:   { label: "Publication History", description: "Which publications contain editions of which tablets" }
+  scholarly_annotations: { label: "Scholarly Notes", description: "Expert commentary and bibliography citations on artifacts" }
+  fragment_joins:      { label: "Fragment Connections", description: "Physical joins between tablet fragments (pieces of the same original tablet)" }
+
+  # Lookup tables
+  period_canon:      { label: "Period Names", description: "Standardized names for historical periods (e.g., 'Old Babylonian' = ca. 1900-1600 BC)" }
+  language_map:      { label: "Language Codes", description: "Maps between CDLI language names and ORACC language codes" }
+  genre_canon:       { label: "Text Categories", description: "Standardized genre names for tablet classification" }
+  provenience_canon: { label: "Site Names", description: "Maps ancient city names to modern site names" }
+  surface_canon:     { label: "Surface Names", description: "Standardized names for tablet surfaces" }
+
+# ═══════════════════════════════════════════════════════════
+# SCHEMA MODIFICATIONS FROM CITATION PIPELINE REVIEW
+# ═══════════════════════════════════════════════════════════
+
+pipeline_review_modifications:
+  - table: publications
+    change: "Add cited_by_count INTEGER column"
+    reason: "Semantic Scholar citation count storage (pipeline phase 08)"
+
+  - table: artifacts
+    change: "Add annotation_run_id INTEGER FK to annotation_runs.id"
+    reason: "Unified provenance via annotation_runs instead of data_source column"
+
+  - table: glossary_entries
+    change: "Add annotation_run_id INTEGER FK to annotation_runs.id"
+    reason: "Unified provenance via annotation_runs instead of data_source column"
+
+  - table: artifact_editions
+    change: "Confidence floor for is_current_edition: only auto-set for editions with confidence >= 0.7"
+    reason: "Low-confidence CSV-parsed editions (0.3) should not be auto-promoted to current"
+
+  - table: annotation_runs
+    change: "Withdrawn: data_source column pattern. Use annotation_runs.source_name exclusively."
+    reason: "Citation pipeline proves one provenance system is sufficient. No parallel tracking."
 
 # ═══════════════════════════════════════════════════════════
 # OPEN QUESTIONS

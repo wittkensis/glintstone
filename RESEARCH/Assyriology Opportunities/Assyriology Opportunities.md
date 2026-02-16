@@ -16,6 +16,11 @@ While machine learning for cuneiform sign recognition represents an important ad
 
 ## 1. Trust Infrastructure for Scholarly Editions
 
+> **Glintstone status: v2 schema — core architecture designed**
+> Addressed by: `scholars`, `annotation_runs` (scholar_id + method + publication_ref/publication_id), competing interpretations (`token_readings`, `lemmatizations` with `is_consensus`), 4 evidence tables, 3 decision tables with supersedes chains. Every annotation traces to who/what created it, how, and where published.
+> See: `schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml`
+> Remaining: UI for provenance display, reputation scoring (deferred), CRDT-based distributed editing (out of scope for data layer)
+
 ### The Problem
 
 Every cuneiform text exists in a **trust limbo** with no provenance tracking for editorial decisions:
@@ -1035,6 +1040,14 @@ ORDER BY similarity_score DESC
 
 ## 4. Annotation Ecosystem for Distributed Expertise
 
+> **Glintstone status: v2 schema — initial framework designed**
+> Addressed by three subsystems:
+> - **Discussion threads**: 5 per-entity thread tables (token_reading, lemmatization, translation, fragment_join, scholarly_annotation) with strict FKs + shared `discussion_posts` with typed contributions (observation, counterargument, evidence, question, synthesis, endorsement)
+> - **Fragment joins**: `join_groups` for N-way reconstruction + `fragment_joins` pairwise links with proposed/verified/accepted/rejected pipeline + evidence + decisions
+> - **Scholarly annotations**: `scholarly_annotations` with strict nullable FK targeting (artifact, surface, line, token, sign, composite) + CHECK constraint + W3C Web Annotation export view (`scholarly_annotations_w3c`)
+> See: `schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml` (ANNOTATION ECOSYSTEM section)
+> Remaining: External annotation harvesting/aggregation, Hypothes.is integration, ActivityPub federation, annotation DOI minting, reputation scoring (deferred), browser extension, annotation overlay UI
+
 ### The Problem
 
 Scholarly annotations are **trapped in incompatible silos**:
@@ -1542,6 +1555,14 @@ Text ───┼─ Scholar D alternative reading
 
 ## 5. Knowledge Graph for Cuneiform
 
+> **Glintstone status: v2 schema — initial framework designed**
+> Addressed by three subsystems:
+> - **Named entity registry**: `named_entities` (person, deity, place, institution, work, etc. extracted from ORACC POS tags) + `entity_aliases` for merge tracking + `entity_mentions` linking tokens/lines to entities with provenance + evidence + decisions. ~1,836 entities, ~4,995 mentions from current corpus
+> - **Entity relationships**: `relationship_predicates` (~13 Tier 1 stable predicates: father_of, patron_deity_of, located_in, etc.) + `entity_relationships` with hybrid predicate governance (Tier 1 enum FK + Tier 2-3 freetext) + temporal scope via period names + evidence + decisions
+> - **Authority reconciliation**: `authority_links` mapping entities to Wikidata, VIAF, Pleiades, GeoNames, PeriodO + `authority_reconciliation_disputes` for contested links
+> See: `schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml` (KNOWLEDGE GRAPH section)
+> Remaining: SPARQL/GraphQL query endpoint, visual query builder, RDF export, geographic/network/timeline visualizations, inference rules, full triple store (current design is relational graph, not RDF-native)
+
 ### The Problem
 
 Cuneiform data exists in **isolated silos** with no structural connections:
@@ -1999,6 +2020,15 @@ River chart showing:
 ---
 
 ## 6. Citation Resolution Service
+
+> **Glintstone status: v2 schema — initial framework designed**
+> Addressed by three subsystems:
+> - **Identity concordance**: `artifact_identifiers` N:1 alias table (museum_no, excavation_no, accession_no, publication, ARK, etc.) with normalized lookup index + evidence + decisions. Seeded from ~353k artifacts
+> - **Publication registry**: `publications` with series membership (RIME, SAA, RINAP, VAB), supersedes chains, DOI/BibTeX + `publication_authors` linking to `scholars` table
+> - **Edition bridge**: `artifact_editions` linking artifacts to publications with page/plate refs, edition_type (full_edition, hand_copy, photograph_only, etc.), `is_current_edition` consensus flag, per-artifact supersedes chain + evidence + decisions
+> - **Annotation_runs integration**: `publication_id` FK added alongside freetext `publication_ref` for incremental migration
+> See: `schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml` (CITATION RESOLUTION section + Layer 0)
+> Remaining: Fuzzy citation parser, resolver API endpoint, citation extraction from PDFs, Handle System / ARK minting, OpenURL context-sensitive linking, UI for "show me all editions of this text"
 
 ### The Problem
 
@@ -3033,6 +3063,18 @@ Not just "solve cuneiform OCR" but **establish how AI and humanities work togeth
 ---
 
 ## Strategic Recommendations
+
+### Implementation Progress
+
+| Opportunity | Schema Status | Next Phase |
+|---|---|---|
+| 1. Trust Infrastructure | **Designed** -- scholars, annotation_runs, evidence/decision tables, competing interpretations | Implementation (SQL DDL, import scripts) |
+| 2. Composite Text Assembly | Not started | Research needed |
+| 3. Semantic Search | Not started | Depends on Layer 3-4 data population |
+| 4. Annotation Ecosystem | **Designed** -- discussion threads, fragment joins, scholarly annotations, W3C view | Implementation |
+| 5. Knowledge Graph | **Designed** -- named entities, relationships, authority links | Implementation; entity extraction from ORACC POS |
+| 6. Citation Resolution | **Designed** -- identifier concordance, publications, edition bridge | Implementation; CDLI API parsing |
+| 7. Pedagogy | Not started | Depends on most other systems |
 
 ### For Maximum Impact
 

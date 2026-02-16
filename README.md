@@ -1,16 +1,33 @@
 # Glintstone
 
-Federated cuneiform research platform. Raw tablet to full translation in a single interface.
+A federated cuneiform research platform. Glintstone aggregates open data from across the field into a single interface organized around a five-stage pipeline: **Image > OCR > ATF > Lemmas > Translation**. Every artifact shows its pipeline status so researchers can see what exists, what's missing, and where human expertise or new tools could make the most difference.
 
-## Why Glintstone
+This project would not exist without the decades of scholarship behind [CDLI](https://cdli.earth), [ORACC](https://oracc.museum.upenn.edu), [eBL](https://www.ebl.lmu.de), [ePSD2](http://oracc.org/epsd2), [OGSL](http://oracc.org/ogsl), and the [CompVis](https://github.com/CompVis/cuneiform-sign-detection-dataset) and [eBL OCR](https://github.com/ElectronicBabylonianLiterature/cuneiform-ocr-data) annotation teams. The researchers and institutions behind these projects built the foundation this platform stands on -- cataloging hundreds of thousands of artifacts, producing transliterations and linguistic annotations, training sign detection models, and making all of it openly available. Glintstone's role is to bring these resources together and make them more accessible. Credit and source attribution are structural requirements, not afterthoughts.
 
-Cuneiform research is fragmented across CDLI (catalog and images), ORACC (linguistic annotations), eBL (editions and fragment joining), ePSD2 (dictionaries), and others. No single platform shows you the complete picture for a tablet -- what's been photographed, transliterated, annotated, and translated -- or tells you what's missing.
+We are early in this process. There is a great deal to learn about the domain, and it will take sustained iteration -- with input from working Assyriologists -- to get this right.
 
-Glintstone federates these sources into one interface built around a 5-stage pipeline: **Image > OCR > ATF > Lemmas > Translation**. Every tablet shows its pipeline status so you can see at a glance what exists and where gaps remain.
+---
 
-**For Assyriologists:** Unified search across sources, dictionary lookups inline with transliterations, quality transparency per tablet, and gap identification showing where human expertise is needed most.
+## What Glintstone Does
 
-**For ML researchers:** Structured training data linking sign annotations to linguistic ground truth, a sign detection inference pipeline (DETR), and a schema designed to connect OCR outputs back to lexical databases.
+Cuneiform research data is fragmented. Tablet photographs live in one system, transliterations in another, linguistic annotations in a third, dictionaries in a fourth. No single platform shows the complete picture for a given tablet, or tells you what's missing.
+
+Glintstone federates these sources around a **pipeline-first** view:
+
+```
+Image  >  OCR  >  ATF  >  Lemmas  >  Translation
+```
+
+For each of the ~389,000 artifacts in the database, the interface shows which stages are complete and where gaps remain. This makes it easy to find tablets that have transliterations but no lemmatization, or lemmatization but no translation -- the places where scholarly effort has the highest marginal value.
+
+Beyond pipeline visibility, the data model supports:
+
+- **Competing interpretations** -- multiple readings or lemmatizations of the same token, each with provenance and confidence
+- **Full provenance tracking** -- every annotation traces to the scholar, tool, or import process that produced it
+- **Sign concordance** -- unified lookup across OGSL, MZL, ABZ, and Unicode sign identification systems
+- **Citation resolution** -- a three-tier system linking artifacts to their publication history
+
+For the full data model, see the [v2 schema](schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml).
 
 ---
 
@@ -18,155 +35,96 @@ Glintstone federates these sources into one interface built around a 5-stage pip
 
 ### Integrated
 
-| Source | Provides | Records | Notes |
-|--------|----------|---------|-------|
-| **CDLI** catalog | Tablet metadata (P-numbers, museum numbers, period, provenience, genre, language) | 353,283 artifacts | CSV export from cdli.earth. ATF import adds ~33k stub records for P-numbers not in catalog, bringing total to ~389k. |
-| **CDLI** ATF | Transliterations in ATF format | 135,200 inscriptions | Parsed from `cdliatf_unblocked.atf` (86 MB) |
-| **CDLI** translations | Multi-language translations | 5,599 translations across 9 languages | Extracted from inline `#tr.XX:` markers in ATF |
-| **ORACC/DCCLT** glossaries | Dictionary entries (Sumerian, Akkadian, Old Babylonian, Standard Babylonian, proper nouns) | 21,054 entries, ~40,000 variant forms | From DCCLT gloss-*.json files |
-| **OGSL** (via ORACC) | Cuneiform sign inventory with Unicode codepoints and all known readings | 3,367 signs, ~15,000 sign values | ogsl-sl.json |
-| **ORACC** lemmas | Word-by-word linguistic annotations (citation form, part of speech, language) | 308,610 lemmas | From ORACC project corpora. Only a fraction of available ORACC data is imported -- dozens of project zip archives (rime, ribo, rinap, saao, cams, etcsl, etc.) are publicly available and downloaded to `data/sources/ORACC/` but not yet ingested. This is a high-priority next step. |
-| **CompVis** | Sign bounding-box annotations for ML training | 81 tablets, 8,109 annotations | cuneiform-sign-detection-dataset |
-| **eBL** OCR data | Sign detection training data | Annotated tablet images | cuneiform-ocr-data |
+| Source | Provides | License |
+|--------|----------|---------|
+| **CDLI** (cdli.earth) | Artifact catalog (353k), ATF transliterations (135k texts), translations (5.6k), tablet images (on-demand), publications API | CC0 |
+| **ORACC** (12+ projects) | Lemmatization (~309k tokens), glossaries (~21k entries), project-specific catalog enrichment, geographic coordinates | CC BY-SA 3.0 |
+| **OGSL** | Cuneiform sign inventory (3,367 signs, ~15k reading values, Unicode mappings) | CC BY-SA 3.0 |
+| **CompVis** | Sign bounding-box annotations (81 tablets, 8.1k annotations) | MIT |
+| **eBL** | OCR training data, sign concordance data, fragment-level citations | Research use |
+
+ORACC projects currently downloaded: dcclt, epsd2, saao, rinap, riao, etcsri, blms, hbtin, dccmt, ribo, amgg, ogsl. Several additional projects (rime, etcsl, cams, ctij) are known to exist but return server errors when fetched.
+
+CDLI and OGSL data are imported from bulk downloads. ORACC project data is fetched via zip API. CDLI images are fetched on demand and cached locally. The CDLI publications endpoint provides structured bibliographic data via REST API.
+
+For detailed field mappings, update frequencies, and access methods per source, see [data-sources.md](schema-architecture/glintstone-schema-v2/data-sources.md).
 
 ### Not Yet Integrated
 
 | Source | Status |
 |--------|--------|
-| **CAD** (Chicago Assyrian Dictionary) | PDF digitization tools exist (`data/tools/cad-digitization/`), data not yet imported |
-| **Live ML inference** | DETR model trained (173 sign classes, mAP@50 = 43.1%) but runs in mock mode due to mmcv ARM64 incompatibility. Akkademia translation model available but not yet wired to UI. Both are ready to activate with minor infrastructure work. |
+| **CAD** (Chicago Assyrian Dictionary) | PDF digitization tools built, extraction not yet run |
+| **BabyLemmatizer** output | Model available, import pathway designed, not yet executed |
+| **KeiBi** (Keilschriftbibliographie) | ~90k entries, manual acquisition required |
 
 ---
 
-## Data Schema
+## Data Model
 
-All data converges on the **P-number** (CDLI artifact identifier) as the universal join key. Each source contributes a layer to the pipeline.
+The schema is organized into five layers, reflecting the stages of cuneiform research:
 
-### Layer 1: Tablet Identity (CDLI)
+**Physical** -- Where are signs on the artifact? Surfaces, bounding boxes, damage states. Sources: CompVis annotations, eBL OCR, ML models.
 
-| Table | Key Columns | Source | Purpose |
-|-------|-------------|--------|---------|
-| `artifacts` | p_number (PK), designation, museum_no, period, provenience, genre, language | cdli_cat.csv + ATF stubs | Core metadata for every tablet |
-| `composites` | q_number (PK), designation, exemplar_count_cache | CDLI ATF headers | Multi-tablet composite texts (Q-numbers) |
-| `artifact_composites` | p_number, q_number (compound PK) | CDLI ATF headers | Links individual tablets to composites |
+**Graphemic** -- What signs are present? The cuneiform sign inventory with cross-system concordance (OGSL canonical, with MZL and ABZ numbers mapped via Unicode). Source: OGSL.
 
-### Layer 2: Text (CDLI ATF)
+**Reading** -- How are signs read in context? ATF transliteration decomposed into lines, tokens, and competing readings. A single token position can have multiple readings from different scholars or models. Sources: CDLI ATF, ORACC corpus.
 
-| Table | Key Columns | Source | Purpose |
-|-------|-------------|--------|---------|
-| `inscriptions` | p_number (FK), atf, transliteration_clean, source, is_latest | cdliatf_unblocked.atf | Raw ATF markup and searchable clean text. Multiple versions possible; `is_latest=1` marks current. |
-| `translations` | p_number (FK), translation, language, source | `#tr.XX:` lines in ATF | Human translations. Languages: en, de, ts, it, fr, es, dk, ca, fa. Unique per (p_number, language, source). |
+**Linguistic** -- What do the words mean? Lemmatization (dictionary headword mapping), morphological analysis, and translations. Supports multiple competing analyses per token with provenance. Sources: ORACC corpus and glossaries, BabyLemmatizer (future).
 
-### Layer 3: Linguistics (ORACC)
+**Semantic** -- Higher-level meaning. Named entity registry (persons, deities, places), entity relationships (knowledge graph), cross-text parallels, and authority reconciliation (links to Wikidata, Pleiades, etc.). Derived from linguistic layer.
 
-| Table | Key Columns | Source | Purpose |
-|-------|-------------|--------|---------|
-| `lemmas` | p_number (FK), lang, cf (citation form), form (tablet spelling), pos | ORACC corpusjson | Word-by-word annotations. `form` contains sign tokens with compound signs, determinatives, and subscripts. |
-| `glossary_entries` | entry_id (PK), headword, citation_form, guide_word, language, pos, icount | DCCLT gloss-*.json | Dictionary headwords. Languages: sux, akk, akk-x-stdbab, akk-x-oldbab, qpn. |
-| `glossary_forms` | entry_id (FK), form, count | DCCLT gloss-*.json | Variant spellings for each dictionary entry |
+All layers converge on the **P-number** (CDLI artifact identifier) as the universal join key. Every record carries an `annotation_run_id` linking it to its source -- see [data-quality.md](schema-architecture/glintstone-schema-v2/data-quality.md) for how this provenance system works.
 
-### Layer 4: Signs (OGSL)
-
-| Table | Key Columns | Source | Purpose |
-|-------|-------------|--------|---------|
-| `signs` | sign_id (PK), utf8, unicode_hex, sign_type, most_common_value | ogsl-sl.json | Cuneiform sign inventory. Types: simple, compound (`\|A.AN\|`), variant (`A@g`). |
-| `sign_values` | sign_id (FK), value, sub_index, frequency | ogsl-sl.json + computed | All known readings for a sign. Frequency computed from lemma corpus. |
-| `sign_word_usage` | sign_id (FK), entry_id (FK), sign_value, usage_count, value_type | Derived (lemmas x glossary) | Links signs to dictionary words. `value_type`: logographic, syllabic, or determinative. Derived from parsing lemma forms. |
-
-### Layer 5: Machine Learning
-
-| Table | Key Columns | Source | Purpose |
-|-------|-------------|--------|---------|
-| `sign_annotations` | p_number (FK), sign_label, bbox (x/y/w/h as %), confidence, source, image_type | CompVis, eBL, ML inference | Bounding-box detections on tablet images. Sources: compvis, ebl, manual, ml. |
-| `pipeline_status` | p_number (PK), has_image, has_ocr, has_atf, has_lemmas, has_translation | Computed | Tracks 5-stage completeness per tablet |
-
-### Layer 6: Application
-
-| Table | Source | Purpose |
-|-------|--------|---------|
-| `collections`, `collection_members` | User-generated | User-created tablet groupings |
-| `language_stats`, `period_stats`, `provenience_stats`, `genre_stats` | Computed | Pre-aggregated filter counts for UI performance |
-| `museums`, `excavation_sites` | CDLI catalog | Reference lookup tables (museum codes, site codes) |
-
-### How It Connects
-
-```
-artifacts (P-number) ─────────────────────────────────────────
-  ├── inscriptions         ATF text from CDLI
-  ├── translations         human translations from CDLI ATF
-  ├── lemmas               word annotations from ORACC
-  ├── sign_annotations     bounding boxes from CompVis/eBL/ML
-  ├── pipeline_status      computed completeness
-  └── artifact_composites ── composites (Q-number)
-
-signs (OGSL) ─────────────────────────────────────────────────
-  ├── sign_values          all readings per sign
-  └── sign_word_usage ──── glossary_entries (ORACC/DCCLT)
-                              └── glossary_forms
-```
+For the full schema specification, see the [v2 schema YAML](schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml). For import details, see the [import pipeline guide](schema-architecture/glintstone-schema-v2/import-pipeline-guide.md).
 
 ---
 
-## Design Philosophy
+## Formats
 
-- **Pipeline-first visibility** -- every view foregrounds the 5-stage pipeline so researchers immediately see what's complete and what's missing
-- **Data/app separation** -- the SQLite database lives in `database/`, independent of the web app in `app/`. Either can be backed up, moved, or replaced without affecting the other
-- **On-demand fetching** -- images and ATF data are fetched from CDLI when first requested, then cached locally. No massive upfront downloads required
-- **Gap identification** -- pipeline indicators highlight where human expertise or ML contribution would have the most impact
-- **Academic attribution** -- every data point traces back to its originating project and the researchers who produced it. Glintstone federates but does not obscure -- the scholars and institutions behind CDLI, ORACC, eBL, and ePSD2 built the foundation this platform stands on, and their contributions must remain visible and credited throughout the interface. *The current UI is lacking here -- making source attribution and academic credit more prominent is a critical next step.*
-- **Source provenance** -- every data point tracks its origin (CDLI, ORACC, CompVis, etc.) so researchers can assess reliability
+Glintstone works with several identification, annotation, and interchange formats used across the field:
+
+**Artifact identification**
+- **P-numbers** (CDLI artifact identifiers) as the universal join key, with museum numbers, excavation numbers, and publication designations mapped via an identifier concordance table
+- **Q-numbers** for composite (reconstructed) texts assembled from multiple exemplars
+
+**Transliteration and annotation**
+- **ATF** (ASCII Transliteration Format) -- the standard line-oriented notation for cuneiform transliteration, parsed into surfaces, lines, and tokens
+- **CoNLL-U** -- token-level linguistic annotation format used by BabyLemmatizer for import/export interchange. Maps to the schema's lemmatization and morphology tables. See [ml-integration.md](schema-architecture/glintstone-schema-v2/ml-integration.md).
+
+**Sign identification**
+- **OGSL** -- canonical sign names (e.g., "KA", "LUGAL", "|A.AN|"), used as primary identifiers
+- **MZL** -- Borger's Mesopotamisches Zeichenlexikon integer codes (used by CompVis annotations)
+- **ABZ** -- Borger's ABZ integer codes (used by eBL)
+- **Unicode** -- cuneiform block codepoints (U+12000-U+1254F), serving as the bridge for cross-system concordance
+
+**Citation and interoperability**
+- **W3C Web Annotation** -- scholarly annotations exportable to W3C Web Annotation Data Model format for federation with external tools
+- **IIIF** -- planned for image interoperability, not yet implemented
 
 ---
 
-## Project Structure
+## Open Challenges
 
-```
-CUNEIFORM/
-├── app/
-│   └── public_html/           PHP web application
-│       ├── api/               REST endpoints (ATF, glossary, thumbnails, ML, dictionary)
-│       ├── tablets/           Tablet list, detail, search views
-│       ├── dictionary/        Dictionary and sign browsers
-│       ├── includes/          Shared PHP (db.php, components, helpers)
-│       └── assets/            CSS (Kenilworth tokens), JS (vanilla), images
-│
-├── database/
-│   ├── glintstone.db          SQLite database (~300 MB)
-│   └── images/                Cached tablet images and thumbnails
-│
-├── data/
-│   ├── sources/               Raw source data (see SETUP.md files in each sub-repo)
-│   │   ├── CDLI/              Catalog CSV, ATF file, images
-│   │   ├── ORACC/             Project corpora, glossaries, OGSL
-│   │   ├── eBL/               Electronic Babylonian Literature fragments
-│   │   ├── ePSD2/             Sumerian dictionary data
-│   │   ├── compvis-annotations/   Sign detection dataset (sub-repo)
-│   │   └── ebl-annotations/       OCR training data (sub-repo)
-│   └── tools/
-│       ├── download/          Data fetcher scripts
-│       ├── import/            Database import scripts (Python)
-│       ├── validate/          Data quality checks
-│       ├── cad-digitization/  CAD PDF processing tools
-│       └── image-library/     Image management utilities
-│
-├── ml/
-│   ├── service/               FastAPI sign detection service (localhost:8000)
-│   │   ├── app.py             4 endpoints: /health, /classes, /detect-signs, /detect-signs-by-path
-│   │   ├── inference.py       DETR model wrapper
-│   │   └── sign_mapping.json  173 sign classes with OGSL + Unicode mappings
-│   └── models/                ML model repos (see SETUP.md in each)
-│       ├── akkademia/         Akkadian transliteration (sub-repo)
-│       ├── deepscribe/        Elamite OCR (sub-repo)
-│       └── ebl_ocr/           DETR sign detection checkpoint
-│
-├── ops/
-│   ├── setup.sh               One-time environment setup (~15 min)
-│   ├── start.sh               Start all services (Valet + ML)
-│   ├── stop.sh                Stop all services
-│   └── SERVER-SETUP.md        Manual setup and troubleshooting
-│
-└── RESEARCH/                  Domain research, personas, reference materials
-```
+These are the significant gaps, assumptions, and trade-offs in the current design. We document them here because transparency about limitations is essential for a research tool.
+
+**Coverage gaps**
+- Only ~2% of the 389k artifacts have ORACC linguistic annotation. The remaining 98% exist at the identity or text layer only.
+- The CDLI bulk catalog export has not been updated since August 2022. Artifacts added after this date are not reflected.
+- Sign concordance between MZL, OGSL, and ABZ is incomplete. Auto-matching via Unicode resolves ~90%, but ~200-400 signs require manual curation.
+- Several ORACC projects (rime, etcsl, cams, ctij) are unavailable due to server-side errors.
+
+**Design trade-offs**
+- GDL (sign-level structure) stored as JSON on tokens rather than in normalized tables. Simpler to import, but limits sign-level queries.
+- Sumerian verbal morphology is contested across scholarly frameworks (Jagersma, Zolyomi, Edzard). The schema supports multiple analyses as competing annotations rather than picking one framework.
+- CDLI and ORACC sometimes disagree on period, genre, or provenience. CDLI is treated as authoritative for identity fields; ORACC enrichment stored in separate columns.
+- Translations link to text lines, not individual tokens. No source currently provides token-level translation alignment.
+
+**Open questions**
+- How to handle IIIF image integration properly
+- Whether to normalize GDL JSON into queryable tables in a future version
+- How to version ORACC data across releases (currently tracked via annotation_runs timestamps)
+
+For the full list of 12 data quality issues found during pressure testing, see [data-issues.md](schema-architecture/glintstone-schema-v2/data-issues.md).
 
 ---
 
@@ -175,67 +133,44 @@ CUNEIFORM/
 ### Prerequisites
 
 - macOS with Homebrew
-- PHP 8.4+
-- Python 3.9+ (for ML service)
+- PHP 8.4+, Python 3.9+
 - Composer (installed by setup script)
 
-### First-Time Setup
+### Setup
 
 ```bash
+# One-time setup (~15 min)
 ./ops/setup.sh
-```
 
-Installs Homebrew dependencies, Composer, Laravel Valet, and links the project. Takes about 15 minutes.
-
-### Daily Use
-
-```bash
+# Start all services
 ./ops/start.sh
 ```
 
-Starts Valet (Nginx + PHP-FPM), the ML detection service, and opens http://glintstone.test.
+Opens at http://glintstone.test. See `ops/SERVER-SETUP.md` for manual setup and troubleshooting.
 
-Press Ctrl+C or run `./ops/stop.sh` to stop everything.
-
-### Data Setup
+### Data
 
 Source data is not included in the repository. To populate:
 
-1. Download source data using scripts in `data/tools/download/`
-2. Clone sub-repos (see SETUP.md files in `ml/models/` and `data/sources/`)
-3. Run import pipeline: `data/tools/import/run_full_import.sh`
+1. Download source data: see `data/sources/SETUP.md`
+2. Clone ML model sub-repos: see `ml/models/SETUP.md`
+3. Run import pipeline: `data/v2-schema-tools/run_full_import.sh`
 
 ---
 
-## ML Models
+## Documentation
 
-| Model | Task | Architecture | Training Data | Status |
-|-------|------|-------------|---------------|--------|
-| [Akkademia](https://github.com/gaigutherz/Akkademia) | Akkadian transliteration | BiLSTM (also HMM, MEMM) | RINAP corpora via ORACC | Available, 96.7% accuracy. Not yet connected to UI. |
-| [DeepScribe](https://github.com/oi-deepscribe/deepscribe) | Elamite cuneiform OCR | CNN/ResNet | Persepolis Fortification Archive (100K+ annotations) | Code only, no trained weights. |
-| eBL OCR | Cuneiform sign detection | Deformable DETR + ResNet-50 | eBL annotations (173 classes, 1000 epochs) | Trained (mAP@50 = 43.1%). Mock mode on macOS ARM64. |
-
-See `SETUP.md` in each model directory for clone/download instructions.
-
----
-
-## Architecture
-
-```
-Browser
-  |
-Valet (Nginx + PHP-FPM)
-  |
-  +-- PHP app (app/public_html/)
-  |     |
-  |     +-- SQLite (database/glintstone.db) -- read-only, WAL mode
-  |     |
-  |     +-- CDLI remote (on-demand image/ATF fetch, cached locally)
-  |
-  +-- ML Service (ml/service/, FastAPI on localhost:8000)
-        |
-        +-- DETR model (ml/models/ebl_ocr/)
-```
+| Document | Purpose |
+|----------|---------|
+| [v2 Schema](schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml) | Full schema specification (70+ tables, annotated) |
+| [Data Sources](schema-architecture/glintstone-schema-v2/data-sources.md) | Per-source field mappings, licenses, access methods |
+| [Data Quality](schema-architecture/glintstone-schema-v2/data-quality.md) | Trust architecture, competing interpretations, evidence chains |
+| [ML Integration](schema-architecture/glintstone-schema-v2/ml-integration.md) | BabyLemmatizer, DETR, Akkademia model integration |
+| [Import Pipeline](schema-architecture/glintstone-schema-v2/import-pipeline-guide.md) | 19-step ETL overview |
+| [Data Issues](schema-architecture/glintstone-schema-v2/data-issues.md) | 12 critical issues from pressure testing |
+| [Citation Pipeline](schema-architecture/glintstone-schema-v2/citation-pipeline-summary.md) | Citation sourcing from 9 external sources (built) |
+| [Source Mappings](schema-architecture/glintstone-schema-v2/source-to-v2-mapping.yaml) | Field-level source-to-schema mappings with null rates |
+| [Import Pipeline Spec](schema-architecture/glintstone-schema-v2/import-pipeline.yaml) | Full technical ETL specification |
 
 ---
 
@@ -248,7 +183,7 @@ Valet (Nginx + PHP-FPM)
 | eBL | https://www.ebl.lmu.de |
 | ePSD2 | http://oracc.org/epsd2 |
 | OGSL | http://oracc.org/ogsl |
-| Akkademia | https://github.com/gaigutherz/Akkademia |
-| DeepScribe | https://github.com/oi-deepscribe/deepscribe |
 | CompVis annotations | https://github.com/CompVis/cuneiform-sign-detection-dataset |
 | eBL OCR data | https://github.com/ElectronicBabylonianLiterature/cuneiform-ocr-data |
+| Akkademia | https://github.com/gaigutherz/Akkademia |
+| BabyLemmatizer | https://github.com/asahala/BabyLemmatizer |

@@ -1,0 +1,934 @@
+# Glintstone v2 Import Pipeline
+# Multi-stage ETL for cuneiform studies data
+#
+# Architecture: 4-stage ETL with annotation_runs provenance tracking.
+# Every imported record carries an annotation_run_id FK.
+#
+# Implementation: Python scripts at data/v2-schema-tools/{module}/
+# Pattern established by citation pipeline (data/v2-schema-tools/citations/).
+#
+# Database: /Volumes/Portable Storage/Glintstone/database/glintstone.db
+# Engine: SQLite with PRAGMA journal_mode=WAL, synchronous=NORMAL
+
+meta:
+  version: "2.0"
+  engine: SQLite
+  database: /Volumes/Portable Storage/Glintstone/database/glintstone.db
+  status: design
+  total_steps: 19
+  built_steps: [18]
+
+# ═══════════════════════════════════════════════════════════
+# STAGES
+# ═══════════════════════════════════════════════════════════
+
+stages:
+  extract:
+    label: "Stage 1: EXTRACT"
+    description: Source-specific parsers that read raw data files
+  transform:
+    label: "Stage 2: TRANSFORM"
+    description: Normalization via lookup tables + sign concordance mapping
+  load:
+    label: "Stage 3: LOAD"
+    description: Upsert into SQLite with annotation_run_id, checkpoint/resume
+  derive:
+    label: "Stage 4: DERIVE"
+    description: Computed tables, materialized views, pipeline_status
+
+# ═══════════════════════════════════════════════════════════
+# SHARED INFRASTRUCTURE
+# ═══════════════════════════════════════════════════════════
+
+shared:
+  normalize:
+    path: data/v2-schema-tools/shared/normalize.py
+    description: >
+      Canonical mapping for period, language, genre, provenience, surface.
+      Each function takes a raw string and returns a normalized form.
+    functions:
+      - normalize_period       # "Ur III (ca. 2100-2000 BC)" -> "Ur III"
+      - normalize_provenience  # "Nippur (mod. Nuffar)" -> "Nippur"
+      - normalize_genre        # Canonical genre string
+      - normalize_language     # ISO-style language code
+      - normalize_surface      # "@obverse" -> "obverse"
+
+  concordance:
+    path: data/v2-schema-tools/shared/concordance.py
+    description: >
+      Sign system concordance mapping between OGSL, MZL, ABZ.
+      Unicode code points serve as bridge for auto-matching.
+    functions:
+      - mzl_to_ogsl           # MZL number -> OGSL sign_id
+      - abz_to_ogsl           # ABZ number -> OGSL sign_id
+      - ogsl_to_unicode        # OGSL sign_id -> Unicode cuneiform codepoint
+
+  checkpoint:
+    path: data/v2-schema-tools/shared/checkpoint.py
+    description: >
+      ImportCheckpoint class for resumable imports. Handles SIGINT/SIGTERM,
+      atomic state file writes, and progress reporting. Pattern from
+      citations/lib/checkpoint.py — extracted to shared for reuse.
+    class: ImportCheckpoint
+    features:
+      - signal_handling        # Graceful interrupt with state save
+      - atomic_state_files     # JSON checkpoint in _progress/
+      - source_checksums       # Detect source changes since last run
+      - progress_reporting     # Processed/inserted/updated/skipped/errors
+
+  annotation_run:
+    description: >
+      Every import phase creates an annotation_run record before writing data.
+      All rows inserted carry the annotation_run_id FK. This is the
+      provenance backbone of the v2 schema.
+    fields:
+      source_name: "e.g. 'cdli-catalog', 'oracc/dcclt', 'compvis'"
+      source_version: "e.g. commit hash, download date, API version"
+      tool_name: "script filename"
+      tool_version: "script version or git SHA"
+      started_at: "TIMESTAMP"
+      completed_at: "TIMESTAMP, set on finish"
+      config_snapshot: "JSON blob of import parameters"
+      row_count: "total rows written in this run"
+
+  sqlite_pragmas:
+    - "PRAGMA journal_mode=WAL"
+    - "PRAGMA synchronous=NORMAL"
+    - "PRAGMA foreign_keys=ON"
+    - "PRAGMA cache_size=-64000"  # 64 MB
+
+  validation:
+    description: Run after each phase
+    checks:
+      - row_count: "Actual vs expected row count"
+      - null_audit: "NULL rate for critical columns (reject if above threshold)"
+      - fk_integrity: "Foreign key constraint check"
+      - annotation_run_not_null: "annotation_run_id IS NOT NULL on every row"
+
+# ═══════════════════════════════════════════════════════════
+# DATA SOURCES
+# ═══════════════════════════════════════════════════════════
+
+sources:
+  cdli_catalog:
+    path: /Volumes/Portable Storage/Glintstone/data/sources/CDLI/metadata/cdli_cat.csv
+    format: CSV
+    rows: 389715
+    license: CC0
+
+  cdli_atf:
+    path: /Volumes/Portable Storage/Glintstone/data/sources/CDLI/atf/
+    format: ATF text files
+    texts: 135200
+    license: CC0
+
+  oracc:
+    path: /Volumes/Portable Storage/Glintstone/data/sources/ORACC/{project}/
+    format: JSON (catalogue, corpus, glossary per project)
+    projects: 9+
+    license: CC BY-SA 3.0 (per project)
+
+  ogsl:
+    path: /Volumes/Portable Storage/Glintstone/data/sources/ORACC/ogsl/
+    format: JSON signlist
+    license: CC BY-SA 3.0
+
+  compvis:
+    path: /Volumes/Portable Storage/Glintstone/data/sources/CompVis/
+    format: JSON annotations
+    annotations: 11070
+
+  ebl:
+    path: /Volumes/Portable Storage/Glintstone/data/sources/eBL/
+    format: Text (mzl.txt, ebl.txt)
+
+# ═══════════════════════════════════════════════════════════
+# IMPORT STEPS (dependency order)
+# ═══════════════════════════════════════════════════════════
+
+steps:
+
+  # -----------------------------------------------------------
+  # STEP 1: Lookup Tables
+  # -----------------------------------------------------------
+  - step: 1
+    name: Lookup tables
+    status: not_built
+    script: 01_seed_lookup_tables.py
+    stage: load
+    depends_on: []
+    tables:
+      - period_canon
+      - language_map
+      - genre_canon
+      - provenience_canon
+      - surface_canon
+    sources:
+      - manual curation
+      - regex extraction from live database
+    description: >
+      Seed canonical lookup tables used by normalize.py for period,
+      language, genre, provenience, and surface normalization. Each table
+      maps raw variant strings to a single canonical form.
+    extract: >
+      Query distinct values from v1 database for each dimension.
+      Apply regex to identify variant forms (e.g. "Ur III (ca. 2100-2000 BC)"
+      variants of "Ur III").
+    transform: >
+      Manual curation pass to resolve ambiguous mappings.
+      Output as JSON seed files for reproducibility.
+    load: >
+      INSERT OR REPLACE into each canon table.
+      No annotation_run_id on lookup tables themselves (they are reference data).
+    validation:
+      expected_rows:
+        period_canon: ~80
+        language_map: ~30
+        genre_canon: ~50
+        provenience_canon: ~300
+        surface_canon: ~20
+
+  # -----------------------------------------------------------
+  # STEP 2: Retroactive Annotation Runs
+  # -----------------------------------------------------------
+  - step: 2
+    name: Retroactive annotation runs
+    status: not_built
+    script: 02_retroactive_annotation_runs.py
+    stage: load
+    depends_on: []
+    tables:
+      - annotation_runs
+    description: >
+      Create annotation_run records for all data already present from v1.
+      These retroactive runs let existing rows participate in the
+      provenance system without re-importing.
+    runs_to_create:
+      - { source_name: "cdli-catalog", tool_name: "v1-import" }
+      - { source_name: "cdli-atf", tool_name: "v1-import" }
+      - { source_name: "compvis", tool_name: "v1-import" }
+      - { source_name: "oracc/dcclt", tool_name: "v1-import" }
+      - { source_name: "oracc/epsd2", tool_name: "v1-import" }
+      - { source_name: "oracc/rinap", tool_name: "v1-import" }
+      - { source_name: "oracc/saao", tool_name: "v1-import" }
+      - { source_name: "oracc/blms", tool_name: "v1-import" }
+      - { source_name: "oracc/cams", tool_name: "v1-import" }
+      - { source_name: "oracc/etcsri", tool_name: "v1-import" }
+      - { source_name: "oracc/obmc", tool_name: "v1-import" }
+      - { source_name: "oracc/riao", tool_name: "v1-import" }
+      - { source_name: "oracc/rimanum", tool_name: "v1-import" }
+    load: >
+      INSERT one annotation_run per source. Record source_version as
+      "v1-migration" with timestamp of migration run.
+    validation:
+      expected_rows:
+        annotation_runs: ~13
+
+  # -----------------------------------------------------------
+  # STEP 3: Scholars
+  # -----------------------------------------------------------
+  - step: 3
+    name: Scholars
+    status: not_built
+    script: 03_seed_scholars.py
+    stage: extract_transform_load
+    depends_on: [2]
+    tables:
+      - scholars
+    sources:
+      - ORACC project credits fields
+      - CDLI author metadata
+    description: >
+      Seed scholar records from ORACC project metadata and CDLI author
+      fields. Citation pipeline (step 18) enriches these further from
+      OpenAlex, Who's Who, and Wikipedia.
+    extract: >
+      Parse ORACC project metadata JSON for credits/authors.
+      Parse CDLI catalog author-related fields.
+    transform: >
+      Name normalization (last, first; diacritics; Unicode).
+      Dedup by normalized name.
+    load: >
+      INSERT OR IGNORE with annotation_run_id.
+    validation:
+      expected_rows:
+        scholars: ~200-500
+
+  # -----------------------------------------------------------
+  # STEP 4: Signs + Concordance
+  # -----------------------------------------------------------
+  - step: 4
+    name: Signs and concordance
+    status: not_built
+    script: 04_import_signs.py
+    stage: extract_transform_load
+    depends_on: []
+    tables:
+      - signs
+      - sign_readings
+      - sign_concordance
+    sources:
+      - OGSL signlist (data/sources/ORACC/ogsl/)
+      - eBL mzl.txt (MZL numbers + readings)
+      - eBL ebl.txt (eBL internal sign IDs)
+    description: >
+      Import the OGSL sign inventory as the canonical sign table, then
+      build a concordance mapping MZL and ABZ numbers to OGSL sign_ids.
+      This concordance is critical for step 15 (CompVis annotations use
+      MZL numbers that must resolve to OGSL).
+    extract: >
+      Parse OGSL signlist JSON for sign entries, readings, forms.
+      Parse eBL mzl.txt for MZL number -> readings mapping.
+      Parse eBL ebl.txt for eBL sign IDs.
+    transform: >
+      Auto-match MZL -> OGSL via Unicode cuneiform codepoint bridge:
+      both systems record Unicode values for signs, so shared codepoints
+      provide high-confidence matches. Shared readings as secondary signal.
+      Flag ~200-400 unresolved mappings for manual curation.
+    load: >
+      signs: INSERT from OGSL.
+      sign_readings: INSERT readings per sign.
+      sign_concordance: INSERT matched pairs (ogsl_id, mzl_no, abz_no, confidence).
+    validation:
+      expected_rows:
+        signs: ~1500
+        sign_readings: ~5000
+        sign_concordance: ~1200
+      unresolved_target: "<400 MZL numbers without OGSL match"
+
+  # -----------------------------------------------------------
+  # STEP 5: Artifacts
+  # -----------------------------------------------------------
+  - step: 5
+    name: Artifacts
+    status: not_built
+    script: 05_import_artifacts.py
+    stage: extract_transform_load
+    depends_on: [1, 2]
+    tables:
+      - artifacts
+    sources:
+      - cdli_cat.csv (389,715 rows)
+      - ORACC catalogue JSON (per project)
+      - ORACC geojson
+    description: >
+      Full import of the CDLI catalog with expanded v2 fields. ORACC
+      catalogue enriches subgenre/supergenre/geo coordinates. CDLI is
+      authoritative for all identity fields; ORACC overrides are additive.
+    extract: >
+      CSV reader for cdli_cat.csv. JSON parser for ORACC catalogue
+      and geojson files per project.
+    transform: >
+      period -> period_normalized via period_canon (step 1).
+      provenience -> provenience_normalized via provenience_canon.
+      language -> languages (split on "; " to JSON array).
+      ORACC geojson -> pleiades_id, latitude, longitude.
+      ORACC catalogue -> subgenre, supergenre, oracc_projects.
+    load: >
+      Batch INSERT with annotation_run_id.
+      CDLI rows first, then ORACC enrichment as UPDATE.
+      Checkpoint every 10,000 rows.
+    validation:
+      expected_rows:
+        artifacts: 389715
+      null_thresholds:
+        p_number: 0%
+        designation: 0.2%
+        period: 2%
+        provenience: 4%
+        language: 6%
+
+  # -----------------------------------------------------------
+  # STEP 6: Artifact Identifiers
+  # -----------------------------------------------------------
+  - step: 6
+    name: Artifact identifiers
+    status: not_built
+    script: 06_seed_artifact_identifiers.py
+    stage: derive
+    depends_on: [5]
+    tables:
+      - artifact_identifiers
+    sources:
+      - artifacts table (museum_no, excavation_no, primary_publication, seal_id)
+    description: >
+      Seed the N:1 identifier concordance from existing artifact columns.
+      One row per non-NULL museum_no, excavation_no, primary_publication,
+      and seal_id. Normalized forms for fast lookup.
+    transform: >
+      identifier_normalized: lowercase, collapse whitespace, strip diacritics.
+      authority: infer from identifier format (BM -> british_museum,
+      YBC -> yale_babylonian, IM -> iraq_museum, etc.).
+    load: >
+      INSERT with annotation_run_id from step 2 retroactive run.
+      UNIQUE constraint on (p_number, identifier_type, identifier_value).
+    validation:
+      expected_rows:
+        artifact_identifiers: ~500000
+      checks:
+        - "Every artifacts.museum_no IS NOT NULL has a matching row"
+        - "identifier_normalized IS NOT NULL for all rows"
+
+  # -----------------------------------------------------------
+  # STEP 7: Surfaces
+  # -----------------------------------------------------------
+  - step: 7
+    name: Surfaces
+    status: not_built
+    script: 07_parse_surfaces.py
+    stage: extract_transform_load
+    depends_on: [5]
+    tables:
+      - surfaces
+    sources:
+      - CDLI ATF files (@obverse, @reverse, @left, @right, @top, @bottom, @seal markers)
+      - CompVis view_desc field
+    description: >
+      Parse ATF surface markers into per-artifact surface records.
+      Surfaces are the physical writing areas on an artifact (obverse,
+      reverse, edges, seal impressions). Required before text_lines
+      and sign_annotations can reference specific locations.
+    extract: >
+      Scan ATF files for @surface markers within each text block.
+      Extract CompVis view_desc values for image-annotated surfaces.
+    transform: >
+      Raw marker -> canonical surface name via surface_canon (step 1).
+      "@obverse" -> "obverse", "@rev" -> "reverse", etc.
+      Merge ATF and CompVis surface lists per artifact.
+    load: >
+      INSERT with annotation_run_id. One row per (p_number, surface_name).
+    validation:
+      expected_rows:
+        surfaces: ~300000
+      checks:
+        - "Every artifact with ATF text has at least one surface"
+
+  # -----------------------------------------------------------
+  # STEP 8: Text Lines
+  # -----------------------------------------------------------
+  - step: 8
+    name: Text lines
+    status: not_built
+    script: 08_parse_text_lines.py
+    stage: extract_transform_load
+    depends_on: [7]
+    tables:
+      - text_lines
+    sources:
+      - CDLI ATF (135,200 texts)
+      - ORACC CDL line nodes (2,215 orphan texts not in CDLI)
+    description: >
+      Decompose ATF text blobs into individual line records with
+      surface assignment, line number, and raw transliteration.
+      ORACC CDL provides additional texts not found in CDLI ATF.
+    extract: >
+      ATF parser: split text blocks on line-number patterns (e.g. "1.",
+      "1'.", "1a.", "o 1", "r 1"). Track current surface from @markers.
+      ORACC CDL: walk JSON tree for line-type nodes.
+    transform: >
+      Assign surface_id FK from step 7.
+      Normalize line numbers to sortable format.
+      Strip ATF structural markup, preserve transliteration content.
+    load: >
+      Batch INSERT with annotation_run_id.
+      Checkpoint every 5,000 texts.
+      ORACC-only texts (no CDLI P-number): create artifact stub first.
+    validation:
+      expected_rows:
+        text_lines: ~2000000
+      checks:
+        - "Every text_line has a valid surface_id FK"
+        - "Line numbers are monotonically ordered within each surface"
+
+  # -----------------------------------------------------------
+  # STEP 9: Tokens
+  # -----------------------------------------------------------
+  - step: 9
+    name: Tokens
+    status: not_built
+    script: 09_import_tokens.py
+    stage: extract_transform_load
+    depends_on: [8]
+    tables:
+      - tokens
+    sources:
+      - ORACC CDL lemma nodes (for ORACC-covered texts)
+      - ATF tokenizer (for non-ORACC texts)
+    description: >
+      Positional anchors within text lines. Each token is a single
+      graphemic word (sign sequence between spaces in transliteration).
+      Tokens are the attachment point for readings, lemmatizations,
+      and morphological analysis.
+    extract: >
+      ORACC CDL: extract lemma-type nodes with form, grapheme sequence,
+      and position within line.
+      ATF tokenizer: split transliteration on whitespace, handling
+      determinatives, glosses, and damage markers.
+    transform: >
+      Assign position_in_line (0-indexed ordinal).
+      Preserve raw form string for display.
+    load: >
+      Batch INSERT with annotation_run_id.
+      ORACC tokens preferred where available; ATF tokenizer for remainder.
+    validation:
+      expected_rows:
+        tokens: ~5000000
+      checks:
+        - "Every token has a valid text_line_id FK"
+        - "position_in_line is unique within each text_line_id"
+
+  # -----------------------------------------------------------
+  # STEP 10: Token Readings
+  # -----------------------------------------------------------
+  - step: 10
+    name: Token readings
+    status: not_built
+    script: 10_import_token_readings.py
+    stage: extract_transform_load
+    depends_on: [9]
+    tables:
+      - token_readings
+    sources:
+      - ORACC CDL form/GDL data
+      - ATF raw transliteration
+    description: >
+      How each token is read (sign values assigned to graphemes).
+      Multiple readings per token are possible (competing interpretations
+      from different scholars/projects). Links tokens to signs table.
+    extract: >
+      ORACC GDL: parse grapheme-level data from CDL form nodes.
+      ATF: parse sign values from transliteration conventions.
+    transform: >
+      Map sign names to sign_id FK (from step 4).
+      Record reading type (logogram, syllabogram, determinative, number).
+    load: >
+      INSERT with annotation_run_id. One row per grapheme per token.
+    validation:
+      expected_rows:
+        token_readings: ~8000000
+      checks:
+        - "Every token_reading has a valid token_id FK"
+        - "sign_id resolves to signs table where assigned"
+
+  # -----------------------------------------------------------
+  # STEP 11: Lemmatizations
+  # -----------------------------------------------------------
+  - step: 11
+    name: Lemmatizations
+    status: not_built
+    script: 11_import_lemmatizations.py
+    stage: extract_transform_load
+    depends_on: [9]
+    tables:
+      - lemmatizations
+    sources:
+      - ORACC CDL lemma nodes (86,659 with real identifications)
+    description: >
+      Dictionary identification of tokens. Each lemmatization links a
+      token to a glossary entry via citation form (cf), guide word (gw),
+      and POS. Only tokens with real identifications are imported.
+    extract: >
+      Parse ORACC CDL lemma.f fields for cf, gw, pos, epos, sense, norm.
+    transform: >
+      Filter: only import where cf IS NOT NULL AND cf != '' AND cf != 'X'.
+      "X" entries are unidentified tokens — skip them.
+      Record source ORACC project for attribution.
+    load: >
+      INSERT with annotation_run_id.
+      Multiple lemmatizations per token allowed (competing interpretations).
+    validation:
+      expected_rows:
+        lemmatizations: ~86000
+      import_rule: "cf IS NOT NULL AND cf != '' AND cf != 'X'"
+      checks:
+        - "Every lemmatization has a valid token_id FK"
+        - "No rows where cf IS NULL or cf = 'X'"
+
+  # -----------------------------------------------------------
+  # STEP 12: Morphology
+  # -----------------------------------------------------------
+  - step: 12
+    name: Morphology
+    status: not_built
+    script: 12_parse_morphology.py
+    stage: transform_load
+    depends_on: [11]
+    tables:
+      - morphology
+    sources:
+      - ORACC morph strings (on lemmatization records)
+    description: >
+      Parse ORACC morphological analysis strings into structured slots.
+      Language-specific: Sumerian uses prefix-chain slot grammar,
+      Akkadian uses root+pattern template morphology.
+    extract: >
+      Read morph field from lemmatization source data.
+    transform: >
+      Sumerian parser: dimensional prefix slots
+      (modal, conjugation, ventive, pronominal, stem, subject, object).
+      Akkadian parser: G/D/S/N stem, tense, person/number/gender.
+      Output normalized slot values.
+    load: >
+      INSERT with annotation_run_id.
+      One morphology row per lemmatization that has a morph string.
+    validation:
+      expected_rows:
+        morphology: ~50000
+      checks:
+        - "Every morphology row has a valid lemmatization_id FK"
+        - "Parse success rate > 90% for Sumerian, > 85% for Akkadian"
+
+  # -----------------------------------------------------------
+  # STEP 13: Glossary Entries, Forms, and Senses
+  # -----------------------------------------------------------
+  - step: 13
+    name: Glossary entries, forms, and senses
+    status: not_built
+    script: 13_import_glossary.py
+    stage: extract_transform_load
+    depends_on: [2]
+    tables:
+      - glossary_entries
+      - glossary_forms
+      - glossary_senses
+    sources:
+      - ORACC glossary JSON (all 9+ projects)
+    description: >
+      Import all ORACC glossary data. Each project maintains its own
+      glossary; entries are preserved per-project (no dedup at glossary level).
+      glossary_senses is currently 0 rows in v1 — this step must populate it.
+    extract: >
+      Parse glossary JSON files per ORACC project.
+      Extract entries (headword, cf, gw, pos), forms (orthographic variants),
+      and senses (meaning subdivisions with labels).
+    transform: >
+      Preserve project attribution on each entry.
+      Normalize POS tags to v2 POS enum.
+      Extract sense hierarchy (sense > subsense).
+    load: >
+      glossary_entries: INSERT per project per headword.
+      glossary_forms: INSERT forms linked to entries.
+      glossary_senses: INSERT senses linked to entries (CRITICAL — currently 0 rows).
+      All with annotation_run_id.
+    validation:
+      expected_rows:
+        glossary_entries: ~30000
+        glossary_forms: ~80000
+        glossary_senses: ~50000
+      checks:
+        - "glossary_senses.count > 0 (currently 0 — must fix)"
+        - "Every entry has at least one sense"
+        - "Every entry has project attribution"
+
+  # -----------------------------------------------------------
+  # STEP 14: Translations
+  # -----------------------------------------------------------
+  - step: 14
+    name: Translations
+    status: not_built
+    script: 14_import_translations.py
+    stage: extract_transform_load
+    depends_on: [8]
+    tables:
+      - translations
+    sources:
+      - CDLI ATF #tr.XX: markers (5,597 existing in v1)
+      - ORACC translation nodes
+    description: >
+      Import text translations at line or block level. CDLI ATF uses
+      #tr.en:, #tr.de:, etc. markers. ORACC provides structured
+      translation nodes in corpus JSON.
+    extract: >
+      ATF parser: extract #tr.XX: lines following text lines.
+      ORACC: parse translation-type nodes from corpus JSON.
+    transform: >
+      Assign language code from marker (en, de, fr, etc.).
+      Link to text_line_id or artifact-level (block translations).
+      Migrate v1 source='cdli' records to annotation_run_id.
+    load: >
+      INSERT new translations with annotation_run_id.
+      UPDATE existing v1 rows to set annotation_run_id (retroactive).
+    validation:
+      expected_rows:
+        translations: ~8000
+      checks:
+        - "All v1 translations (5,597) migrated to annotation_run_id"
+        - "ORACC translations added beyond v1 count"
+
+  # -----------------------------------------------------------
+  # STEP 15: Sign Annotations
+  # -----------------------------------------------------------
+  - step: 15
+    name: Sign annotations
+    status: not_built
+    script: 15_import_sign_annotations.py
+    stage: extract_transform_load
+    depends_on: [4, 7]
+    tables:
+      - sign_annotations
+    sources:
+      - CompVis bounding box annotations (11,070)
+    description: >
+      Import CompVis sign annotations with bounding boxes on tablet images.
+      MZL numbers from CompVis must resolve to OGSL sign_ids via the
+      concordance built in step 4.
+    extract: >
+      Parse CompVis annotation JSON for bounding boxes, MZL numbers,
+      and image references.
+    transform: >
+      MZL number -> OGSL sign_id via sign_concordance (step 4).
+      Bbox pixel coordinates -> percentage-of-image (resolution-independent).
+      Requires image dimensions for percentage conversion.
+      Link to surface_id from step 7 via CompVis view_desc.
+    load: >
+      INSERT with annotation_run_id.
+      Flag annotations where MZL -> OGSL resolution failed.
+    validation:
+      expected_rows:
+        sign_annotations: 11070
+      checks:
+        - "MZL -> OGSL resolution rate > 95%"
+        - "All bboxes converted to percentages"
+        - "Every annotation has a valid surface_id FK"
+
+  # -----------------------------------------------------------
+  # STEP 16: Named Entities and Entity Mentions
+  # -----------------------------------------------------------
+  - step: 16
+    name: Named entities and entity mentions
+    status: not_built
+    script: 16_derive_entities.py
+    stage: derive
+    depends_on: [11, 13]
+    tables:
+      - named_entities
+      - entity_mentions
+    sources:
+      - glossary_entries (entries with POS in entity categories)
+      - lemmatizations (tokens identified with entity POS)
+    description: >
+      Derive named entities from glossary entries that represent proper
+      nouns (persons, deities, places, temples, etc.). Entity mentions
+      are instances in text where these entities appear.
+    extract: >
+      Query glossary_entries WHERE pos IN ('PN','DN','GN','TN','WN','EN','MN','ON','RN','SN','FN','LN','AN','QN').
+      Query lemmatizations WHERE pos matches entity POS categories.
+    transform: >
+      Dedup entities by headword + language across ORACC projects.
+      Classify entity type from POS (PN -> person, DN -> deity, GN -> place, etc.).
+      Entity mentions: link lemmatization to named_entity.
+    load: >
+      named_entities: INSERT deduped entities with annotation_run_id.
+      entity_mentions: INSERT one row per lemmatization with entity POS.
+    validation:
+      expected_rows:
+        named_entities: ~5000
+        entity_mentions: ~20000
+      checks:
+        - "No duplicate entities (same headword + language)"
+        - "Every entity_mention links to valid named_entity and lemmatization"
+
+  # -----------------------------------------------------------
+  # STEP 17: Composites
+  # -----------------------------------------------------------
+  - step: 17
+    name: Composites and artifact-composite links
+    status: not_built
+    script: 17_import_composites.py
+    stage: extract_transform_load
+    depends_on: [5]
+    tables:
+      - composites
+      - artifact_composites
+    sources:
+      - CDLI ATF files (>>Q markers)
+    description: >
+      Import composite (ideal) texts and their links to individual
+      artifact exemplars. Composites represent reconstructed "standard"
+      versions assembled from multiple witness tablets.
+    extract: >
+      Parse ATF files for ">>Q" reference lines that link artifacts
+      to composite Q-numbers.
+    transform: >
+      Extract Q-number, composite designation, and line references.
+      Remove periods_cache/proveniences_cache columns (v1 denormalization).
+      These values derive via SQL view: JOIN artifact_composites -> artifacts.
+    load: >
+      composites: INSERT with Q-number PK.
+      artifact_composites: INSERT (p_number, q_number, line_ref) links.
+    validation:
+      expected_rows:
+        composites: 857
+        artifact_composites: 3771
+      checks:
+        - "All Q-numbers are valid format"
+        - "All p_numbers in artifact_composites exist in artifacts"
+        - "No periods_cache or proveniences_cache columns (derive via view)"
+
+  # -----------------------------------------------------------
+  # STEP 18: Citation Pipeline (ALREADY BUILT)
+  # -----------------------------------------------------------
+  - step: 18
+    name: Citation pipeline
+    status: built
+    script: data/v2-schema-tools/citations/run_citation_import.sh
+    stage: extract_transform_load
+    depends_on: [5]
+    tables:
+      - publications
+      - artifact_editions
+      - scholars  # enrichment of step 3 seed data
+      - publication_supersessions
+    sources:
+      - CDLI API (publications, artifact-edition links)
+      - CDLI CSV (pub_history, citation fields)
+      - eBL API (CSL-JSON bibliography)
+      - ORACC catalogue (edition references)
+      - OpenAlex (DOI, ORCID, citation metadata)
+      - KeiBi (BibTeX, manual acquisition)
+      - Semantic Scholar (citation graphs)
+      - Who's Who in Cuneiform Studies (scholar directory)
+      - Wikipedia Assyriologists list
+    description: >
+      Full citation resolution pipeline. 10 phases importing publications,
+      linking artifacts to editions, enriching scholar records, and
+      building supersession chains. See citations/README.md for details.
+    phases:
+      - { script: 01_cdli_publications.py, name: "CDLI Publications" }
+      - { script: 02_cdli_artifact_editions.py, name: "CDLI Artifact Editions" }
+      - { script: 03_ebl_bibliography.py, name: "eBL Bibliography" }
+      - { script: 04_oracc_editions.py, name: "ORACC Editions" }
+      - { script: 05_cdli_csv_supplementary.py, name: "CDLI CSV Supplementary" }
+      - { script: 06_enrich_openalex.py, name: "OpenAlex Enrichment" }
+      - { script: 07_import_keibi.py, name: "KeiBi Bibliography" }
+      - { script: 08_enrich_semantic_scholar.py, name: "Semantic Scholar" }
+      - { script: 09_import_scholars_directory.py, name: "Scholar Directory" }
+      - { script: 10_seed_supersessions.py, name: "Supersession Chains" }
+    shared_libs:
+      - lib/checkpoint.py
+      - lib/name_normalizer.py
+      - lib/publication_matcher.py
+      - lib/bibtex_parser.py
+      - lib/cdli_client.py
+      - lib/ebl_client.py
+    verification:
+      - verify/verify_publications.py
+      - verify/verify_provider_attribution.py
+      - verify/verify_artifact_editions.py
+      - verify/verify_scholars.py
+      - verify/verify_dedup.py
+
+  # -----------------------------------------------------------
+  # STEP 19: Materialized Views and Pipeline Status
+  # -----------------------------------------------------------
+  - step: 19
+    name: Materialized views and pipeline status
+    status: not_built
+    script: 19_refresh_views.py
+    stage: derive
+    depends_on: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+    tables:
+      - mv_language_stats
+      - mv_period_stats
+      - mv_provenience_stats
+      - mv_genre_stats
+      - mv_pipeline_overview
+    description: >
+      Refresh all materialized view tables and update pipeline_status.
+      These are denormalized aggregation tables for fast dashboard queries.
+      Must run after all other steps to reflect complete data.
+    views:
+      mv_language_stats: >
+        SELECT language, COUNT(*) as artifact_count,
+        COUNT(DISTINCT text_lines.id) as line_count
+        FROM artifacts LEFT JOIN ... GROUP BY language
+      mv_period_stats: >
+        SELECT period_normalized, COUNT(*) as artifact_count,
+        MIN/MAX date range, language distribution
+        FROM artifacts GROUP BY period_normalized
+      mv_provenience_stats: >
+        SELECT provenience_normalized, COUNT(*), latitude, longitude
+        FROM artifacts GROUP BY provenience_normalized
+      mv_genre_stats: >
+        SELECT genre, COUNT(*), period distribution
+        FROM artifacts GROUP BY genre
+      mv_pipeline_overview: >
+        SELECT table_name, row_count, last_annotation_run,
+        null_rates for critical columns, FK integrity status
+        FROM (each table in schema)
+    load: >
+      DROP TABLE IF EXISTS mv_*; CREATE TABLE mv_* AS (query).
+      Update pipeline_status with completion timestamp and summary.
+    validation:
+      checks:
+        - "All mv_ tables have > 0 rows"
+        - "mv_pipeline_overview covers all 19 steps"
+        - "Row counts in overview match actual table counts"
+
+# ═══════════════════════════════════════════════════════════
+# DEPENDENCY GRAPH (visual summary)
+# ═══════════════════════════════════════════════════════════
+#
+#   Step 1 (lookups) ──────────────────────┐
+#   Step 2 (annotation_runs) ──┬───────────┤
+#                              │           │
+#   Step 3 (scholars) ─────────┘           │
+#   Step 4 (signs) ────────────────────────┤
+#                                          │
+#   Step 5 (artifacts) ────────────────────┤ depends on 1, 2
+#     │                                    │
+#     ├── Step 6 (identifiers)             │
+#     ├── Step 7 (surfaces) ───────────────┤
+#     │     │                              │
+#     │     ├── Step 8 (text_lines) ───────┤
+#     │     │     │                        │
+#     │     │     ├── Step 9 (tokens) ─────┤
+#     │     │     │     │                  │
+#     │     │     │     ├── Step 10 (readings)
+#     │     │     │     ├── Step 11 (lemmas)
+#     │     │     │     │     │
+#     │     │     │     │     ├── Step 12 (morphology)
+#     │     │     │     │     └── Step 16 (entities) ── also depends on 13
+#     │     │     │     │
+#     │     │     │     └───────────────────┤
+#     │     │     ├── Step 14 (translations)│
+#     │     │     └────────────────────────┤
+#     │     └── Step 15 (sign annotations) │ also depends on 4
+#     │                                    │
+#     ├── Step 17 (composites)             │
+#     └── Step 18 (citations) ── BUILT     │
+#                                          │
+#   Step 13 (glossary) ───── depends on 2  │
+#                                          │
+#   Step 19 (views) ──────── depends on ALL│
+#
+# ═══════════════════════════════════════════════════════════
+# ORCHESTRATOR
+# ═══════════════════════════════════════════════════════════
+
+orchestrator:
+  script: run_full_import.sh
+  path: data/v2-schema-tools/run_full_import.sh
+  description: >
+    Master orchestrator that runs all 19 steps in dependency order.
+    Each step is idempotent. Supports --reset for clean re-run and
+    --from N to resume from step N. Follows the pattern established
+    by citations/run_citation_import.sh.
+  usage: |
+    # Full pipeline
+    ./run_full_import.sh
+
+    # Resume from step 8
+    ./run_full_import.sh --from 8
+
+    # Clean re-run of everything
+    ./run_full_import.sh --reset
+
+    # Single step
+    python 05_import_artifacts.py --db /path/to/glintstone.db [--reset]
+  cli_pattern: |
+    Every script accepts:
+      --db PATH        Database path (default: database/glintstone.db)
+      --reset          Discard checkpoint and start fresh
+      --dry-run        Parse and transform only, no writes
+      --verbose        Detailed progress output
