@@ -4,11 +4,65 @@
 tables_added:
   - surfaces: "Explicit surface decomposition (was implicit text field)"
   - text_lines: "Per-line ATF records (was monolithic text blob)"
-  - tokens: "Central hub linking all layers (did not exist)"
+  - tokens: "Positional anchor linking all layers (did not exist)"
+  - token_readings: "Competing transliterations per token position (trust primitive)"
   - lemmatizations: "Replaces lemmas — supports competing analyses"
   - morphology: "Structured morphological decomposition (was opaque string)"
   - annotation_runs: "Provenance tracking for all annotations (did not exist)"
+  - scholars: "Individual scholarly contributors with expertise metadata (trust primitive)"
   - intertextuality_links: "Cross-text relationships (did not exist)"
+  # Trust: Evidence tables (link annotations to supporting evidence)
+  - token_reading_evidence: "Evidence for token readings (photographs, publications, etc.)"
+  - lemmatization_evidence: "Evidence for lemmatizations"
+  - sign_annotation_evidence: "Evidence for sign bounding box annotations"
+  - translation_evidence: "Evidence for translations"
+  # Trust: Decision tables (audit trail for consensus choices)
+  - token_reading_decisions: "Audit trail for token reading consensus"
+  - lemmatization_decisions: "Audit trail for lemmatization consensus"
+  - translation_decisions: "Audit trail for translation consensus"
+  # Annotation Ecosystem: Fragment Joins
+  - join_groups: "N-way fragment join grouping (reconstructed tablets)"
+  - fragment_joins: "Pairwise physical connections between artifacts with trust pipeline"
+  - fragment_join_evidence: "Evidence supporting/refuting proposed joins"
+  - fragment_join_decisions: "Audit trail for join acceptance/rejection"
+  # Annotation Ecosystem: Scholarly Commentary
+  - scholarly_annotations: "Cross-layer commentary with strict FK targeting and W3C export"
+  - scholarly_annotation_evidence: "Evidence for scholarly annotations"
+  # Annotation Ecosystem: Discussion Threads (per-entity strict FKs)
+  - token_reading_discussion_threads: "Scholarly discourse on token readings"
+  - lemmatization_discussion_threads: "Scholarly discourse on lemmatizations"
+  - translation_discussion_threads: "Scholarly discourse on translations"
+  - fragment_join_discussion_threads: "Scholarly discourse on proposed joins"
+  - scholarly_annotation_discussion_threads: "Scholarly discourse on annotations"
+  - discussion_posts: "Shared posts table for all discussion thread types"
+  # Knowledge Graph: Named Entity Registry
+  - named_entities: "Graph nodes — persons, deities, places, institutions extracted from lemmatizations"
+  - entity_aliases: "Merge/alias records when duplicate entities identified"
+  - entity_mentions: "Links tokens/lines to named entities with provenance"
+  - entity_mention_evidence: "Evidence for entity identification"
+  - entity_mention_decisions: "Audit trail for entity identification consensus"
+  # Knowledge Graph: Entity Relationships
+  - relationship_predicates: "Controlled vocabulary for stable relationship types (~13 Tier 1 predicates)"
+  - entity_relationships: "Knowledge graph edges with hybrid predicate governance and temporal scope"
+  - entity_relationship_evidence: "Evidence for entity relationships"
+  - entity_relationship_decisions: "Audit trail for entity relationship consensus"
+  # Knowledge Graph: Authority Reconciliation
+  - authority_links: "Maps entities to external identifiers (Wikidata, VIAF, Pleiades, GeoNames)"
+  - authority_reconciliation_disputes: "Records disagreements on authority links"
+  # Citation Resolution: Identity Concordance (Layer 0)
+  - artifact_identifiers: "N:1 alias concordance — any identifier resolves to P-number (replaces flat museum_no/excavation_no for lookup)"
+  - artifact_identifier_evidence: "Evidence for identifier assignments (catalog entries, museum records)"
+  - artifact_identifier_decisions: "Audit trail for disputed identifier assignments"
+  # Citation Resolution: Publication Registry (Cross-cutting)
+  - publications: "Structured bibliographic records with series membership and edition supersession chains"
+  - publication_authors: "Structured authorship linking publications to scholars table"
+  # Citation Resolution: Edition Bridge (Layer 0 / Trust)
+  - artifact_editions: "Links artifacts to publications with page/plate refs, is_current_edition consensus flag, per-artifact supersedes chain"
+  - artifact_edition_evidence: "Evidence for artifact-publication links"
+  - artifact_edition_decisions: "Audit trail for is_current_edition designation"
+
+views_added:
+  - scholarly_annotations_w3c: "W3C Web Annotation Data Model export for federation"
 
 tables_removed:
   - lemmas: "Replaced by lemmatizations + tokens"
@@ -63,6 +117,16 @@ tables_expanded:
   import_log:
     added_columns: [annotation_run_id]
 
+  annotation_runs:
+    added_columns: [scholar_id, method, publication_ref, publication_id]
+    removed_columns: []
+    notes: "publication_id is nullable FK to publications table (incremental migration); publication_ref stays as freetext fallback"
+
+  tokens:
+    added_columns: []
+    removed_columns: [form, reading, sign_function, damage, reading_confidence]
+    notes: "Reading data moved to token_readings table. Token is now purely positional."
+
 tables_unchanged:
   - composites
   - artifact_composites
@@ -95,3 +159,39 @@ key_architectural_shifts:
 
   - from: "Opaque morph string"
     to: "Structured morphology table with language-specific slots"
+
+  - from: "Single reading per token position"
+    to: "Competing readings via token_readings with provenance and consensus tracking"
+
+  - from: "No scholar-level attribution"
+    to: "scholars table + scholar_id on annotation_runs — who read this, how, and where published"
+
+  - from: "is_consensus as bare flag"
+    to: "Decision tables with rationale, method, and supersedes chain for full audit trail"
+
+  - from: "No evidence linking"
+    to: "Per-entity evidence tables connecting annotations to photographs, publications, collation notes"
+
+  - from: "No fragment join tracking"
+    to: "fragment_joins + join_groups with full evidence/decision trust pipeline and N-way grouping"
+
+  - from: "No general-purpose scholarly commentary"
+    to: "scholarly_annotations with strict FK targeting, versioning, and W3C Web Annotation export"
+
+  - from: "No structured scholarly discussion"
+    to: "Per-entity discussion_threads with shared discussion_posts — captures discourse that produces consensus"
+
+  - from: "No named entity tracking"
+    to: "named_entities registry with entity_mentions linking tokens to persons, deities, places — bridges Layer 4 (Linguistic) to Layer 5 (Semantic)"
+
+  - from: "No entity relationships"
+    to: "entity_relationships with hybrid predicate governance (Tier 1 enum + Tier 2-3 freetext), temporal scope via period names, full evidence/decision trust chain"
+
+  - from: "No external authority linking"
+    to: "authority_links maps entities to Wikidata, VIAF, Pleiades, GeoNames with reconciliation disputes for scholarly disagreement"
+
+  - from: "Flat museum_no/excavation_no columns, no structured publication tracking"
+    to: "artifact_identifiers N:1 concordance + publications registry + artifact_editions bridge — dual resolution path (fast identifier lookup + rich edition metadata) with per-artifact supersedes chains and is_current_edition consensus"
+
+  - from: "Freetext publication_ref on annotation_runs"
+    to: "Structured publication_id FK alongside freetext fallback — every reading/lemmatization/annotation can link to a real bibliographic record"
