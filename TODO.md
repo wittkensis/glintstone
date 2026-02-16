@@ -43,3 +43,6 @@
 - https://compvis.github.io/cuneiform-sign-detection-code/
 - CDLI Tablet Detail https://cdli.earth/artifacts/322250
 - DeepScribe Methodology https://arxiv.org/html/2306.01268v2
+- CDL (Cuneiform Document Language)
+- GDL (Grapheme Description Language)
+- ATF format documentation

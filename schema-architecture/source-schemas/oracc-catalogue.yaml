@@ -4,7 +4,8 @@ source:
   local_path: sources/ORACC/{project}/json/{project}/catalogue.json
   format: json
   license: CC0
-  projects_with_data: [dcclt, saao, rinap, hbtin, dccmt, ribo, epsd2, riao, etcsri, blms]
+  projects_with_data:
+    [dcclt, saao, rinap, hbtin, dccmt, ribo, epsd2, riao, etcsri, blms]
   last_pulled: 2026-02-04 (dcclt-ribo), 2026-02-14 (epsd2-blms)
   notes: >
     Each ORACC project has its own catalogue.json. Field availability varies by project.

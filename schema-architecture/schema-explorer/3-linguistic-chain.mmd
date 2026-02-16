@@ -1,0 +1,89 @@
+---
+title: "Linguistic Chain: Tablets → Signs → Tokens → Meanings → Translations"
+---
+flowchart TB
+  art["artifact\n(P-number)\n353k records"]
+  art -->|"1 artifact\nhas 2-7"| surf
+
+  surf["surface\nobverse | reverse | edge\n(parsed from ATF @markers)"]
+  surf -->|"1 surface\nhas 5-50"| line
+
+  line["text_line\nraw ATF + line_number\n(from CDLI ATF or ORACC CDL)"]
+  line -->|"1 line\nhas 3-15"| tok
+
+  tok["TOKEN\nform + reading + lang\ngdl_json + sign_function\ndamage + confidence\n━━━━━━━━━━━━━━━━━\nCENTRAL HUB\neverything connects here"]
+
+  %% ─── LEFT BRANCH: Physical / Sign identification ───
+  tok -->|"token contains\n1-5 signs via GDL"| gdl
+
+  gdl["GDL Sign Instances\n(JSON array on token)\neach: sign_name + reading\n+ operator: beside|above\n+ break markers"]
+  gdl -->|"each GDL node\nreferences via OID"| ogsl_sign
+
+  ogsl_sign["signs table\n(OGSL canonical)\nsign_id, utf8, unicode_hex\ngdl_definition"]
+  ogsl_sign -->|"1 sign has\n1-20 readings"| sv
+
+  sv["sign_values\nvalue + sub_index\ntype: logo|syllabic|det|num\nlanguage_context\nperiod_context\nfrequency"]
+
+  ogsl_sign -->|"some signs have"| var
+  var["sign_variants\ngunu (@g)\ntenu (@t)\nsheshig (@s)"]
+
+  %% Sign concordance (the critical gap)
+  ogsl_sign --- conc
+  conc["CONCORDANCE\n(must be built)\n─────────────\nmzl_number ↔ sign_id\nabz_number ↔ sign_id\nNeeded to unify:\nCompVis MZL labels\neBL ABZ labels"]
+
+  %% Physical annotation branch
+  tok -->|"0-1 bbox\nper token"| ann
+
+  ann["sign_annotation\nsurface_id → surface\nsign_id → signs (resolved)\nbbox: x%, y%, w%, h%\ndamage_status\nconfidence"]
+  ann -->|"provenance"| run_phys
+  run_phys["annotation_run\nCompVis DETR\nor eBL model\nor manual"]
+
+  %% ─── RIGHT BRANCH: Linguistic analysis ───
+  tok -->|"1 token has\n1+ competing"| lem
+
+  lem["lemmatization\ncitation_form + guide_word\nsense + pos + epos\nnorm + base\nmorph_raw\nsignature (full ORACC sig)\nis_consensus flag\nconfidence"]
+
+  lem -->|"provenance"| run_ling
+  run_ling["annotation_run\nORACC/dcclt (human)\nORACC/epsd2 (human)\nBabyLemmatizer (ML)\netc."]
+
+  lem -->|"1 lemmatization\nhas 0-1"| morph
+
+  morph["morphology\nlanguage_family discriminator\n━━━━━━━━━━━━━━━━━\nAkkadian:\n  root (triconsonantal)\n  stem: G|D|Sh|N\n  tense, person, number\n  gender, case, state\n━━━━━━━━━━━━━━━━━\nSumerian:\n  conjugation_prefix\n  dimensional_prefixes\n  stem_form, aspect\n  pronominal_suffix\n  transitivity"]
+
+  lem -->|"links to\ndictionary"| gl_e
+
+  gl_e["glossary_entry\nheadword, cf, gw\npos, language\nicount, periods, norms"]
+  gl_e -->|"1 entry has\nmany"| gl_f
+  gl_e -->|"1 entry has\nhierarchical"| gl_s
+
+  gl_f["glossary_forms\nattested spellings\ncount, norm, lang"]
+  gl_s["glossary_senses\nsense_number\ndefinition, POS\nsignatures (attestations)"]
+
+  %% ─── BOTTOM BRANCH: Translation + Intertextuality ───
+  line -->|"1 line has\n0-1 per language"| trans
+
+  trans["translation\nlanguage: en|de|...\nsource: cdli|oracc\nannotation_run_id"]
+
+  tok -->|"token spans can\nlink across texts"| inter
+
+  inter["intertextuality_link\nsource_tokens ↔ target_tokens\ntype: parallel|quotation\n  formula|duplicate\nconfidence"]
+
+  %% ─── PROVENANCE (cross-cutting) ───
+  lem -.-> run_ling
+  ann -.-> run_phys
+
+  style tok fill:#2d5a3d,stroke:#4ade80,color:#d1fae5
+  style lem fill:#1e3a4a,stroke:#38bdf8,color:#bae6fd
+  style morph fill:#1e3a4a,stroke:#38bdf8,color:#bae6fd
+  style gl_e fill:#1e3a4a,stroke:#38bdf8,color:#bae6fd
+  style gl_f fill:#1e3a4a,stroke:#38bdf8,color:#bae6fd
+  style gl_s fill:#1e3a4a,stroke:#38bdf8,color:#bae6fd
+  style ogsl_sign fill:#2a1a3a,stroke:#a78bfa,color:#d4bfff
+  style sv fill:#2a1a3a,stroke:#a78bfa,color:#d4bfff
+  style var fill:#2a1a3a,stroke:#a78bfa,color:#d4bfff
+  style gdl fill:#2a1a3a,stroke:#a78bfa,color:#d4bfff
+  style conc fill:#3a1a1a,stroke:#f87171,color:#fca5a5
+  style run_phys fill:#1c1c2e,stroke:#6366f1,color:#a5b4fc
+  style run_ling fill:#1c1c2e,stroke:#6366f1,color:#a5b4fc
+  style inter fill:#2a2a1a,stroke:#eab308,color:#fde68a
+  style trans fill:#2a2a1a,stroke:#eab308,color:#fde68a

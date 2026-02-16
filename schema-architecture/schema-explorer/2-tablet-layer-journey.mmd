@@ -1,0 +1,104 @@
+---
+title: "Tablet Layer Journey"
+---
+flowchart TB
+  subgraph L0["LAYER 0 — IDENTITY: What is this artifact?"]
+    direction LR
+    S0["CDLI Catalog\nORACC Catalogue\nORACC GeoJSON"]
+    T0["artifacts\n─────────────────\np_number, museum_no\nperiod_normalized\nprovenience_normalized\ngenre, subgenre, supergenre\nlanguage, languages\nlat, lon, pleiades_id\nmaterial, object_type\ncollection, primary_publication"]
+    T0b["composites\n─────────────────\nq_number\ndesignation\nexemplar_count"]
+    Q0["What is this tablet?\nWhere was it found?\nWhat period? What genre?"]
+    S0 --> T0
+    S0 --> T0b
+    T0 --- Q0
+  end
+
+  subgraph L1["LAYER 1 — PHYSICAL: What does the artifact look like?"]
+    direction LR
+    S1["CompVis bboxes\neBL bboxes (future)\nCDLI ATF @markers"]
+    T1a["surfaces\n─────────────────\nsurface_type:\n  obverse, reverse\n  left/right/top/bottom\n  seal\nimage_path, dimensions"]
+    T1b["sign_annotations\n─────────────────\nsurface_id → surfaces\nsign_id → signs (resolved)\nbbox: x%, y%, w%, h%\nline_number, position\ndamage_status:\n  intact|damaged|missing\nannotation_run_id\nconfidence"]
+    Q1["Where are signs located?\nWhat is damaged?\nWhich surface?"]
+    S1 --> T1a
+    S1 --> T1b
+    T1a --- Q1
+  end
+
+  subgraph L2["LAYER 2 — GRAPHEMIC: What signs are present?"]
+    direction LR
+    S2["OGSL Sign List\nePSD2 Unicode ref\neBL partial concordance"]
+    T2a["signs\n─────────────────\nsign_id (OGSL canonical)\nutf8, unicode_hex\nmzl_number (CompVis key)\nabz_number (eBL key)\nlak_number\ngdl_definition (JSON)\ntotal_corpus_frequency"]
+    T2b["sign_values\n─────────────────\nvalue, sub_index\nvalue_type:\n  logographic|syllabic\n  determinative|numeric\nlanguage_context\nperiod_context\nfrequency"]
+    T2c["sign_variants\n─────────────────\nbase_sign → signs\nmodifier: gunu, tenu\nsheshig, nutillu"]
+    Q2["Which signs appear?\nWhat are their readings?\nHow do sign IDs map?"]
+    S2 --> T2a
+    S2 --> T2b
+    S2 --> T2c
+    T2a --- Q2
+  end
+
+  subgraph L3["LAYER 3 — READING: How is the text read?"]
+    direction LR
+    S3["CDLI ATF (135k texts)\nORACC Corpus (~7.5k)"]
+    T3a["text_lines\n─────────────────\nsurface_id → surfaces\nline_number\nraw_atf\nis_ruling, is_blank\nsource: cdli|oracc"]
+    T3b["tokens\n─────────────────\nline_id → text_lines\nposition (in line)\nform (transliterated)\nreading\nsign_function:\n  logo|syllabo|det|num\nlang (per-token!)\ngdl_json (sign tree)\ndamage, confidence"]
+    Q3["What does the text say?\nHow are signs read?\nWhat language per word?"]
+    S3 --> T3a
+    S3 --> T3b
+    T3a --- Q3
+  end
+
+  subgraph L4["LAYER 4 — LINGUISTIC: What do the words mean?"]
+    direction LR
+    S4["ORACC Corpus only\n~7.5k texts = 5.5%\n(+ BabyLemmatizer future)"]
+    T4a["lemmatizations\n─────────────────\ntoken_id → tokens\ncitation_form, guide_word\nsense, pos, epos\nnorm, base\nmorph_raw, signature\nis_consensus\nannotation_run_id\nconfidence\n(MULTIPLE per token)"]
+    T4b["morphology\n─────────────────\nlemmatization_id\nlanguage_family\n\nAkkadian slots:\n  root, stem (G/D/S/N)\n  tense, person, number\n  gender, case, state\n\nSumerian slots:\n  conjugation_prefix\n  dimensional_prefixes\n  stem_form, aspect\n  pronominal_suffix"]
+    Q4["What word is this?\nWhat does it mean?\nWhat is its grammar?"]
+    S4 --> T4a
+    S4 --> T4b
+    T4a --- Q4
+  end
+
+  subgraph L5["LAYER 5 — SEMANTIC: What is the meaning?"]
+    direction LR
+    S5["ORACC Glossary\nCDLI ATF translations\nEditorial work (future)"]
+    T5a["translations\n─────────────────\np_number → artifacts\nline_id → text_lines\nlanguage: en, de, ...\nsource, annotation_run_id"]
+    T5b["glossary_entries\n─────────────────\ncitation_form, guide_word\npos, language, icount\nperiods, norms\n→ glossary_forms\n→ glossary_senses"]
+    T5c["intertextuality_links\n─────────────────\nsource tokens → target tokens\nlink_type:\n  parallel|quotation\n  formula|duplicate\nconfidence"]
+    Q5["What does the text say\nin English/German?\nWhat parallels exist?"]
+    S5 --> T5a
+    S5 --> T5b
+    S5 --> T5c
+    T5a --- Q5
+  end
+
+  subgraph PROV["CROSS-CUTTING — Who analyzed this?"]
+    direction LR
+    SP["All sources generate\nannotation_runs\non import"]
+    TP["annotation_runs\n─────────────────\nsource_type:\n  human|model|hybrid|import\nsource_name:\n  ORACC/dcclt\n  BabyLemmatizer v2.2\n  CompVis DETR\nmodel_version\ncorpus_scope"]
+    QP["Who produced this analysis?\nHuman or ML?\nWhich version?"]
+    SP --> TP
+    TP --- QP
+  end
+
+  L0 ==> L1
+  L1 ==> L2
+  L2 ==> L3
+  L3 ==> L4
+  L4 ==> L5
+
+  style S0 fill:#2a1a3a,stroke:#a78bfa,color:#d4bfff
+  style S1 fill:#2a1a3a,stroke:#a78bfa,color:#d4bfff
+  style S2 fill:#2a1a3a,stroke:#a78bfa,color:#d4bfff
+  style S3 fill:#2a1a3a,stroke:#a78bfa,color:#d4bfff
+  style S4 fill:#3a2a1a,stroke:#d97706,color:#fbbf24
+  style S5 fill:#2a1a3a,stroke:#a78bfa,color:#d4bfff
+  style SP fill:#2a1a3a,stroke:#a78bfa,color:#d4bfff
+  style T3b fill:#2d5a3d,stroke:#4ade80,color:#d1fae5
+  style Q0 fill:#0f1117,stroke:#374151,color:#6b7280
+  style Q1 fill:#0f1117,stroke:#374151,color:#6b7280
+  style Q2 fill:#0f1117,stroke:#374151,color:#6b7280
+  style Q3 fill:#0f1117,stroke:#374151,color:#6b7280
+  style Q4 fill:#0f1117,stroke:#374151,color:#6b7280
+  style Q5 fill:#0f1117,stroke:#374151,color:#6b7280
+  style QP fill:#0f1117,stroke:#374151,color:#6b7280
