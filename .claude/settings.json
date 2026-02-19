@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(tar:*)",
-      "WebFetch(domain:zenodo.org)"
+      "WebFetch(domain:zenodo.org)",
+      "Bash(ssh:*)"
     ]
   }
 }

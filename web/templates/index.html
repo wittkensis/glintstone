@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Glintstone{% endblock %}
+
+{% block content %}
+<main class="container">
+    <h1>Glintstone v2</h1>
+    <p>Cuneiform research platform</p>
+
+    <div id="api-status" class="status-box">Checking API connection...</div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const apiUrl = "{{ api_url }}";
+    fetch(apiUrl + "/health")
+        .then(r => r.json())
+        .then(d => {
+            const el = document.getElementById("api-status");
+            el.textContent = "API: " + d.status + " | DB: " + d.database + " | Python " + d.python;
+            el.classList.add(d.status === "healthy" ? "status-ok" : "status-error");
+        })
+        .catch(() => {
+            const el = document.getElementById("api-status");
+            el.textContent = "API: unreachable";
+            el.classList.add("status-error");
+        });
+</script>
+{% endblock %}

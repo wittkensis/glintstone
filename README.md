@@ -2,9 +2,29 @@
 
 A federated cuneiform research platform. Glintstone aggregates open data from across the field into a single interface organized around a five-stage pipeline: **Image > OCR > ATF > Lemmas > Translation**. Every artifact shows its pipeline status so researchers can see what exists, what's missing, and where human expertise or new tools could make the most difference.
 
-This project would not exist without the decades of scholarship behind [CDLI](https://cdli.earth), [ORACC](https://oracc.museum.upenn.edu), [eBL](https://www.ebl.lmu.de), [ePSD2](http://oracc.org/epsd2), [OGSL](http://oracc.org/ogsl), and the [CompVis](https://github.com/CompVis/cuneiform-sign-detection-dataset) and [eBL OCR](https://github.com/ElectronicBabylonianLiterature/cuneiform-ocr-data) annotation teams. The researchers and institutions behind these projects built the foundation this platform stands on -- cataloging hundreds of thousands of artifacts, producing transliterations and linguistic annotations, training sign detection models, and making all of it openly available. Glintstone's role is to bring these resources together and make them more accessible. Credit and source attribution are structural requirements, not afterthoughts.
+This project would not exist without the decades of scholarship behind [CDLI](https://cdli.earth), [ORACC](https://oracc.museum.upenn.edu), [eBL](https://www.ebl.lmu.de), [ePSD2](http://oracc.org/epsd2), [OGSL](http://oracc.org/ogsl), and the [CompVis](https://github.com/CompVis/cuneiform-sign-detection-dataset) and [eBL OCR](https://github.com/ElectronicBabylonianLiterature/cuneiform-ocr-data) teams. The researchers and institutions behind these projects built the foundation this tool stands on -- cataloging hundreds of thousands of artifacts, producing transliterations and linguistic annotations, training sign detection models, and making all of it openly available. Glintstone's role is to bring these resources together and make them even more accessible. Credit and source attribution are structural requirements for Glintstone.
 
 We are early in this process. There is a great deal to learn about the domain, and it will take sustained iteration -- with input from working Assyriologists -- to get this right.
+
+---
+
+## Why Glintstone?
+
+CDLI and ORACC are the two most important open resources in cuneiform studies. CDLI is the catalog -- 389,000 artifacts with photographs, transliterations, and publication records. ORACC is the scholarship -- project-specific linguistic editions with lemmatization, glossaries, and expert annotations. Both are essential infrastructure that the field depends on.
+
+But they are primarily **databases**. Each serves its core mission well, but neither is designed as a unified research experience that brings everything together for a single artifact or a single line of text. Their data lives in separate, structurally incompatible systems: CDLI stores a flat CSV catalog and ATF text files; ORACC stores project-siloed JSON with no cross-project API.
+
+Glintstone is the **experience layer** that makes both stronger:
+
+- **Unified access** -- Merges CDLI's catalog and ORACC's editions into a single relational schema. A researcher can see an artifact's catalog data, transliteration, linguistic annotations, images, publication history, and pipeline status in one place.
+- **Makes CDLI data more usable** -- CDLI's 64-field CSV catalog contains rich metadata (publication histories, excavation contexts, seal descriptions, philological remarks) that is difficult to query or browse in raw form. Glintstone normalizes, structures, and indexes this data.
+- **Makes ORACC data more accessible** -- ORACC's project-siloed architecture means a text edited in two different projects has two separate, unlinked editions. Glintstone consolidates all projects into a single queryable database with cross-references.
+- **Trust infrastructure** -- Neither CDLI nor ORACC tracks competing scholarly readings, confidence scores, or editorial provenance at the annotation level. Glintstone's annotation system lets disagreement coexist with full provenance chains -- who read this sign, when, how confident, and where was it published.
+- **Citation resolution** -- Connects artifacts to their publication history with structured bibliography and edition supersession chains. Which edition of this text is current? Glintstone answers that.
+- **ML integration** -- Infrastructure for storing and reviewing ML-generated annotations (sign detection, automated lemmatization) alongside human scholarship, with the same provenance tracking.
+- **Resilient** -- Local-first PostgreSQL. No runtime API dependency. CDLI's bulk catalog has been frozen since August 2022. Several ORACC projects intermittently return server errors. Glintstone works regardless.
+
+None of this replaces CDLI or ORACC. Glintstone depends on them completely -- it imports their data, attributes their work, and links back to them. The goal is to take what they've built and present it in ways that make cuneiform research faster and more transparent.
 
 ---
 

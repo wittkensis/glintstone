@@ -4,18 +4,18 @@
 # Architecture: 4-stage ETL with annotation_runs provenance tracking.
 # Every imported record carries an annotation_run_id FK.
 #
-# Implementation: Python scripts at data/v2-schema-tools/{module}/
-# Pattern established by citation pipeline (data/v2-schema-tools/citations/).
+# Implementation: Python scripts at source-data/import-tools/{module}/
+# Pattern established by citation pipeline (source-data/import-tools/citations/).
 #
-# Database: /Volumes/Portable Storage/Glintstone/database/glintstone.db
-# Engine: SQLite with PRAGMA journal_mode=WAL, synchronous=NORMAL
+# Database: PostgreSQL (host=localhost port=5432 dbname=glintstone)
+# Engine: PostgreSQL
 
 meta:
   version: "2.0"
-  engine: SQLite
-  database: /Volumes/Portable Storage/Glintstone/database/glintstone.db
+  engine: PostgreSQL
+  database: "host=localhost port=5432 dbname=glintstone"
   status: design
-  total_steps: 19
+  total_steps: 20
   built_steps: [18]
 
 # ═══════════════════════════════════════════════════════════
@@ -31,7 +31,7 @@ stages:
     description: Normalization via lookup tables + sign concordance mapping
   load:
     label: "Stage 3: LOAD"
-    description: Upsert into SQLite with annotation_run_id, checkpoint/resume
+    description: Upsert into PostgreSQL with annotation_run_id, checkpoint/resume
   derive:
     label: "Stage 4: DERIVE"
     description: Computed tables, materialized views, pipeline_status
@@ -42,7 +42,7 @@ stages:
 
 shared:
   normalize:
-    path: data/v2-schema-tools/shared/normalize.py
+    path: source-data/import-tools/shared/normalize.py
     description: >
       Canonical mapping for period, language, genre, provenience, surface.
       Each function takes a raw string and returns a normalized form.
@@ -54,7 +54,7 @@ shared:
       - normalize_surface      # "@obverse" -> "obverse"
 
   concordance:
-    path: data/v2-schema-tools/shared/concordance.py
+    path: source-data/import-tools/shared/concordance.py
     description: >
       Sign system concordance mapping between OGSL, MZL, ABZ.
       Unicode code points serve as bridge for auto-matching.
@@ -64,7 +64,7 @@ shared:
       - ogsl_to_unicode        # OGSL sign_id -> Unicode cuneiform codepoint
 
   checkpoint:
-    path: data/v2-schema-tools/shared/checkpoint.py
+    path: source-data/import-tools/shared/checkpoint.py
     description: >
       ImportCheckpoint class for resumable imports. Handles SIGINT/SIGTERM,
       atomic state file writes, and progress reporting. Pattern from
@@ -91,11 +91,9 @@ shared:
       config_snapshot: "JSON blob of import parameters"
       row_count: "total rows written in this run"
 
-  sqlite_pragmas:
-    - "PRAGMA journal_mode=WAL"
-    - "PRAGMA synchronous=NORMAL"
-    - "PRAGMA foreign_keys=ON"
-    - "PRAGMA cache_size=-64000"  # 64 MB
+  pg_settings:
+    - "SET work_mem = '64MB'"
+    - "SET maintenance_work_mem = '256MB'"
 
   validation:
     description: Run after each phase
@@ -111,35 +109,35 @@ shared:
 
 sources:
   cdli_catalog:
-    path: /Volumes/Portable Storage/Glintstone/data/sources/CDLI/metadata/cdli_cat.csv
+    path: /Volumes/Portable Storage/Glintstone/source-data/sources/CDLI/metadata/cdli_cat.csv
     format: CSV
     rows: 389715
     license: CC0
 
   cdli_atf:
-    path: /Volumes/Portable Storage/Glintstone/data/sources/CDLI/atf/
+    path: /Volumes/Portable Storage/Glintstone/source-data/sources/CDLI/atf/
     format: ATF text files
     texts: 135200
     license: CC0
 
   oracc:
-    path: /Volumes/Portable Storage/Glintstone/data/sources/ORACC/{project}/
+    path: /Volumes/Portable Storage/Glintstone/source-data/sources/ORACC/{project}/
     format: JSON (catalogue, corpus, glossary per project)
     projects: 9+
     license: CC BY-SA 3.0 (per project)
 
   ogsl:
-    path: /Volumes/Portable Storage/Glintstone/data/sources/ORACC/ogsl/
+    path: /Volumes/Portable Storage/Glintstone/source-data/sources/ORACC/ogsl/
     format: JSON signlist
     license: CC BY-SA 3.0
 
   compvis:
-    path: /Volumes/Portable Storage/Glintstone/data/sources/CompVis/
+    path: /Volumes/Portable Storage/Glintstone/source-data/sources/CompVis/
     format: JSON annotations
     annotations: 11070
 
   ebl:
-    path: /Volumes/Portable Storage/Glintstone/data/sources/eBL/
+    path: /Volumes/Portable Storage/Glintstone/source-data/sources/eBL/
     format: Text (mzl.txt, ebl.txt)
 
 # ═══════════════════════════════════════════════════════════
@@ -265,10 +263,10 @@ steps:
     depends_on: []
     tables:
       - signs
-      - sign_readings
+      - sign_values
       - sign_concordance
     sources:
-      - OGSL signlist (data/sources/ORACC/ogsl/)
+      - OGSL signlist (source-data/sources/ORACC/ogsl/)
       - eBL mzl.txt (MZL numbers + readings)
       - eBL ebl.txt (eBL internal sign IDs)
     description: >
@@ -287,12 +285,12 @@ steps:
       Flag ~200-400 unresolved mappings for manual curation.
     load: >
       signs: INSERT from OGSL.
-      sign_readings: INSERT readings per sign.
+      sign_values: INSERT readings per sign.
       sign_concordance: INSERT matched pairs (ogsl_id, mzl_no, abz_no, confidence).
     validation:
       expected_rows:
         signs: ~1500
-        sign_readings: ~5000
+        sign_values: ~5000
         sign_concordance: ~1200
       unresolved_target: "<400 MZL numbers without OGSL match"
 
@@ -771,7 +769,7 @@ steps:
   - step: 18
     name: Citation pipeline
     status: built
-    script: data/v2-schema-tools/citations/run_citation_import.sh
+    script: source-data/import-tools/citations/run_citation_import.sh
     stage: extract_transform_load
     depends_on: [5]
     tables:
@@ -779,6 +777,7 @@ steps:
       - artifact_editions
       - scholars  # enrichment of step 3 seed data
       - publication_supersessions
+      - fragment_joins  # imported by 05_cdli_csv_supplementary.py
     sources:
       - CDLI API (publications, artifact-edition links)
       - CDLI CSV (pub_history, citation fields)
@@ -819,14 +818,48 @@ steps:
       - verify/verify_dedup.py
 
   # -----------------------------------------------------------
-  # STEP 19: Materialized Views and Pipeline Status
+  # STEP 19: Fragment Join Grouping (Derivation)
   # -----------------------------------------------------------
   - step: 19
+    name: Fragment join grouping
+    status: not_built
+    script: 19_derive_join_groups.py
+    stage: derive
+    depends_on: [18]
+    tables:
+      - join_groups
+      - fragment_joins  # UPDATE join_group_id (was NULL from raw import)
+    sources:
+      - fragment_joins table (pairwise P-number joins from step 18)
+    description: >
+      Derive multi-fragment reconstruction groups from pairwise join records.
+      Step 18 imports raw CDLI fragment joins with join_group_id = NULL
+      (pairwise P+P pairs). This step clusters transitive joins into groups:
+      if A joins B and B joins C, all three belong to one join_group.
+    transform: >
+      Build adjacency graph from fragment_joins (p_number_1, p_number_2).
+      Find connected components (union-find or BFS).
+      Each component = one join_group.
+    load: >
+      INSERT one join_groups row per connected component.
+      UPDATE fragment_joins SET join_group_id = group.id for all members.
+    validation:
+      expected_rows:
+        join_groups: ~2000-5000
+      checks:
+        - "Every fragment_joins row has non-NULL join_group_id after this step"
+        - "No orphan join_groups (every group has >= 1 fragment_join)"
+        - "Transitivity: if A-B and B-C exist, all share same group"
+
+  # -----------------------------------------------------------
+  # STEP 20: Materialized Views and Pipeline Status
+  # -----------------------------------------------------------
+  - step: 20
     name: Materialized views and pipeline status
     status: not_built
-    script: 19_refresh_views.py
+    script: 20_refresh_views.py
     stage: derive
-    depends_on: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+    depends_on: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     tables:
       - mv_language_stats
       - mv_period_stats
@@ -862,7 +895,7 @@ steps:
     validation:
       checks:
         - "All mv_ tables have > 0 rows"
-        - "mv_pipeline_overview covers all 19 steps"
+        - "mv_pipeline_overview covers all 20 steps"
         - "Row counts in overview match actual table counts"
 
 # ═══════════════════════════════════════════════════════════
@@ -897,10 +930,12 @@ steps:
 #     │                                    │
 #     ├── Step 17 (composites)             │
 #     └── Step 18 (citations) ── BUILT     │
+#           │                              │
+#           └── Step 19 (join grouping)    │ derives from fragment_joins
 #                                          │
 #   Step 13 (glossary) ───── depends on 2  │
 #                                          │
-#   Step 19 (views) ──────── depends on ALL│
+#   Step 20 (views) ──────── depends on ALL│
 #
 # ═══════════════════════════════════════════════════════════
 # ORCHESTRATOR
@@ -908,9 +943,9 @@ steps:
 
 orchestrator:
   script: run_full_import.sh
-  path: data/v2-schema-tools/run_full_import.sh
+  path: source-data/import-tools/run_full_import.sh
   description: >
-    Master orchestrator that runs all 19 steps in dependency order.
+    Master orchestrator that runs all 20 steps in dependency order.
     Each step is idempotent. Supports --reset for clean re-run and
     --from N to resume from step N. Follows the pattern established
     by citations/run_citation_import.sh.
@@ -925,10 +960,10 @@ orchestrator:
     ./run_full_import.sh --reset
 
     # Single step
-    python 05_import_artifacts.py --db /path/to/glintstone.db [--reset]
+    python 05_import_artifacts.py [--reset]
   cli_pattern: |
     Every script accepts:
-      --db PATH        Database path (default: database/glintstone.db)
       --reset          Discard checkpoint and start fresh
       --dry-run        Parse and transform only, no writes
       --verbose        Detailed progress output
+    Database connection is read from glintstone.config.get_settings().

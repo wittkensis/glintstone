@@ -23,7 +23,7 @@
 #   - citation-pipeline-summary.md: Citation sourcing pipeline (9 sources, already built)
 
 meta:
-  engine: SQLite
+  engine: PostgreSQL
   status: design
   feeds_from:
     - cdli-catalog (identity)
@@ -70,14 +70,15 @@ tables:
       width: { type: REAL }
       height: { type: REAL }
       thickness: { type: REAL }
-      seal_id: { type: TEXT, new: true, source: cdli-catalog (not imported in v1) }
+      seal_id: { type: TEXT, new: true, source: "cdli_cat.csv → seal_id" }
+      object_preservation: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → object_preservation" }
       # Classification
       period: { type: TEXT }
       period_normalized: { type: TEXT, new: true, description: "Canonical period without date ranges" }
       provenience: { type: TEXT }
       provenience_normalized: { type: TEXT, new: true, description: "Ancient name only, no 'mod. X'" }
       genre: { type: TEXT }
-      subgenre: { type: TEXT, new: true, source: oracc-catalogue }
+      subgenre: { type: TEXT, new: true, source: "oracc-catalogue (primary), cdli_cat.csv → subgenre (fallback when ORACC absent)" }
       supergenre: { type: TEXT, new: true, source: oracc-catalogue }
       language: { type: TEXT }
       languages: { type: TEXT, new: true, description: "All languages in text (ORACC langs field)" }
@@ -88,7 +89,11 @@ tables:
       # Publication
       primary_publication: { type: TEXT, new: true, source: cdli-catalog }
       collection: { type: TEXT, new: true, source: cdli-catalog }
-      dates_referenced: { type: TEXT, new: true, source: cdli-catalog }
+      dates_referenced: { type: TEXT, new: true, source: "cdli_cat.csv → dates_referenced" }
+      date_of_origin: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → date_of_origin" }
+      findspot_square: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → findspot_square" }
+      accounting_period: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → accounting_period", description: "Accounting period for Ur III administrative texts" }
+      acquisition_history: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → acquisition_history" }
       # Provenance tracking
       cdli_updated_at: { type: TIMESTAMP, new: true }
       oracc_projects: { type: TEXT, new: true, description: "Which ORACC projects include this text" }
@@ -157,8 +162,12 @@ tables:
     seed_data: >
       Populated from artifacts.museum_no (~353k, type=museum_no),
       artifacts.excavation_no (where non-NULL, type=excavation_no),
-      artifacts.primary_publication (type=publication), CDLI
-      accession_no/external_id fields, ORACC catalogue cross-refs.
+      artifacts.primary_publication (type=publication),
+      artifacts.seal_id (type=seal_id),
+      cdli_cat.csv → ark_number (type=ark, format: ark:/21198/...),
+      cdli_cat.csv → accession_no (type=accession_no),
+      cdli_cat.csv → external_id (type=external),
+      ORACC catalogue cross-refs.
 
   artifact_identifier_evidence:
     description: >
@@ -207,13 +216,41 @@ tables:
       id: { type: INTEGER, pk: true, autoincrement: true }
       p_number: { type: TEXT, fk: artifacts.p_number }
       surface_type: { type: TEXT, values: [obverse, reverse, left_edge, right_edge, top_edge, bottom_edge, seal] }
-      image_path: { type: TEXT }
-      image_width: { type: INTEGER }
-      image_height: { type: INTEGER }
+      # Condition (from CDLI CSV)
+      surface_preservation: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → surface_preservation" }
+      condition_description: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → condition_description" }
     constraints: [UNIQUE(p_number, surface_type)]
     decision_needed: >
       Should columns be their own table? CDLI ATF has @column markers.
       Some tablets have multiple columns per surface.
+
+  surface_images:
+    # ORIGIN: CDLI image downloads (multiple images per surface possible — different lighting,
+    #         cameras, museum vs field photos). Line drawings from CDLI lineart archives.
+    # CONNECTS: FK to surfaces.id. Referenced by sign_annotations.surface_image_id.
+    #           Bridges physical layer (images) to annotation layer (bounding boxes).
+    # TRADE-OFF: Separate table vs column on surfaces because CDLI provides multiple
+    #            images per surface (different lighting angles, different cameras).
+    description: >
+      NEW TABLE. Images of tablet surfaces. One surface may have multiple
+      images (different lighting, different cameras, line drawings, 3D renders).
+      Sign annotation bounding boxes reference specific images, not surfaces.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      surface_id: { type: INTEGER, fk: surfaces.id, not_null: true }
+      image_path: { type: TEXT, not_null: true }
+      image_width: { type: INTEGER, description: "Pixels, from PIL/Pillow at import" }
+      image_height: { type: INTEGER, description: "Pixels, from PIL/Pillow at import" }
+      image_type: { type: TEXT, values: [photo, line_drawing, 3d_render], default: photo }
+      lighting: { type: TEXT, nullable: true, values: [direct, raking, ambient, infrared], description: "Lighting condition if known" }
+      source_url: { type: TEXT, nullable: true, description: "Original download URL" }
+      is_primary: { type: INTEGER, default: 0, description: "Which image to show by default" }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+    constraints:
+      - "UNIQUE(surface_id, image_path)"
+    indexes:
+      - "idx_si_surface ON surface_images(surface_id)"
+      - "idx_si_primary ON surface_images(surface_id, is_primary) WHERE is_primary = 1"
 
   sign_annotations:
     # ORIGIN: compvis-annotations (11,070 rows, MZL labels), ebl-annotations (future), ML inference (future).
@@ -227,7 +264,7 @@ tables:
       Adds annotation provenance vs v1.
     columns:
       id: { type: INTEGER, pk: true, autoincrement: true }
-      surface_id: { type: INTEGER, fk: surfaces.id, new: true }
+      surface_image_id: { type: INTEGER, fk: surface_images.id, new: true, description: "Annotations are tied to a specific photo" }
       sign_id: { type: TEXT, fk: signs.sign_id, new: true, description: "Resolved OGSL name" }
       # Coordinates as percentages (resolution-independent)
       bbox_x: { type: REAL, description: "0-100%" }
@@ -301,6 +338,31 @@ tables:
       base_sign: { type: TEXT, fk: signs.sign_id }
       modifier_type: { type: TEXT, values: [gunu, tenu, sheshig, nutillu, rotated] }
       modifier_code: { type: TEXT, description: "@g, @t, @s, @n, @180" }
+
+  sign_concordance:
+    # DESIGN NOTE: This table complements the mzl_number/abz_number/lak_number columns on the signs table.
+    #   - Columns on signs: fast 1:1 lookup for the canonical, unambiguous mapping (~90% of signs).
+    #   - This table: handles N:M ambiguous mappings with confidence scores (~200-400 cases where
+    #     MZL allographs/variants don't map cleanly to OGSL). Essential for CompVis import (Step 15)
+    #     where MZL labels must resolve to OGSL sign_ids.
+    #   - Future: additional numbering systems can be added as new 'system' values without schema changes.
+    description: >
+      NEW TABLE. N:M concordance mapping between sign numbering systems
+      (MZL, ABZ, LAK) and OGSL canonical sign_ids. Supports confidence
+      scores and match methods for ambiguous mappings.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      ogsl_id: { type: TEXT, fk: signs.sign_id, not_null: true, description: "OGSL canonical sign name" }
+      system: { type: TEXT, not_null: true, values: [mzl, abz, lak], description: "Numbering system" }
+      number: { type: INTEGER, not_null: true, description: "Number in that system (e.g., MZL 839)" }
+      confidence: { type: REAL, default: 1.0, description: "Match confidence: 1.0=manual verified, 0.95=auto-unicode, 0.7=reading-overlap" }
+      match_method: { type: TEXT, values: [auto_unicode, manual, reading_overlap], description: "How the mapping was established" }
+      note: { type: TEXT, nullable: true, description: "Rationale for ambiguous mappings" }
+    constraints:
+      - "UNIQUE(ogsl_id, system, number)"
+    indexes:
+      - "idx_sc_system_number ON sign_concordance(system, number)"
+      - "idx_sc_ogsl ON sign_concordance(ogsl_id)"
 
 # ═══════════════════════════════════════════════════════════
 # LAYER 3: READING — How are signs read in context?
@@ -623,7 +685,7 @@ tables:
       notes: { type: TEXT }
       # Trust primitives (NEW)
       scholar_id: { type: INTEGER, fk: scholars.id, nullable: true, new: true, description: "NULL for ML/import runs" }
-      method: { type: TEXT, new: true, values: [hand_copy, photograph, collation, autopsy, RTI, 3D_scan, ML_model, import], description: "How the reading was produced" }
+      method: { type: TEXT, new: true, values: [hand_copy, photograph, collation, autopsy, RTI, 3D_scan, ML_model, import, api_fetch, web_scrape, manual, model], description: "How the data was produced. Values include both scholarly methods (hand_copy, collation) and import methods (api_fetch, import, web_scrape)." }
       publication_ref: { type: TEXT, new: true, nullable: true, description: "DOI, citation key, or 'field_notes' — freetext fallback" }
       publication_id: { type: INTEGER, fk: publications.id, new: true, nullable: true, description: "Structured FK to publications table. NULL until matched; publication_ref stays as fallback for unresolved citations. Incremental migration." }
     notes: >
@@ -667,7 +729,8 @@ tables:
       publication_type:
         type: TEXT
         not_null: true
-        values: [monograph, edited_volume, journal_article, series_volume, digital_edition, museum_catalog, dissertation, conference_paper, hand_copy_publication]
+        values: [monograph, edited_volume, journal_article, series_volume, digital_edition, museum_catalog, dissertation, conference_paper, hand_copy_publication, chapter, proceedings, thesis, report, unpublished, other]
+        description: "Expanded to cover all BibTeX entry types. 'thesis' covers both PhD and masters. 'chapter' = in-book/in-collection contribution."
       year: { type: INTEGER, nullable: true }
       # Series membership
       series_key: { type: TEXT, nullable: true, description: "Series abbreviation: 'RIME', 'SAA', 'RINAP', 'VAB', 'PBS', 'ATU'" }
@@ -932,7 +995,7 @@ tables:
       id: { type: INTEGER, pk: true, autoincrement: true }
       fragment_a: { type: TEXT, fk: artifacts.p_number, not_null: true }
       fragment_b: { type: TEXT, fk: artifacts.p_number, not_null: true }
-      join_group_id: { type: INTEGER, fk: join_groups.id, not_null: true }
+      join_group_id: { type: INTEGER, fk: join_groups.id, nullable: true, description: "NULL = raw pairwise CDLI import. Non-NULL = curated multi-fragment reconstruction group. Grouping deferred to derivation step." }
       join_type: { type: TEXT, values: [direct, indirect, uncertain] }
       # direct = fragments physically touch
       # indirect = fragments from same tablet but don't touch
@@ -1000,7 +1063,7 @@ tables:
       token_end_id: { type: INTEGER, fk: tokens.id, nullable: true, description: "End of token range" }
       line_end_id: { type: INTEGER, fk: text_lines.id, nullable: true, description: "End of line range" }
       # Annotation content
-      annotation_type: { type: TEXT, not_null: true, values: [textual_criticism, parallel_passage, historical_context, cultural_note, linguistic_note, paleographic_note, prosopographic_note, bibliography, conservation_note, museum_note, pedagogy, methodology] }
+      annotation_type: { type: TEXT, not_null: true, values: [textual_criticism, parallel_passage, historical_context, cultural_note, linguistic_note, paleographic_note, prosopographic_note, bibliography, conservation_note, museum_note, pedagogy, methodology, editorial_note] }
       content: { type: TEXT, not_null: true }
       references: { type: TEXT, nullable: true, description: "JSON array of DOIs, P-numbers, citations" }
       tags: { type: TEXT, nullable: true, description: "JSON array of domain-specific tags" }
@@ -1506,9 +1569,9 @@ views:
 
 migration_notes:
   overview: >
-    v2 is additive — no v1 data is discarded. New tables are added,
-    existing tables gain columns, and text blobs get decomposed into
-    normalized structures.
+    v2 is a complete rebuild from source data — no v1 data is migrated.
+    All data re-imported from CDLI, ORACC, CompVis, and other sources
+    using the v2 import pipeline. PostgreSQL replaces SQLite.
 
   steps:
     - name: Add concordance columns to signs
@@ -1801,6 +1864,7 @@ labels:
   signs:         { label: "Cuneiform Sign List", description: "Master list of all cuneiform signs with cross-system concordance" }
   sign_values:   { label: "Sign Readings", description: "How each sign can be read (a single sign may have many readings)" }
   sign_variants: { label: "Sign Variants", description: "Visual modifications of signs (added strokes, rotations, etc.)" }
+  sign_concordance: { label: "Sign Number Cross-Reference", description: "Maps between different sign numbering systems (MZL, ABZ, LAK) and the canonical OGSL sign list" }
 
   # Layer 3: Reading
   text_lines:     { label: "Text Lines", description: "Individual lines of text on a tablet surface" }
@@ -1893,7 +1957,7 @@ open_questions:
       Akkadian needs root/pattern columns. Using one table means many NULLs.
     leaning: >
       One polymorphic table with language_family discriminator. NULLs are
-      acceptable in SQLite. Avoids join complexity for cross-language queries.
+      acceptable in PostgreSQL. Avoids join complexity for cross-language queries.
 
   - question: "Should translations link to lines or tokens?"
     context: >

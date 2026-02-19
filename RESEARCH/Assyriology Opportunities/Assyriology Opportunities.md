@@ -3117,3 +3117,96 @@ Which of these opportunities resonates most strongly with your vision for the cu
 The trust infrastructure feels like it aligns most closely with your background in designing for trust in agentic systems, but I could see arguments for starting with annotation (more immediate value) or knowledge graph (most ambitious) depending on your goals.
 
 Want to explore implementation details for any of these?
+
+---
+
+## Scaling Potential: A General Platform for Extinct Language Decipherment
+
+### The Bigger Vision
+
+Everything described in this document -- trust infrastructure, composite assembly, semantic search, annotation ecosystems, knowledge graphs, citation resolution, pedagogy -- is **language-agnostic at the architectural level**. Cuneiform is the proving ground, but the platform Glintstone builds could become the standard infrastructure for working with *any* extinct or undeciphered writing system.
+
+The underlying problem is universal: fragmentary evidence, competing expert interpretations, centuries of accumulated scholarship, no living speakers, and the need for transparent, collaborative, computationally-augmented decipherment. Every system described above addresses these problems in ways that transfer directly.
+
+### Candidate Scripts and Languages
+
+#### Tier 1: Closely Related (Minimal Adaptation)
+
+These use cuneiform or closely related writing systems. The sign inventory, ATF conventions, and existing Glintstone schema could extend to cover them with relatively modest effort.
+
+- **Hittite cuneiform** -- Well-deciphered Indo-European language written in cuneiform. ~30,000 tablets. Active scholarly community. Same sign inventory as Akkadian with additions. Oracc already hosts some Hittite projects.
+- **Elamite cuneiform** -- Partially understood language isolate. Thousands of tablets from Persepolis and Susa. Morphology still debated. Perfect candidate for trust infrastructure and competing-interpretation tracking.
+- **Urartian cuneiform** -- Small but significant corpus from eastern Anatolia. Related to Hurrian. Limited scholarly community means every annotation matters more.
+- **Old Persian cuneiform** -- Simpler syllabary (36 signs vs. 600+). Well-deciphered but cross-referencing with Akkadian and Elamite trilingual inscriptions is exactly the kind of composite assembly this platform enables.
+- **Ugaritic** -- Alphabetic cuneiform from Syria. ~1,500 texts. Well-understood but corpus still growing. Mythological texts (Baal Cycle) have the same composite-text-assembly needs as Gilgamesh.
+
+#### Tier 2: Different Script, Same Problems (Moderate Adaptation)
+
+These use non-cuneiform writing systems but face identical scholarly infrastructure challenges. The data model generalizes; the sign inventory and input methods need new front-ends.
+
+- **Linear B** -- Deciphered in 1952 (Ventris), but the corpus of ~5,000 tablets from Knossos, Pylos, Mycenae, and Thebes is still being actively edited. Fragmentary, damaged, with competing readings and ongoing joins. The trust infrastructure, composite assembly engine, and annotation ecosystem apply directly. Mycenaean Greek vocabulary is small (~1,500 words) but the administrative texts have the same citation chaos as cuneiform (different museum numbering, excavation numbers, publication series).
+- **Egyptian hieroglyphics and hieratic** -- Enormous corpus. Well-deciphered but far from fully published. The Thesaurus Linguae Aegyptiae (TLA) is the closest parallel to CDLI/Oracc, and it faces every problem described in this document: citation fragmentation, siloed annotations, no trust tracking for editorial decisions, limited semantic search. A shared infrastructure layer could serve both fields.
+- **Mayan glyphs** -- Dramatic decipherment progress since the 1970s but still ongoing. ~10,000 inscriptions. Active debates about readings. The field has its own version of ATF chaos (different drawing conventions, inconsistent transliteration standards). Knowledge graph potential is enormous: linking rulers, sites, dates, events across the corpus.
+- **Meroitic** -- Alphabet deciphered (Griffith, 1911) but the language itself remains mostly untranslated. ~1,800 texts from ancient Nubia. This is exactly where ML-augmented pattern detection, semantic clustering, and collaborative annotation could accelerate breakthroughs.
+- **Luwian hieroglyphs** -- Deciphered but corpus expanding. Monumental inscriptions from Iron Age Anatolia and Syria. Same composite-text and knowledge-graph needs as cuneiform royal inscriptions.
+
+#### Tier 3: Undeciphered Scripts (Maximum Impact)
+
+These are the scripts where a collaborative decipherment platform could be genuinely transformative. The trust infrastructure becomes critical: tracking every proposed decipherment, its evidence basis, which hypotheses have been tested and falsified, and enabling systematic rather than ad hoc approaches.
+
+- **Linear A** -- Minoan script, predecessor to Linear B. ~7,000 sign groups across ~1,400 documents. The signs are catalogued but the language is unknown. Any decipherment attempt requires tracking provenance of every proposed sound value, every semantic hypothesis, every structural argument. This is exactly what the trust infrastructure and annotation ecosystem provide.
+- **Proto-Elamite** -- ~1,600 clay tablets from Iran, ca. 3100-2900 BCE. Partially understood (numerical systems decoded) but the script itself is undeciphered. Recent ML work (e.g., CDLI's proto-Elamite digitization) would benefit directly from Glintstone's sign-level provenance and competing-interpretation architecture.
+- **Indus Valley Script (Harappan)** -- ~4,000 inscribed objects. Extremely short texts (average ~5 signs). Whether it encodes language at all is debated. The platform's ability to track and weigh competing hypotheses, link to archaeological context via knowledge graph, and enable distributed expert annotation could help settle fundamental questions.
+- **Cypro-Minoan** -- ~250 inscriptions from Bronze Age Cyprus. Partially deciphered by Steele (2022) but work is ongoing and contested. Small corpus means every scholarly annotation is high-value.
+- **Rongorongo** -- ~26 wooden tablets from Rapa Nui. Tiny corpus, heavily damaged, possibly not linguistic. But the provenance tracking and trust infrastructure would bring rigor to a field plagued by speculative claims.
+- **Etruscan** -- Script is readable (adapted Greek alphabet) but the language is only partially understood despite ~13,000 inscriptions. Semantic search and knowledge graph infrastructure could accelerate understanding of vocabulary and grammar through pattern detection at corpus scale.
+
+### What Generalizes, What Doesn't
+
+**Directly transferable (no modification):**
+- Trust/provenance infrastructure (scholars, annotation runs, evidence chains, competing interpretations)
+- Annotation ecosystem (W3C model, discussion threads, DOI minting)
+- Citation resolution (alias systems, edition tracking, fuzzy matching)
+- Knowledge graph architecture (entities, relationships, authority reconciliation)
+- Pedagogical scaffolding (spaced repetition, progressive revelation, adaptive difficulty)
+
+**Requires parameterization (script-specific configuration):**
+- Sign inventories and paleographic variants
+- Transliteration conventions (ATF vs. Manuel de Codage vs. Thompson catalog)
+- Morphological analysis rules
+- Writing direction and layout (cuneiform L-R, hieroglyphics variable, rongorongo boustrophedon)
+- Period/region taxonomies
+
+**Requires new development:**
+- Script-specific input methods and rendering
+- Language-specific NLP models (morphology, syntax)
+- Domain ontologies (Mesopotamian gods vs. Egyptian gods vs. Maya rulers)
+- Integration with field-specific databases (TLA, FAMSI, Perseus)
+
+### Strategic Framing
+
+The cuneiform implementation establishes the **reference architecture**. If designed with generalization in mind from the start -- abstract script layer, pluggable sign inventories, configurable transliteration schemes -- the marginal cost of adding each new script drops dramatically.
+
+This reframes Glintstone from "a cuneiform database" to **"the open infrastructure layer for computational epigraphy and philology."**
+
+The pitch to funders shifts from "we digitized some tablets" to "we built the platform that accelerates decipherment of every undeciphered script on earth."
+
+### Potential Collaboration Partners
+
+| Script | Key Institutions / Projects |
+|---|---|
+| Linear A/B | Cambridge (CREWS project), University of Bologna, DAMOS database |
+| Egyptian | Berlin-Brandenburgische Akademie (TLA), Oxford (Griffith Institute), IFAO Cairo |
+| Mayan | University of Bonn (Textdatenbank), FAMSI, Dumbarton Oaks |
+| Proto-Elamite | CDLI (already in pipeline), Louvre, University of Tehran |
+| Indus Valley | IIT Kharagpur, Decipherment project at TIFR, Helsinki (Asko Parpola) |
+| Meroitic | SFDAS, British Museum Sudan collections, Humboldt-Universit&auml;t |
+| Etruscan | CNR Rome, University of Massachusetts Amherst, Corpus Inscriptionum Etruscarum |
+
+### Why Now
+
+Three converging trends make this moment unique:
+
+1. **ML capabilities** have reached the threshold where pattern detection in damaged/fragmentary scripts is genuinely useful, but only if integrated with scholarly trust systems rather than deployed as black boxes.
+2. **Digital humanities infrastructure** is mature enough (IIIF, W3C Web Annotation, Linked Open Data, ORCID) that building on standards is viable rather than requiring everything from scratch.
+3. **The fields are small enough** that a well-designed platform can achieve critical mass. There are perhaps 500 active cuneiformists, 200 Mayan epigraphers, 50 people working on Linear A. A single platform serving all of them creates network effects that no field could generate alone.

@@ -1,9 +1,0 @@
-/**
- * Page Home CSS Bundle
- * Namespace: .home-*
- *
- * Styles for the homepage.
- */
-
-@import url('homepage.css');
-@import url('search.css');

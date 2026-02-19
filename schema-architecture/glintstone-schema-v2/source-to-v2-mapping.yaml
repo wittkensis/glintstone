@@ -37,7 +37,7 @@ artifacts:
       null_rate: 3.1%
       new: true
     genre:            { from: "cdli_cat.csv → genre", null_rate: 1.4% }
-    subgenre:         { from: "oracc-catalogue → genre", null_rate: ~95%, new: true }
+    subgenre:         { from: "oracc-catalogue → genre (primary), cdli_cat.csv → subgenre (fallback when ORACC absent)", null_rate: ~90%, new: true }
     supergenre:       { from: "oracc-catalogue → supergenre", null_rate: ~95%, new: true }
     language:         { from: "cdli_cat.csv → language", null_rate: 5.2% }
     languages:        { from: "cdli_cat.csv → language", transform: "Split on '; ' to JSON array", new: true }
@@ -47,6 +47,11 @@ artifacts:
     primary_publication: { from: "cdli_cat.csv → primary_publication", null_rate: ~40%, new: true }
     collection:       { from: "cdli_cat.csv → collection", null_rate: ~30%, new: true }
     dates_referenced: { from: "cdli_cat.csv → dates_referenced", null_rate: ~85%, new: true }
+    date_of_origin:   { from: "cdli_cat.csv → date_of_origin", null_rate: high, new: true, note: "Often placeholder '00.00.00.00'. Real dating in period field." }
+    findspot_square:  { from: "cdli_cat.csv → findspot_square", null_rate: variable, new: true, note: "Was in v1, accidentally dropped in initial v2 design" }
+    accounting_period: { from: "cdli_cat.csv → accounting_period", null_rate: variable, new: true, note: "Relevant for Ur III administrative texts" }
+    acquisition_history: { from: "cdli_cat.csv → acquisition_history", null_rate: variable, new: true }
+    object_preservation: { from: "cdli_cat.csv → object_preservation", null_rate: variable, new: true }
     cdli_updated_at:  { from: "cdli_cat.csv → date_updated", null_rate: ~10%, new: true }
     oracc_projects:   { from: "oracc-catalogue membership", transform: "JSON array of project abbreviations", null_rate: ~98%, new: true }
     annotation_run_id: { from: "retroactive import record", new: true }
@@ -66,7 +71,12 @@ artifact_identifiers:
     is_current:             { default: 1 }
     annotation_run_id:      { from: "retroactive import record" }
     confidence:             { default: 1.0 }
-  seed_rule: "One row per non-NULL museum_no, excavation_no, primary_publication, seal_id on artifacts."
+  seed_rule: >
+    One row per non-NULL value for each of:
+    museum_no (type=museum_no), excavation_no (type=excavation_no),
+    primary_publication (type=publication), seal_id (type=seal_id),
+    ark_number (type=ark), accession_no (type=accession_no),
+    external_id (type=external). All from cdli_cat.csv.
 
 composites:
   primary_source: cdli-atf
@@ -94,14 +104,26 @@ artifact_composites:
 
 surfaces:
   primary_source: cdli-atf
-  secondary_sources: [compvis-annotations, oracc-corpus]
+  secondary_sources: [compvis-annotations, oracc-corpus, cdli-catalog]
   estimated_rows: "~300k (2-4 surfaces per inscribed artifact)"
   field_mapping:
-    p_number:     { from: "ATF @surface marker or compvis view_desc" }
-    surface_type: { from: "ATF marker", transform: "via surface_canon: @obverse→obverse, @reverse→reverse, @left→left_edge, etc." }
-    image_path:   { from: "file system scan: data/images/{p_number}_{surface}.jpg" }
+    p_number:               { from: "ATF @surface marker or compvis view_desc" }
+    surface_type:           { from: "ATF marker", transform: "via surface_canon: @obverse→obverse, @reverse→reverse, @left→left_edge, etc." }
+    surface_preservation:   { from: "cdli_cat.csv → surface_preservation", null_rate: variable, new: true }
+    condition_description:  { from: "cdli_cat.csv → condition_description", null_rate: variable, new: true }
+
+surface_images:
+  primary_source: "file system scan + CDLI image downloads"
+  estimated_rows: "~400-600k (multiple images per surface — different lighting/cameras)"
+  field_mapping:
+    surface_id:   { from: "surfaces.id via p_number + surface_type lookup" }
+    image_path:   { from: "file system scan: data/images/{p_number}_{surface}_{variant}.jpg" }
     image_width:  { from: "image metadata (PIL/Pillow)" }
     image_height: { from: "image metadata (PIL/Pillow)" }
+    image_type:   { from: "file naming convention: *_ld.jpg → line_drawing, else → photo" }
+    lighting:     { from: "CDLI image metadata if available, else NULL" }
+    source_url:   { from: "CDLI download URL" }
+    is_primary:   { default: 0, transform: "First photo image per surface set to 1" }
   surface_canon_rules:
     "@obverse": obverse
     "@reverse": reverse
@@ -120,7 +142,7 @@ sign_annotations:
   primary_source: compvis-annotations
   row_count: 11,070
   field_mapping:
-    surface_id:       { from: "compvis → surface + p_number", transform: "JOIN surfaces ON p_number + surface_type" }
+    surface_image_id: { from: "compvis → surface + p_number", transform: "JOIN surface_images ON surfaces.id WHERE is_primary = 1" }
     sign_id:          { from: "compvis → label (MZL number)", transform: "MZL→OGSL concordance lookup (Issue 5)", null_rate_post_concordance: "~3% unresolved" }
     bbox_x:           { from: "compvis → x", transform: "/ image_width * 100" }
     bbox_y:           { from: "compvis → y", transform: "/ image_height * 100" }
@@ -174,6 +196,24 @@ sign_variants:
     base_sign:     { from: "ogsl → parent sign" }
     modifier_type: { from: "ogsl → modifier (@g, @t, etc.)" }
     modifier_code: { from: "ogsl → raw modifier code" }
+
+sign_concordance:
+  primary_source: "concordance build (step 4)"
+  secondary_sources: [ogsl-signlist, ebl-annotations]
+  estimated_rows: "~1,200"
+  field_mapping:
+    ogsl_id:        { from: "OGSL sign_id (FK→signs)", not_null: true }
+    system:         { values: [mzl, abz, lak], not_null: true }
+    number:         { from: "MZL/ABZ/LAK number (INTEGER)", not_null: true }
+    confidence:     { from: "match quality", default: 1.0 }
+    match_method:   { values: [auto_unicode, manual, reading_overlap] }
+    note:           { nullable: true }
+  constraint: "UNIQUE(ogsl_id, system, number)"
+  design_rationale: >
+    Dual concordance approach: 1:1 columns on signs (mzl_number, abz_number, lak_number)
+    for fast single-system lookup, PLUS this N:M table for ambiguous cases where one MZL
+    number maps to multiple OGSL signs (or vice versa) with confidence scores. The columns
+    serve the common case; the table handles the ~5% edge cases with full provenance.
 
 # ═══════════════════════════════════════════════════════════
 # LAYER 3: READING
@@ -439,14 +479,15 @@ fragment_joins:
   primary_source: "CITATION PIPELINE (05_cdli_csv_supplementary.py)"
   estimated_rows: "~7,367"
   field_mapping:
-    fragment_a:       { from: "CDLI CSV → join_information (P-number, alphabetically first)" }
-    fragment_b:       { from: "CDLI CSV → join_information (P-number, alphabetically second)" }
+    p_number_1:       { from: "CDLI CSV → join_information (P-number, alphabetically first)" }
+    p_number_2:       { from: "CDLI CSV → join_information (P-number, alphabetically second)" }
     join_type:        { default: "uncertain" }
+    join_group_id:    { nullable: true, note: "NULL from raw pairwise import. Populated by step 19 derivation." }
     annotation_run_id: { from: "CDLI supplementary import annotation_run" }
     confidence:       { default: 0.6 }
     note:             { from: "raw join_information string" }
-  constraint: "UNIQUE(fragment_a, fragment_b). Alphabetical ordering enforced (a < b)."
-  note: "join_group_id left NULL — groups are for curated multi-fragment reconstructions."
+  constraint: "UNIQUE(p_number_1, p_number_2). Alphabetical ordering enforced (p_number_1 < p_number_2)."
+  note: "join_group_id left NULL at import. Step 19 derives groups from transitive join closure."
 
 # ═══════════════════════════════════════════════════════════
 # LOOKUP / NORMALIZATION TABLES (NEW)
@@ -493,6 +534,63 @@ surface_canon:
   field_mapping:
     raw_surface: { from: "ATF markers + compvis surface values" }
     canonical:   { values: [obverse, reverse, left_edge, right_edge, top_edge, bottom_edge, seal, unknown] }
+
+# ═══════════════════════════════════════════════════════════
+# CDLI CSV FIELDS → ROUTING (all 64 fields accounted for)
+# Fields not directly mapped to a v2 table column above
+# ═══════════════════════════════════════════════════════════
+
+cdli_csv_supplementary_routing:
+  # → scholarly_annotations (annotation_type='editorial_note', artifact_id=p_number)
+  to_scholarly_annotations:
+    - { csv_field: author_remarks, description: "Philological notes from scholars" }
+    - { csv_field: date_remarks, description: "Dating commentary" }
+    - { csv_field: period_remarks, description: "Period dating notes" }
+    - { csv_field: provenience_remarks, description: "Provenience notes" }
+    - { csv_field: text_remarks, description: "Text-specific notes" }
+    - { csv_field: object_remarks, description: "General object notes" }
+    - { csv_field: subgenre_remarks, description: "Notes including category codes" }
+    - { csv_field: findspot_remarks, description: "Excavation descriptions (often German)" }
+    - { csv_field: cdli_comments, description: "CDLI editorial comments" }
+    - { csv_field: seal_information, description: "Seal description text" }
+    # All loaded with annotation_type='editorial_note', confidence=0.8, visibility='public'
+
+  # → annotation_runs provenance
+  to_annotation_runs:
+    - { csv_field: atf_source, target: "scholar_id on ATF import annotation_run", description: "Who provided the ATF transliteration" }
+    - { csv_field: translation_source, target: "scholar_id on translation import annotation_run", description: "Who provided the translation" }
+
+  # → pipeline_status / import_log
+  to_pipeline_tracking:
+    - { csv_field: photo_upload, target: "import_log or pipeline_status", description: "Photo upload resolution + date (e.g. '600ppi 20160630')" }
+    - { csv_field: lineart_upload, target: "import_log or pipeline_status", description: "Line drawing upload info" }
+    - { csv_field: atf_upload, target: "import_log or pipeline_status", description: "ATF upload indicator + date" }
+    - { csv_field: db_source, target: "import_log", description: "CDLI internal database source identifier" }
+    - { csv_field: date_entered, target: "import_log", description: "When record was added to CDLI" }
+
+  # → artifact_identifiers (via seed_rule expansion)
+  to_artifact_identifiers:
+    - { csv_field: ark_number, type: ark, description: "CDLI persistent identifier (format: ark:/21198/...)" }
+    - { csv_field: accession_no, type: accession_no, description: "Museum accession number" }
+    - { csv_field: external_id, type: external, description: "Cross-database identifier" }
+    - { csv_field: electronic_publication, type: electronic_publication, description: "Electronic publication reference" }
+
+  # → superseded by richer sources
+  superseded:
+    - { csv_field: google_earth_collection, superseded_by: "CDLI API collection coordinates" }
+    - { csv_field: google_earth_provenience, superseded_by: "oracc-geojson lat/lng → artifacts.latitude/longitude" }
+    - { csv_field: publication_date, superseded_by: "publications.year via citation pipeline" }
+    - { csv_field: author, superseded_by: "scholars table via citation pipeline name normalization" }
+
+  # → explicitly dropped
+  dropped:
+    - { csv_field: id_text, reason: "Internal CDLI text ID, redundant with p_number" }
+    - { csv_field: id_text2, reason: "Legacy, usually 0" }
+    - { csv_field: dumb, reason: "Always NULL" }
+    - { csv_field: dumb2, reason: "Always NULL" }
+    - { csv_field: alternative_years, reason: "High null rate, no clear target. Flag for future review." }
+    - { csv_field: elevation, reason: "Excavation elevation data, very sparse. Could be added later." }
+    - { csv_field: stratigraphic_level, reason: "Archaeological context, very sparse. Could be added later." }
 
 # ═══════════════════════════════════════════════════════════
 # TABLES UNCHANGED FROM v1
