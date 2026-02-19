@@ -1,150 +1,140 @@
 # Glintstone
 
-A federated cuneiform research platform. Glintstone aggregates open data from across the field into a single interface organized around a five-stage pipeline: **Image > OCR > ATF > Lemmas > Translation**. Every artifact shows its pipeline status so researchers can see what exists, what's missing, and where human expertise or new tools could make the most difference.
+Five thousand years of writing. Less than 2% translated.
 
-This project would not exist without the decades of scholarship behind [CDLI](https://cdli.earth), [ORACC](https://oracc.museum.upenn.edu), [eBL](https://www.ebl.lmu.de), [ePSD2](http://oracc.org/epsd2), [OGSL](http://oracc.org/ogsl), and the [CompVis](https://github.com/CompVis/cuneiform-sign-detection-dataset) and [eBL OCR](https://github.com/ElectronicBabylonianLiterature/cuneiform-ocr-data) teams. The researchers and institutions behind these projects built the foundation this tool stands on -- cataloging hundreds of thousands of artifacts, producing transliterations and linguistic annotations, training sign detection models, and making all of it openly available. Glintstone's role is to bring these resources together and make them even more accessible. Credit and source attribution are structural requirements for Glintstone.
+Glintstone unifies the open cuneiform record -- CDLI, ORACC, eBL, and a dozen more sources -- into one platform where scholars can see exactly what's understood, what isn't, and where effort matters most. Every artifact is tracked through a five-stage pipeline: **Captured > Recognized > Transcribed > Lemmatized > Translated**.
 
-We are early in this process. There is a great deal to learn about the domain, and it will take sustained iteration -- with input from working Assyriologists -- to get this right.
+This project would not exist without the decades of scholarship behind [CDLI](https://cdli.earth), [ORACC](https://oracc.museum.upenn.edu), [eBL](https://www.ebl.lmu.de), [ePSD2](http://oracc.org/epsd2), [OGSL](http://oracc.org/ogsl), and the [CompVis](https://github.com/CompVis/cuneiform-sign-detection-dataset) and [eBL OCR](https://github.com/ElectronicBabylonianLiterature/cuneiform-ocr-data) teams. Credit and source attribution are structural requirements.
 
----
-
-## Why Glintstone?
-
-CDLI and ORACC are the two most important open resources in cuneiform studies. CDLI is the catalog -- 389,000 artifacts with photographs, transliterations, and publication records. ORACC is the scholarship -- project-specific linguistic editions with lemmatization, glossaries, and expert annotations. Both are essential infrastructure that the field depends on.
-
-But they are primarily **databases**. Each serves its core mission well, but neither is designed as a unified research experience that brings everything together for a single artifact or a single line of text. Their data lives in separate, structurally incompatible systems: CDLI stores a flat CSV catalog and ATF text files; ORACC stores project-siloed JSON with no cross-project API.
-
-Glintstone is the **experience layer** that makes both stronger:
-
-- **Unified access** -- Merges CDLI's catalog and ORACC's editions into a single relational schema. A researcher can see an artifact's catalog data, transliteration, linguistic annotations, images, publication history, and pipeline status in one place.
-- **Makes CDLI data more usable** -- CDLI's 64-field CSV catalog contains rich metadata (publication histories, excavation contexts, seal descriptions, philological remarks) that is difficult to query or browse in raw form. Glintstone normalizes, structures, and indexes this data.
-- **Makes ORACC data more accessible** -- ORACC's project-siloed architecture means a text edited in two different projects has two separate, unlinked editions. Glintstone consolidates all projects into a single queryable database with cross-references.
-- **Trust infrastructure** -- Neither CDLI nor ORACC tracks competing scholarly readings, confidence scores, or editorial provenance at the annotation level. Glintstone's annotation system lets disagreement coexist with full provenance chains -- who read this sign, when, how confident, and where was it published.
-- **Citation resolution** -- Connects artifacts to their publication history with structured bibliography and edition supersession chains. Which edition of this text is current? Glintstone answers that.
-- **ML integration** -- Infrastructure for storing and reviewing ML-generated annotations (sign detection, automated lemmatization) alongside human scholarship, with the same provenance tracking.
-- **Resilient** -- Local-first PostgreSQL. No runtime API dependency. CDLI's bulk catalog has been frozen since August 2022. Several ORACC projects intermittently return server errors. Glintstone works regardless.
-
-None of this replaces CDLI or ORACC. Glintstone depends on them completely -- it imports their data, attributes their work, and links back to them. The goal is to take what they've built and present it in ways that make cuneiform research faster and more transparent.
+We are early. There is a great deal to learn about the domain, and it will take sustained iteration -- with input from working Assyriologists -- to get this right.
 
 ---
 
 ## What Glintstone Does
 
-Cuneiform research data is fragmented. Tablet photographs live in one system, transliterations in another, linguistic annotations in a third, dictionaries in a fourth. No single platform shows the complete picture for a given tablet, or tells you what's missing.
+Cuneiform research data is fragmented across incompatible systems. Glintstone compounds what CDLI, ORACC, and the broader scholarly ecosystem have built -- making each resource more queryable, more connected, and more meaningful.
 
-Glintstone federates these sources around a **pipeline-first** view:
+**Exploration** -- New views across existing data. Search and use the API across all open data: artifacts, composites, signs, readings, lemmas, and citations.
+
+**Curation** -- See the forest from the trees. Connected data allows aggregation and analysis in new ways. Automated and custom curation methods across tablets, signs, lemmas, and meanings.
+
+**Scholarly Contribution** *(future)* -- Catalyze your impact. Glintstone aims to unlock a new scale of scholarly achievement, with proper recognition for expertise and hard work. This requires significant input from working scholars to build right.
+
+### Pipeline
+
+Every artifact tracked through five stages -- from raw image to translated text. The interface shows what's complete, what's missing, and where scholarly effort has the highest impact.
 
 ```
-Image  >  OCR  >  ATF  >  Lemmas  >  Translation
+01 Captured      The artifact exists as a digital photograph
+02 Recognized    ML-assisted sign detection on the tablet surface
+03 Transcribed   The text read into structured notation (ATF)
+04 Lemmatized    Every word linked to its dictionary lemma
+05 Translated    Meaning rendered in modern language
 ```
 
-For each of the ~389,000 artifacts in the database, the interface shows which stages are complete and where gaps remain. This makes it easy to find tablets that have transliterations but no lemmatization, or lemmatization but no translation -- the places where scholarly effort has the highest marginal value.
+Each artifact also surfaces academic and historical context -- era, genre, place of origin -- drawn dynamically from trusted open sources.
 
-Beyond pipeline visibility, the data model supports:
+### Data Model
 
-- **Competing interpretations** -- multiple readings or lemmatizations of the same token, each with provenance and confidence
-- **Full provenance tracking** -- every annotation traces to the scholar, tool, or import process that produced it
-- **Sign concordance** -- unified lookup across OGSL, MZL, ABZ, and Unicode sign identification systems
-- **Citation resolution** -- a three-tier system linking artifacts to their publication history
+The [v2 schema](schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml) is organized into five layers:
 
-For the full data model, see the [v2 schema](schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml).
+- **Physical** -- Surfaces, bounding boxes, damage states. Sources: CompVis, eBL OCR, ML models.
+- **Graphemic** -- Sign inventory with cross-system concordance (OGSL, MZL, ABZ via Unicode).
+- **Reading** -- ATF transliteration decomposed into lines, tokens, and competing readings.
+- **Linguistic** -- Lemmatization, morphology, translations. Multiple competing analyses per token with provenance.
+- **Semantic** -- Named entities, knowledge graph, cross-text parallels, authority reconciliation (Wikidata, Pleiades).
+
+All layers converge on the **P-number** (CDLI artifact identifier) as the universal join key. Every record carries an `annotation_run_id` linking it to its source.
 
 ---
 
 ## Data Sources
 
-### Integrated
+### Artifacts & Objects
 
 | Source | Provides | License |
 |--------|----------|---------|
-| **CDLI** (cdli.earth) | Artifact catalog (353k), ATF transliterations (135k texts), translations (5.6k), tablet images (on-demand), publications API | CC0 |
-| **ORACC** (12+ projects) | Lemmatization (~309k tokens), glossaries (~21k entries), project-specific catalog enrichment, geographic coordinates | CC BY-SA 3.0 |
-| **OGSL** | Cuneiform sign inventory (3,367 signs, ~15k reading values, Unicode mappings) | CC BY-SA 3.0 |
-| **CompVis** | Sign bounding-box annotations (81 tablets, 8.1k annotations) | MIT |
-| **eBL** | OCR training data, sign concordance data, fragment-level citations | Research use |
+| **CDLI** | Artifact catalog (353k records), excavation contexts, provenance, photographs, physical measurements | CC0 |
+| **Pleiades** | Geographic coordinates for ancient places; provenience resolution via ORACC GeoJSON | CC BY 3.0 |
 
-ORACC projects currently downloaded: dcclt, epsd2, saao, rinap, riao, etcsri, blms, hbtin, dccmt, ribo, amgg, ogsl. Several additional projects (rime, etcsl, cams, ctij) are known to exist but return server errors when fetched.
+### Texts & Corpora
 
-CDLI and OGSL data are imported from bulk downloads. ORACC project data is fetched via zip API. CDLI images are fetched on demand and cached locally. The CDLI publications endpoint provides structured bibliographic data via REST API.
+| Source | Provides | License |
+|--------|----------|---------|
+| **CDLI** | ATF transliterations (135k texts, ~4M tokens), translations (43.7k), composite text links, fragment joins | CC0 |
+| **ORACC** (12 projects) | Lemmatization (~309k tokens), glossaries (~21k entries), project-specific catalog enrichment | CC BY-SA 3.0 |
+
+ORACC projects: DCCLT, RINAP, SAAo, RIAo, RIBo, RIME, ETCSRI, ETCSL, BLMS, CAMS, AMGG, HBTIN.
+
+### Signs & Lexica
+
+| Source | Provides | License |
+|--------|----------|---------|
+| **OGSL** | Cuneiform sign inventory (3,367 signs, ~15k reading values, Unicode/MZL/ABZ concordance) | CC BY-SA 3.0 |
+| **ePSD2** | Sumerian lexicon (~21k entries), sign-level glossary data, lemma forms | CC BY-SA 3.0 |
+| **DCCLT** | Cuneiform lexical tradition -- sign lists, vocabularies, scribal training texts | CC BY-SA 3.0 |
+
+### Machine Learning
+
+| Source | Provides | License |
+|--------|----------|---------|
+| **CompVis** | Sign bounding-box annotations (81 tablets, 8.1k annotations) | CC BY 4.0 |
+| **eBL annotations** | Sign detection training data, MZL sign concordance | CC BY 4.0 |
+| **DeepScribe** | Computer vision pipeline for cuneiform sign detection (Persepolis Fortification Archive) | MIT |
+| **BabyLemmatizer** | Neural POS tagger and lemmatizer for Akkadian | Apache 2.0 |
+
+### Bibliography & Citation
+
+| Source | Provides | License |
+|--------|----------|---------|
+| **CDLI** | Publications bibliography (16.7k pubs), artifact-publication links, edition histories | CC0 |
+| **eBL bibliography** | Fragment-level citation data via live API | Research use |
+| **OpenAlex** | Publication DOI enrichment, scholar ORCID identifiers | CC0 |
+| **Semantic Scholar** | Citation and reference graph data keyed to DOIs | Free API |
+| **KeiBi** | Comprehensive Assyriology bibliography (~90k entries) | Research use |
+
+### Scholars & Identity
+
+| Source | Provides | License |
+|--------|----------|---------|
+| **CDLI** | Scholar name registry, ATF editor and author attribution | CC BY-SA |
+| **Wikipedia / Wikidata** | Assyriologist name resolution, Wikidata QIDs for disambiguation | CC BY-SA 4.0 / CC0 |
 
 For detailed field mappings, update frequencies, and access methods per source, see [data-sources.md](schema-architecture/glintstone-schema-v2/data-sources.md).
 
-### Not Yet Integrated
+---
 
-| Source | Status |
-|--------|--------|
-| **CAD** (Chicago Assyrian Dictionary) | PDF digitization tools built, extraction not yet run |
-| **BabyLemmatizer** output | Model available, import pathway designed, not yet executed |
-| **KeiBi** (Keilschriftbibliographie) | ~90k entries, manual acquisition required |
+## Tech Stack
+
+- **Backend**: Python 3.9+ / FastAPI / Uvicorn
+- **Database**: PostgreSQL (psycopg3)
+- **Web**: FastAPI + Jinja2 (server-rendered)
+- **Proxy**: nginx (local dev: `*.glintstone.test` domains)
+- **Import pipeline**: Python scripts (`source-data/import-tools/`)
+- **Marketing site**: Static HTML + Tailwind
 
 ---
 
-## Data Model
+## Project Structure
 
-The schema is organized into five layers, reflecting the stages of cuneiform research:
-
-**Physical** -- Where are signs on the artifact? Surfaces, bounding boxes, damage states. Sources: CompVis annotations, eBL OCR, ML models.
-
-**Graphemic** -- What signs are present? The cuneiform sign inventory with cross-system concordance (OGSL canonical, with MZL and ABZ numbers mapped via Unicode). Source: OGSL.
-
-**Reading** -- How are signs read in context? ATF transliteration decomposed into lines, tokens, and competing readings. A single token position can have multiple readings from different scholars or models. Sources: CDLI ATF, ORACC corpus.
-
-**Linguistic** -- What do the words mean? Lemmatization (dictionary headword mapping), morphological analysis, and translations. Supports multiple competing analyses per token with provenance. Sources: ORACC corpus and glossaries, BabyLemmatizer (future).
-
-**Semantic** -- Higher-level meaning. Named entity registry (persons, deities, places), entity relationships (knowledge graph), cross-text parallels, and authority reconciliation (links to Wikidata, Pleiades, etc.). Derived from linguistic layer.
-
-All layers converge on the **P-number** (CDLI artifact identifier) as the universal join key. Every record carries an `annotation_run_id` linking it to its source -- see [data-quality.md](schema-architecture/glintstone-schema-v2/data-quality.md) for how this provenance system works.
-
-For the full schema specification, see the [v2 schema YAML](schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml). For import details, see the [import pipeline guide](schema-architecture/glintstone-schema-v2/import-pipeline-guide.md).
-
----
-
-## Formats
-
-Glintstone works with several identification, annotation, and interchange formats used across the field:
-
-**Artifact identification**
-- **P-numbers** (CDLI artifact identifiers) as the universal join key, with museum numbers, excavation numbers, and publication designations mapped via an identifier concordance table
-- **Q-numbers** for composite (reconstructed) texts assembled from multiple exemplars
-
-**Transliteration and annotation**
-- **ATF** (ASCII Transliteration Format) -- the standard line-oriented notation for cuneiform transliteration, parsed into surfaces, lines, and tokens
-- **CoNLL-U** -- token-level linguistic annotation format used by BabyLemmatizer for import/export interchange. Maps to the schema's lemmatization and morphology tables. See [ml-integration.md](schema-architecture/glintstone-schema-v2/ml-integration.md).
-
-**Sign identification**
-- **OGSL** -- canonical sign names (e.g., "KA", "LUGAL", "|A.AN|"), used as primary identifiers
-- **MZL** -- Borger's Mesopotamisches Zeichenlexikon integer codes (used by CompVis annotations)
-- **ABZ** -- Borger's ABZ integer codes (used by eBL)
-- **Unicode** -- cuneiform block codepoints (U+12000-U+1254F), serving as the bridge for cross-system concordance
-
-**Citation and interoperability**
-- **W3C Web Annotation** -- scholarly annotations exportable to W3C Web Annotation Data Model format for federation with external tools
-- **IIIF** -- planned for image interoperability, not yet implemented
-
----
-
-## Open Challenges
-
-These are the significant gaps, assumptions, and trade-offs in the current design. We document them here because transparency about limitations is essential for a research tool.
-
-**Coverage gaps**
-- Only ~2% of the 389k artifacts have ORACC linguistic annotation. The remaining 98% exist at the identity or text layer only.
-- The CDLI bulk catalog export has not been updated since August 2022. Artifacts added after this date are not reflected.
-- Sign concordance between MZL, OGSL, and ABZ is incomplete. Auto-matching via Unicode resolves ~90%, but ~200-400 signs require manual curation.
-- Several ORACC projects (rime, etcsl, cams, ctij) are unavailable due to server-side errors.
-
-**Design trade-offs**
-- GDL (sign-level structure) stored as JSON on tokens rather than in normalized tables. Simpler to import, but limits sign-level queries.
-- Sumerian verbal morphology is contested across scholarly frameworks (Jagersma, Zolyomi, Edzard). The schema supports multiple analyses as competing annotations rather than picking one framework.
-- CDLI and ORACC sometimes disagree on period, genre, or provenience. CDLI is treated as authoritative for identity fields; ORACC enrichment stored in separate columns.
-- Translations link to text lines, not individual tokens. No source currently provides token-level translation alignment.
-
-**Open questions**
-- How to handle IIIF image integration properly
-- Whether to normalize GDL JSON into queryable tables in a future version
-- How to version ORACC data across releases (currently tracked via annotation_runs timestamps)
-
-For the full list of 12 data quality issues found during pressure testing, see [data-issues.md](schema-architecture/glintstone-schema-v2/data-issues.md).
+```
+api/                    FastAPI app (api.glintstone.org)
+web/                    Server-rendered web app (app.glintstone.org)
+glintstone/             Shared Python package (config, database, repository)
+database/               Migrations and seeds
+source-data/
+  import-tools/         Numbered import scripts (01-15)
+  sources/              Raw source data (not in repo)
+schema-architecture/
+  glintstone-schema-v2/ v2 schema, docs, mappings
+  glintstone-schema-v1/ v1 reference
+  source-schemas/       Raw source format documentation
+marketing/              Static marketing site (glintstone.org)
+ml/models/              ML model sub-repos
+ops/
+  local/                Local dev setup, nginx, start/stop scripts
+  deploy/               VPS provisioning and deployment
+```
 
 ---
 
@@ -153,28 +143,56 @@ For the full list of 12 data quality issues found during pressure testing, see [
 ### Prerequisites
 
 - macOS with Homebrew
-- PHP 8.4+, Python 3.9+
-- Composer (installed by setup script)
+- Python 3.9+
+- PostgreSQL 15+
+- nginx
 
 ### Setup
 
 ```bash
-# One-time setup (~15 min)
-./ops/setup.sh
+# One-time setup
+./ops/local/setup.sh
 
 # Start all services
-./ops/start.sh
+./ops/local/start.sh
 ```
 
-Opens at http://glintstone.test. See `ops/SERVER-SETUP.md` for manual setup and troubleshooting.
+Opens at http://app.glintstone.test (web) and http://api.glintstone.test (API). See `ops/deploy/DEPLOY.md` for production deployment.
 
 ### Data
 
 Source data is not included in the repository. To populate:
 
-1. Download source data: see `data/sources/SETUP.md`
-2. Clone ML model sub-repos: see `ml/models/SETUP.md`
-3. Run import pipeline: `data/v2-schema-tools/run_full_import.sh`
+1. Download source data into `source-data/sources/`
+2. Copy `.env.example` to `.env` and configure database credentials
+3. Run migrations: `python database/migrate.py`
+4. Run import pipeline scripts in `source-data/import-tools/` (numbered order)
+
+---
+
+## Open Challenges
+
+**Coverage gaps**
+- Only ~2% of 389k artifacts have ORACC linguistic annotation.
+- CDLI bulk catalog export frozen since August 2022.
+- Sign concordance (MZL/OGSL/ABZ) ~90% auto-matched; ~200-400 signs need manual curation.
+
+**Design trade-offs**
+- GDL stored as JSON on tokens rather than normalized tables.
+- Sumerian verbal morphology contested across frameworks -- schema supports competing annotations.
+- CDLI/ORACC disagreements on period, genre, provenience handled via separate columns.
+
+**Open questions**
+- GDL normalization into queryable tables
+- ORACC data versioning across releases
+
+See [data-issues.md](schema-architecture/glintstone-schema-v2/data-issues.md) for the full list.
+
+---
+
+## Beyond Cuneiform
+
+The core infrastructure is language-agnostic. Trust tracking, provenance chains, and annotation ecosystems apply to any extinct or undeciphered writing system. Cuneiform is the proving ground -- but the same architecture could serve Linear A, Linear B, Egyptian, Mayan, Proto-Elamite, Ugaritic, Meroitic, Indus Valley, Etruscan, Luwian, Rongorongo, and Cypro-Minoan.
 
 ---
 
@@ -182,15 +200,29 @@ Source data is not included in the repository. To populate:
 
 | Document | Purpose |
 |----------|---------|
-| [v2 Schema](schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml) | Full schema specification (70+ tables, annotated) |
+| [v2 Schema](schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml) | Full schema specification (70+ tables) |
 | [Data Sources](schema-architecture/glintstone-schema-v2/data-sources.md) | Per-source field mappings, licenses, access methods |
 | [Data Quality](schema-architecture/glintstone-schema-v2/data-quality.md) | Trust architecture, competing interpretations, evidence chains |
 | [ML Integration](schema-architecture/glintstone-schema-v2/ml-integration.md) | BabyLemmatizer, DETR, Akkademia model integration |
 | [Import Pipeline](schema-architecture/glintstone-schema-v2/import-pipeline-guide.md) | 19-step ETL overview |
-| [Data Issues](schema-architecture/glintstone-schema-v2/data-issues.md) | 12 critical issues from pressure testing |
-| [Citation Pipeline](schema-architecture/glintstone-schema-v2/citation-pipeline-summary.md) | Citation sourcing from 9 external sources (built) |
-| [Source Mappings](schema-architecture/glintstone-schema-v2/source-to-v2-mapping.yaml) | Field-level source-to-schema mappings with null rates |
+| [Data Issues](schema-architecture/glintstone-schema-v2/data-issues.md) | Critical issues from pressure testing |
+| [Citation Pipeline](schema-architecture/glintstone-schema-v2/citation-pipeline-summary.md) | Citation sourcing from 9 external sources |
+| [Source Mappings](schema-architecture/glintstone-schema-v2/source-to-v2-mapping.yaml) | Field-level source-to-schema mappings |
 | [Import Pipeline Spec](schema-architecture/glintstone-schema-v2/import-pipeline.yaml) | Full technical ETL specification |
+| [Deployment](ops/deploy/DEPLOY.md) | VPS provisioning and deployment |
+
+---
+
+## Collaboration
+
+Glintstone is open source (CC BY-SA 4.0) and looking for collaborators:
+
+- **Assyriologists & Philologists** -- Feedback on trust, workflows, and new tools
+- **ML Experts & Computational Linguists** -- Data architecture and API for a rapidly changing field
+- **Software Engineers** -- See open repo Issues.
+- **Data Architects** -- Schema design for annotation at scale across projects, versions, and scholarly disagreement
+- **Digital Humanities Scholars** -- Linked data, interoperability standards, modeling contested knowledge
+- **Librarians & Metadata Specialists** -- Authority control, identifier alignment, cataloging standards
 
 ---
 
@@ -203,7 +235,10 @@ Source data is not included in the repository. To populate:
 | eBL | https://www.ebl.lmu.de |
 | ePSD2 | http://oracc.org/epsd2 |
 | OGSL | http://oracc.org/ogsl |
-| CompVis annotations | https://github.com/CompVis/cuneiform-sign-detection-dataset |
+| CompVis | https://github.com/CompVis/cuneiform-sign-detection-dataset |
 | eBL OCR data | https://github.com/ElectronicBabylonianLiterature/cuneiform-ocr-data |
+| DeepScribe | https://github.com/DigitalPasts/DeepScribe |
 | Akkademia | https://github.com/gaigutherz/Akkademia |
 | BabyLemmatizer | https://github.com/asahala/BabyLemmatizer |
+| OpenAlex | https://openalex.org |
+| Pleiades | https://pleiades.stoa.org |
