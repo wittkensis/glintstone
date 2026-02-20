@@ -1,42 +1,35 @@
-/* Minimal v2 styles — placeholder until design system is applied */
+/* Core */
+@import url('core/tokens.css');
+@import url('core/reset.css');
+@import url('core/typography.css');
+@import url('core/utilities.css');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Layout */
+@import url('layout/containers.css');
+@import url('layout/header.css');
+@import url('layout/footer.css');
+@import url('layout/page-header.css');
+@import url('layout/page-hero.css');
+@import url('layout/two-column.css');
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: #0a0a0a;
-    color: #e0e0e0;
-    line-height: 1.6;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
+/* Components */
+@import url('components/buttons.css');
+@import url('components/badges.css');
+@import url('components/cards-base.css');
+@import url('components/cards-tablet.css');
+@import url('components/cards-collection.css');
+@import url('components/pipeline.css');
+@import url('components/stage-filter.css');
+@import url('components/pagination.css');
+@import url('components/empty-states.css');
+@import url('components/forms.css');
+@import url('components/search.css');
+@import url('components/section-header.css');
+@import url('components/progress-meter.css');
+@import url('components/tabs.css');
 
-.container { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
-
-.site-header {
-    padding: 1rem 2rem;
-    border-bottom: 1px solid #222;
-}
-.site-title { color: #e0e0e0; text-decoration: none; font-weight: 600; }
-
-.site-footer {
-    margin-top: auto;
-    padding: 1rem 2rem;
-    border-top: 1px solid #222;
-    font-size: 0.875rem;
-    color: #666;
-}
-
-h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
-
-.status-box {
-    margin-top: 1.5rem;
-    padding: 0.75rem 1rem;
-    border: 1px solid #333;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 0.875rem;
-}
-.status-ok { border-color: #2d6a2d; color: #6fbf6f; }
-.status-error { border-color: #6a2d2d; color: #bf6f6f; }
+/* Pages */
+@import url('pages/homepage.css');
+@import url('pages/tablets.css');
+@import url('pages/collections.css');
+@import url('pages/dictionary.css');

@@ -1,0 +1,1382 @@
+/**
+ * Dictionary Page Styles
+ * Merged from page-dictionary/browser.css + page-dictionary/page-browser.css
+ *                + page-dictionary/groupings.css + page-dictionary/word-list.css
+ *                + page-dictionary/placeholders.css
+ */
+
+
+/* ==========================================================================
+   DICTIONARY BROWSER LAYOUT
+   from: page-dictionary/browser.css
+   ========================================================================== */
+
+/**
+ * Dictionary Browser Layout
+ * Purpose: 3-column master-detail grid for dictionary browsing
+ * Used on: Dictionary index page
+ * Dependencies: core/tokens.css
+ *
+ * Structure:
+ * +---------------------------------------------------------------------+
+ * |  Header (spans all columns)                                          |
+ * +----------------+---------------------+------------------------------+
+ * |  Groupings     |  Word List          |  Word Detail                 |
+ * |  (250px)       |  (350px)            |  (flex: 1)                   |
+ * +----------------+---------------------+------------------------------+
+ */
+
+/* ==========================================================================
+   Page Container
+   ========================================================================== */
+
+/* Prevent body scroll when dictionary browser is active */
+body:has(.dict-browser) {
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* ==========================================================================
+   Main Grid Layout
+   ========================================================================== */
+
+.dict-browser {
+    display: grid;
+    grid-template-columns: 250px 350px 1fr;
+    grid-template-rows: auto auto 1fr;
+    min-height: calc(100vh - var(--site-header-height, 48px));
+    max-height: calc(100vh - var(--site-header-height, 48px));
+    overflow: hidden;
+    background: var(--color-bg);
+}
+
+/* ==========================================================================
+   Header (Row 1, spans all columns)
+   ========================================================================== */
+
+.dict-browser__header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-6) 0;
+    background: var(--color-bg);
+}
+
+.dict-browser__title {
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    font-weight: 400;
+    color: var(--color-text);
+    margin: 0;
+    letter-spacing: 0.02em;
+}
+
+.dict-browser__subtitle {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-left: var(--space-3);
+}
+
+/* Subnav (level 2 tab navigation, own grid row spanning all columns) */
+.dict-browser__subnav {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-6);
+    border-bottom: 2px solid var(--color-border);
+    background: var(--color-bg);
+}
+
+.dict-browser__subnav-link {
+    position: relative;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.dict-browser__subnav-link:hover {
+    color: var(--color-text);
+}
+
+.dict-browser__subnav-link.active {
+    color: var(--color-accent);
+}
+
+.dict-browser__subnav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-accent);
+}
+
+.dict-browser__sources {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    opacity: 0.7;
+    margin-right: var(--space-4);
+}
+
+.dict-browser__actions {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+}
+
+/* ==========================================================================
+   Column 1: Groupings Panel
+   ========================================================================== */
+
+.dict-browser__groupings {
+    grid-column: 1;
+    grid-row: 3;
+    background: var(--color-bg-elevated);
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* ==========================================================================
+   Column 2: Word List Panel
+   ========================================================================== */
+
+.dict-browser__words {
+    grid-column: 2;
+    grid-row: 3;
+    background: var(--color-bg-inset);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Column 3: Word Detail Panel
+   ========================================================================== */
+
+.dict-browser__detail {
+    grid-column: 3;
+    grid-row: 3;
+    background: var(--color-bg);
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* ==========================================================================
+   Responsive: Tablet (768-1024px)
+   Hide groupings, show as overlay with toggle
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+    .dict-browser {
+        grid-template-columns: 350px 1fr;
+    }
+
+    .dict-browser__groupings {
+        position: fixed;
+        top: var(--site-header-height, 48px);
+        left: 0;
+        bottom: 0;
+        width: 250px;
+        z-index: var(--z-modal);
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .dict-browser__groupings[data-open="true"] {
+        transform: translateX(0);
+    }
+
+    /* Overlay backdrop */
+    .dict-browser__groupings-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: calc(var(--z-modal) - 1);
+    }
+
+    .dict-browser__groupings[data-open="true"] + .dict-browser__groupings-backdrop {
+        display: block;
+    }
+
+    .dict-browser__words {
+        grid-column: 1;
+    }
+
+    .dict-browser__detail {
+        grid-column: 2;
+    }
+}
+
+/* ==========================================================================
+   Responsive: Mobile (<768px)
+   Single column with bottom sheet for detail
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .dict-browser {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr;
+    }
+
+    .dict-browser__header {
+        padding: var(--space-3) var(--space-4);
+        min-height: 56px;
+    }
+
+    .dict-browser__title,
+    .signs-browser__title {
+        font-size: var(--text-xl);
+    }
+
+    .dict-browser__sources {
+        display: none;
+    }
+
+    .dict-browser__subnav {
+        padding: 0 var(--space-4);
+    }
+
+    .dict-browser__words {
+        grid-column: 1;
+        grid-row: 3;
+        border-right: none;
+    }
+
+    .dict-browser__detail {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 70vh;
+        grid-column: 1;
+        border-top: 1px solid var(--color-border);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        box-shadow: var(--shadow-lg);
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: var(--z-modal);
+    }
+
+    .dict-browser__detail[data-open="true"] {
+        transform: translateY(0);
+    }
+
+    /* Detail panel handle for drag gestures */
+    .dict-browser__detail-handle {
+        display: flex;
+        justify-content: center;
+        padding: var(--space-3);
+        cursor: grab;
+    }
+
+    .dict-browser__detail-handle::before {
+        content: '';
+        width: 40px;
+        height: 4px;
+        background: var(--color-border);
+        border-radius: var(--radius-full);
+    }
+}
+
+/* Hide detail handle on larger screens */
+@media (min-width: 769px) {
+    .dict-browser__detail-handle {
+        display: none;
+    }
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+    .dict-browser {
+        display: block;
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .dict-browser__groupings,
+    .dict-browser__words {
+        display: none;
+    }
+
+    .dict-browser__detail {
+        overflow: visible;
+    }
+}
+
+
+/* ==========================================================================
+   DICTIONARY PAGE BROWSER
+   from: page-dictionary/page-browser.css
+   ========================================================================== */
+
+/**
+ * Dictionary Page Browser
+ * Purpose: Full-page dictionary/sign library browser layout, search, and entry cards
+ * Used on: /dictionary/index, /dictionary/signs
+ * Dependencies: core/tokens.css, components/badges.css, components/states.css
+ *
+ * For knowledge sidebar styles, see: dictionary/knowledge-sidebar.css
+ */
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
+.dictionary-browser {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+}
+
+@media (max-width: 900px) {
+    .dictionary-browser {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .dictionary-browser .filter-sidebar {
+        position: static !important;
+    }
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+
+.dictionary-header {
+    margin-bottom: 2rem;
+}
+
+.dictionary-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-text);
+}
+
+.dictionary-description {
+    font-size: 1.125rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.dictionary-main {
+    min-width: 0; /* Prevent grid blowout */
+}
+
+/* ==========================================================================
+   Results Header
+   ========================================================================== */
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.results-count {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* ==========================================================================
+   Filter Form
+   ========================================================================== */
+
+.filter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* ==========================================================================
+   Entries Grid
+   ========================================================================== */
+
+.entries-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .entries-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   Entry Card
+   ========================================================================== */
+
+.entry-card {
+    display: block;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-decoration: none;
+    color: var(--color-text);
+    transition: all 0.2s ease;
+}
+
+.entry-card:hover,
+.entry-card:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.entry-card__header {
+    margin-bottom: 0.75rem;
+}
+
+.entry-headword {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0.5rem 0 0;
+    display: inline;
+    color: var(--color-text);
+}
+
+.entry-guide-word {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    font-weight: normal;
+}
+
+.entry-card__meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.entry-card__stats {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.entry-frequency {
+    display: inline-block;
+}
+
+/* ==========================================================================
+   Pagination (Page Browser)
+   ========================================================================== */
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.pagination-prev,
+.pagination-next {
+    padding: 0.625rem 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.pagination-prev:hover,
+.pagination-next:hover,
+.pagination-prev:focus,
+.pagination-next:focus {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-background);
+}
+
+.pagination-info {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+}
+
+/* ==========================================================================
+   Word/Sign Actions
+   ========================================================================== */
+
+.word-actions,
+.sign-actions {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+}
+
+
+/* ==========================================================================
+   DICTIONARY GROUPINGS PANEL
+   from: page-dictionary/groupings.css
+   ========================================================================== */
+
+/**
+ * Dictionary Groupings Panel
+ * Purpose: Column 1 category navigation with expandable sections
+ * Used on: Dictionary browser page
+ * Dependencies: core/tokens.css, dictionary/browser.css
+ *
+ * Structure:
+ * - All Words (always visible)
+ * - By Part of Speech (expandable)
+ * - By Language (expandable)
+ * - By Frequency (expandable)
+ */
+
+/* ==========================================================================
+   Container
+   ========================================================================== */
+
+.dict-groupings {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* ==========================================================================
+   Navigation Container
+   ========================================================================== */
+
+.dict-groupings__nav {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: var(--space-2) 0;
+}
+
+/* ==========================================================================
+   Grouping Items (Clickable filters)
+   ========================================================================== */
+
+.dict-groupings__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-4);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                color var(--transition-fast);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+
+.dict-groupings__item:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.dict-groupings__item--active {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-left: 3px solid var(--color-accent);
+    padding-left: calc(var(--space-4) - 3px);
+}
+
+.dict-groupings__item-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dict-groupings__item-count {
+    flex-shrink: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    margin-left: var(--space-2);
+}
+
+.dict-groupings__item--active .dict-groupings__item-count {
+    color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   Accordion Sections (always visible, independently scrollable)
+   ========================================================================== */
+
+.dict-groupings__section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Critical for flexbox scrolling */
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.dict-groupings__section:first-of-type {
+    border-top: none;
+}
+
+/* Collapsed state: only header visible, don't grow */
+.dict-groupings__section[data-expanded="false"] {
+    flex: 0 0 auto;
+}
+
+/* Expanded state: fill all available height, content scrolls */
+.dict-groupings__section[data-expanded="true"] {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+/* Push collapsed sections to bottom when they follow an expanded section */
+/* Only target the first collapsed section after an expanded one */
+.dict-groupings__section[data-expanded="true"] + .dict-groupings__section[data-expanded="false"] {
+    margin-top: auto;
+}
+
+/* Section Header (expand/collapse toggle) */
+.dict-groupings__section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-5) var(--space-4);
+    background: var(--color-bg-subtle);
+    border: none;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--transition-fast),
+                color var(--transition-fast);
+}
+
+.dict-groupings__section-header:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.dict-groupings__section[data-expanded="true"] .dict-groupings__section-header {
+    color: var(--color-text);
+}
+
+/* Chevron icon */
+.dict-groupings__section-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-muted);
+    transition: transform var(--transition-normal);
+    flex-shrink: 0;
+}
+
+.dict-groupings__section[data-expanded="true"] .dict-groupings__section-chevron {
+    transform: rotate(180deg);
+}
+
+/* Section Content (independently scrollable when expanded) */
+.dict-groupings__section-content {
+    display: none;
+    flex: 1;
+    min-height: 0; /* Critical for nested flexbox scrolling */
+    overflow-y: auto;
+    padding-bottom: var(--space-2);
+}
+
+.dict-groupings__section[data-expanded="true"] .dict-groupings__section-content {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Nested items within sections */
+.dict-groupings__section-content .dict-groupings__item {
+    padding-left: var(--space-6);
+    font-size: var(--text-sm);
+}
+
+.dict-groupings__section-content .dict-groupings__item--active {
+    padding-left: calc(var(--space-6) - 3px);
+}
+
+/* ==========================================================================
+   Mobile Toggle Button (visible on tablet/mobile)
+   ========================================================================== */
+
+.dict-groupings__toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.dict-groupings__toggle:hover {
+    background: var(--color-bg-elevated);
+}
+
+.dict-groupings__toggle-icon {
+    width: 20px;
+    height: 20px;
+}
+
+@media (max-width: 1024px) {
+    .dict-groupings__toggle {
+        display: flex;
+    }
+}
+
+/* ==========================================================================
+   Close Button (for mobile overlay)
+   ========================================================================== */
+
+.dict-groupings__close {
+    display: none;
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: var(--color-surface);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                color var(--transition-fast);
+    z-index: 10;
+}
+
+.dict-groupings__close:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+}
+
+.dict-groupings__close-icon {
+    width: 16px;
+    height: 16px;
+}
+
+@media (max-width: 1024px) {
+    .dict-groupings__close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ==========================================================================
+   Loading State
+   ========================================================================== */
+
+.dict-groupings--loading .dict-groupings__item-count {
+    background: var(--color-surface);
+    color: transparent;
+    border-radius: var(--radius-sm);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+
+/* ==========================================================================
+   DICTIONARY WORD LIST
+   from: page-dictionary/word-list.css
+   ========================================================================== */
+
+/**
+ * Dictionary Word List
+ * Purpose: Column 2 - Search input, scrollable word list, pagination
+ * Used on: Dictionary browser page
+ * Dependencies: core/tokens.css, dictionary/browser.css
+ *
+ * Structure:
+ * - Search input (fixed top)
+ * - Scrollable word list
+ * - Footer with count + load more
+ */
+
+/* ==========================================================================
+   Container
+   ========================================================================== */
+
+.dict-word-list {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* ==========================================================================
+   Search Section (Fixed Top)
+   ========================================================================== */
+
+.dict-word-list__search {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: var(--space-3) var(--space-4);
+    background: rgba(var(--color-bg-inset-rgb), 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.dict-word-list__search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.dict-word-list__search-icon {
+    position: absolute;
+    left: var(--space-3);
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-subtle);
+    pointer-events: none;
+}
+
+.dict-word-list__search-input {
+    width: 100%;
+    padding: var(--space-2) var(--space-4);
+    padding-left: calc(var(--space-3) + 16px + var(--space-2));
+    padding-right: var(--space-10);
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    transition: border-color var(--transition-fast),
+                box-shadow var(--transition-fast);
+}
+
+.dict-word-list__search-input::placeholder {
+    color: var(--color-text-subtle);
+}
+
+.dict-word-list__search-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px var(--color-accent-20);
+}
+
+/* Clear button */
+.dict-word-list__search-clear {
+    position: absolute;
+    right: var(--space-2);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: var(--color-surface);
+    border: none;
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                color var(--transition-fast);
+}
+
+.dict-word-list__search-clear:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+}
+
+.dict-word-list__search-clear-icon {
+    width: 12px;
+    height: 12px;
+}
+
+/* Show clear button when input has value */
+.dict-word-list__search-input:not(:placeholder-shown) + .dict-word-list__search-clear {
+    display: flex;
+}
+
+/* Sort select */
+.dict-word-list__sort {
+    width: 100%;
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23707070' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--space-2) center;
+    padding-right: var(--space-6);
+}
+
+.dict-word-list__sort:hover {
+    border-color: var(--color-text-subtle);
+}
+
+.dict-word-list__sort:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px var(--color-accent-20);
+}
+
+/* ==========================================================================
+   Scrollable Items Container
+   ========================================================================== */
+
+.dict-word-list__items {
+    padding: var(--space-2);
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+
+.dict-word-list__footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) var(--space-4);
+    background: rgba(var(--color-bg-inset-rgb), 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.dict-word-list__count {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.dict-word-list__load-more {
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                border-color var(--transition-fast);
+}
+
+.dict-word-list__load-more:hover {
+    background: var(--color-bg);
+    border-color: var(--color-accent);
+}
+
+.dict-word-list__load-more:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Hide load more when no more results */
+.dict-word-list__load-more[data-hidden="true"] {
+    display: none;
+}
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+
+/* Loading indicator */
+.dict-word-list__loading {
+    display: none;
+    justify-content: center;
+    padding: var(--space-4);
+}
+
+.dict-word-list[data-loading="true"] .dict-word-list__loading {
+    display: flex;
+}
+
+.dict-word-list__spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ==========================================================================
+   DICTIONARY PLACEHOLDERS
+   from: page-dictionary/placeholders.css
+   ========================================================================== */
+
+/**
+ * Dictionary Placeholders
+ * Purpose: Empty states, loading states, error states for all columns
+ * Used on: Dictionary browser page
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   Shared Placeholder Styles
+   ========================================================================== */
+
+.dict-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8);
+    text-align: center;
+    height: 100%;
+    min-height: 200px;
+}
+
+.dict-placeholder__icon {
+    width: 48px;
+    height: 48px;
+    color: var(--color-text-subtle);
+    opacity: 0.5;
+    margin-bottom: var(--space-4);
+}
+
+.dict-placeholder__title {
+    font-size: var(--text-lg);
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2);
+}
+
+.dict-placeholder__description {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-4);
+    max-width: 280px;
+    line-height: 1.5;
+}
+
+.dict-placeholder__action {
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                border-color var(--transition-fast);
+}
+
+.dict-placeholder__action:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-accent);
+}
+
+/* ==========================================================================
+   Column 2: Empty Word List
+   ========================================================================== */
+
+.dict-word-list__empty {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+    text-align: center;
+    flex: 1;
+}
+
+.dict-word-list[data-empty="true"] .dict-word-list__empty {
+    display: flex;
+}
+
+.dict-word-list[data-empty="true"] .dict-word-list__items {
+    display: none;
+}
+
+.dict-word-list__empty-icon {
+    width: 40px;
+    height: 40px;
+    color: var(--color-text-subtle);
+    opacity: 0.4;
+    margin-bottom: var(--space-3);
+}
+
+.dict-word-list__empty-title {
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0 0 var(--space-1);
+}
+
+.dict-word-list__empty-description {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-4);
+    max-width: 240px;
+}
+
+.dict-word-list__empty-action {
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.dict-word-list__empty-action:hover {
+    background: var(--color-bg-elevated);
+}
+
+/* ==========================================================================
+   Column 3: No Word Selected
+   ========================================================================== */
+
+.dict-detail-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: var(--space-8);
+    text-align: center;
+}
+
+.dict-detail-placeholder__icon {
+    width: 64px;
+    height: 64px;
+    color: var(--color-text-subtle);
+    opacity: 0.3;
+    margin-bottom: var(--space-6);
+}
+
+.dict-detail-placeholder__title {
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 400;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2);
+}
+
+.dict-detail-placeholder__description {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0;
+    max-width: 320px;
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+
+/* Full-panel loading overlay */
+.dict-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(26, 26, 26, 0.8);
+    z-index: 10;
+}
+
+[data-loading="true"] .dict-loading-overlay {
+    display: flex;
+}
+
+/* Loading spinner */
+.dict-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: dict-spin 0.8s linear infinite;
+}
+
+.dict-spinner--sm {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+@keyframes dict-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Inline loading indicator */
+.dict-loading-inline {
+    display: none;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+[data-loading="true"] .dict-loading-inline {
+    display: flex;
+}
+
+/* Skeleton detail panel */
+.dict-detail-skeleton {
+    padding: var(--space-6);
+}
+
+.dict-detail-skeleton__header {
+    margin-bottom: var(--space-6);
+}
+
+.dict-detail-skeleton__title {
+    background: var(--color-surface);
+    height: 2rem;
+    width: 200px;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-3);
+    animation: dict-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dict-detail-skeleton__badges {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.dict-detail-skeleton__badge {
+    background: var(--color-surface);
+    height: 1.5rem;
+    width: 80px;
+    border-radius: var(--radius-full);
+    animation: dict-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dict-detail-skeleton__section {
+    margin-bottom: var(--space-6);
+}
+
+.dict-detail-skeleton__section-title {
+    background: var(--color-surface);
+    height: 1rem;
+    width: 120px;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-3);
+    animation: dict-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dict-detail-skeleton__line {
+    background: var(--color-surface);
+    height: 1rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-2);
+    animation: dict-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dict-detail-skeleton__line--short {
+    width: 60%;
+}
+
+.dict-detail-skeleton__line--medium {
+    width: 80%;
+}
+
+.dict-detail-skeleton__line--full {
+    width: 100%;
+}
+
+/* ==========================================================================
+   Error State
+   ========================================================================== */
+
+.dict-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+    text-align: center;
+}
+
+.dict-error__icon {
+    width: 40px;
+    height: 40px;
+    color: var(--color-error);
+    opacity: 0.7;
+    margin-bottom: var(--space-3);
+}
+
+.dict-error__title {
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0 0 var(--space-1);
+}
+
+.dict-error__description {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-4);
+    max-width: 280px;
+}
+
+.dict-error__retry {
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                border-color var(--transition-fast);
+}
+
+.dict-error__retry:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-accent);
+}

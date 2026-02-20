@@ -1,0 +1,211 @@
+/**
+ * Progress Meter Component Styles
+ * Concentric rings visualization for digitization progress
+ */
+
+/* Container */
+.progress-meter {
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-8);
+}
+
+/* SVG Container */
+.progress-rings {
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+}
+
+/* Background rings (track) */
+.ring-bg {
+    fill: none;
+    stroke: var(--color-surface);
+    stroke-width: 20;
+    transition: stroke var(--transition-slow);
+}
+
+/* Progress rings (animated) */
+.ring-progress {
+    fill: none;
+    stroke-linecap: round;
+    stroke-width: 20;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: stroke-dashoffset 1.2s ease-out, stroke var(--transition-slow);
+}
+
+/* Ring colors - Distinct colors for each metric */
+.ring-1 {
+    stroke: var(--color-success); /* Green for Images */
+}
+
+.ring-2 {
+    stroke: var(--color-accent); /* Gold for Transliterations */
+}
+
+.ring-3 {
+    stroke: var(--color-info); /* Blue for Translations */
+}
+
+/* Center Monument Typography */
+.monument-number {
+    font-family: var(--font-serif);
+    font-size: var(--text-display);
+    font-weight: var(--font-weight-bold);
+    fill: var(--color-text);
+    letter-spacing: -0.02em;
+}
+
+.monument-divider {
+    stroke: var(--color-border);
+    stroke-width: 2;
+}
+
+.monument-label {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    fill: var(--color-text-muted);
+    letter-spacing: 0.02em;
+}
+
+/* Ring Labels (outside SVG) - Side by side */
+.ring-labels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+    width: 100%;
+    max-width: 800px;
+}
+
+.ring-label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    text-align: center;
+    transition: background var(--transition-normal), border-color var(--transition-normal), transform var(--transition-normal);
+}
+
+.ring-label:hover {
+    background: var(--color-surface);
+    transform: translateY(-2px);
+}
+
+/* Color accents matching rings */
+.ring-label-1 {
+    border-top: 3px solid var(--color-success);
+}
+
+.ring-label-2 {
+    border-top: 3px solid var(--color-accent);
+}
+
+.ring-label-3 {
+    border-top: 3px solid var(--color-info);
+}
+
+.label-name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.label-stat {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+    display: block;
+    margin: var(--space-1) 0;
+}
+
+.label-count {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    display: block;
+}
+
+/* Screen reader only content */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Responsive: Tablet */
+@media (max-width: 768px) {
+    .progress-meter {
+        gap: var(--space-6);
+    }
+
+    .progress-rings {
+        max-width: 500px;
+    }
+
+    .monument-number {
+        font-size: var(--text-4xl);
+    }
+
+    .monument-label {
+        font-size: var(--text-sm);
+    }
+}
+
+/* Responsive: Mobile - Stack labels */
+@media (max-width: 640px) {
+    .progress-meter {
+        gap: var(--space-6);
+    }
+
+    .progress-rings {
+        max-width: 400px;
+    }
+
+    .monument-number {
+        font-size: var(--text-3xl);
+    }
+
+    .monument-label {
+        font-size: var(--text-xs);
+    }
+
+    .ring-labels {
+        grid-template-columns: 1fr;
+        max-width: 100%;
+        gap: var(--space-3);
+    }
+
+    .label-stat {
+        font-size: var(--text-xl);
+    }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .ring-progress {
+        transition: none;
+    }
+}
+
+/* Focus and accessibility */
+.ring-label:focus-within {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}

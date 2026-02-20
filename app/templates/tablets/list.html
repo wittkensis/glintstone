@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "components/_macros.html" import tablet_card, stage_filter, filter_sidebar, pagination %}
+
+{% block title %}Tablets - Glintstone{% endblock %}
+
+{% block content %}
+<main class="layout-two-column filtered-list-page">
+<div class="page-with-sidebar">
+    {{ filter_sidebar(search_value=search or '', action_url='/tablets') }}
+
+    <div class="main-content">
+        <div class="page-header">
+            <div class="page-header-main">
+                <div class="page-header-title">
+                    <h1>Tablets</h1>
+                    <p class="subtitle">
+                        Showing {{ '{:,}'.format(total) }} tablets
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {% set stages = [
+            {'label': 'All', 'value': ''},
+            {'label': 'Needs graphemic', 'value': 'needs_graphemic'},
+            {'label': 'Needs reading', 'value': 'needs_reading'},
+            {'label': 'Needs linguistic', 'value': 'needs_linguistic'},
+            {'label': 'Complete', 'value': 'complete'},
+        ] %}
+        {{ stage_filter(stages, pipeline or '', '/tablets', search=search or '') }}
+
+        <div class="tablet-grid">
+            {% for tablet in tablets %}
+                {{ tablet_card(tablet, api_url=api_url) }}
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">&#x12000;</div>
+                <h3>No tablets found</h3>
+                <p>Try adjusting your search or filters.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% set base = '/tablets?' %}
+        {% if search %}{% set base = base ~ 'search=' ~ search ~ '&' %}{% endif %}
+        {% if pipeline %}{% set base = base ~ 'pipeline=' ~ pipeline ~ '&' %}{% endif %}
+        {{ pagination(page, total_pages, base) }}
+    </div>
+</div>
+</main>
+{% endblock %}

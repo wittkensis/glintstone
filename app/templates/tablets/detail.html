@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% from "components/_macros.html" import pipeline, lang_badge %}
+
+{% block title %}{{ tablet.p_number }} - Glintstone{% endblock %}
+
+{% block content %}
+<div class="tablet-detail-page">
+<main class="container">
+
+    {% if tablet.composites %}
+    <div class="composite-panel" id="composite-panel" data-q-number="{{ tablet.composites[0].q_number }}">
+        <div class="composite-panel__header">
+            <div class="composite-panel__title-group">
+                <h2 class="composite-panel__title">{{ tablet.composites[0].designation or tablet.composites[0].q_number }}</h2>
+                {% if tablet.composites[0].designation %}
+                <span class="composite-panel__subtitle">{{ tablet.composites[0].q_number }}</span>
+                {% endif %}
+            </div>
+            <span class="composite-panel__count" id="composite-count">{{ tablet.composites[0].exemplar_count or '?' }} tablets</span>
+        </div>
+        <div class="composite-panel__list" id="composite-list">
+            <div class="composite-panel__loading">Loading tablets...</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="container-inner">
+        <div class="page-header tablet-header">
+            <div class="page-header-main">
+                <div class="page-header-title">
+                    <h1>{{ tablet.p_number }}</h1>
+                </div>
+                <div class="page-header-actions">
+                    {% set pipe = tablet.pipeline or {} %}
+                    {{ pipeline(pipe, 'inline') }}
+
+                    {% if tablet.composites %}
+                    <button class="btn btn--icon-left btn--toggle" id="composite-toggle"
+                            aria-expanded="false" aria-controls="composite-panel"
+                            title="View composite text">
+                        <span>{{ tablet.composites[0].designation or tablet.composites[0].q_number }}</span>
+                    </button>
+                    {% endif %}
+
+                    <div class="actions-menu">
+                        <button class="btn btn--icon actions-menu__trigger" aria-haspopup="true" aria-expanded="false">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+                            </svg>
+                        </button>
+                        <div class="actions-menu__dropdown">
+                            <a href="https://cdli.ucla.edu/search/archival_view.php?ObjectID={{ tablet.p_number }}"
+                               target="_blank" class="actions-menu__item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                                </svg>
+                                View on CDLI
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Primary Metadata #}
+        {% set has_secondary = tablet.designation or tablet.museum_no or tablet.genre or (tablet.width and tablet.height) %}
+        <div class="tablet-meta">
+            <dl class="tablet-meta__row">
+                {% if tablet.language %}
+                <div class="meta-item">
+                    <dt>Language</dt>
+                    <dd>{{ tablet.language }}</dd>
+                </div>
+                {% endif %}
+                {% if tablet.period %}
+                <div class="meta-item">
+                    <dt>Period</dt>
+                    <dd>{{ tablet.period }}</dd>
+                </div>
+                {% endif %}
+                {% if tablet.provenience %}
+                <div class="meta-item">
+                    <dt>Provenience</dt>
+                    <dd>{{ tablet.provenience }}</dd>
+                </div>
+                {% endif %}
+                {% if tablet.excavation_no %}
+                <div class="meta-item">
+                    <dt>Excavation</dt>
+                    <dd>{{ tablet.excavation_no }}</dd>
+                </div>
+                {% endif %}
+                {% if has_secondary %}
+                <div class="meta-item">
+                    <button class="tablet-meta__toggle" id="meta-toggle" aria-expanded="false" aria-controls="meta-secondary">
+                        <svg class="tablet-meta__toggle-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                        More
+                    </button>
+                </div>
+                {% endif %}
+            </dl>
+            {% if has_secondary %}
+            <dl class="tablet-meta__secondary" id="meta-secondary">
+                {% if tablet.designation %}
+                <div class="meta-item">
+                    <dt>Designation</dt>
+                    <dd>{{ tablet.designation }}</dd>
+                </div>
+                {% endif %}
+                {% if tablet.museum_no %}
+                <div class="meta-item">
+                    <dt>Museum</dt>
+                    <dd>{{ tablet.museum_no }}</dd>
+                </div>
+                {% endif %}
+                {% if tablet.genre %}
+                <div class="meta-item">
+                    <dt>Genre</dt>
+                    <dd>{{ tablet.genre }}</dd>
+                </div>
+                {% endif %}
+                {% if tablet.width and tablet.height %}
+                <div class="meta-item">
+                    <dt>Dimensions</dt>
+                    <dd>{{ tablet.width }}&times;{{ tablet.height }}&times;{{ tablet.thickness or '?' }} mm</dd>
+                </div>
+                {% endif %}
+            </dl>
+            {% endif %}
+        </div>
+    </div>
+</main>
+
+<div class="tablet-detail-fullpage">
+    <div class="tablet-detail-viewer"
+         data-state="expanded"
+         data-p-number="{{ tablet.p_number }}">
+
+        <div class="viewer-panel">
+            <section class="tablet-image">
+                <div class="zoombox" id="tablet-zoombox"
+                     data-p-number="{{ tablet.p_number }}"
+                     data-api-url="{{ api_url }}">
+
+                    <div class="zoombox__viewport">
+                        <div class="zoombox__transform">
+                            <img class="zoombox__image is-loading" src="" alt="{{ tablet.designation or tablet.p_number }}">
+                            <div class="zoombox__overlays"></div>
+                        </div>
+                        <div class="zoombox__loading">Loading image...</div>
+                        <div class="zoombox__placeholder">
+                            <span class="zoombox__placeholder-icon">&#x12000;</span>
+                            <span>No image available</span>
+                        </div>
+                    </div>
+
+                    <div class="zoombox__controls">
+                        <button class="zoombox__btn" data-action="zoom-out" title="Zoom out (-)">&#x2212;</button>
+                        <button class="zoombox__btn" data-action="zoom-in" title="Zoom in (+)">+</button>
+                        <button class="zoombox__btn zoombox__btn--reset" data-action="reset" title="Reset (0)">&#x21BA;</button>
+                    </div>
+
+                    <div class="zoombox__minimap-container">
+                        <div class="zoombox__minimap">
+                            <canvas class="zoombox__minimap-canvas"></canvas>
+                            <div class="zoombox__minimap-viewport"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="image-controls">
+                    <p class="image-source" id="image-source"></p>
+                </div>
+            </section>
+        </div>
+
+        <div class="atf-panel">
+            <div class="no-atf" id="atf-container">
+                <p>No transliteration available</p>
+                <div class="contribute-buttons">
+                    <button class="btn btn-secondary" disabled>Add Transliteration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/zoombox.js"></script>
+<script src="/static/js/tablet-detail.js"></script>
+{% endblock %}

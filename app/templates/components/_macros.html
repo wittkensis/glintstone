@@ -1,0 +1,393 @@
+{# ── Language Badge ── #}
+{% macro lang_badge(language) %}
+{% if language %}
+{% set abbr_map = {
+    'Sumerian': 'SU', 'Akkadian': 'AK', 'Hittite': 'HI',
+    'Elamite': 'EL', 'Hurrian': 'HU', 'Ugaritic': 'UG',
+    'Egyptian': 'EG', 'Aramaic': 'AR', 'Greek': 'GR',
+    'Old Persian': 'OP', 'Eblaite': 'EB', 'Urartian': 'UR'
+} %}
+{% set abbr = abbr_map.get(language, language[:2]|upper) %}
+<span class="lang-badge" title="{{ language }}">{{ abbr }}</span>
+{% endif %}
+{% endmacro %}
+
+
+{# ── Pipeline (compact / inline / expanded) ── #}
+{# stages: dict with keys physical, graphemic, reading, linguistic, semantic #}
+{% macro pipeline(stages, variant="compact") %}
+{% set layer_names = ['physical', 'graphemic', 'reading', 'linguistic', 'semantic'] %}
+{% set layer_labels = {
+    'physical': 'Physical',
+    'graphemic': 'Graphemic',
+    'reading': 'Reading',
+    'linguistic': 'Linguistic',
+    'semantic': 'Semantic'
+} %}
+
+{# Determine status per layer from float score #}
+{% set ns = namespace(next_stage=none, complete_count=0) %}
+{% for layer in layer_names %}
+    {% set score = stages.get(layer) if stages else none %}
+    {% if score is not none and score >= 1.0 %}
+        {% set ns.complete_count = ns.complete_count + 1 %}
+    {% endif %}
+    {% if ns.next_stage is none and (score is none or score == 0 or score < 1.0) %}
+        {% set ns.next_stage = layer %}
+    {% endif %}
+{% endfor %}
+
+{% if variant == "compact" %}
+<div class="pipeline pipeline--compact" aria-label="Pipeline: {{ ns.complete_count }} of 5 complete">
+    {% for layer in layer_names %}
+    {% set score = stages.get(layer) if stages else none %}
+    {% set status = 'complete' if score is not none and score >= 1.0 else ('partial' if score is not none and score > 0 else 'missing') %}
+    <span class="pipeline__segment{% if layer == ns.next_stage %} pipeline__segment--next{% endif %}"
+          data-stage="{{ layer }}"
+          data-status="{{ status }}"></span>
+    {% endfor %}
+</div>
+
+{% elif variant == "inline" %}
+{% set next_label = 'Needs ' ~ layer_labels.get(ns.next_stage, '') if ns.next_stage else 'Complete' %}
+<div class="pipeline pipeline--inline"
+     aria-label="Pipeline: {{ ns.complete_count }} of 5 complete"
+     title="{{ next_label }}">
+    <div class="pipeline__dots">
+        {% for layer in layer_names %}
+        {% set score = stages.get(layer) if stages else none %}
+        {% set status = 'complete' if score is not none and score >= 1.0 else ('partial' if score is not none and score > 0 else 'missing') %}
+        <span class="pipeline__dot{% if layer == ns.next_stage %} pipeline__dot--next{% endif %}"
+              data-status="{{ status }}"></span>
+        {% endfor %}
+    </div>
+    <span class="pipeline__next-label">{{ next_label }}</span>
+</div>
+
+{% else %}{# expanded #}
+<nav class="pipeline pipeline--expanded" aria-label="Pipeline: {{ ns.complete_count }} of 5 complete">
+    {% for layer in layer_names %}
+    {% set score = stages.get(layer) if stages else none %}
+    {% set status = 'complete' if score is not none and score >= 1.0 else ('partial' if score is not none and score > 0 else 'missing') %}
+    <div class="pipeline__segment{% if layer == ns.next_stage %} pipeline__segment--next{% endif %}"
+         data-stage="{{ layer }}" data-status="{{ status }}">
+        <span class="pipeline__bar"></span>
+        <div class="pipeline__body">
+            <span class="pipeline__label">{{ layer_labels[layer] }}</span>
+            <span class="pipeline__status">{{ 'Complete' if status == 'complete' else ('Partial' if status == 'partial' else 'Missing') }}</span>
+            {% if layer == ns.next_stage %}
+            <span class="pipeline__next-hint">Next step</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</nav>
+{% endif %}
+{% endmacro %}
+
+
+{# ── Tablet Card ── #}
+{% macro tablet_card(tablet, collection_id=none, api_url='') %}
+<a href="/tablets/{{ tablet.p_number }}"
+   class="card tablet-card"
+   data-p-number="{{ tablet.p_number }}">
+
+    {% if collection_id %}
+    <form method="POST" action="/collections/{{ collection_id }}/remove-tablet" class="card-remove-form">
+        <input type="hidden" name="p_number" value="{{ tablet.p_number }}">
+        <button type="submit" class="card-remove-btn"
+                onclick="event.preventDefault(); event.stopPropagation(); if(confirm('Remove this tablet from the collection?')) this.form.submit();"
+                title="Remove from collection">&times;</button>
+    </form>
+    {% endif %}
+
+    {{ lang_badge(tablet.language) }}
+
+    <div class="card-image">
+        <img src="{{ api_url }}/image/{{ tablet.p_number }}?size=200"
+             alt="{{ tablet.designation or tablet.p_number }}"
+             loading="lazy"
+             onerror="this.parentElement.classList.add('no-image')">
+        <div class="card-placeholder">
+            <span class="cuneiform-icon">&#x12000;</span>
+        </div>
+    </div>
+
+    <div class="card-details card-overlay">
+        {% set pipe = {
+            'physical': tablet.physical_complete,
+            'graphemic': tablet.graphemic_complete,
+            'reading': tablet.reading_complete,
+            'linguistic': tablet.linguistic_complete,
+            'semantic': tablet.semantic_complete
+        } %}
+        {{ pipeline(pipe, 'compact') }}
+
+        <span class="card-eyebrow p-number">{{ tablet.p_number }}</span>
+        {% if tablet.period %}
+        <span class="card-primary meta-period">{{ tablet.period[:25] }}</span>
+        {% endif %}
+        {% if tablet.provenience %}
+        <span class="card-meta">{{ tablet.provenience[:20] }}</span>
+        {% endif %}
+        {% if tablet.genre %}
+        <span class="card-meta">{{ tablet.genre[:20] }}</span>
+        {% endif %}
+    </div>
+</a>
+{% endmacro %}
+
+
+{# ── Collection Card ── #}
+{% macro collection_card(collection, api_url='') %}
+<a href="/collections/{{ collection.collection_id }}"
+   class="card collection-card"
+   data-collection-id="{{ collection.collection_id }}">
+
+    {% if collection.image_path %}
+    <div class="collection-cover-image">
+        <img src="{{ collection.image_path }}"
+             alt="{{ collection.name }}"
+             loading="lazy">
+    </div>
+    {% else %}
+    <div class="card-image-grid collection-cover">
+        {% set previews = collection.preview_tablets or [] %}
+        {% for tablet in previews %}
+        <div class="cover-thumb">
+            <img src="{{ api_url }}/image/{{ tablet.p_number }}?size=100"
+                 alt="{{ tablet.designation or tablet.p_number }}"
+                 loading="lazy"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="cover-thumb__fallback" style="display:none;">
+                <span class="cuneiform-icon">&#x12000;</span>
+            </div>
+        </div>
+        {% endfor %}
+        {% for i in range(4 - previews|length) %}
+        <div class="cover-thumb empty">
+            <span class="cuneiform-icon">&#x12000;</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card-details collection-meta">
+        <h3 class="card-primary collection-name">{{ collection.name }}</h3>
+        {% if collection.description %}
+        <p class="card-meta collection-description">
+            {{ collection.description[:120] }}{{ '...' if collection.description|length > 120 else '' }}
+        </p>
+        {% endif %}
+        <div class="card-meta collection-stats">
+            <span class="stat">
+                {{ '{:,}'.format(collection.tablet_count or 0) }}
+                {{ 'tablet' if (collection.tablet_count or 0) == 1 else 'tablets' }}
+            </span>
+        </div>
+    </div>
+</a>
+{% endmacro %}
+
+
+{# ── Stage Filter ── #}
+{% macro stage_filter(stages, current, base_url='/tablets', search='') %}
+<nav class="stage-filter btn-group" aria-label="Filter by pipeline stage">
+    {% for stage in stages %}
+    {% set is_active = (stage.value == '' and not current) or (current == stage.value) %}
+    {% set url = base_url ~ '?' %}
+    {% if search %}{% set url = url ~ 'search=' ~ search ~ '&' %}{% endif %}
+    {% if stage.value %}{% set url = url ~ 'pipeline=' ~ stage.value %}{% endif %}
+    <a href="{{ url }}"
+       class="btn btn-group-item{{ ' btn-group-item--active' if is_active }}"
+       {{ 'aria-current=true' if is_active }}>
+        {{ stage.label }}
+    </a>
+    {% endfor %}
+</nav>
+{% endmacro %}
+
+
+{# ── Pagination ── #}
+{% macro pagination(page, total_pages, base_url) %}
+{% if total_pages > 1 %}
+<nav class="pagination">
+    {% if page > 1 %}
+    <a href="{{ base_url }}{{ '&' if '?' in base_url else '?' }}page={{ page - 1 }}" class="btn">Previous</a>
+    {% endif %}
+    <span class="page-info">Page {{ page }} of {{ '{:,}'.format(total_pages) }}</span>
+    {% if page < total_pages %}
+    <a href="{{ base_url }}{{ '&' if '?' in base_url else '?' }}page={{ page + 1 }}" class="btn">Next</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endmacro %}
+
+
+{# ── Filter Sidebar (search only for v2) ── #}
+{% macro filter_sidebar(search_value='', action_url='/tablets') %}
+<aside class="filter-sidebar">
+    <div class="filter-section always-visible" data-filter="search">
+        <div class="filter-content">
+            <form method="GET" action="{{ action_url }}" class="search-form">
+                <div class="search-input-wrapper">
+                    <input type="text" name="search" id="search-input"
+                           class="search-input"
+                           value="{{ search_value }}"
+                           placeholder="Search">
+                    <button type="submit" class="btn search-submit">Search</button>
+                </div>
+                <div class="help-text-subtle search-help">Search P-numbers and designations. Use || for multiple.</div>
+            </form>
+        </div>
+    </div>
+</aside>
+{% endmacro %}
+
+
+{# ── Page Header ── #}
+{% macro page_header(title, subtitle=none, back_link=none, back_text=none, actions=none) %}
+<div class="page-header">
+    <div class="page-header-main">
+        <div class="page-header-title">
+            {% if back_link %}
+            <a href="{{ back_link }}" class="back-link">&larr; {{ back_text or 'Back' }}</a>
+            {% endif %}
+            <h1>{{ title }}</h1>
+            {% if subtitle %}
+            <p class="subtitle">{{ subtitle }}</p>
+            {% endif %}
+        </div>
+        {% if actions %}
+        <div class="page-header-actions">
+            {{ actions }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+
+{# ── Hero Banner ── #}
+{% macro hero_banner(title, description=none, image=none, back_link=none, back_text=none, tablet_count=0, actions=none) %}
+{% if image %}
+<div class="page-hero">
+    <div class="page-hero-image">
+        <img src="{{ image }}" alt="{{ title }}">
+    </div>
+    <div class="page-hero-overlay"></div>
+    <div class="page-hero-content">
+        <div class="page-hero-header">
+            <div class="page-hero-title">
+                {% if back_link %}
+                <a href="{{ back_link }}" class="back-link">&larr; {{ back_text or 'Back' }}</a>
+                {% endif %}
+                <h1>{{ title }}</h1>
+                {% if description %}
+                <p class="subtitle">{{ description }}</p>
+                {% endif %}
+            </div>
+            {% if actions %}
+            <div class="page-hero-actions">{{ actions }}</div>
+            {% endif %}
+        </div>
+        <div class="page-hero-metadata">
+            <div class="page-hero-stats">
+                <span class="stat">
+                    {{ '{:,}'.format(tablet_count) }}
+                    {{ 'tablet' if tablet_count == 1 else 'tablets' }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+{{ page_header(title, description, back_link, back_text, actions) }}
+{% endif %}
+{% endmacro %}
+
+
+{# ── Empty State ── #}
+{% macro empty_state(icon='&#x12000;', title='Nothing here yet', message='', action_url=none, action_text=none) %}
+<div class="empty-state">
+    <div class="empty-icon">{{ icon }}</div>
+    <h3>{{ title }}</h3>
+    {% if message %}<p>{{ message }}</p>{% endif %}
+    {% if action_url %}
+    <a href="{{ action_url }}" class="btn-primary">{{ action_text }}</a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# ── KPI Dashboard (progress rings) ── #}
+{% macro kpi_dashboard(kpi) %}
+{% if kpi %}
+{% set total = kpi.total_tablets or 0 %}
+{% set stages = kpi.pipeline_stages or {} %}
+
+{# Use 3 main rings: physical (images), reading (transliterations), semantic (translations) #}
+{% set ring1_pct = stages.get('physical', {}).get('percent', 0) %}
+{% set ring2_pct = stages.get('reading', {}).get('percent', 0) %}
+{% set ring3_pct = stages.get('semantic', {}).get('percent', 0) %}
+{% set ring1_count = stages.get('physical', {}).get('count', 0) %}
+{% set ring2_count = stages.get('reading', {}).get('count', 0) %}
+{% set ring3_count = stages.get('semantic', {}).get('count', 0) %}
+
+{# SVG circles #}
+{% set r1 = 200 %}{% set r2 = 170 %}{% set r3 = 140 %}
+{% set c1 = 2 * 3.14159 * r1 %}
+{% set c2 = 2 * 3.14159 * r2 %}
+{% set c3 = 2 * 3.14159 * r3 %}
+{% set o1 = c1 * (1 - ring1_pct / 100) %}
+{% set o2 = c2 * (1 - ring2_pct / 100) %}
+{% set o3 = c3 * (1 - ring3_pct / 100) %}
+
+<div class="progress-meter">
+    <div class="sr-only">
+        Archive progress: {{ '{:,}'.format(total) }} tablets recorded.
+        {{ ring1_pct }}% have images,
+        {{ ring2_pct }}% have readings,
+        {{ ring3_pct }}% have semantic data.
+    </div>
+
+    <svg class="progress-rings" viewBox="0 0 500 500" role="img" aria-hidden="true">
+        <title>Digitization Progress</title>
+        <circle class="ring-bg ring-bg-1" cx="250" cy="250" r="{{ r1 }}" />
+        <circle class="ring-bg ring-bg-2" cx="250" cy="250" r="{{ r2 }}" />
+        <circle class="ring-bg ring-bg-3" cx="250" cy="250" r="{{ r3 }}" />
+        <circle class="ring-progress ring-1" cx="250" cy="250" r="{{ r1 }}"
+                stroke-dasharray="{{ c1 }}" stroke-dashoffset="{{ o1 }}" data-percent="{{ ring1_pct }}" />
+        <circle class="ring-progress ring-2" cx="250" cy="250" r="{{ r2 }}"
+                stroke-dasharray="{{ c2 }}" stroke-dashoffset="{{ o2 }}" data-percent="{{ ring2_pct }}" />
+        <circle class="ring-progress ring-3" cx="250" cy="250" r="{{ r3 }}"
+                stroke-dasharray="{{ c3 }}" stroke-dashoffset="{{ o3 }}" data-percent="{{ ring3_pct }}" />
+        <text class="monument-number" x="250" y="240" text-anchor="middle">{{ '{:,}'.format(total) }}</text>
+        <line class="monument-divider" x1="200" y1="255" x2="300" y2="255" />
+        <text class="monument-label" x="250" y="275" text-anchor="middle">Tablets</text>
+    </svg>
+
+    <div class="ring-labels">
+        <div class="ring-label ring-label-1">
+            <span class="label-name">Images</span>
+            <span class="label-stat">{{ ring1_pct }}%</span>
+            <span class="label-count">{{ '{:,}'.format(ring1_count) }} tablets</span>
+        </div>
+        <div class="ring-label ring-label-2">
+            <span class="label-name">Readings</span>
+            <span class="label-stat">{{ ring2_pct }}%</span>
+            <span class="label-count">{{ '{:,}'.format(ring2_count) }} tablets</span>
+        </div>
+        <div class="ring-label ring-label-3">
+            <span class="label-name">Semantic</span>
+            <span class="label-stat">{{ ring3_pct }}%</span>
+            <span class="label-count">{{ '{:,}'.format(ring3_count) }} tablets</span>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="progress-meter">
+    <p>Loading metrics...</p>
+</div>
+{% endif %}
+{% endmacro %}

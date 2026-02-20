@@ -1,30 +1,38 @@
 {% extends "base.html" %}
+{% from "components/_macros.html" import kpi_dashboard, collection_card, empty_state %}
 
 {% block title %}Glintstone{% endblock %}
 
 {% block content %}
-<main class="container">
-    <h1>Glintstone v2</h1>
-    <p>Cuneiform research platform</p>
+<main class="homepage-container">
 
-    <div id="api-status" class="status-box">Checking API connection...</div>
+    <section class="progress-meter-section">
+        {{ kpi_dashboard(kpi) }}
+    </section>
+
+    <div class="section-divider"></div>
+
+    <section class="featured-collections">
+        <header class="featured-collections-header">
+            <h2>Explore Collections</h2>
+            <p>Discover curated sets of tablets organized by theme, period, and scholarly interest</p>
+        </header>
+
+        {% if featured_collections %}
+        <div class="collection-grid">
+            {% for collection in featured_collections %}
+                {{ collection_card(collection, api_url=api_url) }}
+            {% endfor %}
+        </div>
+        {% else %}
+            {{ empty_state(
+                icon='&#x12000;',
+                title='No collections yet',
+                message='Collections will appear here once created.',
+                action_url='/collections/new',
+                action_text='Create Collection'
+            ) }}
+        {% endif %}
+    </section>
 </main>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    const apiUrl = "{{ api_url }}";
-    fetch(apiUrl + "/health")
-        .then(r => r.json())
-        .then(d => {
-            const el = document.getElementById("api-status");
-            el.textContent = "API: " + d.status + " | DB: " + d.database + " | Python " + d.python;
-            el.classList.add(d.status === "healthy" ? "status-ok" : "status-error");
-        })
-        .catch(() => {
-            const el = document.getElementById("api-status");
-            el.textContent = "API: unreachable";
-            el.classList.add("status-error");
-        });
-</script>
 {% endblock %}

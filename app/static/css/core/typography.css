@@ -1,0 +1,93 @@
+/**
+ * Typography
+ * Heading styles, text hierarchy, specialized text classes
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   Headings
+   ========================================================================== */
+
+h1, h2, h3, h4 {
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-snug);
+    margin: 0;
+    font-variant-numeric: lining-nums;
+}
+
+h1 {
+    font-size: var(--text-4xl);
+    font-family: var(--font-serif);
+}
+
+h2 {
+    font-size: var(--text-3xl);
+    font-family: var(--font-serif);
+}
+
+h3 {
+    font-size: var(--text-xl);
+    font-family: var(--font-serif);
+}
+
+h4 {
+    font-size: var(--text-lg);
+    font-family: var(--font-serif);
+}
+
+/* ==========================================================================
+   Basic Text Elements
+   ========================================================================== */
+
+p {
+    margin: 0 0 var(--space-4);
+}
+
+a {
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: color var(--transition-normal);
+}
+
+a:hover {
+    color: var(--color-accent-hover);
+}
+
+/* ==========================================================================
+   Cuneiform Text
+   Specialized font for cuneiform signs
+   ========================================================================== */
+
+.cuneiform {
+    font-family: var(--font-cuneiform);
+    font-size: 1.5em;  /* Relative to parent - intentional */
+    line-height: var(--line-height-loose);
+}
+
+/* ==========================================================================
+   Helpers
+   Specialized variations
+   ========================================================================== */
+
+.help-text-subtle {
+    font-size: var(--text-2xs);
+    color: var(--color-text-subtle);
+    line-height: var(--line-height-normal);
+}
+
+
+/* ==========================================================================
+   Heading Utilities
+   Size and weight modifiers for headings
+   ========================================================================== */
+
+/* Size modifiers */
+.heading-display { font-size: var(--text-display); }
+.heading-lg { font-size: var(--text-4xl); }
+.heading-md { font-size: var(--text-2xl); }
+.heading-sm { font-size: var(--text-xl); }
+.heading-xs { font-size: var(--text-lg); }
+
+/* Weight modifiers */
+.heading-semibold { font-weight: var(--font-weight-semibold); }
+.heading-medium { font-weight: var(--font-weight-medium); }

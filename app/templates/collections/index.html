@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "components/_macros.html" import collection_card, empty_state %}
+
+{% block title %}Collections - Glintstone{% endblock %}
+
+{% block content %}
+<main class="collections-page">
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <h1>Collections</h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-header">
+        <div class="section-header__content">
+            <h2>Collections</h2>
+            <p class="section-description">Curated sets of tablets organized by theme, period, and scholarly interest.</p>
+        </div>
+        <div class="header-actions">
+            <a href="/collections/new" class="btn btn-primary">New</a>
+        </div>
+    </div>
+
+    {% if collections %}
+    <div class="collection-grid">
+        {% for collection in collections %}
+            {{ collection_card(collection, api_url=api_url) }}
+        {% endfor %}
+    </div>
+    {% else %}
+        {{ empty_state(
+            icon='&#x12000;',
+            title='No collections yet',
+            message='Create your first collection to organize tablets by theme, period, or research topic.',
+            action_url='/collections/new',
+            action_text='Create Collection'
+        ) }}
+    {% endif %}
+</main>
+{% endblock %}

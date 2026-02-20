@@ -1,0 +1,59 @@
+/**
+ * Badge Component
+ * Purpose: Shared badge styles for POS, language, frequency, sign-type indicators
+ * Used on: Dictionary pages, search results, tablet detail
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   Base Badge
+   ========================================================================== */
+
+.badge {
+    display: inline-block;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+
+/* Small variant for compact contexts */
+.badge--sm {
+    padding: var(--space-0-5) var(--space-1-5);
+    font-size: var(--text-2xs);
+}
+
+/* ==========================================================================
+   Semantic Variants
+   ========================================================================== */
+
+/* Part of Speech - Purple */
+.badge--pos {
+    background: var(--color-badge-purple-bg);
+    color: var(--color-badge-purple-text);
+    border-color: var(--color-badge-purple-border);
+}
+
+/* Language - Green */
+.badge--language {
+    background: var(--color-badge-green-bg);
+    color: var(--color-badge-green-text);
+    border-color: var(--color-badge-green-border);
+}
+
+/* Frequency - Blue-gray */
+.badge--frequency {
+    background: var(--color-badge-blue-bg);
+    color: var(--color-badge-blue-text);
+    border-color: var(--color-badge-blue-border);
+}
+
+/* Sign Type - Warm/gold */
+.badge--sign-type {
+    background: var(--color-badge-brown-bg);
+    color: var(--color-badge-brown-text);
+    border-color: var(--color-badge-brown-border);
+}

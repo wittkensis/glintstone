@@ -1,0 +1,226 @@
+/**
+ * Button Styles
+ * Namespace: .btn-*
+ *
+ * Button component system with variants and states.
+ */
+
+/* ==========================================================================
+   Base Button Class
+   ========================================================================== */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.btn:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-accent);
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    transform: none;
+}
+
+/* ==========================================================================
+   Icon Positioning Modifiers
+   ========================================================================== */
+
+.btn--icon {
+    padding: var(--space-2);
+}
+
+.btn--icon-left {
+    flex-direction: row;
+}
+
+.btn--icon-right {
+    flex-direction: row-reverse;
+}
+
+.btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Toggle Button Variant
+   ========================================================================== */
+
+.btn--toggle[aria-expanded="true"],
+.btn--toggle.btn--active {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.btn--toggle[aria-expanded="true"]:hover,
+.btn--toggle.btn--active:hover {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    opacity: 0.9;
+}
+
+/* ==========================================================================
+   Button Size Variants
+   ========================================================================== */
+
+.btn-sm {
+    padding: var(--space-1) var(--space-2);
+    font-size: 0.6875rem;
+}
+
+.btn-sm.btn--icon {
+    padding: var(--space-1);
+}
+
+.btn-sm svg {
+    width: 14px;
+    height: 14px;
+}
+
+.btn-lg {
+    padding: var(--space-3) var(--space-6);
+    font-size: 0.875rem;
+}
+
+.btn-lg.btn--icon {
+    padding: var(--space-3);
+}
+
+.btn-lg svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* ==========================================================================
+   Button Style Variants
+   ========================================================================== */
+
+/* Ghost variant - minimal styling */
+.btn--ghost {
+    background: transparent;
+    border-color: transparent;
+}
+
+.btn--ghost:hover {
+    background: var(--color-bg-subtle);
+    border-color: transparent;
+}
+
+/* Primary variant - accent filled */
+.btn--primary {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.btn--primary:hover {
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+    color: var(--color-bg);
+}
+
+/* Danger variant - for destructive actions */
+.btn--danger {
+    border-color: var(--color-danger, #dc2626);
+    color: var(--color-danger, #dc2626);
+}
+
+.btn--danger:hover {
+    background: var(--color-danger, #dc2626);
+    border-color: var(--color-danger, #dc2626);
+    color: var(--color-bg);
+}
+
+/* ==========================================================================
+   Special States
+   ========================================================================== */
+
+/* Loading state */
+.btn--loading {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+.btn--loading:hover {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+}
+
+/* ==========================================================================
+   Button Responsive Adjustments
+   ========================================================================== */
+
+@media (max-width: 600px) {
+    .btn {
+        font-size: 0.6875rem;
+        padding: var(--space-1) var(--space-2);
+    }
+
+    .btn-sm {
+        font-size: 0.625rem;
+        padding: 6px 8px;
+    }
+}
+
+/* ==========================================================================
+   Button Groups
+   ========================================================================== */
+
+.btn-group {
+    display: flex;
+    gap: -1px;
+}
+
+.btn-group .btn-group-item:not(:first-child):not(:last-child) {
+    border-radius: 0;
+}
+.btn-group .btn-group-item:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.btn-group .btn-group-item:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.btn-group .btn-group-item.btn-group-item--active,
+.btn-group .atf-mode--active {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.atf-mode {
+    /* Legacy placeholder - used in ATF viewer */
+}

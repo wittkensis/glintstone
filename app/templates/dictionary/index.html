@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Dictionary - Glintstone{% endblock %}
+
+{% block content %}
+<main class="dictionary-page">
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <h1>Dictionary</h1>
+                <p class="subtitle">Browse Sumerian and Akkadian vocabulary</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="dictionary-browser">
+        {# Column 1: Groupings #}
+        <aside class="dictionary-groups">
+            <div class="dictionary-group">
+                <h3 class="dictionary-group__title">Browse by</h3>
+                <ul class="dictionary-group__list">
+                    <li class="dictionary-group__item active">
+                        <span class="group-name">All Words</span>
+                        <span class="group-count">&mdash;</span>
+                    </li>
+                    <li class="dictionary-group__item">
+                        <span class="group-name">Part of Speech</span>
+                        <span class="group-count">&mdash;</span>
+                    </li>
+                    <li class="dictionary-group__item">
+                        <span class="group-name">Language</span>
+                        <span class="group-count">&mdash;</span>
+                    </li>
+                    <li class="dictionary-group__item">
+                        <span class="group-name">Frequency</span>
+                        <span class="group-count">&mdash;</span>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        {# Column 2: Word list #}
+        <div class="dictionary-wordlist">
+            <div class="dictionary-search">
+                <input type="text" placeholder="Search words..." class="search-input" disabled>
+            </div>
+            <div class="dictionary-wordlist__items">
+                <div class="empty-state">
+                    <div class="empty-icon">&#x12000;</div>
+                    <h3>Dictionary coming soon</h3>
+                    <p>The dictionary browser will be available in a future update.</p>
+                </div>
+            </div>
+        </div>
+
+        {# Column 3: Word detail #}
+        <div class="dictionary-detail">
+            <div class="dictionary-detail__empty">
+                <p>Select a word to view its details</p>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

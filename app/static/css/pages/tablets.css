@@ -1,0 +1,1376 @@
+/**
+ * Tablets Page Styles
+ * Merged from page-tablets feature files for v2 app
+ *
+ * Sections:
+ * - Tablet Metadata
+ * - Tablet Header
+ * - Tablet Sections (quality bar, images, buttons, composites, annotations, translation)
+ * - Tablet Composite Panel
+ * - Zoombox Viewer
+ * - Zoombox Controls
+ * - Zoombox Minimap
+ * - Knowledge Sidebar Layout
+ * - Knowledge Sidebar Placeholders
+ */
+
+
+/* ==========================================================================
+   TABLET METADATA
+   from: feature-tablet-viewer/metadata.css
+   ========================================================================== */
+
+/**
+ * Tablet Metadata
+ * Purpose: Metadata display for tablet detail pages
+ * Used on: Tablet detail pages
+ * Dependencies: core/tokens.css
+ * JavaScript: None
+ */
+
+/* ==========================================================================
+   Metadata Display
+   ========================================================================== */
+
+.tablet-meta {
+    margin-bottom: var(--space-4);
+}
+
+.tablet-meta__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3) var(--space-6);
+    margin: 0;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tablet-meta__row dt {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tablet-meta__row dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+
+.meta-name {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.meta-code {
+    color: var(--color-text-muted);
+    font-size: 0.875em;
+    margin-left: var(--space-1);
+}
+
+/* More details toggle - inline with metadata */
+.tablet-meta__toggle {
+    font-size: 0.6875rem;
+    color: var(--color-text-subtle);
+    cursor: pointer;
+    user-select: none;
+    padding: var(--space-1) 0;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.tablet-meta__toggle:hover {
+    color: var(--color-text-muted);
+}
+
+.tablet-meta__toggle-icon {
+    transition: transform 0.15s ease;
+}
+
+.tablet-meta__toggle[aria-expanded="true"] .tablet-meta__toggle-icon {
+    transform: rotate(90deg);
+}
+
+/* Secondary metadata row */
+.tablet-meta__secondary {
+    display: none;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+.tablet-meta__secondary.is-open {
+    display: flex;
+}
+
+.tablet-meta__secondary dt {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tablet-meta__secondary dd {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+
+
+/* ==========================================================================
+   TABLET HEADER
+   from: feature-tablet-viewer/header.css
+   ========================================================================== */
+
+/**
+ * Tablet Header
+ * Purpose: Page header for tablet detail view with identity, badges, and actions
+ * Used on: Tablet detail pages
+ * Dependencies: core/tokens.css, layout/page-header.css
+ * JavaScript: None
+ */
+
+/* ==========================================================================
+   Tablet-Specific Styling
+   ========================================================================== */
+
+.tablet-header .page-header-title {
+    display: flex;
+    flex-direction: row;
+}
+
+/* Override h1 size for tablet headers */
+.tablet-header .page-header-title h1 {
+    /* font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0; */
+}
+
+/* Language Badge - displayed inline with title */
+.tablet-header .language-badge {
+    display: inline-flex;
+    padding: 2px 8px;
+    margin-left: var(--space-2);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    background: var(--color-bg-inset);
+    color: var(--color-text-muted);
+    border-radius: var(--radius-sm);
+    align-items: center;
+}
+
+/* ==========================================================================
+   Actions Menu (Tablet-Specific)
+   ========================================================================== */
+
+.actions-menu {
+    position: relative;
+}
+
+.actions-menu__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.actions-menu__trigger:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+}
+
+.actions-menu__dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    min-width: 160px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    overflow: hidden;
+}
+
+.actions-menu:hover .actions-menu__dropdown,
+.actions-menu:focus-within .actions-menu__dropdown,
+.actions-menu__dropdown.is-open {
+    display: block;
+}
+
+.actions-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.8125rem;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: background var(--transition-fast);
+}
+
+.actions-menu__item:hover {
+    background: var(--color-surface);
+}
+
+.actions-menu__item svg {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+/* Composite Toggle - now uses .btn.btn--icon-left.btn--toggle from buttons.css */
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .tablet-header .page-header-title h1 {
+        font-size: 1.25rem;
+    }
+
+    .tablet-header .language-badge {
+        display: block;
+        margin-left: 0;
+        margin-top: var(--space-1);
+        width: fit-content;
+    }
+
+    .tablet-header .page-header-actions {
+        position: absolute;
+        top: var(--space-4);
+        right: var(--space-4);
+    }
+}
+
+
+/* ==========================================================================
+   TABLET SECTIONS
+   from: feature-tablet-viewer/sections.css
+   ========================================================================== */
+
+/**
+ * Tablet Sections
+ * Purpose: Quality bar, image sections, buttons, composites list, image options, and translation
+ * Used on: Tablet detail pages
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/zoombox.js (for image options)
+ * Required classes for JS: .annotation-toggle
+ */
+
+/* ==========================================================================
+   Quality Bar
+   ========================================================================== */
+
+.quality-bar {
+    margin-top: var(--space-4);
+}
+
+.quality-bar label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--color-surface);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--color-accent);
+    transition: width 0.3s;
+}
+
+/* ==========================================================================
+   Image & Text Sections
+   ========================================================================== */
+
+.tablet-text h3,
+.tablet-image h3 {
+    margin-bottom: var(--space-4);
+}
+
+.image-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: rgba(15, 15, 18, 0.75);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 15;
+}
+
+.image-source {
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+    background: var(--color-bg-subtle);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Composites Section
+   ========================================================================== */
+
+.composites-section {
+    margin-top: var(--space-8);
+}
+
+.composite-list {
+    list-style: none;
+    padding: 0;
+}
+
+.composite-list li {
+    padding: var(--space-3);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-2);
+}
+
+.q-number {
+    font-family: var(--font-mono);
+    color: var(--color-success);
+    margin-right: var(--space-4);
+}
+
+/* ==========================================================================
+   Image Options
+   ========================================================================== */
+
+/* Image options toolbar */
+.image-options {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: nowrap;
+    align-items: center;
+    overflow: hidden;
+}
+
+.btn-small {
+    padding: var(--space-1) var(--space-3);
+    font-size: 0.75rem;
+}
+
+/* Annotation toggle button */
+.annotation-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.annotation-toggle:has(input:checked) {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-color: var(--color-accent);
+}
+
+.annotation-toggle input {
+    display: none;
+}
+
+.annotation-badge {
+    font-size: 0.65rem;
+    background: var(--color-success);
+    color: var(--color-bg);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    margin-left: var(--space-2);
+}
+
+.annotation-toggle:has(input:checked) .annotation-badge {
+    background: var(--color-bg);
+    color: var(--color-accent);
+}
+
+.annotation-source-badge {
+    font-size: 0.65rem;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    padding: 1px 4px;
+    border-radius: 2px;
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-family: var(--font-mono);
+}
+
+/* ==========================================================================
+   Translation Section
+   ========================================================================== */
+
+/* Translation section */
+.translation-section {
+    margin-top: var(--space-8);
+}
+
+.translation-section h3 {
+    margin-bottom: var(--space-4);
+}
+
+.translation-block {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.translation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.translation-lang {
+    font-weight: 600;
+    color: var(--color-accent);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.translation-source {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+}
+
+.translation-text {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--color-text);
+}
+
+.no-translation {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+}
+
+/* ==========================================================================
+   Responsive (Sections)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    /* Tablet header responsive styles moved to tablet/header.css */
+
+    .tablet-meta__row {
+        gap: var(--space-2) var(--space-4);
+    }
+
+    /* Compact image controls on mobile */
+    .image-controls {
+        padding: var(--space-2) var(--space-3);
+        gap: var(--space-1);
+    }
+
+    .image-source {
+        font-size: 0.6875rem;
+    }
+
+    /* Chevron pipeline - hide labels on small screens */
+    .pipeline-chevron__step {
+        padding: var(--space-1) var(--space-2);
+        padding-left: var(--space-3);
+        min-height: 32px;
+    }
+
+    .pipeline-chevron__step:first-child {
+        padding-left: var(--space-2);
+    }
+
+    .pipeline-chevron__label {
+        font-size: 0.5625rem;
+    }
+
+    .pipeline-chevron__status {
+        display: none;
+    }
+
+    .pipeline-chevron__step::after {
+        right: -8px;
+        border-top-width: 16px;
+        border-bottom-width: 16px;
+        border-left-width: 8px;
+    }
+
+    .pipeline-chevron__step::before {
+        border-top-width: 16px;
+        border-bottom-width: 16px;
+        border-left-width: 8px;
+    }
+}
+
+
+/* ==========================================================================
+   TABLET COMPOSITE PANEL
+   from: feature-tablet-viewer/composite.css
+   ========================================================================== */
+
+/**
+ * Tablet Composite Panel
+ * Purpose: Horizontal scrolling list of related tablet composites
+ * Used on: Tablet detail pages with composite relationships
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/composite.js
+ * Required classes for JS: .composite-panel, .is-open
+ */
+
+/* ==========================================================================
+   Composite Panel
+   ========================================================================== */
+
+/* Composite panel - part of grid layout with dynamic height */
+.composite-panel {
+    display: flex;
+    max-height: 0;
+    width: 100%;
+    min-width: 0;
+    background: #0f0f0f;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 1;
+}
+
+.composite-panel.is-open {
+    max-height: 500px; /* Large enough for any content */
+}
+
+/* Fixed header on left */
+.composite-panel__header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: var(--space-3) var(--space-4);
+    border-right: 1px solid var(--color-border);
+    flex-shrink: 0;
+    width: 200px;
+}
+
+.composite-panel__title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.composite-panel__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+    line-height: 1.3;
+}
+
+.composite-panel__subtitle {
+    font-size: 0.65rem;
+    font-weight: 400;
+    font-family: var(--font-mono);
+    color: var(--color-text-muted);
+    line-height: 1.2;
+}
+
+.composite-panel__count {
+    font-size: 0.65rem;
+    color: var(--color-text-subtle);
+    margin-top: 4px;
+}
+
+/* Horizontal scrolling list */
+.composite-panel__list {
+    display: flex;
+    gap: 0.5rem;
+    padding: var(--space-2) var(--space-2);
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+
+    /* Hide scrollbars */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.composite-panel__list::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Opera */
+}
+
+.composite-panel__loading {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    padding: var(--space-2);
+}
+
+/* Tablet item in composite list - matches ATF composite item styling */
+.composite-tablet-item {
+    display: flex;
+    gap: var(--space-2);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: transparent;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.composite-tablet-item:hover {
+    background: var(--color-bg-subtle);
+}
+
+.composite-tablet-item.is-current {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.composite-tablet-item.is-current:hover {
+    background: var(--color-accent);
+}
+
+/* Thumbnail */
+.composite-tablet-item__thumbnail {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background: var(--color-bg-elevated);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    position: relative;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__thumbnail {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.composite-tablet-item__thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.composite-tablet-item__placeholder {
+    position: absolute;
+    color: var(--color-text-subtle);
+    font-size: 1.5rem;
+    font-family: 'Noto Sans Cuneiform', serif;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Info section */
+.composite-tablet-item__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+.composite-tablet-item__pnumber {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.2;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__pnumber {
+    color: var(--color-bg);
+}
+
+.composite-tablet-item__designation {
+    font-size: 0.6rem;
+    color: var(--color-text-subtle);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.composite-tablet-item.is-current .composite-tablet-item__designation {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+
+/* ==========================================================================
+   ZOOMBOX VIEWER
+   from: feature-tablet-viewer/zoombox-viewer.css
+   ========================================================================== */
+
+/**
+ * Zoombox Viewer
+ * Purpose: Core zoom functionality, viewport, transform, image display, overlay annotations
+ * Used on: Tablet detail pages with zoomable images
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/zoombox.js
+ * Required classes for JS: .zoombox, .zoombox__viewport, .zoombox__transform, .zoombox__image, .is-zoomed, .is-dragging
+ */
+
+/* ==========================================================================
+   Container
+   ========================================================================== */
+
+.zoombox {
+    position: relative;
+    width: 100%;
+}
+
+/* ==========================================================================
+   Viewport - Fixed height, clips zoomed content
+   ========================================================================== */
+
+.zoombox__viewport {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    overflow: hidden;
+    background: var(--color-bg);
+    border-radius: var(--radius-md);
+    cursor: grab;
+}
+
+.zoombox__viewport:active,
+.zoombox__viewport.is-dragging {
+    cursor: grabbing;
+}
+
+.zoombox__viewport.is-zoomed {
+    cursor: move;
+}
+
+/* ==========================================================================
+   Transform Layer - Gets scaled and translated
+   ========================================================================== */
+
+.zoombox__transform {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+    transition: transform 0.15s ease-out;
+}
+
+.zoombox__transform.is-dragging {
+    transition: none;
+}
+
+/* ==========================================================================
+   Image
+   ========================================================================== */
+
+.zoombox__image {
+    display: block;
+    max-width: none;
+    pointer-events: none;
+    user-select: none;
+}
+
+.zoombox__image.is-loading {
+    opacity: 0;
+}
+
+.zoombox__image.is-loaded {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.zoombox__image.is-error {
+    display: none;
+}
+
+/* ==========================================================================
+   Loading & Placeholder States
+   ========================================================================== */
+
+.zoombox__loading,
+.zoombox__placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    z-index: 5;
+}
+
+.zoombox__loading {
+    display: none;
+}
+
+.zoombox.is-loading .zoombox__loading {
+    display: block;
+}
+
+.zoombox__placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.zoombox.has-image .zoombox__placeholder,
+.zoombox.is-loading .zoombox__placeholder {
+    display: none;
+}
+
+.zoombox__placeholder-icon {
+    font-size: 3rem;
+    color: var(--color-border);
+    opacity: 0.5;
+}
+
+/* ==========================================================================
+   Overlay Container - For OCR annotations
+   ========================================================================== */
+
+.zoombox__overlays {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    /* Width/height set via JS to match image natural dimensions */
+}
+
+.zoombox__overlays.is-active {
+    pointer-events: auto;
+}
+
+/* ==========================================================================
+   Overlay Box - Individual annotation
+   ========================================================================== */
+
+.zoombox__overlay-box {
+    position: absolute;
+    border: 2px solid var(--color-accent);
+    background: rgba(201, 169, 98, 0.15);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    box-sizing: border-box;
+}
+
+.zoombox__overlay-box:hover {
+    background: rgba(201, 169, 98, 0.25);
+    border-color: var(--color-warning);
+}
+
+.zoombox__overlay-box.is-highlighted {
+    background: rgba(92, 160, 92, 0.25);
+    border-color: var(--color-success);
+}
+
+/* ==========================================================================
+   Overlay Tooltip
+   ========================================================================== */
+
+.zoombox__overlay-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: var(--space-1) var(--space-2);
+    background: rgba(0, 0, 0, 0.9);
+    color: var(--color-text);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 100;
+}
+
+.zoombox__overlay-box:hover .zoombox__overlay-tooltip {
+    opacity: 1;
+}
+
+/* ==========================================================================
+   Responsive (Zoombox Viewer)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .zoombox__viewport {
+        height: 400px;
+    }
+}
+
+@media (pointer: coarse) {
+    .zoombox__viewport {
+        cursor: default;
+    }
+
+    .zoombox__viewport:active,
+    .zoombox__viewport.is-dragging {
+        cursor: default;
+    }
+}
+
+
+/* ==========================================================================
+   ZOOMBOX CONTROLS
+   from: feature-tablet-viewer/zoombox-controls.css
+   ========================================================================== */
+
+/**
+ * Zoombox Controls
+ * Purpose: Zoom controls toolbar and buttons
+ * Used on: Tablet detail pages with zoomable images
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/zoombox.js
+ * Required classes for JS: .zoombox__controls, .zoombox__btn, .is-visible
+ */
+
+/* ==========================================================================
+   Zoom Controls (top-left)
+   ========================================================================== */
+
+.zoombox__controls {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: rgba(15, 15, 18, 0.75);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    padding: 6px;
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.zoombox__controls.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ==========================================================================
+   Control Buttons
+   ========================================================================== */
+
+.zoombox__btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.zoombox__btn:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.zoombox__btn:active {
+    transform: scale(0.95);
+}
+
+.zoombox__btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.zoombox__btn:disabled:hover {
+    background: transparent;
+    color: var(--color-text);
+}
+
+.zoombox__btn--reset {
+    font-size: 0.875rem;
+}
+
+/* Zoom level indicator */
+.zoombox__zoom-level {
+    padding: var(--space-1);
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    user-select: none;
+}
+
+/* ==========================================================================
+   Responsive (Zoombox Controls)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+    .zoombox__controls {
+        gap: 1px;
+        padding: 4px;
+    }
+
+    .zoombox__btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.875rem;
+    }
+}
+
+@media (pointer: coarse) {
+    .zoombox__controls {
+        opacity: 0.9;
+        pointer-events: auto;
+    }
+}
+
+
+/* ==========================================================================
+   ZOOMBOX MINIMAP
+   from: feature-tablet-viewer/zoombox-minimap.css
+   ========================================================================== */
+
+/**
+ * Zoombox Minimap
+ * Purpose: Minimap navigation for zoomed images
+ * Used on: Tablet detail pages with zoomable images
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/zoombox.js
+ * Required classes for JS: .zoombox__minimap-container, .zoombox__minimap-viewport, .is-visible
+ */
+
+/* ==========================================================================
+   Minimap Container (top-right)
+   ========================================================================== */
+
+.zoombox__minimap-container {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    width: 100px;
+    background: rgba(30, 30, 35, 0.95);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+    z-index: 20;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.zoombox__minimap-container.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.zoombox__minimap {
+    position: relative;
+    width: 100%;
+    /* aspect-ratio set dynamically by JS to match image */
+    background: #000;
+}
+
+.zoombox__minimap-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.zoombox__minimap-viewport {
+    position: absolute;
+    border: 2px solid var(--color-accent);
+    background: rgba(201, 169, 98, 0.2);
+    pointer-events: auto;
+    border-radius: var(--radius-md);
+    cursor: move;
+    box-sizing: border-box;
+    display: none;
+}
+
+.zoombox.is-zoomed .zoombox__minimap-viewport {
+    display: block;
+}
+
+/* ==========================================================================
+   Responsive (Minimap)
+   ========================================================================== */
+
+@media (pointer: coarse) {
+    .zoombox__minimap-container {
+        width: 110px;
+    }
+}
+
+@media (max-width: 640px) {
+    .zoombox__minimap-container {
+        width: 80px;
+    }
+}
+
+
+/* ==========================================================================
+   KNOWLEDGE SIDEBAR LAYOUT
+   from: feature-knowledge-sidebar/layout.css
+   ========================================================================== */
+
+/**
+ * Knowledge Sidebar Layout
+ * Purpose: Container structure, sliding panel, icon bar
+ * Used on: Tablet detail pages with knowledge sidebar
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/atf-viewer.js
+ * Required classes for JS: .atf-knowledge-sidebar, .knowledge-content-panel
+ */
+
+/* ==========================================================================
+   Sidebar Container
+   ========================================================================== */
+
+.atf-knowledge-sidebar {
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+    align-self: stretch;
+    position: relative;
+    background: var(--color-bg-inset);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 1px solid var(--color-border);
+    overflow: hidden;
+}
+
+.atf-knowledge-sidebar[data-state="closed"] {
+    width: 48px;
+}
+
+.atf-knowledge-sidebar[data-state="open"] {
+    width: 348px;
+}
+
+/* ==========================================================================
+   Sliding Content Panel
+   ========================================================================== */
+
+.knowledge-content-panel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 48px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateX(100%);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.atf-knowledge-sidebar[data-state="open"] .knowledge-content-panel {
+    transform: translateX(0);
+    opacity: 1;
+    padding: 0 var(--space-2);
+}
+
+.knowledge-content-panel__header {
+    display: flex;
+    align-items: center;
+    padding: var(--space-3) var(--space-2);
+    flex-shrink: 0;
+}
+
+.knowledge-content-panel__title {
+    font-family: var(--font-serif);
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+}
+
+.knowledge-content-panel__body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ==========================================================================
+   Tab Content Containers
+   ========================================================================== */
+
+.knowledge-tab-content {
+    display: none;
+    overflow: hidden;
+}
+
+.knowledge-tab-content--active {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Content Container (shared pattern for knowledge sidebar content)
+   ========================================================================== */
+
+.knowledge-sidebar-content {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Responsive (Knowledge Sidebar)
+   ========================================================================== */
+
+@media (max-width: 600px) {
+    .atf-knowledge-sidebar[data-state="open"] {
+        width: 100%;
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+    }
+}
+
+
+/* ==========================================================================
+   KNOWLEDGE SIDEBAR PLACEHOLDERS
+   from: feature-knowledge-sidebar/placeholders.css
+   ========================================================================== */
+
+/**
+ * Knowledge Sidebar Placeholders
+ * Purpose: Empty tab content for tabs not yet implemented
+ * Used on: Research, Discussion, Context tabs in knowledge sidebar
+ * Dependencies: core/tokens.css
+ */
+
+/* ==========================================================================
+   Placeholder Container
+   ========================================================================== */
+
+.knowledge-sidebar-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6) var(--space-3);
+    text-align: center;
+    color: var(--color-text-muted);
+    height: 100%;
+}
+
+/* ==========================================================================
+   Placeholder Icon
+   ========================================================================== */
+
+.knowledge-sidebar-placeholder svg {
+    margin-bottom: var(--space-3);
+    opacity: 0.4;
+    width: 40px;
+    height: 40px;
+}
+
+/* ==========================================================================
+   Placeholder Text
+   ========================================================================== */
+
+.knowledge-sidebar-placeholder h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+    color: var(--color-text);
+}
+
+.knowledge-sidebar-placeholder p {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    max-width: 240px;
+}
