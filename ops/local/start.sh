@@ -49,7 +49,7 @@ cd "$PROJECT_DIR"
 echo $! > "$PID_DIR/api.pid"
 
 # Start Web (uvicorn with reload)
-"$VENV/uvicorn" web.main:app --host 127.0.0.1 --port "$WEB_PORT" --reload > /dev/null 2>&1 &
+"$VENV/uvicorn" app.main:app --host 127.0.0.1 --port "$WEB_PORT" --reload > /dev/null 2>&1 &
 echo $! > "$PID_DIR/web.pid"
 
 # Start nginx for .test domain routing (port 80 requires sudo)

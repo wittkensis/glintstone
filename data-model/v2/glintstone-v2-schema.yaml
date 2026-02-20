@@ -2,8 +2,8 @@
 # STATUS: PLACEHOLDER — Design phase, not yet implemented
 #
 # Synthesizes:
-#   - 11 source schemas (schema-architecture/source-schemas/)
-#   - v1 current schema (schema-architecture/glintstone-schema-v1/)
+#   - 11 source schemas (data-model/source-schemas/)
+#   - v1 current schema (data-model/v1/)
 #   - Linguistics research (RESEARCH/Linguistics Schema/v2/ Phase 1 + Phase 2)
 #
 # Design principles:

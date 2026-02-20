@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from glintstone.config import get_settings
+from core.config import get_settings
 
 BASE_DIR = Path(__file__).parent
 

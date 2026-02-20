@@ -3,7 +3,7 @@
 Applies numbered SQL files from migrations/ in order.
 Tracks applied migrations in a _migrations table.
 
-Usage: python database/migrate.py
+Usage: python data-model/migrate.py
 """
 
 import glob
@@ -11,13 +11,13 @@ import os
 import sys
 from pathlib import Path
 
-# Add project root to path so glintstone package is importable
+# Add project root to path so core package is importable
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import psycopg
 from psycopg.rows import dict_row
 
-from glintstone.config import get_settings
+from core.config import get_settings
 
 
 def run_migrations() -> None:

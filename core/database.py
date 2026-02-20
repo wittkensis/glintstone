@@ -7,7 +7,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
-from glintstone.config import get_settings
+from core.config import get_settings
 
 _pool: ConnectionPool | None = None
 

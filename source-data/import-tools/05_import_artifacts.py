@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import psycopg
 from psycopg.rows import dict_row
 
-from glintstone.config import get_settings
+from core.config import get_settings
 
 CDLI_CSV = Path(__file__).resolve().parents[1] / "sources/CDLI/metadata/cdli_cat.csv"
 BATCH_SIZE = 2000

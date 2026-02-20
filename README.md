@@ -36,7 +36,7 @@ Each artifact also surfaces academic and historical context -- era, genre, place
 
 ### Data Model
 
-The [v2 schema](schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml) is organized into five layers:
+The [v2 schema](data-model/v2/glintstone-v2-schema.yaml) is organized into five layers:
 
 - **Physical** -- Surfaces, bounding boxes, damage states. Sources: CompVis, eBL OCR, ML models.
 - **Graphemic** -- Sign inventory with cross-system concordance (OGSL, MZL, ABZ via Unicode).
@@ -100,7 +100,7 @@ ORACC projects: DCCLT, RINAP, SAAo, RIAo, RIBo, RIME, ETCSRI, ETCSL, BLMS, CAMS,
 | **CDLI** | Scholar name registry, ATF editor and author attribution | CC BY-SA |
 | **Wikipedia / Wikidata** | Assyriologist name resolution, Wikidata QIDs for disambiguation | CC BY-SA 4.0 / CC0 |
 
-For detailed field mappings, update frequencies, and access methods per source, see [data-sources.md](schema-architecture/glintstone-schema-v2/data-sources.md).
+For detailed field mappings, update frequencies, and access methods per source, see [data-sources.md](data-model/v2/data-sources.md).
 
 ---
 
@@ -119,16 +119,18 @@ For detailed field mappings, update frequencies, and access methods per source, 
 
 ```
 api/                    FastAPI app (api.glintstone.org)
-web/                    Server-rendered web app (app.glintstone.org)
-glintstone/             Shared Python package (config, database, repository)
-database/               Migrations and seeds
+app/                    Server-rendered web app (app.glintstone.org)
+core/                   Shared Python package (config, database, repository)
+data-model/
+  migrate.py            Migration runner
+  migrations/           Numbered SQL migrations
+  seeds/                Seed data
+  v2/                   v2 schema, docs, mappings
+  v1/                   v1 reference
+  source-schemas/       Raw source format documentation
 source-data/
   import-tools/         Numbered import scripts (01-15)
   sources/              Raw source data (not in repo)
-schema-architecture/
-  glintstone-schema-v2/ v2 schema, docs, mappings
-  glintstone-schema-v1/ v1 reference
-  source-schemas/       Raw source format documentation
 marketing/              Static marketing site (glintstone.org)
 ml/models/              ML model sub-repos
 ops/
@@ -165,7 +167,7 @@ Source data is not included in the repository. To populate:
 
 1. Download source data into `source-data/sources/`
 2. Copy `.env.example` to `.env` and configure database credentials
-3. Run migrations: `python database/migrate.py`
+3. Run migrations: `python data-model/migrate.py`
 4. Run import pipeline scripts in `source-data/import-tools/` (numbered order)
 
 ---
@@ -186,7 +188,7 @@ Source data is not included in the repository. To populate:
 - GDL normalization into queryable tables
 - ORACC data versioning across releases
 
-See [data-issues.md](schema-architecture/glintstone-schema-v2/data-issues.md) for the full list.
+See [data-issues.md](data-model/v2/data-issues.md) for the full list.
 
 ---
 
@@ -200,15 +202,15 @@ The core infrastructure is language-agnostic. Trust tracking, provenance chains,
 
 | Document | Purpose |
 |----------|---------|
-| [v2 Schema](schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml) | Full schema specification (70+ tables) |
-| [Data Sources](schema-architecture/glintstone-schema-v2/data-sources.md) | Per-source field mappings, licenses, access methods |
-| [Data Quality](schema-architecture/glintstone-schema-v2/data-quality.md) | Trust architecture, competing interpretations, evidence chains |
-| [ML Integration](schema-architecture/glintstone-schema-v2/ml-integration.md) | BabyLemmatizer, DETR, Akkademia model integration |
-| [Import Pipeline](schema-architecture/glintstone-schema-v2/import-pipeline-guide.md) | 19-step ETL overview |
-| [Data Issues](schema-architecture/glintstone-schema-v2/data-issues.md) | Critical issues from pressure testing |
-| [Citation Pipeline](schema-architecture/glintstone-schema-v2/citation-pipeline-summary.md) | Citation sourcing from 9 external sources |
-| [Source Mappings](schema-architecture/glintstone-schema-v2/source-to-v2-mapping.yaml) | Field-level source-to-schema mappings |
-| [Import Pipeline Spec](schema-architecture/glintstone-schema-v2/import-pipeline.yaml) | Full technical ETL specification |
+| [v2 Schema](data-model/v2/glintstone-v2-schema.yaml) | Full schema specification (70+ tables) |
+| [Data Sources](data-model/v2/data-sources.md) | Per-source field mappings, licenses, access methods |
+| [Data Quality](data-model/v2/data-quality.md) | Trust architecture, competing interpretations, evidence chains |
+| [ML Integration](data-model/v2/ml-integration.md) | BabyLemmatizer, DETR, Akkademia model integration |
+| [Import Pipeline](data-model/v2/import-pipeline-guide.md) | 19-step ETL overview |
+| [Data Issues](data-model/v2/data-issues.md) | Critical issues from pressure testing |
+| [Citation Pipeline](data-model/v2/citation-pipeline-summary.md) | Citation sourcing from 9 external sources |
+| [Source Mappings](data-model/v2/source-to-v2-mapping.yaml) | Field-level source-to-schema mappings |
+| [Import Pipeline Spec](data-model/v2/import-pipeline.yaml) | Full technical ETL specification |
 | [Deployment](ops/deploy/DEPLOY.md) | VPS provisioning and deployment |
 
 ---

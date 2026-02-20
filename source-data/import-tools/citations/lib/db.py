@@ -2,19 +2,19 @@
 Shared PostgreSQL connection factory for citation pipeline scripts.
 
 All scripts use this instead of hardcoded sqlite3 connections.
-Connection settings come from glintstone.config.get_settings().
+Connection settings come from core.config.get_settings().
 """
 
 import sys
 from pathlib import Path
 
-# Add project root to path so glintstone package is importable
+# Add project root to path so core package is importable
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 import psycopg
 from psycopg.rows import dict_row
 
-from glintstone.config import get_settings
+from core.config import get_settings
 
 
 def get_connection(row_factory=None) -> psycopg.Connection:

@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter
 
-from glintstone.config import get_settings
-from glintstone.database import get_connection
+from core.config import get_settings
+from core.database import get_connection
 
 router = APIRouter()
 

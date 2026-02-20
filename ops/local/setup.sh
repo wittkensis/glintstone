@@ -75,7 +75,7 @@ fi
 # 7. Run migrations
 echo ""
 echo "Running migrations..."
-"$PROJECT_DIR/venv/bin/python" "$PROJECT_DIR/database/migrate.py"
+"$PROJECT_DIR/venv/bin/python" "$PROJECT_DIR/data-model/migrate.py"
 
 echo ""
 echo "=== Setup complete ==="

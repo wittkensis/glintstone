@@ -15,7 +15,7 @@ import sys
 import unicodedata
 from pathlib import Path
 
-DEFAULT_DB = Path("/Volumes/Portable Storage/Glintstone/database/glintstone.db")
+DEFAULT_DB = Path("/Volumes/Portable Storage/Glintstone/data-model/glintstone.db")
 
 
 def verify(db_path: Path) -> bool:

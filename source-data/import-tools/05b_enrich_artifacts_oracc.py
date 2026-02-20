@@ -22,7 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import psycopg
-from glintstone.config import get_settings
+from core.config import get_settings
 
 ORACC_BASE = Path(__file__).resolve().parents[1] / "sources/ORACC"
 

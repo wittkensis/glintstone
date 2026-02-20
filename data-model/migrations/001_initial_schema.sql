@@ -1,5 +1,5 @@
 -- Glintstone v2 Initial Schema
--- Generated from schema-architecture/glintstone-schema-v2/glintstone-v2-schema.yaml
+-- Generated from data-model/v2/glintstone-v2-schema.yaml
 -- Engine: PostgreSQL
 --
 -- Table creation order respects FK dependencies.

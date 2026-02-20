@@ -495,7 +495,7 @@ Pagination: [< Previous] [1] 2 3 ... 68 [Next >]
 import sqlite3
 import re
 
-db = sqlite3.connect('database/glintstone.db')
+db = sqlite3.connect('data-model/glintstone.db')
 
 # 1. Get all lemmas with word forms
 lemmas = db.execute("""

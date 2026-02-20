@@ -5,8 +5,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from glintstone.config import get_settings
-from glintstone.database import init_pool, close_pool
+from core.config import get_settings
+from core.database import init_pool, close_pool
 from api.routes import health, image
 
 
