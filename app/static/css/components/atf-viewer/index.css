@@ -1,0 +1,10 @@
+/**
+ * ATF Viewer Component Index
+ * Imports all ATF viewer styles
+ */
+
+@import 'layout.css';
+@import '../knowledge-sidebar.css';
+@import 'content.css';
+@import 'words.css';
+@import 'parallel.css';
