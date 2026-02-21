@@ -53,8 +53,9 @@ class ArtifactRepository(BaseRepository):
         params["offset"] = offset
 
         items = self.fetch_all(f"""
-            SELECT a.p_number, a.designation, a.language, a.period,
-                   a.provenience, a.genre,
+            SELECT a.p_number, a.designation,
+                   COALESCE(a.language_normalized, a.language) as language,
+                   a.period, a.provenience, a.genre,
                    ps.physical_complete, ps.graphemic_complete,
                    ps.reading_complete, ps.linguistic_complete,
                    ps.semantic_complete, ps.has_image
@@ -142,3 +143,72 @@ class ArtifactRepository(BaseRepository):
             WHERE s.p_number = %(p_number)s
             ORDER BY si.is_primary DESC
         """, {"p_number": p_number})
+
+    def get_atf(self, p_number: str) -> dict:
+        """Get ATF text lines for a tablet."""
+        lines = self.fetch_all("""
+            SELECT
+                tl.line_number,
+                tl.raw_atf,
+                tl.is_ruling,
+                tl.is_blank,
+                s.surface_type
+            FROM text_lines tl
+            LEFT JOIN surfaces s ON tl.surface_id = s.id
+            WHERE tl.p_number = %(p_number)s
+            ORDER BY tl.line_number
+        """, {"p_number": p_number})
+
+        return {
+            "p_number": p_number,
+            "lines": lines,
+            "total_lines": len(lines)
+        }
+
+    def get_translation(self, p_number: str) -> dict:
+        """Get translation data for a tablet."""
+        translations = self.fetch_all("""
+            SELECT
+                t.line_id,
+                tl.line_number,
+                t.translation,
+                t.language,
+                t.source
+            FROM translations t
+            LEFT JOIN text_lines tl ON t.line_id = tl.id
+            WHERE t.p_number = %(p_number)s
+            ORDER BY tl.line_number
+        """, {"p_number": p_number})
+
+        return {
+            "p_number": p_number,
+            "translations": translations,
+            "total": len(translations)
+        }
+
+    def get_lemmas(self, p_number: str) -> dict:
+        """Get lemmatization data for a tablet."""
+        lemmas = self.fetch_all("""
+            SELECT
+                tl.line_number,
+                t.position,
+                t.gdl_json,
+                l.citation_form,
+                l.guide_word,
+                l.sense,
+                l.pos,
+                l.epos,
+                l.norm,
+                l.base
+            FROM lemmatizations l
+            JOIN tokens t ON l.token_id = t.id
+            JOIN text_lines tl ON t.line_id = tl.id
+            WHERE tl.p_number = %(p_number)s
+            ORDER BY tl.line_number, t.position
+        """, {"p_number": p_number})
+
+        return {
+            "p_number": p_number,
+            "lemmas": lemmas,
+            "total": len(lemmas)
+        }
