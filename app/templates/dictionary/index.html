@@ -4,7 +4,7 @@
 
 {% block content %}
 <main class="dictionary-page">
-    <div class="page-header">
+    <div class="page-header" style="padding: var(--space-6) var(--space-6) 0;">
         <div class="page-header-main">
             <div class="page-header-title">
                 <h1>Dictionary</h1>
@@ -13,52 +13,139 @@
         </div>
     </div>
 
-    <div class="dictionary-browser">
+    <div class="dict-browser" data-dict-browser data-api-url="{{ api_url }}">
         {# Column 1: Groupings #}
-        <aside class="dictionary-groups">
-            <div class="dictionary-group">
-                <h3 class="dictionary-group__title">Browse by</h3>
-                <ul class="dictionary-group__list">
-                    <li class="dictionary-group__item active">
-                        <span class="group-name">All Words</span>
-                        <span class="group-count">&mdash;</span>
-                    </li>
-                    <li class="dictionary-group__item">
-                        <span class="group-name">Part of Speech</span>
-                        <span class="group-count">&mdash;</span>
-                    </li>
-                    <li class="dictionary-group__item">
-                        <span class="group-name">Language</span>
-                        <span class="group-count">&mdash;</span>
-                    </li>
-                    <li class="dictionary-group__item">
-                        <span class="group-name">Frequency</span>
-                        <span class="group-count">&mdash;</span>
-                    </li>
-                </ul>
+        <aside class="dict-browser__groupings">
+            <div class="dict-groupings">
+                {# All Words #}
+                <button class="dict-groupings__item dict-groupings__item--active" data-group-type="all" style="margin: var(--space-2) 0;">
+                    <span class="dict-groupings__item-label">All Words</span>
+                    <span class="dict-groupings__item-count">{{ counts.all | default(0) }}</span>
+                </button>
+
+                {# Part of Speech #}
+                {% if counts.pos %}
+                <div class="dict-groupings__section" data-expanded="false">
+                    <button class="dict-groupings__section-header">
+                        <span>Part of Speech</span>
+                        <svg class="dict-groupings__section-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="dict-groupings__section-content">
+                        {% for pos, count in counts.pos.items() | sort %}
+                        <button class="dict-groupings__item" data-group-type="pos" data-group-value="{{ pos }}">
+                            <span class="dict-groupings__item-label">{{ pos }}</span>
+                            <span class="dict-groupings__item-count">{{ count }}</span>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Language #}
+                {% if counts.language %}
+                <div class="dict-groupings__section" data-expanded="false">
+                    <button class="dict-groupings__section-header">
+                        <span>Language</span>
+                        <svg class="dict-groupings__section-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="dict-groupings__section-content">
+                        {% for lang, count in counts.language.items() | sort %}
+                        <button class="dict-groupings__item" data-group-type="language" data-group-value="{{ lang }}">
+                            <span class="dict-groupings__item-label">{{ lang }}</span>
+                            <span class="dict-groupings__item-count">{{ count }}</span>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Frequency #}
+                {% if counts.frequency %}
+                <div class="dict-groupings__section" data-expanded="false">
+                    <button class="dict-groupings__section-header">
+                        <span>Frequency</span>
+                        <svg class="dict-groupings__section-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="dict-groupings__section-content">
+                        <button class="dict-groupings__item" data-group-type="frequency" data-group-value="1">
+                            <span class="dict-groupings__item-label">Hapax (1)</span>
+                            <span class="dict-groupings__item-count">{{ counts.frequency['1'] | default(0) }}</span>
+                        </button>
+                        <button class="dict-groupings__item" data-group-type="frequency" data-group-value="2-10">
+                            <span class="dict-groupings__item-label">Rare (2-10)</span>
+                            <span class="dict-groupings__item-count">{{ counts.frequency['2-10'] | default(0) }}</span>
+                        </button>
+                        <button class="dict-groupings__item" data-group-type="frequency" data-group-value="11-100">
+                            <span class="dict-groupings__item-label">Uncommon (11-100)</span>
+                            <span class="dict-groupings__item-count">{{ counts.frequency['11-100'] | default(0) }}</span>
+                        </button>
+                        <button class="dict-groupings__item" data-group-type="frequency" data-group-value="101-500">
+                            <span class="dict-groupings__item-label">Common (101-500)</span>
+                            <span class="dict-groupings__item-count">{{ counts.frequency['101-500'] | default(0) }}</span>
+                        </button>
+                        <button class="dict-groupings__item" data-group-type="frequency" data-group-value="500+">
+                            <span class="dict-groupings__item-label">Very Common (500+)</span>
+                            <span class="dict-groupings__item-count">{{ counts.frequency['500+'] | default(0) }}</span>
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </aside>
 
         {# Column 2: Word list #}
-        <div class="dictionary-wordlist">
-            <div class="dictionary-search">
-                <input type="text" placeholder="Search words..." class="search-input" disabled>
-            </div>
-            <div class="dictionary-wordlist__items">
-                <div class="empty-state">
-                    <div class="empty-icon">&#x12000;</div>
-                    <h3>Dictionary coming soon</h3>
-                    <p>The dictionary browser will be available in a future update.</p>
+        <div class="dict-browser__words">
+            <div class="dict-word-list">
+                <div class="dict-word-list__search">
+                    <div class="dict-word-list__search-wrapper">
+                        <svg class="dict-word-list__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M7 12C9.76142 12 12 9.76142 12 7C12 4.23858 9.76142 2 7 2C4.23858 2 2 4.23858 2 7C2 9.76142 4.23858 12 7 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 14L10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <input type="text" placeholder="Search words..." class="dict-word-list__search-input" data-search-input>
+                        <button class="dict-word-list__search-clear" data-search-clear hidden>
+                            <svg class="dict-word-list__search-clear-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
+                <select class="dict-word-list__sort" data-sort-select>
+                    <option value="frequency">By Frequency</option>
+                    <option value="alpha">Alphabetical</option>
+                </select>
+                <div class="dict-word-list__count" data-word-count>
+                    <span class="count">0</span> entries
+                </div>
+                <div class="dict-word-list__items" data-word-list>
+                    {# Filled by JavaScript #}
+                </div>
+                <button class="dict-word-list__load-more" data-load-more hidden>
+                    Load More
+                </button>
             </div>
         </div>
 
         {# Column 3: Word detail #}
-        <div class="dictionary-detail">
-            <div class="dictionary-detail__empty">
-                <p>Select a word to view its details</p>
+        <div class="dict-browser__detail" data-detail-panel>
+            <div class="dict-detail-placeholder">
+                <svg class="dict-detail-placeholder__icon" width="48" height="48" viewBox="0 0 48 48" fill="none">
+                    <path d="M14 8H34M14 16H34M14 24H26M14 32H26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <h3 class="dict-detail-placeholder__title">No word selected</h3>
+                <p class="dict-detail-placeholder__description">Select a word from the list to view its details</p>
             </div>
         </div>
     </div>
 </main>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dictionary-browser.js"></script>
 {% endblock %}

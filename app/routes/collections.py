@@ -14,12 +14,19 @@ def collection_list(request: Request):
     except Exception:
         collections = {"items": []}
 
+    try:
+        composites = api.get("/composites")
+    except Exception:
+        composites = {"items": [], "total": 0}
+
     from app.main import templates
     return templates.TemplateResponse(
         "collections/index.html",
         {
             "request": request,
             "collections": collections.get("items", []),
+            "composites": composites.get("items", []),
+            "composites_total": composites.get("total", 0),
             "api_url": request.app.state.api.base_url,
         },
     )

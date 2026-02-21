@@ -36,6 +36,11 @@
     margin-bottom: var(--space-4);
 }
 
+/* When used as page-header-metadata, don't add extra margin */
+.page-header-metadata.tablet-meta {
+    margin-bottom: 0;
+}
+
 .tablet-meta__row {
     display: flex;
     flex-wrap: wrap;
@@ -106,8 +111,6 @@
     display: none;
     flex-wrap: wrap;
     gap: var(--space-3) var(--space-6);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--color-border);
 }
 
 .tablet-meta__secondary.is-open {
@@ -215,7 +218,6 @@
     overflow: hidden;
 }
 
-.actions-menu:hover .actions-menu__dropdown,
 .actions-menu:focus-within .actions-menu__dropdown,
 .actions-menu__dropdown.is-open {
     display: block;
@@ -334,6 +336,7 @@
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
     z-index: 15;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .image-source {
@@ -802,10 +805,10 @@
 .zoombox__viewport {
     position: relative;
     width: 100%;
-    height: 500px;
+    height: 100%;
     overflow: hidden;
-    background: var(--color-bg);
-    border-radius: var(--radius-md);
+    background: var(--color-bg-inset);
+    border-radius: 0;
     cursor: grab;
 }
 
@@ -1023,9 +1026,11 @@
     z-index: 20;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Show controls when image is loaded */
+.zoombox.has-image .zoombox__controls,
 .zoombox__controls.is-visible {
     opacity: 1;
     pointer-events: auto;
@@ -1138,9 +1143,11 @@
     overflow: hidden;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Show minimap when image is loaded */
+.zoombox.has-image .zoombox__minimap-container,
 .zoombox__minimap-container.is-visible {
     opacity: 1;
     pointer-events: auto;
@@ -1212,21 +1219,56 @@
 .atf-knowledge-sidebar {
     display: flex;
     flex-direction: row;
-    flex-shrink: 0;
-    align-self: stretch;
     position: relative;
     background: var(--color-bg-inset);
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-left: 1px solid var(--color-border);
     overflow: hidden;
 }
 
-.atf-knowledge-sidebar[data-state="closed"] {
+/* Knowledge Sidebar - Icon Bar */
+.knowledge-icon-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     width: 48px;
+    flex-shrink: 0;
+    padding: var(--space-3) 0;
+    gap: var(--space-2);
+    background: var(--color-bg-inset);
+    border-right: 1px solid var(--color-border);
+}
+
+.knowledge-icon-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.knowledge-icon-btn:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.knowledge-icon-btn.is-active {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.atf-knowledge-sidebar[data-state="closed"] {
+    flex: 0 0 48px;
 }
 
 .atf-knowledge-sidebar[data-state="open"] {
-    width: 348px;
+    flex: 0 0 348px;
 }
 
 /* ==========================================================================
@@ -1242,15 +1284,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: var(--color-bg-inset);
     transform: translateX(100%);
-    opacity: 0;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .atf-knowledge-sidebar[data-state="open"] .knowledge-content-panel {
     transform: translateX(0);
-    opacity: 1;
     padding: 0 var(--space-2);
 }
 
@@ -1306,21 +1346,6 @@
 }
 
 /* ==========================================================================
-   Responsive (Knowledge Sidebar)
-   ========================================================================== */
-
-@media (max-width: 600px) {
-    .atf-knowledge-sidebar[data-state="open"] {
-        width: 100%;
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-    }
-}
-
-
-/* ==========================================================================
    KNOWLEDGE SIDEBAR PLACEHOLDERS
    from: feature-knowledge-sidebar/placeholders.css
    ========================================================================== */
@@ -1374,3 +1399,147 @@
     line-height: 1.5;
     max-width: 240px;
 }
+
+/* ==========================================================================
+   TABLET DETAIL PAGE - 3-COLUMN LAYOUT
+   Grid: viewer | ATF panel | knowledge sidebar (48px collapsed, 348px open)
+   ========================================================================== */
+
+body.page-tablet-detail {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+body.page-tablet-detail .site-header {
+    position: relative;
+    flex-shrink: 0;
+}
+
+body.page-tablet-detail > .page-header {
+    flex: 0 0 auto;
+    max-width: var(--container-base);
+    margin: 0 auto;
+    width: 100%;
+    padding: var(--space-6);
+    overflow-y: auto;
+    max-height: 50vh;
+}
+
+.tablet-detail-viewer {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    background: var(--color-bg);
+    overflow: hidden;
+}
+
+/* Collapsed viewer panel styling */
+.tablet-detail-viewer[data-viewer-state="collapsed"] .viewer-panel {
+    opacity: 0.3;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    flex: 0 0 100px;
+}
+
+.tablet-detail-viewer[data-viewer-state="collapsed"] .viewer-panel:hover {
+    opacity: 0.5;
+}
+
+/* Add a subtle indicator overlay when collapsed */
+.tablet-detail-viewer[data-viewer-state="collapsed"] .viewer-panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(0, 0, 0, 0.3) 100%);
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Disable zoom controls and interactions when collapsed */
+.tablet-detail-viewer[data-viewer-state="collapsed"] .zoombox__controls,
+.tablet-detail-viewer[data-viewer-state="collapsed"] .zoombox__minimap-container,
+.tablet-detail-viewer[data-viewer-state="collapsed"] .image-controls {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tablet-detail-viewer[data-viewer-state="collapsed"] .zoombox__viewport {
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+/* When no ATF data: expand viewer to full width */
+.tablet-detail-viewer[data-has-atf="false"] .atf-panel {
+    flex: 0 0 0;
+    overflow: hidden;
+}
+
+.tablet-detail-viewer[data-has-atf="false"] .viewer-panel {
+    flex: 1 1 auto;
+}
+
+.viewer-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg-inset);
+    border-right: 1px solid var(--color-border);
+    overflow: hidden;
+    flex: 1 1 0;
+    min-height: 0;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                flex-grow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.atf-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg-elevated);
+    overflow: hidden;
+    padding: 0;
+    flex: 1 1 0;
+    min-height: 0;
+    height: 100%;
+    transition: flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                flex-grow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.atf-panel .no-atf {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--color-text-muted);
+    text-align: center;
+    gap: var(--space-3);
+}
+
+.tablet-image {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.zoombox {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+

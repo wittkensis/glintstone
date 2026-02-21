@@ -13,30 +13,97 @@
         </div>
     </div>
 
-    <div class="section-header">
-        <div class="section-header__content">
-            <h2>Collections</h2>
-            <p class="section-description">Curated sets of tablets organized by theme, period, and scholarly interest.</p>
+    <nav class="tabs" role="tablist">
+        <button class="tab-button active"
+                role="tab"
+                aria-selected="true"
+                aria-controls="collections-panel"
+                id="collections-tab"
+                data-tab="collections">
+            Collections
+        </button>
+        <button class="tab-button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="composites-panel"
+                id="composites-tab"
+                data-tab="composites">
+            Composites <span class="tab-count">{{ composites_total }}</span>
+        </button>
+    </nav>
+
+    <div id="collections-panel" class="tab-panel active" role="tabpanel" aria-labelledby="collections-tab">
+        <div class="section-header">
+            <div class="section-header__content">
+                <h2>Collections</h2>
+                <p class="section-description">Curated sets of tablets organized by theme, period, and scholarly interest.</p>
+            </div>
+            <div class="header-actions">
+                <a href="/collections/new" class="btn btn-primary">New</a>
+            </div>
         </div>
-        <div class="header-actions">
-            <a href="/collections/new" class="btn btn-primary">New</a>
+
+        {% if collections %}
+        <div class="collection-grid">
+            {% for collection in collections %}
+                {{ collection_card(collection, api_url=api_url) }}
+            {% endfor %}
         </div>
+        {% else %}
+            {{ empty_state(
+                icon='&#x12000;',
+                title='No collections yet',
+                message='Create your first collection to organize tablets by theme, period, or research topic.',
+                action_url='/collections/new',
+                action_text='Create Collection'
+            ) }}
+        {% endif %}
     </div>
 
-    {% if collections %}
-    <div class="collection-grid">
-        {% for collection in collections %}
-            {{ collection_card(collection, api_url=api_url) }}
-        {% endfor %}
+    <div id="composites-panel" class="tab-panel" role="tabpanel" aria-labelledby="composites-tab">
+        <div class="section-header">
+            <div class="section-header__content">
+                <h2>Composites</h2>
+                <p class="section-description">Standardized literary and administrative texts reconstructed from multiple exemplar tablets.</p>
+            </div>
+        </div>
+
+        {% if composites %}
+        <div class="composites-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Q-Number</th>
+                        <th>Designation</th>
+                        <th>Language</th>
+                        <th>Period</th>
+                        <th>Genre</th>
+                        <th class="text-right">Exemplars</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for composite in composites %}
+                    <tr>
+                        <td class="q-number">{{ composite.q_number }}</td>
+                        <td class="designation">{{ composite.designation or '—' }}</td>
+                        <td>{{ composite.language or '—' }}</td>
+                        <td>{{ composite.period or '—' }}</td>
+                        <td>{{ composite.genre or '—' }}</td>
+                        <td class="text-right">{{ composite.exemplar_count or 0 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            {{ empty_state(
+                icon='&#x12000;',
+                title='No composites yet',
+                message='Composite texts will appear here once reconstructed from exemplar tablets.',
+                action_url=None,
+                action_text=None
+            ) }}
+        {% endif %}
     </div>
-    {% else %}
-        {{ empty_state(
-            icon='&#x12000;',
-            title='No collections yet',
-            message='Create your first collection to organize tablets by theme, period, or research topic.',
-            action_url='/collections/new',
-            action_text='Create Collection'
-        ) }}
-    {% endif %}
 </main>
 {% endblock %}

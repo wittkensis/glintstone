@@ -1,13 +1,32 @@
 {# ── Language Badge ── #}
 {% macro lang_badge(language) %}
-{% if language %}
+{% if language and language not in ['Undetermined', 'Uncertain', 'Unclear', 'Uninscribed', 'No linguistic content', 'Clay (no text)'] %}
 {% set abbr_map = {
-    'Sumerian': 'SU', 'Akkadian': 'AK', 'Hittite': 'HI',
-    'Elamite': 'EL', 'Hurrian': 'HU', 'Ugaritic': 'UG',
-    'Egyptian': 'EG', 'Aramaic': 'AR', 'Greek': 'GR',
-    'Old Persian': 'OP', 'Eblaite': 'EB', 'Urartian': 'UR'
+    'Sumerian': 'SU', 'Sumerian (uncertain)': 'SU?', 'Sumerian and Akkadian': 'SU+AK',
+    'Akkadian': 'AK', 'Akkadian (uncertain)': 'AK?', 'Pseudo-Akkadian': 'AK*',
+    'Akkadian and Aramaic': 'AK+AR', 'Akkadian and Aramaic (uncertain)': 'AK+AR?',
+    'Hittite': 'HI', 'Hittite (uncertain)': 'HI?',
+    'Elamite': 'EL', 'Elamite/Egyptian': 'EL+EG',
+    'Hurrian': 'HU', 'Hurrian (uncertain)': 'HU?',
+    'Luwian': 'LU',
+    'Ugaritic': 'UG',
+    'Egyptian': 'EG', 'Egyptian (uncertain)': 'EG?',
+    'Aramaic': 'AR', 'Aramaic (uncertain)': 'AR?',
+    'Greek': 'GR',
+    'Old Persian': 'OP', 'Old Persian and Babylonian': 'OP+BA',
+    'Old Persian and Elamite': 'OP+EL', 'Old Persian, Elamite, and Babylonian': 'OP+EL+BA',
+    'Eblaite': 'EB',
+    'Urartian': 'UR',
+    'Hebrew': 'HE', 'Hebrew (uncertain)': 'HE?',
+    'Phoenician': 'PH',
+    'Qatabanian': 'QT',
+    'Sabaean': 'SA',
+    'Arabic': 'AB',
+    'Mandaic': 'MD',
+    'Syriac': 'SY',
+    'Hattic': 'HT'
 } %}
-{% set abbr = abbr_map.get(language, language[:2]|upper) %}
+{% set abbr = abbr_map.get(language, language[:2]|upper if language|length >= 2 else language|upper) %}
 <span class="lang-badge" title="{{ language }}">{{ abbr }}</span>
 {% endif %}
 {% endmacro %}
@@ -25,24 +44,45 @@
     'semantic': 'Semantic'
 } %}
 
+{# Find highest completed/partial stage index for inference #}
+{% set ns_highest = namespace(idx=-1) %}
+{% for i in range(layer_names|length) %}
+    {% set score = stages.get(layer_names[i]) if stages else none %}
+    {% if score is not none and score > 0 %}
+        {% set ns_highest.idx = i %}
+    {% endif %}
+{% endfor %}
+
 {# Determine status per layer from float score #}
 {% set ns = namespace(next_stage=none, complete_count=0) %}
-{% for layer in layer_names %}
+{% for idx in range(layer_names|length) %}
+    {% set layer = layer_names[idx] %}
     {% set score = stages.get(layer) if stages else none %}
     {% if score is not none and score >= 1.0 %}
         {% set ns.complete_count = ns.complete_count + 1 %}
     {% endif %}
+    {# Set next_stage to first non-complete that isn't inferred #}
     {% if ns.next_stage is none and (score is none or score == 0 or score < 1.0) %}
-        {% set ns.next_stage = layer %}
+        {# Skip inferred stages (earlier missing stages when later stages exist) #}
+        {% if not (idx < ns_highest.idx) %}
+            {% set ns.next_stage = layer %}
+        {% endif %}
     {% endif %}
 {% endfor %}
 
 {% if variant == "compact" %}
 <div class="pipeline pipeline--compact" aria-label="Pipeline: {{ ns.complete_count }} of 5 complete">
-    {% for layer in layer_names %}
+    {% for idx in range(layer_names|length) %}
+    {% set layer = layer_names[idx] %}
     {% set score = stages.get(layer) if stages else none %}
     {% set status = 'complete' if score is not none and score >= 1.0 else ('partial' if score is not none and score > 0 else 'missing') %}
-    <span class="pipeline__segment{% if layer == ns.next_stage %} pipeline__segment--next{% endif %}"
+    {# Infer earlier stages if later stages exist #}
+    {% if status == 'missing' and idx < ns_highest.idx %}
+        {% set status = 'inferred' %}
+    {% endif %}
+    {# Only mark as next if it's not inferred #}
+    {% set is_next = (layer == ns.next_stage and status != 'inferred') %}
+    <span class="pipeline__segment{% if is_next %} pipeline__segment--next{% endif %}"
           data-stage="{{ layer }}"
           data-status="{{ status }}"></span>
     {% endfor %}
@@ -54,10 +94,17 @@
      aria-label="Pipeline: {{ ns.complete_count }} of 5 complete"
      title="{{ next_label }}">
     <div class="pipeline__dots">
-        {% for layer in layer_names %}
+        {% for idx in range(layer_names|length) %}
+        {% set layer = layer_names[idx] %}
         {% set score = stages.get(layer) if stages else none %}
         {% set status = 'complete' if score is not none and score >= 1.0 else ('partial' if score is not none and score > 0 else 'missing') %}
-        <span class="pipeline__dot{% if layer == ns.next_stage %} pipeline__dot--next{% endif %}"
+        {# Infer earlier stages if later stages exist #}
+        {% if status == 'missing' and idx < ns_highest.idx %}
+            {% set status = 'inferred' %}
+        {% endif %}
+        {# Only mark as next if it's not inferred #}
+        {% set is_next = (layer == ns.next_stage and status != 'inferred') %}
+        <span class="pipeline__dot{% if is_next %} pipeline__dot--next{% endif %}"
               data-status="{{ status }}"></span>
         {% endfor %}
     </div>
@@ -66,16 +113,23 @@
 
 {% else %}{# expanded #}
 <nav class="pipeline pipeline--expanded" aria-label="Pipeline: {{ ns.complete_count }} of 5 complete">
-    {% for layer in layer_names %}
+    {% for idx in range(layer_names|length) %}
+    {% set layer = layer_names[idx] %}
     {% set score = stages.get(layer) if stages else none %}
     {% set status = 'complete' if score is not none and score >= 1.0 else ('partial' if score is not none and score > 0 else 'missing') %}
-    <div class="pipeline__segment{% if layer == ns.next_stage %} pipeline__segment--next{% endif %}"
+    {# Infer earlier stages if later stages exist #}
+    {% if status == 'missing' and idx < ns_highest.idx %}
+        {% set status = 'inferred' %}
+    {% endif %}
+    {# Only mark as next if it's not inferred #}
+    {% set is_next = (layer == ns.next_stage and status != 'inferred') %}
+    <div class="pipeline__segment{% if is_next %} pipeline__segment--next{% endif %}"
          data-stage="{{ layer }}" data-status="{{ status }}">
         <span class="pipeline__bar"></span>
         <div class="pipeline__body">
             <span class="pipeline__label">{{ layer_labels[layer] }}</span>
-            <span class="pipeline__status">{{ 'Complete' if status == 'complete' else ('Partial' if status == 'partial' else 'Missing') }}</span>
-            {% if layer == ns.next_stage %}
+            <span class="pipeline__status">{{ 'Complete' if status == 'complete' else ('Partial' if status == 'partial' else ('Inferred' if status == 'inferred' else 'Missing')) }}</span>
+            {% if is_next %}
             <span class="pipeline__next-hint">Next step</span>
             {% endif %}
         </div>
