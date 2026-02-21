@@ -85,8 +85,8 @@ def parse_cdli_date(date_str: str):
         return None
 
 
-def load_lookup_tables(conn: psycopg.Connection) -> tuple[dict, dict]:
-    """Load period and provenience lookup tables into memory for fast normalization."""
+def load_lookup_tables(conn: psycopg.Connection) -> tuple[dict, dict, dict]:
+    """Load period, provenience, and language lookup tables into memory for fast normalization."""
     period_map = {}
     cur = conn.execute("SELECT raw_period, canonical FROM period_canon")
     for row in cur.fetchall():
@@ -97,7 +97,38 @@ def load_lookup_tables(conn: psycopg.Connection) -> tuple[dict, dict]:
     for row in cur.fetchall():
         prov_map[row[0]] = row[1]
 
-    return period_map, prov_map
+    # Load language map (cdli_name -> full_name for normalization)
+    lang_map = {}
+    cur = conn.execute("SELECT cdli_name, full_name FROM language_map")
+    for row in cur.fetchall():
+        lang_map[row[0]] = row[1]
+
+    return period_map, prov_map, lang_map
+
+
+def normalize_language(raw_lang: str, lang_map: dict) -> str | None:
+    """
+    Normalize language string using language_map lookup.
+
+    Handles CDLI inconsistencies:
+    - Semicolon vs comma separators ("Sumerian; Akkadian" vs "Sumerian, Akkadian")
+    - Looks up raw value in language_map
+    - Returns normalized full_name or None if unmapped
+    """
+    if not raw_lang:
+        return None
+
+    # Try direct lookup first
+    if raw_lang in lang_map:
+        return lang_map[raw_lang]
+
+    # CDLI uses both semicolons and commas as separators - normalize semicolons to commas
+    normalized = raw_lang.replace(";", ",")
+    if normalized in lang_map:
+        return lang_map[normalized]
+
+    # If still not found, return raw value (will be logged as unmapped)
+    return raw_lang
 
 
 def get_annotation_run_id(conn: psycopg.Connection) -> int:
@@ -144,8 +175,8 @@ def main():
         annotation_run_id = get_annotation_run_id(conn)
         print(f"\n  annotation_run_id: {annotation_run_id}")
 
-        period_map, prov_map = load_lookup_tables(conn)
-        print(f"  Loaded {len(period_map)} period mappings, {len(prov_map)} provenience mappings.")
+        period_map, prov_map, lang_map = load_lookup_tables(conn)
+        print(f"  Loaded {len(period_map)} period mappings, {len(prov_map)} provenience mappings, {len(lang_map)} language mappings.")
     else:
         conn = None
         annotation_run_id = 0
@@ -194,7 +225,7 @@ def main():
                 clean_str(row.get("genre", "")),                   # genre
                 clean_str(row.get("subgenre", "")),                # subgenre
                 None,                                              # supergenre (from ORACC, not in CDLI CSV)
-                language_raw,                                      # language
+                normalize_language(language_raw, lang_map),        # language (normalized)
                 parse_languages_json(language_raw or ""),          # languages (JSON array)
                 None,                                              # pleiades_id (from ORACC)
                 None,                                              # latitude
