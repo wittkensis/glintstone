@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Personas | Glintstone</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!--
+================================================================================
+PERSONA INDEX
+================================================================================
+This document provides an overview of all user personas for the project.
+Use this as a starting point for persona-based validation and testing.
+
+STRUCTURE:
+- Primary personas: Core users the platform must serve well from launch
+- Secondary personas: Important but less frequent use cases
+================================================================================
+-->
+
+<main class="persona-index">
+
+  <header class="index-header">
+    <h1 class="index-title">User Personas</h1>
+    <p class="index-description">
+      These personas represent the spectrum of end-users for the Glintstone platform.
+      They are designed for simulated user validation, user testing, and product decision-making.
+    </p>
+  </header>
+
+  <!-- =========================================================================
+       PRIMARY PERSONAS
+       ========================================================================= -->
+  <section class="index-section" data-section="primary">
+    <h2 class="index-section-title">Primary Personas</h2>
+    <p>Core users the platform must serve well from launch.</p>
+
+    <div class="persona-grid">
+
+      <a href="01-marcus-chen.html" class="persona-card" data-persona-id="marcus-chen">
+        <div class="card-meta">
+          <span class="persona-tag" data-type="primary">Primary</span>
+        </div>
+        <h3 class="card-name">Marcus Chen</h3>
+        <p class="card-archetype">"The Weekend Warrior"</p>
+        <p class="card-summary">
+          Tech professional with 15 minutes to spare. Wants meaningful contribution
+          without expertise. Represents the largest potential user base.
+        </p>
+      </a>
+
+      <a href="02-fatima-al-rashid.html" class="persona-card" data-persona-id="fatima-al-rashid">
+        <div class="card-meta">
+          <span class="persona-tag" data-type="primary">Primary</span>
+        </div>
+        <h3 class="card-name">Dr. Fatima Al-Rashid</h3>
+        <p class="card-archetype">"The Domain Expert"</p>
+        <p class="card-summary">
+          Senior Assyriologist and expert reviewer. Gatekeeper of quality.
+          If experts don't trust the platform, hobbyist contributions mean nothing.
+        </p>
+      </a>
+
+      <a href="03-aisha-okonkwo.html" class="persona-card" data-persona-id="aisha-okonkwo">
+        <div class="card-meta">
+          <span class="persona-tag" data-type="primary">Primary</span>
+        </div>
+        <h3 class="card-name">Aisha Okonkwo</h3>
+        <p class="card-archetype">"The Aspiring Scholar"</p>
+        <p class="card-summary">
+          PhD candidate building expertise and reputation. Wants acceleration
+          without sacrificing professional credibility. Bridge between worlds.
+        </p>
+      </a>
+
+      <a href="04-jonathan-hartley.html" class="persona-card" data-persona-id="jonathan-hartley">
+        <div class="card-meta">
+          <span class="persona-tag" data-type="primary">Primary</span>
+        </div>
+        <h3 class="card-name">Jonathan Hartley</h3>
+        <p class="card-archetype">"The Institutional Steward"</p>
+        <p class="card-summary">
+          Museum curator managing access to collections. Controls data flow
+          and institutional partnerships. Key to scaling content.
+        </p>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       SECONDARY PERSONAS
+       ========================================================================= -->
+  <section class="index-section" data-section="secondary">
+    <h2 class="index-section-title">Secondary Personas</h2>
+    <p>Important users representing less frequent or more specialized use cases.</p>
+
+    <div class="persona-grid">
+
+      <a href="05-sophie-laurent.html" class="persona-card" data-persona-id="sophie-laurent">
+        <div class="card-meta">
+          <span class="persona-tag" data-type="secondary">Secondary</span>
+        </div>
+        <h3 class="card-name">Sophie Laurent</h3>
+        <p class="card-archetype">"The Curious Explorer"</p>
+        <p class="card-summary">
+          Casual visitor with zero commitment. You have 30 seconds to impress
+          or she's gone. Tests first-impression experience.
+        </p>
+      </a>
+
+      <a href="06-david-yamamoto.html" class="persona-card" data-persona-id="david-yamamoto">
+        <div class="card-meta">
+          <span class="persona-tag" data-type="secondary">Secondary</span>
+        </div>
+        <h3 class="card-name">Prof. David Yamamoto</h3>
+        <p class="card-archetype">"The Educator"</p>
+        <p class="card-summary">
+          University instructor using the platform for classroom activities.
+          Needs engagement tools for students who don't know cuneiform.
+        </p>
+      </a>
+
+      <a href="07-rachel-nguyen.html" class="persona-card" data-persona-id="rachel-nguyen">
+        <div class="card-meta">
+          <span class="persona-tag" data-type="secondary">Secondary</span>
+        </div>
+        <h3 class="card-name">Rachel Nguyen</h3>
+        <p class="card-archetype">"The Knowledge Consumer"</p>
+        <p class="card-summary">
+          History enthusiast who reads contextualized content but never contributes.
+          Represents the "Grokipedia" audience.
+        </p>
+      </a>
+
+      <a href="08-miguel-santos.html" class="persona-card" data-persona-id="miguel-santos">
+        <div class="card-meta">
+          <span class="persona-tag" data-type="secondary">Secondary</span>
+        </div>
+        <h3 class="card-name">Miguel Santos</h3>
+        <p class="card-archetype">"The Technical Contributor"</p>
+        <p class="card-summary">
+          Open source developer interested in the technical architecture.
+          Contributes to infrastructure, not content.
+        </p>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       USAGE GUIDE
+       ========================================================================= -->
+  <section class="index-section" data-section="usage">
+    <h2 class="index-section-title">Usage Guide</h2>
+
+    <div class="section-content">
+      <h3>For Simulated User Testing</h3>
+      <ul>
+        <li><strong>Stay in character:</strong> Maintain the persona's knowledge level, time constraints, and motivations</li>
+        <li><strong>Apply realistic friction:</strong> Personas with less time should abandon quickly if confused</li>
+        <li><strong>Track appropriate metrics:</strong> Use the success metrics defined for each persona</li>
+        <li><strong>Test edge cases:</strong> What happens when they're interrupted? When they disagree?</li>
+      </ul>
+
+      <h3>For Product Decisions</h3>
+      <ul>
+        <li><strong>Weight by segment size:</strong> Marcus represents the largest potential user base; Dr. Al-Rashid the smallest but most critical</li>
+        <li><strong>Trust is foundational:</strong> If experts don't trust the platform, hobbyist contributions mean nothing</li>
+        <li><strong>Design for extremes:</strong> If Marcus and Dr. Al-Rashid can both use a feature, Aisha probably can too</li>
+      </ul>
+
+      <h3>For Agent Prompts</h3>
+      <ul>
+        <li>Each persona HTML file contains structured JSON in a hidden <code>&lt;script&gt;</code> block</li>
+        <li>Key data is in semantic HTML with <code>data-*</code> attributes for parsing</li>
+        <li>Test scenarios include unique IDs for tracking</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<!-- Agent-readable summary -->
+<aside class="agent-data" aria-hidden="true">
+  <script type="application/json" id="personas-index">
+  {
+    "project": "Glintstone",
+    "version": "1.0",
+    "created": "2026-02-04",
+    "personas": {
+      "primary": [
+        {"id": "marcus-chen", "name": "Marcus Chen", "archetype": "The Weekend Warrior", "role": "Hobbyist Volunteer"},
+        {"id": "fatima-al-rashid", "name": "Dr. Fatima Al-Rashid", "archetype": "The Domain Expert", "role": "Senior Assyriologist"},
+        {"id": "aisha-okonkwo", "name": "Aisha Okonkwo", "archetype": "The Aspiring Scholar", "role": "PhD Candidate"},
+        {"id": "jonathan-hartley", "name": "Jonathan Hartley", "archetype": "The Institutional Steward", "role": "Museum Curator"}
+      ],
+      "secondary": [
+        {"id": "sophie-laurent", "name": "Sophie Laurent", "archetype": "The Curious Explorer", "role": "Casual Visitor"},
+        {"id": "david-yamamoto", "name": "Prof. David Yamamoto", "archetype": "The Educator", "role": "University Instructor"},
+        {"id": "rachel-nguyen", "name": "Rachel Nguyen", "archetype": "The Knowledge Consumer", "role": "History Enthusiast"},
+        {"id": "miguel-santos", "name": "Miguel Santos", "archetype": "The Technical Contributor", "role": "Open Source Developer"}
+      ]
+    }
+  }
+  </script>
+</aside>
+
+</body>
+</html>

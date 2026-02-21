@@ -86,9 +86,10 @@ Glintstone downloads all available ORACC project zip archives. Currently integra
 | dccmt | Digital Corpus of Cuneiform Mathematical Texts | Mathematical texts |
 | ribo | Royal Inscriptions of Babylonia Online | Babylonian royal inscriptions |
 | amgg | Akkadian Medicine and Greco-Roman connections | Medical texts |
-| ogsl | ORACC Global Sign List | Sign inventory (see below) |
+| ogsl | ORACC Global Sign List | Sign inventory (~3,367 signs with readings, see below) |
+| etcsl | Electronic Text Corpus of Sumerian Literature | Sumerian literary texts with lemmatization |
 
-Several additional projects (rime, etcsl, cams, ctij) are known to exist but return server errors when fetched.
+Several additional projects (rime, cams, ctij) are known to exist but return server errors when fetched.
 
 ### Access method
 
@@ -226,10 +227,46 @@ These sources backfill bibliographic metadata and scholar identification. See [c
 
 ### CAD (Chicago Assyrian Dictionary)
 
-- **Status**: PDF digitization tools built (`data/v1-schema-tools/cad-digitization/`), data not yet extracted
-- **Content**: 26 volumes covering the complete Akkadian lexicon
+- **Status**: Digitization in progress at ISAC (Institute for the Study of Ancient Cultures)
+- **Content**: 21 volumes covering the complete Akkadian lexicon (A-Z)
 - **License**: Public domain (copyright expired)
-- **Planned approach**: PDF to text (Google Gemini API), then structured extraction to `glossary_entries`
+- **Priority**: Highest-value single Akkadian source (comprehensive, scholarly consensus)
+- **Planned approach**: Await structured digitization format from ISAC; PDF extraction as fallback
+- **Schema targets**: `glossary_entries`, `glossary_senses`, `interpretations` (competing scholarly readings)
+
+### CHD (Chicago Hittite Dictionary)
+
+- **Status**: Partial digitization available
+- **Content**: Hittite lexicon (incomplete coverage)
+- **License**: Check ISAC terms
+- **Priority**: Primary Hittite dictionary source
+- **Planned approach**: Import from digitized volumes when available
+- **Schema targets**: `glossary_entries`, `glossary_forms`, `glossary_senses`
+
+### HPM (Hittite Parsed Morphology)
+
+- **Status**: Marquette University project, format TBD
+- **Content**: Morphological decomposition data for Hittite
+- **License**: Research use (confirm)
+- **Priority**: Core for Hittite morphological analysis
+- **Schema targets**: `morphology`, `lemmatizations`
+
+### Persepolis Fortification Archive
+
+- **Status**: Elamite administrative texts, transliterations available
+- **Content**: Elamite text corpus with transliterations
+- **License**: Research use (ISAC)
+- **Priority**: Primary Elamite corpus (Elamite is thinnest language layer)
+- **Planned approach**: Import transliterations, manual curation for lexicon
+- **Schema targets**: `text_lines`, `glossary_entries` (Elamite lemmas)
+
+### ETCSL (Electronic Text Corpus of Sumerian Literature)
+
+- **Status**: Available as ORACC project (partially integrated)
+- **Content**: XML/HTML transliterations of Sumerian literary texts with lemmatization
+- **License**: CC BY-SA 3.0 (ORACC)
+- **Priority**: Complements ePSD2 for Sumerian literary corpus
+- **Schema targets**: `text_lines`, `lemmatizations`, `translations`
 
 ### BabyLemmatizer Output
 
