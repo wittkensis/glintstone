@@ -1,0 +1,257 @@
+/**
+ * ATF Knowledge Sidebar
+ * Purpose: Collapsible sidebar for dictionary, research, and contextual info
+ * Used on: ATF viewer component
+ * Dependencies: core/tokens.css
+ * JavaScript: assets/js/atf-viewer.js
+ * Required classes for JS: .atf-knowledge-sidebar
+ */
+
+/* ==========================================================================
+   Icon Bar (Always Visible)
+   NOTE: Sidebar container styles moved to tablets.css (single source of truth)
+   ========================================================================== */
+
+/* Move to tabs.css */
+.tabs-nav--vertical-icons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-3) 0;
+    gap: var(--space-2);
+    background: var(--color-bg-inset);
+    width: 48px;
+    flex-shrink: 0;
+}
+
+/* Old style – remove? */
+.knowledge-icon-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.knowledge-icon-btn:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+}
+
+.knowledge-icon-btn.is-active {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+/* ==========================================================================
+   Content Panel Header & Body
+   NOTE: Panel container and transitions moved to tablets.css (single source of truth)
+   ========================================================================== */
+
+.knowledge-content-panel__header {
+    padding: var(--space-4);
+}
+
+.knowledge-content-panel__title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.knowledge-content-panel__body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* ==========================================================================
+   Tab Content
+   ========================================================================== */
+
+.knowledge-tab-content {
+    display: none;
+    height: 100%;
+}
+
+.knowledge-tab-content--active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ==========================================================================
+   Placeholder State
+   ========================================================================== */
+
+.knowledge-sidebar-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--color-text-muted);
+    gap: var(--space-3);
+}
+
+.knowledge-sidebar-placeholder svg {
+    opacity: 0.4;
+}
+
+.knowledge-sidebar-placeholder h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+    margin: 0;
+}
+
+.knowledge-sidebar-placeholder p {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* ==========================================================================
+   Dictionary Browse
+   ========================================================================== */
+
+.knowledge-sidebar-dictionary {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.knowledge-sidebar-filters {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    background: var(--color-bg-elevated);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.knowledge-sidebar-search {
+    position: relative;
+}
+
+.knowledge-sidebar-search__input {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    padding-right: 32px;
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: 0.8125rem;
+}
+
+.knowledge-sidebar-search__input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.knowledge-sidebar-search__clear {
+    position: absolute;
+    right: var(--space-1);
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 1.25rem;
+    padding: var(--space-1);
+    line-height: 1;
+}
+
+.knowledge-sidebar-filter {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--color-bg-inset);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: 0.8125rem;
+}
+
+/* ==========================================================================
+   Dictionary List
+   ========================================================================== */
+
+.knowledge-sidebar-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.knowledge-sidebar-list__items {
+    flex: 1;
+}
+
+.knowledge-sidebar-list__footer {
+    padding: var(--space-3);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-bg-elevated);
+}
+
+.knowledge-sidebar-list__count {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   Word Detail View
+   ========================================================================== */
+
+.knowledge-sidebar-word-detail {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.knowledge-sidebar-word-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--color-bg-elevated);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.knowledge-sidebar-word-header__back {
+    background: none;
+    border: none;
+    color: var(--color-accent);
+    cursor: pointer;
+    font-size: 1.25rem;
+    padding: 0;
+    line-height: 1;
+}
+
+.knowledge-sidebar-word-header__title {
+    flex: 1;
+}
+
+.knowledge-sidebar-word-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-4);
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+
+.is-hidden {
+    display: none !important;
+}

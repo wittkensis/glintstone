@@ -1,0 +1,83 @@
+/**
+ * Filter Sidebar Component
+ * Full-height sticky sidebar for search and filtering
+ */
+
+.filter-sidebar {
+    position: sticky;
+    top: var(--site-header-height, 48px);
+    height: calc(100vh - var(--site-header-height, 48px));
+    max-height: calc(100vh - var(--site-header-height, 48px));
+    overflow-y: auto;
+    background: var(--color-bg-elevated);
+    border-right: 1px solid var(--color-border);
+    padding: 0;
+}
+
+.filter-section {
+    padding: 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.filter-section.always-visible {
+    border-bottom: none;
+}
+
+.filter-content {
+    padding: var(--space-4);
+}
+
+.filter-section form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.filter-section input[type="text"] {
+    width: 100%;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 0.875rem;
+}
+
+.filter-section input[type="text"]:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.btn.search-submit {
+    width: 100%;
+    padding: var(--space-2);
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background var(--transition-fast);
+}
+
+.btn.search-submit:hover {
+    background: var(--color-accent-hover, var(--color-accent));
+    filter: brightness(1.1);
+}
+
+.help-text-subtle {
+    margin-top: var(--space-2);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .filter-sidebar {
+        position: static;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+    }
+}
