@@ -5,6 +5,35 @@ Step 19: Match translations to text_lines by parsing line number hints.
 Parses line number prefixes from translation text and matches to text_lines.line_number.
 Uses heuristic patterns to extract line numbers, surfaces, and positional fallback.
 
+=== MATCHING STRATEGY ===
+
+PHASE 1: Unmatchable Classification
+  Identifies non-content translations before matching:
+  - Broken/damaged: "...", "22 ... slaves" (embedded ellipsis)
+  - Placeholder: "xxx", "xxxx"
+  - Metadata: "Basket-of-tablets:", "total:", section headers
+
+PHASE 2: Pattern-Based Extraction
+  Extracts line references using regex patterns (ordered by priority):
+  0. Sub-line notation: "1.a.", "2.b" → matches "1.a", "2.b" (0.7 confidence)
+  1. Surface + line: "o 1.", "r i 3'" → with surface (1.0 confidence)
+  2. Line only: "1.", "12'" → without surface (0.8 confidence)
+  3. Reversed: "1 o." → reversed notation (0.9 confidence)
+  4. Prime: "1'" → primed lines (0.75 confidence)
+
+PHASE 3: Database Matching
+  Looks up text_lines by (p_number, surface, line_number)
+  Stores match with confidence score
+
+PHASE 4: Positional Fallback
+  For translations with no extractable line reference,
+  matches by position: translation index → text_line offset (0.5 confidence)
+
+LIMITATIONS:
+  - Sub-line structure (1.a, 1.b) may cause many-to-one mappings
+  - Positional fallback fails when translation count > line count
+  - Some unmatched entries are inherent to ATF structure, not errors
+
 Depends on:
   - Step 3 (text_lines table populated)
   - Step 15 (translations table populated)
@@ -32,6 +61,18 @@ sys.path.insert(0, str(citations_lib))
 from checkpoint import ImportCheckpoint  # noqa: E402
 
 
+# Patterns for non-matchable translations (must classify BEFORE attempting line matching)
+UNMATCHABLE_PATTERNS = [
+    # ENHANCED: Catches any ellipsis - standalone, leading, embedded, or trailing
+    # Examples: "...", "22 ... slaves", "... field", "word ... word"
+    (r"(^\.{3,}|^\.{3,}\s+|\s\.{3,}\s|\s\.{3,}$)", "broken"),
+    (r"^x{3,}\s*$", "placeholder"),  # xxx, xxxx, etc.
+    (r"^Basket-of-tablets:", "metadata"),
+    (r"^total:", "summary"),
+    (r"^received\.?\s*$", "summary"),
+    (r"^(obverse|reverse|edge|left edge|right edge)\s*:\s*$", "section_header"),
+]
+
 # Regex patterns for line number extraction
 SURFACE_MAP = {
     "o": "obverse",
@@ -45,6 +86,22 @@ SURFACE_MAP = {
 }
 
 PATTERNS = [
+    # Pattern 0: Sub-line notation "1.a. text", "2.b text", or "o 3.c. text"
+    # ENHANCED: Handles sub-line notation from parser fix
+    # NOTE: After parser re-import, text_lines will have "1.a", "1.b" etc.,
+    # so this pattern now matches them directly
+    (
+        r"^([oro]|obv?|rev?|obverse|reverse|edge)?\s*(\d+)\.([a-z]\d?)\s*[.:]\s*(.+)$",
+        lambda m: {
+            "surface": SURFACE_MAP.get(m.group(1).lower(), None)
+            if m.group(1)
+            else None,
+            "line_number": m.group(2)
+            + "."
+            + m.group(3),  # Full line number with sub-line
+            "confidence": 0.7,  # Lower confidence (many-to-one possible)
+        },
+    ),
     # Pattern 1: "o 1. text" or "o i 3' text" (surface + optional column + line)
     (
         r"^([oro]|obv?|rev?|obverse|reverse|edge)\s+([ivxIVX]*)\s*(\d+)[\'\s]*[.:]\s*(.+)$",
@@ -64,7 +121,33 @@ PATTERNS = [
         r"^(obverse|reverse|edge)\s+(\d+)[\'\s]*[.:]\s*(.+)$",
         lambda m: {"surface": m.group(1), "line_number": m.group(2), "confidence": 1.0},
     ),
+    # Pattern 4: Reversed surface notation "1 o." or "1 r."
+    (
+        r"^\s*(\d+)[\'\s]*\s+([oro]|obv?|rev?)\s*[.:]\s*(.+)$",
+        lambda m: {
+            "line_number": m.group(1),
+            "surface": SURFACE_MAP.get(m.group(2).lower(), m.group(2).lower()),
+            "confidence": 0.9,
+        },
+    ),
+    # Pattern 5: Line with apostrophe "1' text" (primed line numbers)
+    (
+        r"^\s*(\d+)[\'][\s:\.]\s*(.+)$",
+        lambda m: {"line_number": m.group(1), "confidence": 0.75},
+    ),
 ]
+
+
+def classify_unmatchable(translation_text: str) -> str | None:
+    """
+    Check if translation is non-matchable content (not a line translation).
+
+    Returns unmatchable_type if translation is non-content, None otherwise.
+    """
+    for pattern, classification in UNMATCHABLE_PATTERNS:
+        if re.match(pattern, translation_text, re.IGNORECASE):
+            return classification
+    return None
 
 
 def extract_line_info(translation_text: str) -> dict | None:
@@ -156,19 +239,33 @@ def positional_match(
     except StopIteration:
         return (None, 0.0)
 
-    # Get all lines for this tablet ordered by id
-    all_lines = conn.execute(
+    # NEW: Get total line count for range validation
+    line_count = conn.execute(
+        """
+        SELECT COUNT(*) as cnt FROM text_lines
+        WHERE p_number = %s
+    """,
+        (p_number,),
+    ).fetchone()["cnt"]
+
+    # NEW: Validate position is in range
+    if position >= line_count:
+        # Translation index beyond available lines - no match possible
+        return (None, 0.0)
+
+    # Get line at position (now safe - we validated range)
+    line = conn.execute(
         """
         SELECT id FROM text_lines
         WHERE p_number = %s
         ORDER BY id
-        LIMIT %s OFFSET %s
+        LIMIT 1 OFFSET %s
     """,
-        (p_number, 1, position),
+        (p_number, position),
     ).fetchone()
 
-    if all_lines:
-        return (all_lines["id"], 0.5)  # Lower confidence for positional
+    if line:
+        return (line["id"], 0.5)  # Lower confidence for positional
 
     return (None, 0.0)
 
@@ -201,36 +298,60 @@ def main(args):
     checkpoint.set_total(total)
     print(f"Total translations to match: {total:,}\n")
 
-    # Process in batches
-    offset = checkpoint.resume_offset
+    # Process in batches using cursor-based pagination
+    # Use id > last_processed_id instead of OFFSET to avoid skipping records
     batch_size = 1000
     commit_interval = 5000
+    processed_count = 0
+    last_processed_id = 0  # Track the max ID we've processed
 
     unmatched = []
     current_p_number = None
 
     while True:
-        # Fetch batch
+        # Fetch batch using cursor (id > last_processed_id)
         translations = conn.execute(
             """
-            SELECT id, p_number, translation
+            SELECT id, p_number, translation, line_id
             FROM translations
-            WHERE line_id IS NULL
-            ORDER BY p_number, id
-            LIMIT %s OFFSET %s
+            WHERE id > %s
+            ORDER BY id
+            LIMIT %s
         """,
-            (batch_size, offset),
+            (last_processed_id, batch_size),
         ).fetchall()
 
         if not translations:
             break
 
         for trans in translations:
+            # Skip if already matched
+            if trans["line_id"] is not None:
+                continue
+
             # Track progress by tablet
             if trans["p_number"] != current_p_number:
                 current_p_number = trans["p_number"]
-                if offset % 1000 == 0:
+                if processed_count % 1000 == 0:
                     print(f"Processing {current_p_number}...")
+
+            # PHASE 1B: Classify unmatchable translations FIRST
+            unmatchable_type = classify_unmatchable(trans["translation"])
+
+            if unmatchable_type:
+                # Non-matchable content - record separately, don't try to match
+                unmatched.append(
+                    {
+                        "p_number": trans["p_number"],
+                        "translation_id": trans["id"],
+                        "text": trans["translation"][:100],
+                        "unmatchable_type": unmatchable_type,
+                    }
+                )
+                checkpoint.stats["unmatchable"] = (
+                    checkpoint.stats.get("unmatchable", 0) + 1
+                )
+                continue
 
             # Extract line info from translation text
             line_info = extract_line_info(trans["translation"])
@@ -267,10 +388,14 @@ def main(args):
                 checkpoint.stats["skipped"] += 1
 
         checkpoint.stats["processed"] += len(translations)
-        offset += batch_size
+        processed_count += len(translations)
+
+        # Update cursor for next batch
+        if translations:
+            last_processed_id = translations[-1]["id"]
 
         # Periodic commit and progress report
-        if offset % commit_interval == 0 or checkpoint.interrupted:
+        if processed_count % commit_interval == 0 or checkpoint.interrupted:
             conn.commit()
             checkpoint.save()
             matched_pct = (
@@ -278,13 +403,15 @@ def main(args):
                 if checkpoint.stats["processed"] > 0
                 else 0
             )
-            print(f"Processed {offset:,} / {total:,} ({matched_pct:.1f}% matched)")
+            print(
+                f"Processed {processed_count:,} / {total:,} ({matched_pct:.1f}% matched)"
+            )
 
         if checkpoint.interrupted:
             print("\nInterrupted. Progress saved. Resume with same command.")
             break
 
-        if args.limit and offset >= args.limit:
+        if args.limit and processed_count >= args.limit:
             print(f"\n--limit {args.limit} reached")
             break
 
@@ -322,6 +449,19 @@ def main(args):
     print(f"Total translations: {result['total']:,}")
     print(f"Matched: {result['matched']:,} ({result['pct']}%)")
     print(f"Unmatched: {result['total'] - result['matched']:,}")
+
+    # PHASE 1B: Report on unmatchable classifications
+    unmatchable_count = checkpoint.stats.get("unmatchable", 0)
+    if unmatchable_count > 0:
+        matchable_total = result["total"] - unmatchable_count
+        effective_pct = (
+            (result["matched"] / matchable_total * 100) if matchable_total > 0 else 0
+        )
+        print(f"\nUnmatchable (non-line content): {unmatchable_count:,}")
+        print(f"Matchable translations: {matchable_total:,}")
+        print(
+            f"Effective match rate: {result['matched']:,} / {matchable_total:,} ({effective_pct:.1f}%)"
+        )
 
     # Check for orphaned line_ids
     orphans = conn.execute("""

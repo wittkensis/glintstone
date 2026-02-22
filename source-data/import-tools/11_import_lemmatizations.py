@@ -22,12 +22,28 @@ file (not the ATF line label). The `n` field on line-start nodes gives
 the ATF line number used in text_lines.
 
 Matching strategy:
-  1. For each line-start node with label "o 1" / "o i 1" etc.,
-     extract the ATF line number (n field)
-  2. Track (surface_type, line_number) for lemmas that follow
-  3. Match to text_lines by (p_number, line_number) — if multiple
-     surfaces, use the first match
-  4. Match to tokens by (line_id, position-1) since CDL is 1-indexed
+  1. Build lookup caches:
+     - line_cache: (p_number, line_number) → {surface: line_id}
+     - token_cache: (line_id, position) → token_id
+
+  2. For each line-start node with label "o 1" / "o i 1" etc.,
+     extract the ATF line number (n field) and surface type
+
+  3. For each lemma node:
+     - Extract position from ref (convert 1-indexed → 0-indexed)
+     - Get line_number + surface from current walk state
+     - Lookup line_id from line_cache
+     - Lookup token_id from token_cache
+     - Insert lemmatization
+
+  4. Handle failures:
+     - no_line_match: CDL line_number not in text_lines
+     - no_token_match: position out of range (CDL vs ATF mismatch)
+
+INDEXING NOTE:
+  - CDL positions are 1-indexed: .1 = first token
+  - tokens.position is 0-indexed: position=0 = first token
+  - Conversion: cdl_position - 1 = db_position
 
 Depends on:
   - Step 7-9 (text_lines and tokens must exist)
@@ -50,12 +66,20 @@ from core.config import get_settings
 
 ORACC_BASE = Path(__file__).resolve().parents[1] / "sources/ORACC"
 
-ORACC_PROJECTS = ["dcclt", "blms", "etcsri"]  # projects with corpusjson
+ORACC_PROJECTS = [
+    "dcclt",
+    "blms",
+    "etcsri",
+    "hbtin",
+    "dccmt",
+]  # projects with corpusjson
 
 PROJECT_TO_RUN = {
     "dcclt": "oracc/dcclt",
     "blms": "oracc/blms",
     "etcsri": "oracc/etcsri",
+    "hbtin": "oracc/hbtin",
+    "dccmt": "oracc/dccmt",
 }
 
 

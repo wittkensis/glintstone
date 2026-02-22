@@ -80,7 +80,8 @@ RE_HEADER = re.compile(r"^&(P\d+)\s*=\s*(.+)$")
 RE_LANG = re.compile(r"^#atf:\s*lang\s+(\S+)")
 RE_SURFACE = re.compile(r"^@(\w+)(?:\s+(.*))?$")
 RE_COLUMN = re.compile(r"^@column\s+(\d+)", re.IGNORECASE)
-RE_LINE = re.compile(r"^(\d+\'?\.)\s+(.+)$")
+# ENHANCED: Now handles sub-line notation (1.a., 3.b1., etc.) in addition to simple (1., 12'.)
+RE_LINE = re.compile(r"^(\d+(?:\'|\.(?:[a-z](?:\d+)?))?\.)\s+(.+)$")
 RE_RULING = re.compile(r"^\$\s*(single|double|triple)\s+ruling", re.IGNORECASE)
 RE_BLANK = re.compile(r"^\$\s*(beginning|rest|reverse|surface)\s+broken", re.IGNORECASE)
 RE_COMPOSITE = re.compile(r"^>>(Q\d+)\s+(.*)$")
@@ -210,9 +211,11 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
             # Text line
             m = RE_LINE.match(line)
             if m:
-                label = m.group(1)
+                label = m.group(1)  # e.g., "1.", "1'.", "1.a.", "3.b1."
                 content = m.group(2)
-                line_no = parse_line_number(label) or (line_counter + 1)
+                # ENHANCED: Keep full line number with sub-line notation (e.g., "1", "1'", "1.a", "3.b1")
+                # Strip only the final period; preserve prime (') and sub-line (.a, .b1) notation
+                line_no = label.rstrip(".")
                 line_counter += 1
                 tablet["lines"].append((current_surface_type, line_no, content, 0, 0))
                 continue
