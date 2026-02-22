@@ -122,8 +122,6 @@ api/                    FastAPI app (api.glintstone.org)
 app/                    Server-rendered web app (app.glintstone.org)
 core/                   Shared Python package (config, database, repository)
 data-model/
-  migrate.py            Migration runner
-  migrations/           Numbered SQL migrations
   seeds/                Seed data
   v2/                   v2 schema, docs, mappings
   v1/                   v1 reference
@@ -167,8 +165,7 @@ Source data is not included in the repository. To populate:
 
 1. Download source data into `source-data/sources/`
 2. Copy `.env.example` to `.env` and configure database credentials
-3. Run migrations: `python data-model/migrate.py`
-4. Run import pipeline scripts in `source-data/import-tools/` (numbered order)
+3. Run import pipeline scripts in `source-data/import-tools/` (numbered order)
 
 ---
 

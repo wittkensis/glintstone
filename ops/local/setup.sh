@@ -72,11 +72,6 @@ else
     echo "  .test domains already in /etc/hosts"
 fi
 
-# 7. Run migrations
-echo ""
-echo "Running migrations..."
-"$PROJECT_DIR/venv/bin/python" "$PROJECT_DIR/data-model/migrate.py"
-
 echo ""
 echo "=== Setup complete ==="
 echo "Run: ./ops/local/start.sh"
