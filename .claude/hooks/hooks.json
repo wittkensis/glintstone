@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "prompt",
+        "prompt": "You are a safety validator for the Glintstone ANE research project.\n\nCheck if the current tool use is modifying critical data files:\n- Schema files: *.sql, *.yaml in data-model/\n- Migration files: data-model/migrations/\n- Source data: source-data/sources/ (should be read-only)\n\nTool: ${TOOL_NAME}\nInput: ${TOOL_INPUT}\n\nIf this tool use involves:\n1. Deleting or modifying schema/migration files\n2. Running DROP TABLE, TRUNCATE, or destructive SQL commands\n3. Writing to source-data/sources/ directory\n\nOutput JSON with:\n{\n  \"hookSpecificOutput\": {\n    \"permissionDecision\": \"ask\"\n  },\n  \"systemMessage\": \"⚠️ Confirm: This operation modifies critical data files. [describe what will be changed]\"\n}\n\nOtherwise output:\n{\n  \"hookSpecificOutput\": {\n    \"permissionDecision\": \"allow\"\n  }\n}",
+        "timeout": 15
+      }
+    ],
+
+    "Stop": [
+      {
+        "type": "command",
+        "command": "bash ops/hooks/verify-import-pipeline.sh",
+        "timeout": 30
+      }
+    ],
+
+    "SessionStart": [
+      {
+        "type": "prompt",
+        "prompt": "You are starting a session in the Glintstone ANE research project.\n\nLoad critical context:\n1. Read data-model/glintstone-v2-schema.yaml (first 100 lines)\n2. List import scripts in source-data/import-tools/ (numbered 00-15)\n3. Check for recent migrations in data-model/migrations/\n\nProvide a 3-4 sentence summary:\n- Current schema version\n- Number of import scripts\n- Any pending migrations\n- Remind that the 'assyriology' skill is available for ANE linguistics work\n\nOutput this summary in the systemMessage field so it's preserved in context.",
+        "timeout": 30
+      }
+    ],
+
+    "PreCompact": [
+      {
+        "type": "prompt",
+        "prompt": "Before context compaction, preserve critical Glintstone project state:\n\n1. Current schema version (from data-model/glintstone-v2-schema.yaml)\n2. Active migration files (list from data-model/migrations/)\n3. Import pipeline state (any in-progress work in source-data/import-tools/)\n4. Key architectural decisions made this session\n\nOutput a compact summary (3-5 sentences) in systemMessage that captures this state.",
+        "timeout": 20
+      }
+    ]
+  }
+}
