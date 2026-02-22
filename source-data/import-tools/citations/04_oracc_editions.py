@@ -24,7 +24,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from lib.db import get_connection
-from lib.name_normalizer import parse_name, parse_author_string
 from lib.checkpoint import ImportCheckpoint
 
 ORACC_DIR = Path("/Volumes/Portable Storage/Glintstone/source-data/sources/ORACC")
@@ -124,7 +123,7 @@ class ORACCEditionImporter:
                     break
 
                 provider_name = f"ORACC/{project_key}"
-                print(f"\n  [{i+1}/{len(available)}] {project_key}...")
+                print(f"\n  [{i + 1}/{len(available)}] {project_key}...")
 
                 run_id = self._ensure_annotation_run(conn, provider_name)
                 self.annotation_run_ids[project_key] = run_id
@@ -185,7 +184,9 @@ class ORACCEditionImporter:
 
         return available
 
-    def _ensure_annotation_run(self, conn: psycopg.Connection, provider_name: str) -> int:
+    def _ensure_annotation_run(
+        self, conn: psycopg.Connection, provider_name: str
+    ) -> int:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO annotation_runs
@@ -204,7 +205,9 @@ class ORACCEditionImporter:
         conn.commit()
         return run_id
 
-    def _register_project_publication(self, conn: psycopg.Connection, project_key: str, run_id: int) -> int:
+    def _register_project_publication(
+        self, conn: psycopg.Connection, project_key: str, run_id: int
+    ) -> int:
         """Register an ORACC project as a digital_edition publication."""
         meta = ORACC_PROJECTS.get(project_key, {})
         bibtex_key = f"oracc:{project_key}"
@@ -237,7 +240,9 @@ class ORACCEditionImporter:
         )
         return cursor.fetchone()[0]
 
-    def _extract_scholars(self, conn: psycopg.Connection, project_key: str, project_dir: Path, pub_id: int):
+    def _extract_scholars(
+        self, conn: psycopg.Connection, project_key: str, project_dir: Path, pub_id: int
+    ):
         """Extract scholar names from ORACC credits fields."""
         cat_path = project_dir / "catalogue.json"
         if not cat_path.exists():
@@ -259,9 +264,7 @@ class ORACCEditionImporter:
 
             # Extract names from credits like:
             # "Created by Erle Leichty... Lemmatized by Jamie Novotny..."
-            name_pattern = re.compile(
-                r"(?:by|By)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)"
-            )
+            name_pattern = re.compile(r"(?:by|By)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)")
             for match in name_pattern.finditer(credits_str):
                 name_raw = match.group(1)
                 if name_raw not in scholars_seen:
@@ -296,8 +299,12 @@ class ORACCEditionImporter:
         conn.commit()
 
     def _create_artifact_editions(
-        self, conn: psycopg.Connection, project_key: str,
-        project_dir: Path, pub_id: int, run_id: int,
+        self,
+        conn: psycopg.Connection,
+        project_key: str,
+        project_dir: Path,
+        pub_id: int,
+        run_id: int,
     ) -> int:
         """Create artifact_editions for each P-number in ORACC catalogue."""
         cat_path = project_dir / "catalogue.json"
@@ -324,7 +331,9 @@ class ORACCEditionImporter:
                     else:
                         continue
 
-                display_name = entry.get("display_name", "") or entry.get("designation", "")
+                display_name = entry.get("display_name", "") or entry.get(
+                    "designation", ""
+                )
                 ref_str = display_name or f"{project_key}/{p_number}"
 
                 cursor.execute(
@@ -361,9 +370,7 @@ def verify():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute(
-        "SELECT COUNT(*) FROM publications WHERE oracc_project IS NOT NULL"
-    )
+    cursor.execute("SELECT COUNT(*) FROM publications WHERE oracc_project IS NOT NULL")
     project_count = cursor.fetchone()[0]
 
     cursor.execute(
@@ -387,7 +394,7 @@ def verify():
 
     print(f"\n  ORACC projects registered: {project_count}")
     print(f"  Scholars from ORACC credits: {scholar_count}")
-    print(f"\n  Editions by project:")
+    print("\n  Editions by project:")
     for proj, count in sorted(by_project, key=lambda x: -x[1]):
         print(f"    {proj}: {count:,}")
 

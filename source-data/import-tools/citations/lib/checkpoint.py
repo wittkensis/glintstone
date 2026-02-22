@@ -9,7 +9,6 @@ and progress reporting. Pattern extracted from import_cdli_catalog.py.
 import hashlib
 import json
 import signal
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -105,11 +104,13 @@ class ImportCheckpoint:
         self.state["total_items"] = total
 
     def record_error(self, item_id: str, error: str):
-        self.stats["errors"].append({
-            "item": item_id,
-            "error": str(error),
-            "at": datetime.now().isoformat(),
-        })
+        self.stats["errors"].append(
+            {
+                "item": item_id,
+                "error": str(error),
+                "at": datetime.now().isoformat(),
+            }
+        )
 
     def print_progress(self, current: int, total: Optional[int] = None):
         total = total or self.state.get("total_items", 0)

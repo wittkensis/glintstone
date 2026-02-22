@@ -27,20 +27,20 @@ from core.config import get_settings
 
 # Map common museum prefix → authority name
 MUSEUM_AUTHORITIES = [
-    (r'^BM\b', 'british_museum'),
-    (r'^YBC\b', 'yale_babylonian_collection'),
-    (r'^CBS\b', 'university_museum_philadelphia'),
-    (r'^UM\b', 'university_museum_philadelphia'),
-    (r'^IM\b', 'iraq_museum'),
-    (r'^NBC\b', 'nies_babylonian_collection_yale'),
-    (r'^VAT\b', 'vorderasiatisches_museum_berlin'),
-    (r'^AO\b', 'louvre'),
-    (r'^Ni\b', 'istanbul_archaeology_museum'),
-    (r'^NCBT\b', 'newell_collection'),
-    (r'^MLC\b', 'morgan_library'),
-    (r'^Ashm\b', 'ashmolean_museum'),
-    (r'^AS\b', 'ashmolean_museum'),
-    (r'^FLP\b', 'free_library_philadelphia'),
+    (r"^BM\b", "british_museum"),
+    (r"^YBC\b", "yale_babylonian_collection"),
+    (r"^CBS\b", "university_museum_philadelphia"),
+    (r"^UM\b", "university_museum_philadelphia"),
+    (r"^IM\b", "iraq_museum"),
+    (r"^NBC\b", "nies_babylonian_collection_yale"),
+    (r"^VAT\b", "vorderasiatisches_museum_berlin"),
+    (r"^AO\b", "louvre"),
+    (r"^Ni\b", "istanbul_archaeology_museum"),
+    (r"^NCBT\b", "newell_collection"),
+    (r"^MLC\b", "morgan_library"),
+    (r"^Ashm\b", "ashmolean_museum"),
+    (r"^AS\b", "ashmolean_museum"),
+    (r"^FLP\b", "free_library_philadelphia"),
 ]
 
 
@@ -59,12 +59,14 @@ def normalize_identifier(val: str) -> str:
     v = unicodedata.normalize("NFKD", v)
     v = "".join(c for c in v if not unicodedata.combining(c))
     v = v.lower()
-    v = re.sub(r'\s+', ' ', v).strip()
+    v = re.sub(r"\s+", " ", v).strip()
     return v
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Seed artifact_identifiers from artifacts")
+    parser = argparse.ArgumentParser(
+        description="Seed artifact_identifiers from artifacts"
+    )
     parser.add_argument("--dry-run", action="store_true", help="No DB writes")
     args = parser.parse_args()
 
@@ -86,7 +88,9 @@ def main():
         cur.execute("SELECT id FROM annotation_runs WHERE source_name = 'cdli-catalog'")
         row = cur.fetchone()
         if not row:
-            print("ERROR: annotation_run for 'cdli-catalog' not found. Run step 2 first.")
+            print(
+                "ERROR: annotation_run for 'cdli-catalog' not found. Run step 2 first."
+            )
             sys.exit(1)
         annotation_run_id = row[0]
         print(f"\n  annotation_run_id: {annotation_run_id}")
@@ -103,7 +107,6 @@ def main():
 
     BATCH_SIZE = 5000
     inserted = 0
-    skipped = 0
     processed = 0
     offset = 0
 
@@ -111,12 +114,15 @@ def main():
 
     while True:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT p_number, designation, museum_no, excavation_no, primary_publication
                 FROM artifacts
                 ORDER BY p_number
                 LIMIT %s OFFSET %s
-            """, (BATCH_SIZE, offset))
+            """,
+                (BATCH_SIZE, offset),
+            )
             rows = cur.fetchall()
 
         if not rows:
@@ -128,44 +134,75 @@ def main():
 
             # cdli_designation (always present if designation exists)
             if designation:
-                identifiers.append((
-                    p_number, 'cdli_designation', designation,
-                    normalize_identifier(designation), None, annotation_run_id, 1.0
-                ))
+                identifiers.append(
+                    (
+                        p_number,
+                        "cdli_designation",
+                        designation,
+                        normalize_identifier(designation),
+                        None,
+                        annotation_run_id,
+                        1.0,
+                    )
+                )
 
             # museum_no
             if museum_no:
                 authority = infer_authority(museum_no)
-                identifiers.append((
-                    p_number, 'museum_no', museum_no,
-                    normalize_identifier(museum_no), authority, annotation_run_id, 1.0
-                ))
+                identifiers.append(
+                    (
+                        p_number,
+                        "museum_no",
+                        museum_no,
+                        normalize_identifier(museum_no),
+                        authority,
+                        annotation_run_id,
+                        1.0,
+                    )
+                )
 
             # excavation_no
             if excavation_no:
-                identifiers.append((
-                    p_number, 'excavation_no', excavation_no,
-                    normalize_identifier(excavation_no), None, annotation_run_id, 1.0
-                ))
+                identifiers.append(
+                    (
+                        p_number,
+                        "excavation_no",
+                        excavation_no,
+                        normalize_identifier(excavation_no),
+                        None,
+                        annotation_run_id,
+                        1.0,
+                    )
+                )
 
             # primary_publication (abbreviated)
             if primary_pub:
-                identifiers.append((
-                    p_number, 'publication', primary_pub,
-                    normalize_identifier(primary_pub), None, annotation_run_id, 0.9
-                ))
+                identifiers.append(
+                    (
+                        p_number,
+                        "publication",
+                        primary_pub,
+                        normalize_identifier(primary_pub),
+                        None,
+                        annotation_run_id,
+                        0.9,
+                    )
+                )
 
             batch_rows.extend(identifiers)
 
         if batch_rows:
             with conn.cursor() as cur:
-                cur.executemany("""
+                cur.executemany(
+                    """
                     INSERT INTO artifact_identifiers (
                         p_number, identifier_type, identifier_value,
                         identifier_normalized, authority, annotation_run_id, confidence
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (p_number, identifier_type, identifier_value) DO NOTHING
-                """, batch_rows)
+                """,
+                    batch_rows,
+                )
             conn.commit()
 
             # Count actual inserts (approximation — just count batch_rows submitted)

@@ -124,8 +124,12 @@ ANNOTATION_RUNS = [
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Seed retroactive annotation_run records")
-    parser.add_argument("--dry-run", action="store_true", help="Validate without writing")
+    parser = argparse.ArgumentParser(
+        description="Seed retroactive annotation_run records"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Validate without writing"
+    )
     args = parser.parse_args()
 
     print("=" * 60)
@@ -152,13 +156,16 @@ def main():
         skipped = 0
 
         for source_name, source_type, method, corpus_scope, notes in ANNOTATION_RUNS:
-            result = conn.execute("""
+            result = conn.execute(
+                """
                 INSERT INTO annotation_runs
                     (source_name, source_type, method, corpus_scope, notes)
                 VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT DO NOTHING
                 RETURNING id
-            """, (source_name, source_type, method, corpus_scope, notes))
+            """,
+                (source_name, source_type, method, corpus_scope, notes),
+            )
             row = result.fetchone()
             if row:
                 print(f"  + {source_name} (id={row['id']})")

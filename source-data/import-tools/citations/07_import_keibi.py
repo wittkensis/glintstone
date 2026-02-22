@@ -25,18 +25,22 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from lib.bibtex_parser import parse_bibtex_file, bibtex_to_publication
 from lib.db import get_connection
-from lib.name_normalizer import parse_author_string
-from lib.publication_matcher import find_match, ensure_dedup_table, record_dedup_candidate
+from lib.publication_matcher import (
+    find_match,
+    ensure_dedup_table,
+    record_dedup_candidate,
+)
 from lib.checkpoint import ImportCheckpoint
 
-DEFAULT_BIBTEX_DIR = Path("/Volumes/Portable Storage/Glintstone/source-data/sources/KeiBi")
+DEFAULT_BIBTEX_DIR = Path(
+    "/Volumes/Portable Storage/Glintstone/source-data/sources/KeiBi"
+)
 
 PROVIDER_NAME = "KeiBi - Keilschriftbibliographie"
 SOURCE_PREFIX = "keibi:"
 
 
 class KeiBiImporter:
-
     def __init__(self, bibtex_dir: Path, reset: bool = False):
         self.bibtex_dir = bibtex_dir
         self.checkpoint = ImportCheckpoint("keibi_import", reset=reset)
@@ -100,9 +104,13 @@ class KeiBiImporter:
             """INSERT INTO annotation_runs
                (source_type, source_name, method, created_at, notes)
                VALUES (%s, %s, %s, %s, %s) RETURNING id""",
-            ("import", PROVIDER_NAME, "import",
-             datetime.now().isoformat(),
-             f"KeiBi bibliography import. Provider: {PROVIDER_NAME}"),
+            (
+                "import",
+                PROVIDER_NAME,
+                "import",
+                datetime.now().isoformat(),
+                f"KeiBi bibliography import. Provider: {PROVIDER_NAME}",
+            ),
         )
         run_id = cursor.fetchone()[0]
         conn.commit()
@@ -182,8 +190,11 @@ class KeiBiImporter:
                     if match.publication_id and match.confidence < 0.8:
                         new_id = row[0]
                         record_dedup_candidate(
-                            conn, match.publication_id, new_id,
-                            match.method, match.confidence,
+                            conn,
+                            match.publication_id,
+                            new_id,
+                            match.method,
+                            match.confidence,
                         )
 
             except psycopg.errors.UniqueViolation:
@@ -200,9 +211,7 @@ class KeiBiImporter:
 def verify():
     conn = get_connection()
     c = conn.cursor()
-    c.execute(
-        "SELECT COUNT(*) FROM publications WHERE bibtex_key LIKE 'keibi:%'"
-    )
+    c.execute("SELECT COUNT(*) FROM publications WHERE bibtex_key LIKE 'keibi:%'")
     keibi_count = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM _dedup_candidates WHERE resolved = 0")
     dedup_pending = c.fetchone()[0]

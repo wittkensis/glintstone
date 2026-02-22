@@ -33,8 +33,7 @@ def normalize_title(title: str) -> str:
     t = title.lower()
     # Strip diacritics
     t = "".join(
-        c for c in unicodedata.normalize("NFKD", t)
-        if not unicodedata.combining(c)
+        c for c in unicodedata.normalize("NFKD", t) if not unicodedata.combining(c)
     )
     # Remove articles
     t = re.sub(r"\b(the|a|an|der|die|das|le|la|les|un|une)\b", "", t)

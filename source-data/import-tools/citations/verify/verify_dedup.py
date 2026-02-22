@@ -12,7 +12,6 @@ Checks:
 
 import sqlite3
 import sys
-import unicodedata
 from pathlib import Path
 
 DEFAULT_DB = Path("/Volumes/Portable Storage/Glintstone/data-model/glintstone.db")
@@ -33,7 +32,9 @@ def verify(db_path: Path) -> bool:
         "SELECT name FROM sqlite_master WHERE type='table' AND name='_dedup_candidates'"
     )
     if not c.fetchone():
-        print("\n  _dedup_candidates table does not exist (no cross-source dedup run yet)")
+        print(
+            "\n  _dedup_candidates table does not exist (no cross-source dedup run yet)"
+        )
         print("  This is expected if only one source has been imported.")
         _check_title_dupes(c)
         _check_orphans(c)
@@ -65,7 +66,7 @@ def verify(db_path: Path) -> bool:
     """)
     methods = c.fetchall()
     if methods:
-        print(f"\n  By match method:")
+        print("\n  By match method:")
         for method, count, avg_conf in methods:
             print(f"    {method}: {count:,} (avg confidence {avg_conf:.2f})")
 
@@ -78,7 +79,7 @@ def verify(db_path: Path) -> bool:
     """)
     resolutions = c.fetchall()
     if resolutions:
-        print(f"\n  Resolved by outcome:")
+        print("\n  Resolved by outcome:")
         for res, count in resolutions:
             print(f"    {res or 'unspecified'}: {count:,}")
 
@@ -94,7 +95,7 @@ def verify(db_path: Path) -> bool:
     row = c.fetchone()
     if row and any(v for v in row if v):
         high, medium, low = row
-        print(f"\n  Pending confidence distribution:")
+        print("\n  Pending confidence distribution:")
         print(f"    High (>=0.8):   {high or 0:,}  -- likely true duplicates")
         print(f"    Medium (0.5-0.8): {medium or 0:,}  -- need review")
         print(f"    Low (<0.5):     {low or 0:,}  -- likely distinct")
@@ -112,7 +113,7 @@ def verify(db_path: Path) -> bool:
     """)
     samples = c.fetchall()
     if samples:
-        print(f"\n  Top pending candidates (highest confidence):")
+        print("\n  Top pending candidates (highest confidence):")
         for a_id, b_id, method, conf, a_title, a_key, b_title, b_key in samples:
             print(f"    [{conf:.2f} via {method}]")
             print(f"      A: {a_key} -- {(a_title or '')[:60]}")
@@ -124,7 +125,7 @@ def verify(db_path: Path) -> bool:
     conn.close()
 
     if issues == 0:
-        print(f"\n  ALL CHECKS PASSED")
+        print("\n  ALL CHECKS PASSED")
     else:
         print(f"\n  {issues} ISSUE(S) FOUND")
 
@@ -145,13 +146,15 @@ def _check_title_dupes(c):
     """)
     title_dupes = c.fetchall()
     if title_dupes:
-        print(f"\n  Publications with identical normalized titles ({len(title_dupes)} groups):")
+        print(
+            f"\n  Publications with identical normalized titles ({len(title_dupes)} groups):"
+        )
         for norm, count in title_dupes[:5]:
-            print(f"    \"{norm[:70]}\" -- {count} records")
+            print(f'    "{norm[:70]}" -- {count} records')
         if len(title_dupes) > 5:
             print(f"    ... and {len(title_dupes) - 5} more")
     else:
-        print(f"\n  PASS: No publications with identical normalized titles")
+        print("\n  PASS: No publications with identical normalized titles")
 
 
 def _check_orphans(c):
@@ -167,13 +170,18 @@ def _check_orphans(c):
     total_pubs = c.fetchone()[0]
 
     orphan_pct = (orphan_pubs / total_pubs * 100) if total_pubs else 0
-    print(f"\n  Orphan publications (no artifact links): {orphan_pubs:,} / {total_pubs:,} ({orphan_pct:.1f}%)")
+    print(
+        f"\n  Orphan publications (no artifact links): {orphan_pubs:,} / {total_pubs:,} ({orphan_pct:.1f}%)"
+    )
     if orphan_pct > 70:
-        print(f"  NOTE: High orphan rate expected -- many publications discuss topics, not specific artifacts")
+        print(
+            "  NOTE: High orphan rate expected -- many publications discuss topics, not specific artifacts"
+        )
 
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     args = parser.parse_args()

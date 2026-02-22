@@ -10,7 +10,6 @@ Usage:
 """
 
 import argparse
-import psycopg
 import sys
 from pathlib import Path
 
@@ -33,18 +32,22 @@ KNOWN_SUPERSESSIONS = [
     ("RINAP 3/2", None, "Sennacherib part 2"),
     ("RINAP 4", None, "Esarhaddon"),
     ("RINAP 5/1", None, "Ashurbanipal part 1"),
-
     # State Archives of Assyria
-    ("SAA 01", "ABL", "Neo-Assyrian letters to Tiglath-pileser III and Sargon II (partial)"),
+    (
+        "SAA 01",
+        "ABL",
+        "Neo-Assyrian letters to Tiglath-pileser III and Sargon II (partial)",
+    ),
     ("SAA 05", "ABL", "Neo-Assyrian letters from scholars (partial)"),
     ("SAA 10", "ABL", "Neo-Assyrian letters from scholars (partial)"),
-
     # Lexical texts
-    ("DCCLT", "MSL", "Cuneiform lexical texts (digital supersedes print for covered texts)"),
-
+    (
+        "DCCLT",
+        "MSL",
+        "Cuneiform lexical texts (digital supersedes print for covered texts)",
+    ),
     # Sumerian literature
     ("ETCSL", None, "Sumerian literary texts (digital corpus)"),
-
     # Dictionaries
     ("ePSD2", "ePSD", "Electronic Pennsylvania Sumerian Dictionary v2 supersedes v1"),
 ]
@@ -130,7 +133,9 @@ def seed_supersessions():
     """)
     conflicts = cursor.fetchall()
     if conflicts:
-        print(f"\n  WARNING: {len(conflicts)} artifacts have multiple current editions!")
+        print(
+            f"\n  WARNING: {len(conflicts)} artifacts have multiple current editions!"
+        )
         for p, cnt in conflicts[:5]:
             print(f"    {p}: {cnt} current editions")
     else:
@@ -146,7 +151,9 @@ def verify():
     sup_count = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM artifact_editions WHERE is_current_edition = 1")
     current_count = c.fetchone()[0]
-    c.execute("SELECT COUNT(DISTINCT p_number) FROM artifact_editions WHERE is_current_edition = 1")
+    c.execute(
+        "SELECT COUNT(DISTINCT p_number) FROM artifact_editions WHERE is_current_edition = 1"
+    )
     artifacts_with_current = c.fetchone()[0]
     conn.close()
 

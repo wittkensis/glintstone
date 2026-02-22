@@ -22,8 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from lib.db import get_connection
-from lib.ebl_client import EBLClient, PROVIDER_NAME, REFERENCE_TYPE_MAP
-from lib.name_normalizer import parse_author_string
+from lib.ebl_client import EBLClient, PROVIDER_NAME
 from lib.publication_matcher import find_match, ensure_dedup_table
 from lib.checkpoint import ImportCheckpoint
 
@@ -115,7 +114,9 @@ class EBLBibliographyImporter:
             "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'external_resources')"
         )
         if not cursor.fetchone()[0]:
-            print("  external_resources table not found. Using artifacts with known eBL IDs.")
+            print(
+                "  external_resources table not found. Using artifacts with known eBL IDs."
+            )
             return []
 
         cursor.execute(
@@ -125,7 +126,9 @@ class EBLBibliographyImporter:
         )
         return cursor.fetchall()
 
-    def _import_fragment_bibliographies(self, conn: psycopg.Connection, fragments: list):
+    def _import_fragment_bibliographies(
+        self, conn: psycopg.Connection, fragments: list
+    ):
         """Fetch and import bibliography for each eBL fragment."""
         batch = []
 
@@ -155,7 +158,9 @@ class EBLBibliographyImporter:
             self._commit_batch(conn, batch)
             self.checkpoint.stats["processed"] = len(fragments)
 
-    def _transform_entry(self, conn: psycopg.Connection, p_number: str, parsed: dict) -> dict | None:
+    def _transform_entry(
+        self, conn: psycopg.Connection, p_number: str, parsed: dict
+    ) -> dict | None:
         """Transform parsed eBL bibliography entry to import record."""
         if not parsed.get("title"):
             return None

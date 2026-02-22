@@ -26,7 +26,21 @@ from core.config import get_settings
 
 ORACC_BASE = Path(__file__).resolve().parents[1] / "sources/ORACC"
 
-ORACC_PROJECTS = ["dcclt", "epsd2", "rinap", "saao", "blms", "cams", "etcsri", "riao", "etcsl", "ribo", "rime", "amgg", "hbtin"]
+ORACC_PROJECTS = [
+    "dcclt",
+    "epsd2",
+    "rinap",
+    "saao",
+    "blms",
+    "cams",
+    "etcsri",
+    "riao",
+    "etcsl",
+    "ribo",
+    "rime",
+    "amgg",
+    "hbtin",
+]
 
 
 def load_geojson(project: str) -> dict:
@@ -72,7 +86,9 @@ def load_geojson(project: str) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Enrich artifacts from ORACC catalogue")
+    parser = argparse.ArgumentParser(
+        description="Enrich artifacts from ORACC catalogue"
+    )
     parser.add_argument("--dry-run", action="store_true", help="No DB writes")
     args = parser.parse_args()
 
@@ -119,18 +135,21 @@ def main():
             subgenre = entry.get("subgenre")
             geo = geo_data.get(p_num, {})
 
-            updates.append((
-                supergenre,
-                subgenre,
-                geo.get("pleiades_id"),
-                geo.get("lat"),
-                geo.get("lon"),
-                p_num,
-            ))
+            updates.append(
+                (
+                    supergenre,
+                    subgenre,
+                    geo.get("pleiades_id"),
+                    geo.get("lat"),
+                    geo.get("lon"),
+                    p_num,
+                )
+            )
 
         if not args.dry_run and updates:
             with conn.cursor() as cur:
-                cur.executemany("""
+                cur.executemany(
+                    """
                     UPDATE artifacts SET
                         supergenre = COALESCE(supergenre, %s),
                         subgenre = COALESCE(subgenre, %s),
@@ -138,7 +157,9 @@ def main():
                         latitude = COALESCE(latitude, %s),
                         longitude = COALESCE(longitude, %s)
                     WHERE p_number = %s
-                """, updates)
+                """,
+                    updates,
+                )
             conn.commit()
             total_enriched += len(updates)
 
@@ -154,7 +175,7 @@ def main():
         with conn.cursor() as cur:
             cur.executemany(
                 "UPDATE artifacts SET oracc_projects = %s WHERE p_number = %s",
-                project_updates
+                project_updates,
             )
         conn.commit()
         total_geo_updated = len(project_updates)

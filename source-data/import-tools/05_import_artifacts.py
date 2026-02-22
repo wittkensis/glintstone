@@ -19,14 +19,12 @@ Usage:
 import argparse
 import csv
 import json
-import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import psycopg
-from psycopg.rows import dict_row
 
 from core.config import get_settings
 
@@ -80,6 +78,7 @@ def parse_cdli_date(date_str: str):
     # Format is YYYY-MM-DD from date_updated field
     try:
         from datetime import datetime
+
         return datetime.strptime(v, "%Y-%m-%d")
     except ValueError:
         return None
@@ -146,9 +145,15 @@ def get_annotation_run_id(conn: psycopg.Connection) -> int:
 
 def main():
     parser = argparse.ArgumentParser(description="Import CDLI artifacts to PostgreSQL")
-    parser.add_argument("--dry-run", action="store_true", help="Parse only, no DB writes")
-    parser.add_argument("--limit", type=int, default=0, help="Stop after N rows (0=all)")
-    parser.add_argument("--reset", action="store_true", help="Truncate artifacts and reimport")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Parse only, no DB writes"
+    )
+    parser.add_argument(
+        "--limit", type=int, default=0, help="Stop after N rows (0=all)"
+    )
+    parser.add_argument(
+        "--reset", action="store_true", help="Truncate artifacts and reimport"
+    )
     args = parser.parse_args()
 
     print("=" * 60)
@@ -176,7 +181,9 @@ def main():
         print(f"\n  annotation_run_id: {annotation_run_id}")
 
         period_map, prov_map, lang_map = load_lookup_tables(conn)
-        print(f"  Loaded {len(period_map)} period mappings, {len(prov_map)} provenience mappings, {len(lang_map)} language mappings.")
+        print(
+            f"  Loaded {len(period_map)} period mappings, {len(prov_map)} provenience mappings, {len(lang_map)} language mappings."
+        )
     else:
         conn = None
         annotation_run_id = 0
@@ -207,39 +214,41 @@ def main():
             language_raw = clean_str(row.get("language", ""))
 
             record = (
-                p_number,                                           # p_number
-                clean_str(row.get("designation", "")),             # designation
-                clean_str(row.get("museum_no", "")),               # museum_no
-                clean_str(row.get("excavation_no", "")),           # excavation_no
-                clean_str(row.get("material", "")),                # material
-                clean_str(row.get("object_type", "")),             # object_type
-                clean_float(row.get("width", "")),                 # width
-                clean_float(row.get("height", "")),                # height
-                clean_float(row.get("thickness", "")),             # thickness
-                clean_str(row.get("seal_id", "")),                 # seal_id
-                clean_str(row.get("object_preservation", "")),     # object_preservation
-                period_raw,                                        # period (raw)
-                period_map.get(period_raw) if period_raw else None,    # period_normalized
-                provenience_raw,                                   # provenience (raw)
-                prov_map.get(provenience_raw) if provenience_raw else None,  # provenience_normalized
-                clean_str(row.get("genre", "")),                   # genre
-                clean_str(row.get("subgenre", "")),                # subgenre
-                None,                                              # supergenre (from ORACC, not in CDLI CSV)
-                normalize_language(language_raw, lang_map),        # language (normalized)
-                parse_languages_json(language_raw or ""),          # languages (JSON array)
-                None,                                              # pleiades_id (from ORACC)
-                None,                                              # latitude
-                None,                                              # longitude
-                clean_str(row.get("primary_publication", "")),     # primary_publication
-                clean_str(row.get("collection", "")),              # collection
-                clean_str(row.get("dates_referenced", "")),        # dates_referenced
-                clean_str(row.get("date_of_origin", "")),          # date_of_origin
-                clean_str(row.get("findspot_square", "")),         # findspot_square
-                clean_str(row.get("accounting_period", "")),       # accounting_period
-                clean_str(row.get("acquisition_history", "")),     # acquisition_history
-                parse_cdli_date(row.get("date_updated", "")),      # cdli_updated_at
-                None,                                              # oracc_projects (JSON, from ORACC)
-                annotation_run_id,                                 # annotation_run_id
+                p_number,  # p_number
+                clean_str(row.get("designation", "")),  # designation
+                clean_str(row.get("museum_no", "")),  # museum_no
+                clean_str(row.get("excavation_no", "")),  # excavation_no
+                clean_str(row.get("material", "")),  # material
+                clean_str(row.get("object_type", "")),  # object_type
+                clean_float(row.get("width", "")),  # width
+                clean_float(row.get("height", "")),  # height
+                clean_float(row.get("thickness", "")),  # thickness
+                clean_str(row.get("seal_id", "")),  # seal_id
+                clean_str(row.get("object_preservation", "")),  # object_preservation
+                period_raw,  # period (raw)
+                period_map.get(period_raw) if period_raw else None,  # period_normalized
+                provenience_raw,  # provenience (raw)
+                prov_map.get(provenience_raw)
+                if provenience_raw
+                else None,  # provenience_normalized
+                clean_str(row.get("genre", "")),  # genre
+                clean_str(row.get("subgenre", "")),  # subgenre
+                None,  # supergenre (from ORACC, not in CDLI CSV)
+                normalize_language(language_raw, lang_map),  # language (normalized)
+                parse_languages_json(language_raw or ""),  # languages (JSON array)
+                None,  # pleiades_id (from ORACC)
+                None,  # latitude
+                None,  # longitude
+                clean_str(row.get("primary_publication", "")),  # primary_publication
+                clean_str(row.get("collection", "")),  # collection
+                clean_str(row.get("dates_referenced", "")),  # dates_referenced
+                clean_str(row.get("date_of_origin", "")),  # date_of_origin
+                clean_str(row.get("findspot_square", "")),  # findspot_square
+                clean_str(row.get("accounting_period", "")),  # accounting_period
+                clean_str(row.get("acquisition_history", "")),  # acquisition_history
+                parse_cdli_date(row.get("date_updated", "")),  # cdli_updated_at
+                None,  # oracc_projects (JSON, from ORACC)
+                annotation_run_id,  # annotation_run_id
             )
 
             batch.append(record)
@@ -254,7 +263,10 @@ def main():
                 batch = []
 
                 total_processed = inserted + skipped + errors
-                print(f"  {total_processed:>7,} processed  |  {inserted:>7,} inserted  |  {skipped:>6,} skipped", end="\r")
+                print(
+                    f"  {total_processed:>7,} processed  |  {inserted:>7,} inserted  |  {skipped:>6,} skipped",
+                    end="\r",
+                )
 
     # Final batch
     if batch:
@@ -278,9 +290,9 @@ def main():
     # Validate
     expected_min = 350_000
     if not args.dry_run and args.limit == 0:
-        assert inserted + skipped >= expected_min, (
-            f"Expected >= {expected_min:,} artifacts, got {inserted + skipped:,}"
-        )
+        assert (
+            inserted + skipped >= expected_min
+        ), f"Expected >= {expected_min:,} artifacts, got {inserted + skipped:,}"
     print("Validation: OK")
 
 
@@ -290,7 +302,8 @@ def flush_batch(conn: psycopg.Connection, batch: list) -> tuple[int, int]:
         cur.execute("SELECT COUNT(*) FROM artifacts")
         rows_before = cur.fetchone()[0]
 
-        cur.executemany("""
+        cur.executemany(
+            """
             INSERT INTO artifacts (
                 p_number, designation, museum_no, excavation_no,
                 material, object_type, width, height, thickness,
@@ -310,7 +323,9 @@ def flush_batch(conn: psycopg.Connection, batch: list) -> tuple[int, int]:
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             )
             ON CONFLICT (p_number) DO NOTHING
-        """, batch)
+        """,
+            batch,
+        )
         conn.commit()
 
         cur.execute("SELECT COUNT(*) FROM artifacts")

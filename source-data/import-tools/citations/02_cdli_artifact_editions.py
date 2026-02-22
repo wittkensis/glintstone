@@ -27,7 +27,9 @@ from lib.cdli_client import CDLIClient, PROVIDER_NAME
 from lib.checkpoint import ImportCheckpoint
 from lib.publication_matcher import find_match
 
-CSV_PATH = Path("/Volumes/Portable Storage/Glintstone/source-data/sources/CDLI/metadata/cdli_cat.csv")
+CSV_PATH = Path(
+    "/Volumes/Portable Storage/Glintstone/source-data/sources/CDLI/metadata/cdli_cat.csv"
+)
 
 BATCH_SIZE = 500
 
@@ -51,7 +53,9 @@ class CDLIArtifactEditionImporter:
         print("=" * 60)
         print("CDLI ARTIFACT EDITIONS IMPORT")
         print(f"  Provider: {PROVIDER_NAME}")
-        print(f"  Strategy: {'CSV only' if self.csv_only else 'API-first + CSV fallback'}")
+        print(
+            f"  Strategy: {'CSV only' if self.csv_only else 'API-first + CSV fallback'}"
+        )
         print("=" * 60)
 
         if self.checkpoint.is_completed():
@@ -109,7 +113,9 @@ class CDLIArtifactEditionImporter:
     def _load_publication_cache(self, conn: psycopg.Connection):
         """Pre-load bibtex_key -> id mapping for fast lookup."""
         cursor = conn.cursor()
-        cursor.execute("SELECT id, bibtex_key FROM publications WHERE bibtex_key IS NOT NULL")
+        cursor.execute(
+            "SELECT id, bibtex_key FROM publications WHERE bibtex_key IS NOT NULL"
+        )
         self._pub_cache = {row[1]: row[0] for row in cursor.fetchall()}
         print(f"  Publication cache: {len(self._pub_cache):,} entries")
 
@@ -242,7 +248,9 @@ class CDLIArtifactEditionImporter:
 
         print(f"\n    CSV parsed {csv_count:,} artifacts")
 
-    def _parse_publication_history_entry(self, p_number: str, entry: str) -> dict | None:
+    def _parse_publication_history_entry(
+        self, p_number: str, entry: str
+    ) -> dict | None:
         """
         Parse a single publication_history entry using tiered regex.
 
@@ -310,7 +318,9 @@ class CDLIArtifactEditionImporter:
 
         # Tier 3: Unparseable -- stage for manual review
         self.checkpoint.stats["skipped"] += 1
-        self._stage_unparsed(p_number, entry, "tier3", "No regex match on publication_history entry")
+        self._stage_unparsed(
+            p_number, entry, "tier3", "No regex match on publication_history entry"
+        )
         return None
 
     def _resolve_publication(self, designation: str, year: str | None) -> int | None:
@@ -332,7 +342,14 @@ class CDLIArtifactEditionImporter:
             """INSERT INTO _unparsed_records
                (source_script, p_number, raw_text, parse_tier, reason, annotation_run_id)
                VALUES (%s, %s, %s, %s, %s, %s)""",
-            ("02_cdli_artifact_editions", p_number, raw_text, tier, reason, self.annotation_run_id),
+            (
+                "02_cdli_artifact_editions",
+                p_number,
+                raw_text,
+                tier,
+                reason,
+                self.annotation_run_id,
+            ),
         )
 
     def _commit_editions(self, conn: psycopg.Connection, batch: list):
@@ -422,36 +439,40 @@ def verify():
     cursor.execute("SELECT COUNT(*) FROM artifact_editions")
     total = cursor.fetchone()[0]
 
-    cursor.execute("SELECT edition_type, COUNT(*) FROM artifact_editions GROUP BY edition_type")
+    cursor.execute(
+        "SELECT edition_type, COUNT(*) FROM artifact_editions GROUP BY edition_type"
+    )
     by_type = cursor.fetchall()
 
-    cursor.execute(
-        "SELECT COUNT(DISTINCT p_number) FROM artifact_editions"
-    )
+    cursor.execute("SELECT COUNT(DISTINCT p_number) FROM artifact_editions")
     artifacts_with_editions = cursor.fetchone()[0]
 
     cursor.execute("SELECT COUNT(*) FROM artifacts")
     total_artifacts = cursor.fetchone()[0]
 
-    cursor.execute(
-        "SELECT COUNT(*) FROM artifact_editions WHERE confidence < 0.5"
-    )
+    cursor.execute("SELECT COUNT(*) FROM artifact_editions WHERE confidence < 0.5")
     low_confidence = cursor.fetchone()[0]
 
     conn.close()
 
     print(f"\n  Artifact editions: {total:,}")
-    print(f"  Artifacts with editions: {artifacts_with_editions:,} / {total_artifacts:,}")
+    print(
+        f"  Artifacts with editions: {artifacts_with_editions:,} / {total_artifacts:,}"
+    )
     print(f"  Low confidence (<0.5): {low_confidence:,}")
-    print(f"\n  By edition type:")
+    print("\n  By edition type:")
     for etype, count in by_type:
         print(f"    {etype}: {count:,}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Import CDLI artifact-publication links")
+    parser = argparse.ArgumentParser(
+        description="Import CDLI artifact-publication links"
+    )
     parser.add_argument("--reset", action="store_true")
-    parser.add_argument("--csv-only", action="store_true", help="Skip API, only parse CSV")
+    parser.add_argument(
+        "--csv-only", action="store_true", help="Skip API, only parse CSV"
+    )
     parser.add_argument("--verify-only", action="store_true")
     args = parser.parse_args()
 

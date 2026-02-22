@@ -26,14 +26,15 @@ sys.path.insert(0, str(Path(__file__).parent))
 from lib.db import get_connection
 from lib.checkpoint import ImportCheckpoint
 
-CSV_PATH = Path("/Volumes/Portable Storage/Glintstone/source-data/sources/CDLI/metadata/cdli_cat.csv")
+CSV_PATH = Path(
+    "/Volumes/Portable Storage/Glintstone/source-data/sources/CDLI/metadata/cdli_cat.csv"
+)
 
 PROVIDER_NAME = "CDLI"
 BATCH_SIZE = 1000
 
 
 class CDLISupplementaryImporter:
-
     def __init__(self, reset: bool = False):
         self.checkpoint = ImportCheckpoint("cdli_csv_supplementary", reset=reset)
         self.annotation_run_id = None
@@ -89,9 +90,13 @@ class CDLISupplementaryImporter:
                (source_type, source_name, method, created_at, notes)
                VALUES (%s, %s, %s, %s, %s)
                RETURNING id""",
-            ("import", PROVIDER_NAME, "import",
-             datetime.now().isoformat(),
-             "CDLI CSV supplementary fields: citation, published_collation, join_information"),
+            (
+                "import",
+                PROVIDER_NAME,
+                "import",
+                datetime.now().isoformat(),
+                "CDLI CSV supplementary fields: citation, published_collation, join_information",
+            ),
         )
         run_id = cursor.fetchone()[0]
         conn.commit()
@@ -136,9 +141,15 @@ class CDLISupplementaryImporter:
                                 annotation_run_id, confidence, visibility, created_at)
                                VALUES (%s, %s, %s, %s, %s, %s, %s)
                                ON CONFLICT DO NOTHING""",
-                            (p, "bibliography", cite,
-                             self.annotation_run_id, 0.8, "public",
-                             datetime.now().isoformat()),
+                            (
+                                p,
+                                "bibliography",
+                                cite,
+                                self.annotation_run_id,
+                                0.8,
+                                "public",
+                                datetime.now().isoformat(),
+                            ),
                         )
                         count += cursor.rowcount
                     conn.commit()
@@ -152,9 +163,15 @@ class CDLISupplementaryImporter:
                             annotation_run_id, confidence, visibility, created_at)
                            VALUES (%s, %s, %s, %s, %s, %s, %s)
                            ON CONFLICT DO NOTHING""",
-                        (p, "bibliography", cite,
-                         self.annotation_run_id, 0.8, "public",
-                         datetime.now().isoformat()),
+                        (
+                            p,
+                            "bibliography",
+                            cite,
+                            self.annotation_run_id,
+                            0.8,
+                            "public",
+                            datetime.now().isoformat(),
+                        ),
                     )
                     count += cursor.rowcount
                 conn.commit()
@@ -214,8 +231,16 @@ class CDLISupplementaryImporter:
                         annotation_run_id, note)
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                        ON CONFLICT(p_number, publication_id, reference_string) DO NOTHING""",
-                    (p, pub_id, coll, coll.lower().strip(),
-                     "collation", 0.7, self.annotation_run_id, None),
+                    (
+                        p,
+                        pub_id,
+                        coll,
+                        coll.lower().strip(),
+                        "collation",
+                        0.7,
+                        self.annotation_run_id,
+                        None,
+                    ),
                 )
                 count += cursor.rowcount
             else:
@@ -228,13 +253,20 @@ class CDLISupplementaryImporter:
             """INSERT INTO _unparsed_records
                (source_script, p_number, raw_text, parse_tier, reason, annotation_run_id)
                VALUES (%s, %s, %s, %s, %s, %s)""",
-            ("05_cdli_csv_supplementary", p_number, raw_text,
-             "collation_unmatched", "No publication match for collation string",
-             self.annotation_run_id),
+            (
+                "05_cdli_csv_supplementary",
+                p_number,
+                raw_text,
+                "collation_unmatched",
+                "No publication match for collation string",
+                self.annotation_run_id,
+            ),
         )
         self.checkpoint.stats["skipped"] += 1
 
-    def _match_collation_to_publication(self, collation_str: str, pub_cache: dict) -> int | None:
+    def _match_collation_to_publication(
+        self, collation_str: str, pub_cache: dict
+    ) -> int | None:
         """Try to match a collation string to a known publication."""
         # Extract designation-like patterns
         m = re.match(r"([A-Z][A-Za-z]+(?:\s+\d+)?)", collation_str)
@@ -285,9 +317,14 @@ class CDLISupplementaryImporter:
                                 annotation_run_id, confidence, note)
                                VALUES (%s, %s, %s, %s, %s, %s)
                                ON CONFLICT DO NOTHING""",
-                            (a, b, "uncertain",
-                             self.annotation_run_id, 0.6,
-                             f"From CDLI join_information: {join_info}"),
+                            (
+                                a,
+                                b,
+                                "uncertain",
+                                self.annotation_run_id,
+                                0.6,
+                                f"From CDLI join_information: {join_info}",
+                            ),
                         )
                         count += cursor.rowcount
 
@@ -303,13 +340,17 @@ def verify():
     conn = get_connection()
     c = conn.cursor()
 
-    c.execute("SELECT COUNT(*) FROM scholarly_annotations WHERE annotation_type = 'bibliography'")
+    c.execute(
+        "SELECT COUNT(*) FROM scholarly_annotations WHERE annotation_type = 'bibliography'"
+    )
     bib_count = c.fetchone()[0]
 
     c.execute("SELECT COUNT(*) FROM artifact_editions WHERE edition_type = 'collation'")
     coll_count = c.fetchone()[0]
 
-    c.execute("SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'fragment_joins')")
+    c.execute(
+        "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'fragment_joins')"
+    )
     if c.fetchone()[0]:
         c.execute("SELECT COUNT(*) FROM fragment_joins")
         join_count = c.fetchone()[0]

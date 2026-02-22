@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 from typing import Optional
 
-from .name_normalizer import NormalizedName, parse_author_string
+from .name_normalizer import parse_author_string
 
 # BibTeX entry type -> v2 publication_type mapping
 ENTRY_TYPE_MAP = {
@@ -175,13 +175,15 @@ def parse_authors_to_records(
     names = parse_author_string(authors_raw)
     records = []
     for i, name in enumerate(names):
-        records.append({
-            "publication_id": publication_id,
-            "scholar_name_raw": name.raw,
-            "scholar_name_normalized": name.normalized_key,
-            "role": role,
-            "position": i + 1,
-        })
+        records.append(
+            {
+                "publication_id": publication_id,
+                "scholar_name_raw": name.raw,
+                "scholar_name_normalized": name.normalized_key,
+                "role": role,
+                "position": i + 1,
+            }
+        )
     return records
 
 

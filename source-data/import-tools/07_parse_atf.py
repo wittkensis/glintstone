@@ -44,8 +44,7 @@ import psycopg
 from core.config import get_settings
 
 ATF_FILE = (
-    Path(__file__).resolve().parents[1]
-    / "sources/CDLI/metadata/cdliatf_unblocked.atf"
+    Path(__file__).resolve().parents[1] / "sources/CDLI/metadata/cdliatf_unblocked.atf"
 )
 
 BATCH_SIZE = 500  # tablets per batch flush
@@ -62,9 +61,9 @@ SURFACE_MAP = {
     # Aliases
     "o": "obverse",
     "r": "reverse",
-    "edge": None,       # generic edge — skip (not in constraint)
-    "face": None,       # not in constraint
-    "column": None,     # columns are sub-surface structure
+    "edge": None,  # generic edge — skip (not in constraint)
+    "face": None,  # not in constraint
+    "column": None,  # columns are sub-surface structure
     "tablet": None,
     "object": None,
     "envelope": None,
@@ -77,20 +76,20 @@ SURFACE_MAP = {
 }
 
 # Regex patterns
-RE_HEADER = re.compile(r'^&(P\d+)\s*=\s*(.+)$')
-RE_LANG = re.compile(r'^#atf:\s*lang\s+(\S+)')
-RE_SURFACE = re.compile(r'^@(\w+)(?:\s+(.*))?$')
-RE_COLUMN = re.compile(r'^@column\s+(\d+)', re.IGNORECASE)
-RE_LINE = re.compile(r'^(\d+\'?\.)\s+(.+)$')
-RE_RULING = re.compile(r'^\$\s*(single|double|triple)\s+ruling', re.IGNORECASE)
-RE_BLANK = re.compile(r'^\$\s*(beginning|rest|reverse|surface)\s+broken', re.IGNORECASE)
-RE_COMPOSITE = re.compile(r'^>>(Q\d+)\s+(.*)$')
-RE_TRANSLATION = re.compile(r'^#tr\.(\w+):\s+(.+)$')
+RE_HEADER = re.compile(r"^&(P\d+)\s*=\s*(.+)$")
+RE_LANG = re.compile(r"^#atf:\s*lang\s+(\S+)")
+RE_SURFACE = re.compile(r"^@(\w+)(?:\s+(.*))?$")
+RE_COLUMN = re.compile(r"^@column\s+(\d+)", re.IGNORECASE)
+RE_LINE = re.compile(r"^(\d+\'?\.)\s+(.+)$")
+RE_RULING = re.compile(r"^\$\s*(single|double|triple)\s+ruling", re.IGNORECASE)
+RE_BLANK = re.compile(r"^\$\s*(beginning|rest|reverse|surface)\s+broken", re.IGNORECASE)
+RE_COMPOSITE = re.compile(r"^>>(Q\d+)\s+(.*)$")
+RE_TRANSLATION = re.compile(r"^#tr\.(\w+):\s+(.+)$")
 
 
 def parse_line_number(label: str) -> int | None:
     """'1.' → 1, '12'.' → 12, '3' → None if label not parseable."""
-    m = re.match(r'^(\d+)', label.rstrip('.'))
+    m = re.match(r"^(\d+)", label.rstrip("."))
     return int(m.group(1)) if m else None
 
 
@@ -101,10 +100,10 @@ def tokenize_atf(text: str) -> list[str]:
     Returns list of non-empty strings.
     """
     # Remove composite references on same line (shouldn't be there, but defensive)
-    text = re.sub(r'>>Q\S+\s*', '', text)
+    text = re.sub(r">>Q\S+\s*", "", text)
     # Split on whitespace
     parts = text.split()
-    return [p for p in parts if p and p != ',']
+    return [p for p in parts if p and p != ","]
 
 
 def parse_atf_file(atf_path: Path, limit: int = 0):
@@ -115,14 +114,12 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
     """
     tablet = None
     current_surface_type = None  # canonical DB surface type or None
-    current_column = None
-    lang = "und"
     line_counter = 0
 
     with open(atf_path, encoding="utf-8", errors="replace") as f:
         tablet_count = 0
         for raw_line in f:
-            line = raw_line.rstrip('\n').rstrip('\r')
+            line = raw_line.rstrip("\n").rstrip("\r")
 
             # Skip empty lines
             if not line.strip():
@@ -140,14 +137,12 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
                 tablet = {
                     "p_number": m.group(1),
                     "lang": "und",
-                    "surfaces": {},       # surface_type → True (just track existence)
-                    "lines": [],          # (surface_type, line_no, raw_atf, is_ruling, is_blank)
-                    "translations": [],   # (lang_code, text)
-                    "composites": [],     # (q_number, location_label)
+                    "surfaces": {},  # surface_type → True (just track existence)
+                    "lines": [],  # (surface_type, line_no, raw_atf, is_ruling, is_blank)
+                    "translations": [],  # (lang_code, text)
+                    "composites": [],  # (q_number, location_label)
                 }
                 current_surface_type = None
-                current_column = None
-                lang = "und"
                 line_counter = 0
                 continue
 
@@ -158,18 +153,15 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
             m = RE_LANG.match(line)
             if m:
                 tablet["lang"] = m.group(1)
-                lang = m.group(1)
                 continue
 
             # Surface marker
             m = RE_SURFACE.match(line)
             if m:
                 marker = m.group(1).lower()
-                rest = (m.group(2) or "").strip().lower()
 
                 # Check if it's a column
                 if marker == "column":
-                    current_column = rest  # track column number string
                     continue
 
                 # Map marker to DB surface type
@@ -178,7 +170,6 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
                     current_surface_type = db_surface
                     if db_surface not in tablet["surfaces"]:
                         tablet["surfaces"][db_surface] = True
-                    current_column = None
                 elif db_surface is None and marker in SURFACE_MAP:
                     # Valid ATF marker but not a DB surface (e.g. 'column', 'tablet')
                     current_surface_type = None
@@ -204,16 +195,16 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
             # Ruling / blank note
             if RE_RULING.match(line):
                 line_counter += 1
-                tablet["lines"].append((
-                    current_surface_type, line_counter, line.strip(), 1, 0
-                ))
+                tablet["lines"].append(
+                    (current_surface_type, line_counter, line.strip(), 1, 0)
+                )
                 continue
 
-            if RE_BLANK.match(line) or line.startswith('$ '):
+            if RE_BLANK.match(line) or line.startswith("$ "):
                 line_counter += 1
-                tablet["lines"].append((
-                    current_surface_type, line_counter, line.strip(), 0, 1
-                ))
+                tablet["lines"].append(
+                    (current_surface_type, line_counter, line.strip(), 0, 1)
+                )
                 continue
 
             # Text line
@@ -223,9 +214,7 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
                 content = m.group(2)
                 line_no = parse_line_number(label) or (line_counter + 1)
                 line_counter += 1
-                tablet["lines"].append((
-                    current_surface_type, line_no, content, 0, 0
-                ))
+                tablet["lines"].append((current_surface_type, line_no, content, 0, 0))
                 continue
 
             # Skip comments and other markers
@@ -245,7 +234,6 @@ def flush_tablets(
 ):
     """Flush a batch of parsed tablets to the database."""
     with conn.cursor() as cur:
-
         for tablet in tablets:
             p_number = tablet["p_number"]
             if p_number not in known_p_numbers:
@@ -255,12 +243,15 @@ def flush_tablets(
             # --- Surfaces ---
             surface_id_map = {}  # surface_type → surface.id
             for surface_type in tablet["surfaces"]:
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO surfaces (p_number, surface_type)
                     VALUES (%s, %s)
                     ON CONFLICT (p_number, surface_type) DO NOTHING
                     RETURNING id
-                """, (p_number, surface_type))
+                """,
+                    (p_number, surface_type),
+                )
                 row = cur.fetchone()
                 if row:
                     surface_id_map[surface_type] = row[0]
@@ -269,7 +260,7 @@ def flush_tablets(
                     # Get existing id
                     cur.execute(
                         "SELECT id FROM surfaces WHERE p_number = %s AND surface_type = %s",
-                        (p_number, surface_type)
+                        (p_number, surface_type),
                     )
                     row = cur.fetchone()
                     if row:
@@ -277,16 +268,19 @@ def flush_tablets(
 
             # --- Text lines ---
             line_id_map = {}  # (surface_type, line_no) → text_line.id
-            for (surface_type, line_no, raw_atf, is_ruling, is_blank) in tablet["lines"]:
+            for surface_type, line_no, raw_atf, is_ruling, is_blank in tablet["lines"]:
                 surface_id = surface_id_map.get(surface_type) if surface_type else None
 
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO text_lines
                         (p_number, surface_id, line_number, raw_atf, is_ruling, is_blank, source)
                     VALUES (%s, %s, %s, %s, %s, %s, 'cdli')
                     ON CONFLICT (p_number, surface_id, line_number, source) DO NOTHING
                     RETURNING id
-                """, (p_number, surface_id, line_no, raw_atf, is_ruling, is_blank))
+                """,
+                    (p_number, surface_id, line_no, raw_atf, is_ruling, is_blank),
+                )
                 row = cur.fetchone()
                 if row:
                     line_id = row[0]
@@ -297,37 +291,54 @@ def flush_tablets(
                     if not is_ruling and not is_blank:
                         tokens = tokenize_atf(raw_atf)
                         for pos, token_text in enumerate(tokens):
-                            cur.execute("""
+                            cur.execute(
+                                """
                                 INSERT INTO tokens (line_id, position, gdl_json, lang)
                                 VALUES (%s, %s, %s, %s)
                                 ON CONFLICT DO NOTHING
-                            """, (line_id, pos, json.dumps({"frag": token_text}), tablet["lang"]))
+                            """,
+                                (
+                                    line_id,
+                                    pos,
+                                    json.dumps({"frag": token_text}),
+                                    tablet["lang"],
+                                ),
+                            )
                             stats["tokens"] += 1
 
             # --- Translations ---
-            for (tr_lang, tr_text, line_no) in tablet["translations"]:
-                cur.execute("""
+            for tr_lang, tr_text, line_no in tablet["translations"]:
+                cur.execute(
+                    """
                     INSERT INTO translations (p_number, line_id, translation, language, source, annotation_run_id)
                     VALUES (%s, %s, %s, %s, 'cdli', %s)
                     ON CONFLICT DO NOTHING
-                """, (p_number, None, tr_text, tr_lang, annotation_run_id_cdli))
+                """,
+                    (p_number, None, tr_text, tr_lang, annotation_run_id_cdli),
+                )
                 stats["translations"] += 1
 
             # --- Composites ---
-            for (q_number, label) in tablet["composites"]:
+            for q_number, label in tablet["composites"]:
                 # Ensure composite exists
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO composites (q_number, exemplar_count)
                     VALUES (%s, 0)
                     ON CONFLICT (q_number) DO UPDATE SET exemplar_count = composites.exemplar_count + 1
-                """, (q_number,))
+                """,
+                    (q_number,),
+                )
 
                 # Link artifact to composite
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO artifact_composites (p_number, q_number)
                     VALUES (%s, %s)
                     ON CONFLICT DO NOTHING
-                """, (p_number, q_number))
+                """,
+                    (p_number, q_number),
+                )
                 stats["composite_links"] += 1
 
             stats["tablets"] += 1
@@ -337,7 +348,9 @@ def flush_tablets(
 
 def main():
     parser = argparse.ArgumentParser(description="Parse CDLI ATF file into DB")
-    parser.add_argument("--dry-run", action="store_true", help="Parse only, no DB writes")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Parse only, no DB writes"
+    )
     parser.add_argument("--limit", type=int, default=0, help="Stop after N tablets")
     args = parser.parse_args()
 
@@ -379,8 +392,13 @@ def main():
         return
 
     stats = {
-        "tablets": 0, "surfaces": 0, "lines": 0, "tokens": 0,
-        "translations": 0, "composite_links": 0, "skipped_unknown": 0,
+        "tablets": 0,
+        "surfaces": 0,
+        "lines": 0,
+        "tokens": 0,
+        "translations": 0,
+        "composite_links": 0,
+        "skipped_unknown": 0,
     }
 
     batch = []
@@ -390,14 +408,16 @@ def main():
         batch.append(tablet)
 
         if len(batch) >= BATCH_SIZE:
-            flush_tablets(conn, batch, ann_run_atf, ann_run_cdli, known_p_numbers, stats)
+            flush_tablets(
+                conn, batch, ann_run_atf, ann_run_cdli, known_p_numbers, stats
+            )
             batch = []
             print(
                 f"  {stats['tablets']:>7,} tablets  |  "
                 f"{stats['surfaces']:>6,} surfaces  |  "
                 f"{stats['lines']:>7,} lines  |  "
                 f"{stats['tokens']:>8,} tokens",
-                end="\r"
+                end="\r",
             )
 
     if batch:

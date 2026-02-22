@@ -12,7 +12,6 @@ Handles Assyriology-specific challenges:
 import re
 import unicodedata
 from dataclasses import dataclass
-from typing import Optional
 
 # Name particles that should sort under the following word
 PARTICLES = {"von", "van", "de", "del", "della", "di", "du", "le", "la", "al", "el"}

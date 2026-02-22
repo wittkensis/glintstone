@@ -52,7 +52,9 @@ def parse_norms(norms_data) -> str | None:
     if not norms_data:
         return None
     if isinstance(norms_data, list):
-        return json.dumps([n.get("n", "") if isinstance(n, dict) else str(n) for n in norms_data])
+        return json.dumps(
+            [n.get("n", "") if isinstance(n, dict) else str(n) for n in norms_data]
+        )
     return None
 
 
@@ -107,7 +109,8 @@ def import_glossary_file(
             normalized = cf.lower().strip() if cf else headword.lower().strip()
 
             if not dry_run:
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO glossary_entries (
                         entry_id, headword, citation_form, guide_word,
                         language, pos, icount, project,
@@ -115,11 +118,22 @@ def import_glossary_file(
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (entry_id) DO NOTHING
                     RETURNING entry_id
-                """, (
-                    global_entry_id, headword, cf, gw,
-                    lang, pos, icount, project,
-                    normalized, norms, periods, annotation_run_id
-                ))
+                """,
+                    (
+                        global_entry_id,
+                        headword,
+                        cf,
+                        gw,
+                        lang,
+                        pos,
+                        icount,
+                        project,
+                        normalized,
+                        norms,
+                        periods,
+                        annotation_run_id,
+                    ),
+                )
                 row = cur.fetchone()
                 if not row:
                     stats["skipped"] += 1
@@ -129,20 +143,21 @@ def import_glossary_file(
             # Import forms
             forms = entry.get("forms", [])
             for form in forms:
-                form_id = form.get("id", "")
                 form_n = form.get("n", "")
                 form_c = int(form.get("c", 0) or 0)
-                form_icount = int(form.get("icount", 0) or 0)
 
                 if not form_n or dry_run:
                     stats["forms"] += 1
                     continue
 
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO glossary_forms (entry_id, form, count)
                     VALUES (%s, %s, %s)
                     ON CONFLICT DO NOTHING
-                """, (global_entry_id, form_n, form_c))
+                """,
+                    (global_entry_id, form_n, form_c),
+                )
                 stats["forms"] += 1
 
     if not dry_run:

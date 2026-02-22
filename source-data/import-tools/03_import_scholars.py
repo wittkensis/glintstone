@@ -29,7 +29,17 @@ from core.config import get_settings
 CDLI_CSV = Path(__file__).resolve().parents[1] / "sources/CDLI/metadata/cdli_cat.csv"
 ORACC_BASE = Path(__file__).resolve().parents[1] / "sources/ORACC"
 
-ORACC_PROJECTS = ["dcclt", "epsd2", "rinap", "saao", "blms", "cams", "etcsri", "riao", "rimanum"]
+ORACC_PROJECTS = [
+    "dcclt",
+    "epsd2",
+    "rinap",
+    "saao",
+    "blms",
+    "cams",
+    "etcsri",
+    "riao",
+    "rimanum",
+]
 
 
 def normalize_name(raw: str) -> str:
@@ -39,14 +49,14 @@ def normalize_name(raw: str) -> str:
     """
     name = raw.strip()
     # Remove trailing et al., and collaborators
-    name = re.sub(r'\s*(et al\.|& others|and others)\s*', '', name, flags=re.IGNORECASE)
+    name = re.sub(r"\s*(et al\.|& others|and others)\s*", "", name, flags=re.IGNORECASE)
     name = name.strip().strip(",").strip()
     if not name:
         return ""
     # Normalize unicode: decompose + recompose to handle diacritic variants
     name = unicodedata.normalize("NFC", name)
     # Collapse internal whitespace
-    name = re.sub(r'\s+', ' ', name)
+    name = re.sub(r"\s+", " ", name)
     return name
 
 
@@ -59,7 +69,7 @@ def parse_name_list(raw: str) -> list[str]:
         return []
 
     # Split on ' & ', ' and ', '; '
-    parts = re.split(r'\s*[&;]\s*|\s+and\s+', raw)
+    parts = re.split(r"\s*[&;]\s*|\s+and\s+", raw)
     result = []
     for p in parts:
         n = normalize_name(p)
@@ -101,7 +111,7 @@ def collect_scholars() -> set[str]:
             for field in ["author", "atf_source"]:
                 for name in parse_name_list(entry.get(field, "")):
                     names.add(name)
-        print(f"done. +{len(names)-count_before} new names.")
+        print(f"done. +{len(names) - count_before} new names.")
 
     return names
 
@@ -140,12 +150,15 @@ def main():
 
         with conn.cursor() as cur:
             for name in sorted(all_names):
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO scholars (name)
                     VALUES (%s)
                     ON CONFLICT DO NOTHING
                     RETURNING id
-                """, (name,))
+                """,
+                    (name,),
+                )
                 row = cur.fetchone()
                 if row:
                     inserted += 1

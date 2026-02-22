@@ -12,7 +12,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 import psycopg
-from psycopg.rows import dict_row
 
 from core.config import get_settings
 

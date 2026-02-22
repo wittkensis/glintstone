@@ -71,11 +71,11 @@ class EBLClient:
                 return json.loads(resp.read().decode("utf-8"))
         except HTTPError as e:
             if e.code == 401:
-                print(f"    eBL API: Authentication required. Set api_token.")
+                print("    eBL API: Authentication required. Set api_token.")
             elif e.code == 403:
-                print(f"    eBL API: Access forbidden. Check API permissions.")
+                print("    eBL API: Access forbidden. Check API permissions.")
             elif e.code == 429:
-                print(f"    eBL API: Rate limited. Waiting 30s...")
+                print("    eBL API: Rate limited. Waiting 30s...")
                 time.sleep(30)
                 return self._make_request(url)
             else:
@@ -176,7 +176,7 @@ class EBLClient:
         # Try a known fragment
         result = self._make_request(f"{EBL_BASE_URL}/fragments/K.1")
         if result is not None:
-            print(f"  eBL API: Connection successful")
+            print("  eBL API: Connection successful")
             return True
-        print(f"  eBL API: Connection failed")
+        print("  eBL API: Connection failed")
         return False

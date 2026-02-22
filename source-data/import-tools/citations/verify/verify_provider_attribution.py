@@ -24,15 +24,13 @@ def verify(db_path: Path):
     issues = 0
 
     # 1. Publications without annotation_run
-    cursor.execute(
-        "SELECT COUNT(*) FROM publications WHERE annotation_run_id IS NULL"
-    )
+    cursor.execute("SELECT COUNT(*) FROM publications WHERE annotation_run_id IS NULL")
     orphan_pubs = cursor.fetchone()[0]
     if orphan_pubs > 0:
         print(f"  FAIL: {orphan_pubs:,} publications have no annotation_run_id")
         issues += 1
     else:
-        print(f"  PASS: All publications have annotation_run_id")
+        print("  PASS: All publications have annotation_run_id")
 
     # 2. Annotation runs without source_name
     cursor.execute(
@@ -43,7 +41,7 @@ def verify(db_path: Path):
         print(f"  FAIL: {nameless_runs:,} annotation_runs have no source_name")
         issues += 1
     else:
-        print(f"  PASS: All annotation_runs have source_name")
+        print("  PASS: All annotation_runs have source_name")
 
     # 3. Artifact editions without annotation_run
     cursor.execute(
@@ -51,13 +49,15 @@ def verify(db_path: Path):
     )
     orphan_editions = cursor.fetchone()[0]
     if orphan_editions > 0:
-        print(f"  FAIL: {orphan_editions:,} artifact_editions have no annotation_run_id")
+        print(
+            f"  FAIL: {orphan_editions:,} artifact_editions have no annotation_run_id"
+        )
         issues += 1
     else:
-        print(f"  PASS: All artifact_editions have annotation_run_id")
+        print("  PASS: All artifact_editions have annotation_run_id")
 
     # 4. Provider distribution
-    print(f"\n  Provider distribution:")
+    print("\n  Provider distribution:")
     cursor.execute("""
         SELECT ar.source_name, COUNT(p.id)
         FROM publications p
@@ -84,12 +84,12 @@ def verify(db_path: Path):
         for name, notes in cursor.fetchall():
             print(f"    {name}: {notes[:80] if notes else 'no notes'}")
     else:
-        print(f"\n  INFO: No eBL data imported yet")
+        print("\n  INFO: No eBL data imported yet")
 
     conn.close()
 
     if issues == 0:
-        print(f"\n  ALL CHECKS PASSED")
+        print("\n  ALL CHECKS PASSED")
     else:
         print(f"\n  {issues} ISSUE(S) FOUND")
 
@@ -98,6 +98,7 @@ def verify(db_path: Path):
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     args = parser.parse_args()

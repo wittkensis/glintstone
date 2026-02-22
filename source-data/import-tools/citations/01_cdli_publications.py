@@ -23,7 +23,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from lib.db import get_connection
 from lib.cdli_client import CDLIClient, PROVIDER_NAME
-from lib.bibtex_parser import cdli_entry_type_to_publication_type, parse_series_designation
+from lib.bibtex_parser import (
+    cdli_entry_type_to_publication_type,
+    parse_series_designation,
+)
 from lib.name_normalizer import parse_author_string
 from lib.checkpoint import ImportCheckpoint
 
@@ -74,7 +77,7 @@ class CDLIPublicationImporter:
                 print("\n  Import completed successfully!")
             else:
                 self.checkpoint.save(completed=False)
-                print(f"\n  Interrupted. Run again to resume.")
+                print("\n  Interrupted. Run again to resume.")
         finally:
             conn.close()
 
@@ -111,7 +114,9 @@ class CDLIPublicationImporter:
         conn.commit()
         return run_id
 
-    def _import_publications(self, conn: psycopg.Connection, start_page: int, total_pages: int):
+    def _import_publications(
+        self, conn: psycopg.Connection, start_page: int, total_pages: int
+    ):
         """Iterate API pages and import publications."""
         page = start_page
         batch = []
@@ -129,7 +134,9 @@ class CDLIPublicationImporter:
                 if len(batch) >= BATCH_SIZE:
                     self._commit_batch(conn, batch)
                     batch = []
-                    self.checkpoint.stats["processed"] = (page - 1) * 100 + len(result["data"])
+                    self.checkpoint.stats["processed"] = (page - 1) * 100 + len(
+                        result["data"]
+                    )
                     self.checkpoint.save()
                     self.checkpoint.print_progress(
                         self.checkpoint.stats["processed"],
@@ -349,7 +356,7 @@ def verify():
     print(f"  Scholars:     {scholar_count:,}")
     print(f"  Author links: {author_link_count:,}")
     print(f"  Import runs:  {run_count}")
-    print(f"\n  Publications by type:")
+    print("\n  Publications by type:")
     for ptype, count in type_dist:
         print(f"    {ptype}: {count:,}")
 
@@ -357,7 +364,9 @@ def verify():
 def main():
     parser = argparse.ArgumentParser(description="Import CDLI publications")
     parser.add_argument("--reset", action="store_true", help="Reset and start fresh")
-    parser.add_argument("--verify-only", action="store_true", help="Only verify existing import")
+    parser.add_argument(
+        "--verify-only", action="store_true", help="Only verify existing import"
+    )
     args = parser.parse_args()
 
     if args.verify_only:

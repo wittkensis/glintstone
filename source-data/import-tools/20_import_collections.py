@@ -33,8 +33,12 @@ OLD_DB_PATH = Path(__file__).resolve().parents[2] / "app-v0.1/database/glintston
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Import collections from v0.1 SQLite DB")
-    parser.add_argument("--dry-run", action="store_true", help="Preview without inserting")
+    parser = argparse.ArgumentParser(
+        description="Import collections from v0.1 SQLite DB"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Preview without inserting"
+    )
     args = parser.parse_args()
 
     if not OLD_DB_PATH.exists():
@@ -76,9 +80,13 @@ def main():
     if args.dry_run:
         print("\n🔍 DRY RUN - Collections to import:")
         for coll in collections:
-            member_count = sum(1 for m in members if m['collection_id'] == coll['collection_id'])
-            print(f"  • [{coll['collection_id']}] {coll['name']} ({member_count} tablets)")
-            if coll['image_path']:
+            member_count = sum(
+                1 for m in members if m["collection_id"] == coll["collection_id"]
+            )
+            print(
+                f"  • [{coll['collection_id']}] {coll['name']} ({member_count} tablets)"
+            )
+            if coll["image_path"]:
                 print(f"    Image: {coll['image_path']}")
         print("\n✅ Dry run complete - no changes made")
         return
@@ -94,45 +102,57 @@ def main():
     for coll in collections:
         try:
             # First check if collection already exists
-            pg_cur.execute("""
+            pg_cur.execute(
+                """
                 SELECT collection_id FROM collections WHERE name = %s
-            """, (coll['name'],))
+            """,
+                (coll["name"],),
+            )
             existing = pg_cur.fetchone()
 
             # Convert image path from /assets to /static
-            image_path = coll['image_path']
-            if image_path and image_path.startswith('/assets/'):
-                image_path = image_path.replace('/assets/', '/static/')
+            image_path = coll["image_path"]
+            if image_path and image_path.startswith("/assets/"):
+                image_path = image_path.replace("/assets/", "/static/")
 
             if existing:
-                collection_id_map[coll['collection_id']] = existing['collection_id']
+                collection_id_map[coll["collection_id"]] = existing["collection_id"]
                 skipped_collections += 1
-                print(f"  ⊗ Skipped (exists): {coll['name']} (old_id={coll['collection_id']}, new_id={existing['collection_id']})")
+                print(
+                    f"  ⊗ Skipped (exists): {coll['name']} (old_id={coll['collection_id']}, new_id={existing['collection_id']})"
+                )
             else:
                 # Insert new collection
-                pg_cur.execute("""
+                pg_cur.execute(
+                    """
                     INSERT INTO collections (name, description, image_path, created_at, updated_at)
                     VALUES (%s, %s, %s, %s, %s)
                     RETURNING collection_id
-                """, (
-                    coll['name'],
-                    coll['description'],
-                    image_path,
-                    coll['created_at'],
-                    coll['updated_at']
-                ))
+                """,
+                    (
+                        coll["name"],
+                        coll["description"],
+                        image_path,
+                        coll["created_at"],
+                        coll["updated_at"],
+                    ),
+                )
                 result = pg_cur.fetchone()
-                new_id = result['collection_id']
-                collection_id_map[coll['collection_id']] = new_id
+                new_id = result["collection_id"]
+                collection_id_map[coll["collection_id"]] = new_id
                 inserted_collections += 1
-                print(f"  ✓ Inserted: {coll['name']} (old_id={coll['collection_id']}, new_id={new_id})")
+                print(
+                    f"  ✓ Inserted: {coll['name']} (old_id={coll['collection_id']}, new_id={new_id})"
+                )
 
         except Exception as e:
             print(f"  ❌ Error inserting collection '{coll['name']}': {e}")
             continue
 
     pg_conn.commit()
-    print(f"\n✅ Collections: {inserted_collections} inserted, {skipped_collections} skipped")
+    print(
+        f"\n✅ Collections: {inserted_collections} inserted, {skipped_collections} skipped"
+    )
 
     # Import collection members
     print("\n📥 Importing collection members...")
@@ -142,7 +162,7 @@ def main():
     missing_artifacts = []
 
     for member in members:
-        old_coll_id = member['collection_id']
+        old_coll_id = member["collection_id"]
 
         # Skip if we don't have a mapping for this collection
         if old_coll_id not in collection_id_map:
@@ -150,7 +170,7 @@ def main():
             continue
 
         new_coll_id = collection_id_map[old_coll_id]
-        p_number = member['p_number']
+        p_number = member["p_number"]
 
         try:
             # First check if the artifact exists
@@ -160,11 +180,14 @@ def main():
                 error_members += 1
                 continue
 
-            pg_cur.execute("""
+            pg_cur.execute(
+                """
                 INSERT INTO collection_members (collection_id, p_number)
                 VALUES (%s, %s)
                 ON CONFLICT (collection_id, p_number) DO NOTHING
-            """, (new_coll_id, p_number))
+            """,
+                (new_coll_id, p_number),
+            )
 
             if pg_cur.rowcount > 0:
                 inserted_members += 1
@@ -172,7 +195,9 @@ def main():
                 skipped_members += 1
 
         except Exception as e:
-            print(f"  ❌ Error inserting member {p_number} to collection {new_coll_id}: {e}")
+            print(
+                f"  ❌ Error inserting member {p_number} to collection {new_coll_id}: {e}"
+            )
             error_members += 1
             continue
 
@@ -182,24 +207,26 @@ def main():
         print(f"\n⚠️  Skipped {len(missing_artifacts)} artifacts not found in database:")
         for p_num in missing_artifacts:
             print(f"  • {p_num}")
-    print(f"✅ Members: {inserted_members} inserted, {skipped_members} skipped, {error_members} errors")
+    print(
+        f"✅ Members: {inserted_members} inserted, {skipped_members} skipped, {error_members} errors"
+    )
 
     # Summary
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("IMPORT SUMMARY")
-    print("="*60)
+    print("=" * 60)
     print(f"Collections imported: {inserted_collections}/{len(collections)}")
     print(f"Members imported: {inserted_members}/{len(members)}")
-    print("="*60)
+    print("=" * 60)
 
     # Verify by counting
     pg_cur.execute("SELECT COUNT(*) as count FROM collections")
-    total_collections = pg_cur.fetchone()['count']
+    total_collections = pg_cur.fetchone()["count"]
 
     pg_cur.execute("SELECT COUNT(*) as count FROM collection_members")
-    total_members = pg_cur.fetchone()['count']
+    total_members = pg_cur.fetchone()["count"]
 
-    print(f"\nDatabase now contains:")
+    print("\nDatabase now contains:")
     print(f"  • {total_collections} collections")
     print(f"  • {total_members} collection member associations")
 

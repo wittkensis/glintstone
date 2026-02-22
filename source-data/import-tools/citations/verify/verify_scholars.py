@@ -84,7 +84,7 @@ def verify(db_path: Path) -> bool:
             print(f"    {orcid}: {cnt} scholars")
         issues += 1
     else:
-        print(f"  PASS: No duplicate ORCIDs")
+        print("  PASS: No duplicate ORCIDs")
 
     # Likely duplicates by normalized name
     c.execute("SELECT id, name FROM scholars")
@@ -98,7 +98,9 @@ def verify(db_path: Path) -> bool:
 
     likely_dupes = {k: v for k, v in name_groups.items() if len(v) > 1}
     if likely_dupes:
-        print(f"\n  WARN: {len(likely_dupes)} potential duplicate groups by normalized name")
+        print(
+            f"\n  WARN: {len(likely_dupes)} potential duplicate groups by normalized name"
+        )
         shown = 0
         for key, group in sorted(likely_dupes.items(), key=lambda x: -len(x[1])):
             if shown >= 10:
@@ -109,7 +111,7 @@ def verify(db_path: Path) -> bool:
         if len(likely_dupes) > 10:
             print(f"    ... and {len(likely_dupes) - 10} more groups")
     else:
-        print(f"  PASS: No obvious name duplicates detected")
+        print("  PASS: No obvious name duplicates detected")
 
     # publication_authors coverage
     c.execute("SELECT COUNT(*) FROM publications")
@@ -119,7 +121,9 @@ def verify(db_path: Path) -> bool:
     pubs_with_authors = c.fetchone()[0]
 
     author_coverage_pct = (pubs_with_authors / total_pubs * 100) if total_pubs else 0
-    print(f"\n  Publications with structured authors: {pubs_with_authors:,} / {total_pubs:,} ({author_coverage_pct:.1f}%)")
+    print(
+        f"\n  Publications with structured authors: {pubs_with_authors:,} / {total_pubs:,} ({author_coverage_pct:.1f}%)"
+    )
 
     c.execute("SELECT COUNT(*) FROM publication_authors")
     total_links = c.fetchone()[0]
@@ -132,7 +136,7 @@ def verify(db_path: Path) -> bool:
         GROUP BY role
         ORDER BY COUNT(*) DESC
     """)
-    print(f"\n  Author links by role:")
+    print("\n  Author links by role:")
     for role, count in c.fetchall():
         print(f"    {role}: {count:,}")
 
@@ -146,7 +150,7 @@ def verify(db_path: Path) -> bool:
     orphan_pct = (orphans / total * 100) if total else 0
     print(f"\n  Scholars with no publication links: {orphans:,} ({orphan_pct:.1f}%)")
     if orphan_pct > 50:
-        print(f"  WARN: Over half of scholars have no publication links")
+        print("  WARN: Over half of scholars have no publication links")
 
     # Top contributors
     c.execute("""
@@ -159,14 +163,14 @@ def verify(db_path: Path) -> bool:
     """)
     top = c.fetchall()
     if top:
-        print(f"\n  Top 10 scholars by publication count:")
+        print("\n  Top 10 scholars by publication count:")
         for name, count in top:
             print(f"    {name}: {count:,}")
 
     conn.close()
 
     if issues == 0:
-        print(f"\n  ALL CHECKS PASSED")
+        print("\n  ALL CHECKS PASSED")
     else:
         print(f"\n  {issues} ISSUE(S) FOUND")
 
@@ -175,6 +179,7 @@ def verify(db_path: Path) -> bool:
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     args = parser.parse_args()

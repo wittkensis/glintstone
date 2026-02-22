@@ -17,7 +17,6 @@ import json
 import psycopg
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
@@ -36,7 +35,6 @@ WINDOW_SECONDS = 300
 
 
 class SemanticScholarEnricher:
-
     def __init__(self, reset: bool = False):
         self.checkpoint = ImportCheckpoint("semantic_scholar", reset=reset)
         self._request_count = 0
@@ -129,10 +127,10 @@ class SemanticScholarEnricher:
         except Exception:
             return None
 
-    def _store_citations(self, conn: psycopg.Connection, pub_id: int, doi: str, data: dict):
+    def _store_citations(
+        self, conn: psycopg.Connection, pub_id: int, doi: str, data: dict
+    ):
         """Store citation count as metadata on the publication."""
-        citation_count = data.get("citationCount", 0)
-
         # Store citation count (could be a column on publications or metadata)
         # For now, just track it in the checkpoint stats
         self.checkpoint.stats["updated"] += 1

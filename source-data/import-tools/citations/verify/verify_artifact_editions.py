@@ -40,7 +40,9 @@ def verify(db_path: Path) -> bool:
     total_artifacts = c.fetchone()[0]
 
     coverage_pct = (artifacts_with / total_artifacts * 100) if total_artifacts else 0
-    print(f"  Artifacts with editions: {artifacts_with:,} / {total_artifacts:,} ({coverage_pct:.1f}%)")
+    print(
+        f"  Artifacts with editions: {artifacts_with:,} / {total_artifacts:,} ({coverage_pct:.1f}%)"
+    )
 
     # Edition type distribution
     c.execute("""
@@ -49,7 +51,7 @@ def verify(db_path: Path) -> bool:
         GROUP BY edition_type
         ORDER BY COUNT(*) DESC
     """)
-    print(f"\n  By edition type:")
+    print("\n  By edition type:")
     for etype, count in c.fetchall():
         print(f"    {etype}: {count:,}")
 
@@ -72,7 +74,9 @@ def verify(db_path: Path) -> bool:
     else:
         c.execute("SELECT COUNT(*) FROM artifact_editions WHERE is_current_edition = 1")
         current_count = c.fetchone()[0]
-        print(f"\n  PASS: is_current_edition uniqueness OK ({current_count:,} artifacts with current edition)")
+        print(
+            f"\n  PASS: is_current_edition uniqueness OK ({current_count:,} artifacts with current edition)"
+        )
 
     # supersedes_id cycle detection (walk chains up to depth 20)
     c.execute("""
@@ -90,7 +94,9 @@ def verify(db_path: Path) -> bool:
             if len(visited) > 20:
                 break
         if node in visited:
-            print(f"\n  FAIL: Cycle detected in supersedes_id chain involving edition {start}")
+            print(
+                f"\n  FAIL: Cycle detected in supersedes_id chain involving edition {start}"
+            )
             cycle_found = True
             issues += 1
             break
@@ -106,10 +112,12 @@ def verify(db_path: Path) -> bool:
     """)
     orphan_editions = c.fetchone()[0]
     if orphan_editions > 0:
-        print(f"\n  FAIL: {orphan_editions:,} artifact_editions reference non-existent publications")
+        print(
+            f"\n  FAIL: {orphan_editions:,} artifact_editions reference non-existent publications"
+        )
         issues += 1
     else:
-        print(f"  PASS: All publication_id FKs resolve")
+        print("  PASS: All publication_id FKs resolve")
 
     # FK integrity: all p_numbers resolve
     c.execute("""
@@ -119,9 +127,11 @@ def verify(db_path: Path) -> bool:
     """)
     orphan_pnums = c.fetchone()[0]
     if orphan_pnums > 0:
-        print(f"  WARN: {orphan_pnums:,} artifact_editions reference non-existent artifacts")
+        print(
+            f"  WARN: {orphan_pnums:,} artifact_editions reference non-existent artifacts"
+        )
     else:
-        print(f"  PASS: All p_number FKs resolve")
+        print("  PASS: All p_number FKs resolve")
 
     # Confidence distribution
     c.execute("""
@@ -132,7 +142,7 @@ def verify(db_path: Path) -> bool:
         FROM artifact_editions
     """)
     high, medium, low = c.fetchone()
-    print(f"\n  Confidence distribution:")
+    print("\n  Confidence distribution:")
     print(f"    High (>=0.9):   {high or 0:,}")
     print(f"    Medium (0.5-0.9): {medium or 0:,}")
     print(f"    Low (<0.5):     {low or 0:,}")
@@ -156,7 +166,7 @@ def verify(db_path: Path) -> bool:
         GROUP BY bucket
         ORDER BY MIN(cnt)
     """)
-    print(f"\n  Editions per artifact:")
+    print("\n  Editions per artifact:")
     for bucket, count in c.fetchall():
         print(f"    {bucket} editions: {count:,} artifacts")
 
@@ -171,7 +181,7 @@ def verify(db_path: Path) -> bool:
     """)
     heavy = c.fetchall()
     if heavy:
-        print(f"\n  NOTE: Artifacts with >20 editions (review for data quality):")
+        print("\n  NOTE: Artifacts with >20 editions (review for data quality):")
         for p, cnt in heavy:
             print(f"    {p}: {cnt} editions")
 
@@ -183,14 +193,14 @@ def verify(db_path: Path) -> bool:
         GROUP BY ar.source_name
         ORDER BY COUNT(ae.id) DESC
     """)
-    print(f"\n  By provider:")
+    print("\n  By provider:")
     for name, count in c.fetchall():
         print(f"    {name}: {count:,}")
 
     conn.close()
 
     if issues == 0:
-        print(f"\n  ALL CHECKS PASSED")
+        print("\n  ALL CHECKS PASSED")
     else:
         print(f"\n  {issues} ISSUE(S) FOUND")
 
@@ -199,6 +209,7 @@ def verify(db_path: Path) -> bool:
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     args = parser.parse_args()

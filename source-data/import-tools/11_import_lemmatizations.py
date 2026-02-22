@@ -69,18 +69,18 @@ def parse_inst(inst: str) -> dict:
         return result
 
     # Language prefix: %sux:
-    m = re.match(r'^%(\w+(?:-\w+)*):', inst)
+    m = re.match(r"^%(\w+(?:-\w+)*):", inst)
     if m:
         result["lang"] = m.group(1)
-        inst = inst[m.end():]
+        inst = inst[m.end() :]
 
     # form=[cf//gw]pos
-    m = re.match(r'^([^=]+)=', inst)
+    m = re.match(r"^([^=]+)=", inst)
     if m:
         result["form"] = m.group(1)
-        rest = inst[m.end():]
+        rest = inst[m.end() :]
         # [cf//gw]pos
-        m2 = re.match(r'^\[([^/]+)//([^\]]+)\](\w+)', rest)
+        m2 = re.match(r"^\[([^/]+)//([^\]]+)\](\w+)", rest)
         if m2:
             result["cf"] = m2.group(1)
             result["gw"] = m2.group(2)
@@ -153,7 +153,9 @@ def walk_cdl(nodes: list, state: dict, out_lemmas: list):
             position = None
             if len(parts) >= 3:
                 try:
-                    position = int(parts[-1], 16) - 1  # CDL is 1-indexed, convert to 0-indexed
+                    position = (
+                        int(parts[-1], 16) - 1
+                    )  # CDL is 1-indexed, convert to 0-indexed
                 except ValueError:
                     position = None
 
@@ -248,25 +250,28 @@ def process_cdl_file(
                 continue
 
             # Insert lemmatization
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO lemmatizations (
                     token_id, citation_form, guide_word, sense, pos, epos,
                     norm, base, signature, morph_raw, annotation_run_id, confidence
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1.0)
                 ON CONFLICT DO NOTHING
-            """, (
-                token_id,
-                lemma.get("cf"),
-                lemma.get("gw"),
-                lemma.get("sense"),
-                lemma.get("pos"),
-                lemma.get("epos"),
-                lemma.get("norm"),
-                lemma.get("base"),
-                lemma.get("signature"),
-                lemma.get("morph_raw"),
-                annotation_run_id,
-            ))
+            """,
+                (
+                    token_id,
+                    lemma.get("cf"),
+                    lemma.get("gw"),
+                    lemma.get("sense"),
+                    lemma.get("pos"),
+                    lemma.get("epos"),
+                    lemma.get("norm"),
+                    lemma.get("base"),
+                    lemma.get("signature"),
+                    lemma.get("morph_raw"),
+                    annotation_run_id,
+                ),
+            )
             stats["lemmas"] += 1
 
     stats["tablets"] += 1
@@ -294,13 +299,16 @@ def build_caches(conn: psycopg.Connection, project: str) -> tuple[dict, dict]:
     # line_cache: (p_number, line_number) → {surface_type: line_id}
     line_cache = {}
     with conn.cursor() as cur:
-        cur.execute("""
+        cur.execute(
+            """
             SELECT tl.p_number, tl.line_number, s.surface_type, tl.id
             FROM text_lines tl
             LEFT JOIN surfaces s ON tl.surface_id = s.id
             WHERE tl.p_number = ANY(%s)
             AND tl.is_ruling = 0 AND tl.is_blank = 0
-        """, (list(p_list),))
+        """,
+            (list(p_list),),
+        )
         for p_num, line_num, surface_type, line_id in cur.fetchall():
             key = (p_num, line_num)
             if key not in line_cache:
@@ -308,14 +316,19 @@ def build_caches(conn: psycopg.Connection, project: str) -> tuple[dict, dict]:
             line_cache[key][surface_type or "unknown"] = line_id
 
     # token_cache: (line_id, position) → token_id
-    all_line_ids = list({lid for surf_map in line_cache.values() for lid in surf_map.values()})
+    all_line_ids = list(
+        {lid for surf_map in line_cache.values() for lid in surf_map.values()}
+    )
     token_cache = {}
     if all_line_ids:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT id, line_id, position FROM tokens
                 WHERE line_id = ANY(%s)
-            """, (all_line_ids,))
+            """,
+                (all_line_ids,),
+            )
             for token_id, line_id, position in cur.fetchall():
                 token_cache[(line_id, position)] = token_id
 
@@ -325,7 +338,9 @@ def build_caches(conn: psycopg.Connection, project: str) -> tuple[dict, dict]:
 
 def main():
     parser = argparse.ArgumentParser(description="Import ORACC CDL lemmatizations")
-    parser.add_argument("--dry-run", action="store_true", help="Parse only, no DB writes")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Parse only, no DB writes"
+    )
     parser.add_argument("--project", help="Only process this project (e.g. dcclt)")
     args = parser.parse_args()
 
@@ -344,13 +359,21 @@ def main():
     annotation_run_ids = {}
     with conn.cursor() as cur:
         for proj, source_name in PROJECT_TO_RUN.items():
-            cur.execute("SELECT id FROM annotation_runs WHERE source_name = %s", (source_name,))
+            cur.execute(
+                "SELECT id FROM annotation_runs WHERE source_name = %s", (source_name,)
+            )
             row = cur.fetchone()
             if row:
                 annotation_run_ids[proj] = row[0]
 
     projects = [args.project] if args.project else ORACC_PROJECTS
-    total_stats = {"lemmas": 0, "tablets": 0, "no_line_match": 0, "no_token_match": 0, "skipped_files": 0}
+    total_stats = {
+        "lemmas": 0,
+        "tablets": 0,
+        "no_line_match": 0,
+        "no_token_match": 0,
+        "skipped_files": 0,
+    }
 
     for project in projects:
         corpus_dir = ORACC_BASE / project / "json" / project / "corpusjson"
@@ -371,7 +394,13 @@ def main():
             continue
 
         line_cache, token_cache = build_caches(conn, project)
-        stats = {"lemmas": 0, "tablets": 0, "no_line_match": 0, "no_token_match": 0, "skipped_files": 0}
+        stats = {
+            "lemmas": 0,
+            "tablets": 0,
+            "no_line_match": 0,
+            "no_token_match": 0,
+            "skipped_files": 0,
+        }
 
         for i, cdl_file in enumerate(cdl_files):
             process_cdl_file(conn, cdl_file, ann_run_id, line_cache, token_cache, stats)
@@ -379,10 +408,10 @@ def main():
             if (i + 1) % 200 == 0:
                 conn.commit()
                 print(
-                    f"  {i+1:>5}/{len(cdl_files)} files  |  "
+                    f"  {i + 1:>5}/{len(cdl_files)} files  |  "
                     f"{stats['lemmas']:>6,} lemmas  |  "
                     f"{stats['no_token_match']:>4,} unmatched",
-                    end="\r"
+                    end="\r",
                 )
 
         conn.commit()

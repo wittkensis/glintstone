@@ -17,7 +17,6 @@ Usage:
 
 import argparse
 import csv
-import json
 import re
 import sys
 from collections import Counter
@@ -26,7 +25,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import psycopg
-from psycopg.rows import dict_row
 
 from core.config import get_settings
 
@@ -67,7 +65,12 @@ LANGUAGE_MAP = [
     ("Persian,", "peo", "Old Persian", "other"),
     ("Persian, Babylonian", "peo", "Old Persian and Babylonian", "other"),
     ("Persian, Elamite", "peo", "Old Persian and Elamite", "other"),
-    ("Persian, Elamite, Babylonian", "peo", "Old Persian, Elamite, and Babylonian", "other"),
+    (
+        "Persian, Elamite, Babylonian",
+        "peo",
+        "Old Persian, Elamite, and Babylonian",
+        "other",
+    ),
     ("Egyptian", "egy", "Egyptian", "other"),
     ("Egyptian ?", "egy", "Egyptian (uncertain)", "other"),
     ("Greek", "grc", "Greek", "other"),
@@ -129,16 +132,18 @@ def parse_period(raw: str) -> dict | None:
         return None
 
     # Strip trailing "?" and whitespace
-    clean = re.sub(r'\s*\?$', '', raw).strip()
+    clean = re.sub(r"\s*\?$", "", raw).strip()
 
     # Skip multi-period entries (contain ", " between two period names)
     # e.g. "ED I-II (ca. 2900-2700 BC), Old Babylonian (ca. 1900-1600 BC)"
-    if re.search(r'\)\s*,\s*[A-Z]', clean):
+    if re.search(r"\)\s*,\s*[A-Z]", clean):
         # Store as-is with NULL dates
         return {"raw": raw, "canonical": clean, "start": None, "end": None}
 
     # Pattern: "Name (ca. YYYY-YYYY BC)" or "Name (YYYY-YYYY BC)"
-    m = re.match(r'^(.+?)\s*\((?:ca\.?\s+)?(\d+)[-–](\d+)\s+(BC|AD)\)\s*$', clean, re.IGNORECASE)
+    m = re.match(
+        r"^(.+?)\s*\((?:ca\.?\s+)?(\d+)[-–](\d+)\s+(BC|AD)\)\s*$", clean, re.IGNORECASE
+    )
     if m:
         name = m.group(1).strip()
         y1 = int(m.group(2))
@@ -151,7 +156,7 @@ def parse_period(raw: str) -> dict | None:
         return {"raw": raw, "canonical": name, "start": start, "end": end}
 
     # Pattern: "Name (ca. YYYY BC)" — single year
-    m = re.match(r'^(.+?)\s*\((?:ca\.?\s+)?(\d+)\s+(BC|AD)\)\s*$', clean, re.IGNORECASE)
+    m = re.match(r"^(.+?)\s*\((?:ca\.?\s+)?(\d+)\s+(BC|AD)\)\s*$", clean, re.IGNORECASE)
     if m:
         name = m.group(1).strip()
         y = int(m.group(2))
@@ -176,9 +181,9 @@ def parse_provenience(raw: str) -> dict | None:
     if not raw:
         return None
 
-    clean = re.sub(r'\s*\?$', '', raw).strip()
+    clean = re.sub(r"\s*\?$", "", raw).strip()
 
-    m = re.match(r'^(.+?)\s*\(mod\.\s+(.+?)\)\s*$', clean, re.IGNORECASE)
+    m = re.match(r"^(.+?)\s*\(mod\.\s+(.+?)\)\s*$", clean, re.IGNORECASE)
     if m:
         ancient = m.group(1).strip()
         modern = m.group(2).strip()
@@ -204,7 +209,9 @@ def normalize_genre(raw: str) -> str:
         "administative": "Administrative",  # typo in source
         "omens": "Omen",
     }
-    return canonical_map.get(primary.lower(), primary.title() if primary.islower() else primary)
+    return canonical_map.get(
+        primary.lower(), primary.title() if primary.islower() else primary
+    )
 
 
 def audit_csv() -> tuple[Counter, Counter, Counter, Counter]:
@@ -255,11 +262,14 @@ def seed_periods(conn: psycopg.Connection, periods: Counter, dry_run: bool) -> i
             seen_canonicals[canonical] = {"start": start, "end": end}
 
         if not dry_run:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO period_canon (raw_period, canonical, date_start_bce, date_end_bce)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (raw_period) DO NOTHING
-            """, (raw, canonical, start, end))
+            """,
+                (raw, canonical, start, end),
+            )
         inserted += 1
 
     return inserted
@@ -268,11 +278,14 @@ def seed_periods(conn: psycopg.Connection, periods: Counter, dry_run: bool) -> i
 def seed_languages(conn: psycopg.Connection, dry_run: bool) -> int:
     for cdli_name, oracc_code, full_name, family in LANGUAGE_MAP:
         if not dry_run:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO language_map (cdli_name, oracc_code, full_name, family)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (cdli_name) DO NOTHING
-            """, (cdli_name, oracc_code, full_name, family))
+            """,
+                (cdli_name, oracc_code, full_name, family),
+            )
     return len(LANGUAGE_MAP)
 
 
@@ -281,27 +294,35 @@ def seed_genres(conn: psycopg.Connection, genres: Counter, dry_run: bool) -> int
     for raw, _ in genres.most_common():
         canonical = normalize_genre(raw)
         if not dry_run:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO genre_canon (raw_genre, canonical)
                 VALUES (%s, %s)
                 ON CONFLICT (raw_genre) DO NOTHING
-            """, (raw, canonical))
+            """,
+                (raw, canonical),
+            )
         inserted += 1
     return inserted
 
 
-def seed_proveniences(conn: psycopg.Connection, proveniences: Counter, dry_run: bool) -> int:
+def seed_proveniences(
+    conn: psycopg.Connection, proveniences: Counter, dry_run: bool
+) -> int:
     inserted = 0
     for raw, _ in proveniences.most_common():
         parsed = parse_provenience(raw)
         if not parsed:
             continue
         if not dry_run:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO provenience_canon (raw_provenience, ancient_name, modern_name)
                 VALUES (%s, %s, %s)
                 ON CONFLICT (raw_provenience) DO NOTHING
-            """, (raw, parsed["ancient_name"], parsed["modern_name"]))
+            """,
+                (raw, parsed["ancient_name"], parsed["modern_name"]),
+            )
         inserted += 1
     return inserted
 
@@ -309,17 +330,22 @@ def seed_proveniences(conn: psycopg.Connection, proveniences: Counter, dry_run: 
 def seed_surfaces(conn: psycopg.Connection, dry_run: bool) -> int:
     for raw, canonical in SURFACE_CANON:
         if not dry_run:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO surface_canon (raw_surface, canonical)
                 VALUES (%s, %s)
                 ON CONFLICT (raw_surface) DO NOTHING
-            """, (raw, canonical))
+            """,
+                (raw, canonical),
+            )
     return len(SURFACE_CANON)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Seed normalization lookup tables")
-    parser.add_argument("--dry-run", action="store_true", help="Validate without writing")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Validate without writing"
+    )
     args = parser.parse_args()
 
     print("=" * 60)
@@ -328,8 +354,10 @@ def main():
 
     print("\nAuditing CDLI CSV...", end=" ", flush=True)
     periods, languages, genres, proveniences = audit_csv()
-    print(f"done. Found {len(periods)} periods, {len(languages)} languages, "
-          f"{len(genres)} genres, {len(proveniences)} proveniences.")
+    print(
+        f"done. Found {len(periods)} periods, {len(languages)} languages, "
+        f"{len(genres)} genres, {len(proveniences)} proveniences."
+    )
 
     if args.dry_run:
         print("\n[DRY RUN] No database writes.")
@@ -363,13 +391,17 @@ def main():
             conn.commit()
 
         total = n_periods + n_languages + n_genres + n_proveniences + n_surfaces
-        print(f"\n{'[DRY RUN] Would insert' if args.dry_run else 'Inserted'} {total} total rows.")
+        print(
+            f"\n{'[DRY RUN] Would insert' if args.dry_run else 'Inserted'} {total} total rows."
+        )
 
         # Validate against expected thresholds
         assert len(periods) >= 75, f"Expected >=75 periods, got {len(periods)}"
         assert len(languages) >= 30, f"Expected >=30 languages, got {len(languages)}"
         assert len(genres) >= 50, f"Expected >=50 genres, got {len(genres)}"
-        assert len(proveniences) >= 400, f"Expected >=400 proveniences, got {len(proveniences)}"
+        assert (
+            len(proveniences) >= 400
+        ), f"Expected >=400 proveniences, got {len(proveniences)}"
         print("Validation: OK")
 
     except Exception as e:

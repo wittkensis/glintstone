@@ -15,14 +15,13 @@ import argparse
 import re
 import psycopg
 import sys
-from datetime import datetime
 from pathlib import Path
 from urllib.request import urlopen
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 from lib.db import get_connection
-from lib.name_normalizer import parse_name, strip_diacritics
+from lib.name_normalizer import parse_name
 from lib.checkpoint import ImportCheckpoint
 
 CACHE_DIR = Path(__file__).parent / "_cache" / "scholars"
@@ -32,7 +31,6 @@ WIKIPEDIA_URL = "https://en.wikipedia.org/wiki/List_of_Assyriologists"
 
 
 class ScholarDirectoryImporter:
-
     def __init__(self, reset: bool = False):
         self.checkpoint = ImportCheckpoint("scholars_directory", reset=reset)
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -98,18 +96,24 @@ class ScholarDirectoryImporter:
         # Typical format: <a>Name</a> (birth-death) - description
         # or just linked names in alphabetical lists
         name_pattern = re.compile(
-            r'<a[^>]*>([A-Z][^<]{2,50})</a>\s*'
-            r'(?:\((\d{4})\s*[-–]\s*(\d{4})?\))?',
+            r"<a[^>]*>([A-Z][^<]{2,50})</a>\s*" r"(?:\((\d{4})\s*[-–]\s*(\d{4})?\))?",
         )
 
         for match in name_pattern.finditer(html):
             name_raw = match.group(1).strip()
             birth = match.group(2)
-            death = match.group(3)
 
             # Skip non-person entries
-            if any(skip in name_raw.lower() for skip in
-                   ["university", "museum", "institute", "project", "who's who"]):
+            if any(
+                skip in name_raw.lower()
+                for skip in [
+                    "university",
+                    "museum",
+                    "institute",
+                    "project",
+                    "who's who",
+                ]
+            ):
                 continue
 
             parsed = parse_name(name_raw)
@@ -142,11 +146,10 @@ class ScholarDirectoryImporter:
         # Wikipedia list items typically: <li><a href="/wiki/Name" title="Name">Name</a> (dates)</li>
         entry_pattern = re.compile(
             r'<li><a\s+href="/wiki/([^"]+)"[^>]*>([^<]+)</a>'
-            r'\s*\((\d{4})\s*[-–]\s*(\d{4})?\)?',
+            r"\s*\((\d{4})\s*[-–]\s*(\d{4})?\)?",
         )
 
         for match in entry_pattern.finditer(html):
-            wiki_slug = match.group(1)
             name_raw = match.group(2).strip()
             birth = match.group(3)
 

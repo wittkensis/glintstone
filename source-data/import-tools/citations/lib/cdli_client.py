@@ -72,7 +72,7 @@ class CDLIClient:
         except HTTPError as e:
             if e.code == 429:
                 # Rate limited -- back off and retry once
-                print(f"    Rate limited by CDLI API. Waiting 10s...")
+                print("    Rate limited by CDLI API. Waiting 10s...")
                 time.sleep(10)
                 try:
                     with urlopen(req, timeout=30, context=_SSL_CONTEXT) as resp:
@@ -85,7 +85,9 @@ class CDLIClient:
             print(f"    Network error fetching {url}: {e}")
             return None
 
-    def fetch_publications_page(self, page: int = 1, per_page: int = 100) -> Optional[dict]:
+    def fetch_publications_page(
+        self, page: int = 1, per_page: int = 100
+    ) -> Optional[dict]:
         """
         Fetch a page of publications from CDLI API.
 
@@ -274,7 +276,9 @@ class CDLIClient:
         }
 
     @staticmethod
-    def _parse_reference(ref: str) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    def _parse_reference(
+        ref: str,
+    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
         """
         Parse a CDLI exact_reference string into components.
 

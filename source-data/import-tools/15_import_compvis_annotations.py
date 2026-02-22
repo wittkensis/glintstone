@@ -23,7 +23,6 @@ Usage:
 import argparse
 import ast
 import csv
-import json
 import re
 import sys
 from pathlib import Path
@@ -92,9 +91,9 @@ def normalize_museum_no(tablet_id: str) -> str:
     E.g. "BM099070" -> "BM 099070", "VAT08803Rs" -> "VAT 08803"
     """
     # Strip trailing orientation suffixes
-    clean = re.sub(r'(Vs|Rs|Obv|Rev)$', '', tablet_id, flags=re.IGNORECASE)
+    clean = re.sub(r"(Vs|Rs|Obv|Rev)$", "", tablet_id, flags=re.IGNORECASE)
     # Insert space between letter prefix and digits
-    m = re.match(r'^([A-Z]+)(\d.*)$', clean)
+    m = re.match(r"^([A-Z]+)(\d.*)$", clean)
     if m:
         return f"{m.group(1)} {m.group(2)}"
     return clean
@@ -105,7 +104,7 @@ def parse_surface_type_from_tablet_id(tablet_id: str) -> str | None:
     Extract view hint from tablet_id suffix if present.
     E.g. "VAT08803Rs" -> "reverse", "K09237Vs" -> "obverse"
     """
-    m = re.search(r'(Vs|Rs|Obv|Rev)$', tablet_id, flags=re.IGNORECASE)
+    m = re.search(r"(Vs|Rs|Obv|Rev)$", tablet_id, flags=re.IGNORECASE)
     if m:
         suffix = m.group(1).lower()
         return VIEW_TO_SURFACE_TYPE.get(suffix)
@@ -117,7 +116,7 @@ def resolve_p_number(tablet_id: str, conn: psycopg.Connection) -> str | None:
     cur = conn.cursor()
 
     # Direct P-number
-    if re.match(r'^P\d+$', tablet_id):
+    if re.match(r"^P\d+$", tablet_id):
         cur.execute("SELECT p_number FROM artifacts WHERE p_number = %s", (tablet_id,))
         row = cur.fetchone()
         return row[0] if row else None
@@ -235,7 +234,12 @@ def main():
         with open(csv_path) as f:
             reader = csv.DictReader(f)
             for row in reader:
-                key = (row["tablet_CDLI"], row["view_desc"], row["mzl_label"], row["bbox"])
+                key = (
+                    row["tablet_CDLI"],
+                    row["view_desc"],
+                    row["mzl_label"],
+                    row["bbox"],
+                )
                 rows_by_segm[key] = row
 
     all_rows = list(rows_by_segm.values())
@@ -251,7 +255,9 @@ def main():
                 seen_tablets.add(tid)
                 mzl = int(row["mzl_label"])
                 sign = mzl_map.get(mzl, "?")
-                print(f"  {tid} | {row['view_desc']} | MZL {mzl} -> {sign} | bbox {row['bbox']}")
+                print(
+                    f"  {tid} | {row['view_desc']} | MZL {mzl} -> {sign} | bbox {row['bbox']}"
+                )
         return
 
     settings = get_settings()
@@ -319,9 +325,8 @@ def main():
             # Determine surface_type
             surface_type_hint = parse_surface_type_from_tablet_id(tablet_id)
             view_lower = view_desc.lower()
-            surface_type = (
-                surface_type_hint
-                or VIEW_TO_SURFACE_TYPE.get(view_lower, "obverse")
+            surface_type = surface_type_hint or VIEW_TO_SURFACE_TYPE.get(
+                view_lower, "obverse"
             )
 
             # Get/create surface_image
@@ -372,10 +377,14 @@ def main():
         print(f"\n  Annotations inserted: {annotations_inserted:,}")
         print(f"  Annotations skipped:  {annotations_skipped:,}")
         if tablets_not_found:
-            print(f"  Tablets not found ({len(tablets_not_found)}): {sorted(tablets_not_found)}")
+            print(
+                f"  Tablets not found ({len(tablets_not_found)}): {sorted(tablets_not_found)}"
+            )
 
         # Validate
-        assert annotations_inserted > 5000, f"Expected >5000 annotations, got {annotations_inserted}"
+        assert (
+            annotations_inserted > 5000
+        ), f"Expected >5000 annotations, got {annotations_inserted}"
         print("Validation: OK")
 
     except Exception as e:
@@ -383,6 +392,7 @@ def main():
         conn.close()
         print(f"\nFailed: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

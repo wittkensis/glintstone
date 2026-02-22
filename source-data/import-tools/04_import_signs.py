@@ -29,8 +29,7 @@ import psycopg
 from core.config import get_settings
 
 OGSL_JSON = (
-    Path(__file__).resolve().parents[1]
-    / "sources/ORACC/ogsl/json/ogsl/ogsl-sl.json"
+    Path(__file__).resolve().parents[1] / "sources/ORACC/ogsl/json/ogsl/ogsl-sl.json"
 )
 
 
@@ -60,10 +59,10 @@ def clean_value(v: str) -> str:
 
 def extract_sub_index(v: str) -> int | None:
     """Try to extract the subscript number from a reading like 'a₂' → 2."""
-    m = re.search(r'[₀₁₂₃₄₅₆₇₈₉]+$', v)
+    m = re.search(r"[₀₁₂₃₄₅₆₇₈₉]+$", v)
     if not m:
         # Try plain digits
-        m = re.search(r'(\d+)$', v)
+        m = re.search(r"(\d+)$", v)
         if m:
             return int(m.group(1))
         return None
@@ -83,9 +82,9 @@ def infer_value_type(v: str) -> str:
     For now: numeric if it matches digit patterns, syllabic if short consonant-vowel,
     else logographic.
     """
-    clean = re.sub(r'[₀-₉\d]', '', v).strip()
+    clean = re.sub(r"[₀-₉\d]", "", v).strip()
     # Numeric if original is all digits/numerals
-    if re.match(r'^[0-9\(\)]+$', v):
+    if re.match(r"^[0-9\(\)]+$", v):
         return "numeric"
     # Short (1-4 char) lowercase = likely syllabic
     if len(clean) <= 4 and clean.islower():
@@ -149,17 +148,27 @@ def main():
                 values_list = sign_data.get("values", [])
                 most_common = values_list[0] if values_list else None
 
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO signs (
                         sign_id, utf8, unicode_hex, unicode_decimal,
                         uname, uphase, sign_type, gdl_definition, most_common_value
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (sign_id) DO NOTHING
                     RETURNING sign_id
-                """, (
-                    sign_id, utf8, hex_str if hex_str else None,
-                    unicode_decimal, uname, uphase, sign_type, gdl_json, most_common
-                ))
+                """,
+                    (
+                        sign_id,
+                        utf8,
+                        hex_str if hex_str else None,
+                        unicode_decimal,
+                        uname,
+                        uphase,
+                        sign_type,
+                        gdl_json,
+                        most_common,
+                    ),
+                )
                 row = cur.fetchone()
                 if row:
                     signs_inserted += 1
@@ -175,11 +184,14 @@ def main():
                     sub_idx = extract_sub_index(value)
                     v_type = infer_value_type(value)
 
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT INTO sign_values (sign_id, value, sub_index, value_type)
                         VALUES (%s, %s, %s, %s)
                         ON CONFLICT DO NOTHING
-                    """, (sign_id, value, sub_idx, v_type))
+                    """,
+                        (sign_id, value, sub_idx, v_type),
+                    )
                     values_inserted += 1
 
             conn.commit()

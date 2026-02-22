@@ -45,7 +45,7 @@ def verify(db_path: Path):
             print(f"    {bk}: {cnt}")
         issues += 1
     else:
-        print(f"  PASS: No duplicate bibtex_keys")
+        print("  PASS: No duplicate bibtex_keys")
 
     # DOI duplicates
     c.execute("""
@@ -58,7 +58,7 @@ def verify(db_path: Path):
         print(f"  FAIL: {len(doi_dupes)} duplicate DOIs")
         issues += 1
     else:
-        print(f"  PASS: No duplicate DOIs")
+        print("  PASS: No duplicate DOIs")
 
     # Type distribution
     c.execute("""
@@ -66,7 +66,7 @@ def verify(db_path: Path):
         FROM publications GROUP BY publication_type
         ORDER BY COUNT(*) DESC
     """)
-    print(f"\n  Publication types:")
+    print("\n  Publication types:")
     for ptype, count in c.fetchall():
         print(f"    {ptype}: {count:,}")
 
@@ -76,7 +76,7 @@ def verify(db_path: Path):
         FROM publications WHERE year IS NOT NULL
         GROUP BY decade ORDER BY decade
     """)
-    print(f"\n  Publications by decade:")
+    print("\n  Publications by decade:")
     for decade, count in c.fetchall():
         bar = "#" * min(count // 50, 40)
         print(f"    {int(decade)}s: {count:>5,} {bar}")
@@ -90,7 +90,7 @@ def verify(db_path: Path):
     """)
     series = c.fetchall()
     if series:
-        print(f"\n  Top series:")
+        print("\n  Top series:")
         for sk, count in series:
             print(f"    {sk}: {count:,}")
 
@@ -100,6 +100,7 @@ def verify(db_path: Path):
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     args = parser.parse_args()

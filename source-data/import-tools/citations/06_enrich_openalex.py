@@ -25,9 +25,10 @@ from urllib.error import HTTPError
 sys.path.insert(0, str(Path(__file__).parent))
 
 from lib.db import get_connection
-from lib.publication_matcher import normalize_title, levenshtein_ratio
-from lib.name_normalizer import parse_name, strip_diacritics
+from lib.publication_matcher import normalize_title
+from lib.name_normalizer import parse_name
 from lib.checkpoint import ImportCheckpoint
+
 CACHE_DIR = Path(__file__).parent / "_cache" / "openalex"
 
 PROVIDER_NAME = "OpenAlex"
@@ -43,7 +44,6 @@ REQUEST_DELAY = 0.2  # OpenAlex is generous with rate limits
 
 
 class OpenAlexEnricher:
-
     def __init__(self, reset: bool = False):
         self.checkpoint = ImportCheckpoint("openalex_enrichment", reset=reset)
         self.annotation_run_id = None
@@ -100,9 +100,13 @@ class OpenAlexEnricher:
                (source_type, source_name, method, created_at, notes)
                VALUES (%s, %s, %s, %s, %s)
                RETURNING id""",
-            ("import", PROVIDER_NAME, "api_fetch",
-             datetime.now().isoformat(),
-             f"OpenAlex enrichment for Assyriology publications. Provider: {PROVIDER_NAME}"),
+            (
+                "import",
+                PROVIDER_NAME,
+                "api_fetch",
+                datetime.now().isoformat(),
+                f"OpenAlex enrichment for Assyriology publications. Provider: {PROVIDER_NAME}",
+            ),
         )
         run_id = cursor.fetchone()[0]
         conn.commit()
@@ -203,7 +207,9 @@ class OpenAlexEnricher:
                 name = author.get("display_name")
                 if orcid and name:
                     parsed = parse_name(name)
-                    orcid_map[parsed.normalized_key] = orcid.replace("https://orcid.org/", "")
+                    orcid_map[parsed.normalized_key] = orcid.replace(
+                        "https://orcid.org/", ""
+                    )
 
         count = 0
         for scholar_id, name in scholars:
@@ -253,16 +259,18 @@ class OpenAlexEnricher:
             pub_type = self._map_type(work.get("type", ""))
             year = work.get("publication_year")
 
-            batch.append((
-                f"openalex:{work.get('id', '').split('/')[-1]}",
-                work["title"],
-                pub_type,
-                year,
-                "; ".join(authors) or "Unknown",
-                doi or None,
-                self.annotation_run_id,
-                datetime.now().isoformat(),
-            ))
+            batch.append(
+                (
+                    f"openalex:{work.get('id', '').split('/')[-1]}",
+                    work["title"],
+                    pub_type,
+                    year,
+                    "; ".join(authors) or "Unknown",
+                    doi or None,
+                    self.annotation_run_id,
+                    datetime.now().isoformat(),
+                )
+            )
 
             if doi:
                 existing_dois.add(doi)
@@ -309,10 +317,13 @@ class OpenAlexEnricher:
     def _api_request(self, url: str) -> dict | None:
         time.sleep(REQUEST_DELAY)
         try:
-            req = Request(url, headers={
-                "Accept": "application/json",
-                "User-Agent": "Glintstone/1.0 (mailto:glintstone@example.com)",
-            })
+            req = Request(
+                url,
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": "Glintstone/1.0 (mailto:glintstone@example.com)",
+                },
+            )
             with urlopen(req, timeout=30) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except HTTPError as e:
@@ -336,7 +347,8 @@ def verify():
     c.execute(
         "SELECT COUNT(*) FROM publications p "
         "JOIN annotation_runs ar ON p.annotation_run_id = ar.id "
-        "WHERE ar.source_name = %s", (PROVIDER_NAME,)
+        "WHERE ar.source_name = %s",
+        (PROVIDER_NAME,),
     )
     oa_pubs = c.fetchone()[0]
     conn.close()
