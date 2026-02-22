@@ -28,8 +28,8 @@ class CuneiformDetector:
     def __init__(
         self,
         checkpoint_path: str,
-        device: str = 'auto',
-        confidence_threshold: float = 0.3
+        device: str = "auto",
+        confidence_threshold: float = 0.3,
     ):
         """
         Initialize the detector.
@@ -47,16 +47,18 @@ class CuneiformDetector:
         # -> model_name: "detr-173-classes-10-2025", epoch: 1000
         self.model_name = self.checkpoint_path.parent.name
         checkpoint_file = self.checkpoint_path.stem  # "epoch_1000"
-        self.epoch = checkpoint_file.split('_')[-1] if '_' in checkpoint_file else 'unknown'
+        self.epoch = (
+            checkpoint_file.split("_")[-1] if "_" in checkpoint_file else "unknown"
+        )
 
         # Determine device
-        if device == 'auto':
+        if device == "auto":
             if torch.backends.mps.is_available():
-                self.device = 'mps'
+                self.device = "mps"
             elif torch.cuda.is_available():
-                self.device = 'cuda:0'
+                self.device = "cuda:0"
             else:
-                self.device = 'cpu'
+                self.device = "cpu"
         else:
             self.device = device
 
@@ -64,18 +66,17 @@ class CuneiformDetector:
 
         # Load sign mapping
         mapping_path = Path(__file__).parent / "sign_mapping.json"
-        with open(mapping_path, 'r', encoding='utf-8') as f:
+        with open(mapping_path, "r", encoding="utf-8") as f:
             self.sign_mapping = json.load(f)
 
-        self.class_names = [s['name'] for s in self.sign_mapping]
+        self.class_names = [s["name"] for s in self.sign_mapping]
         self.num_classes = len(self.class_names)
         print(f"Loaded {self.num_classes} class names")
 
         # Preprocessing transforms (matches training config)
-        self.transform = T.Compose([
-            T.ToTensor(),
-            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
+        self.transform = T.Compose(
+            [T.ToTensor(), T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
+        )
 
         # Model state
         self.model_loaded = False
@@ -90,21 +91,21 @@ class CuneiformDetector:
 
         # Load checkpoint to extract metadata
         checkpoint = torch.load(
-            self.checkpoint_path,
-            map_location='cpu',
-            weights_only=False
+            self.checkpoint_path, map_location="cpu", weights_only=False
         )
 
-        self.checkpoint_meta = checkpoint.get('meta', {})
+        self.checkpoint_meta = checkpoint.get("meta", {})
         print(f"Checkpoint epoch: {self.checkpoint_meta.get('epoch', 'unknown')}")
 
         # Verify classes match
-        dataset_meta = self.checkpoint_meta.get('dataset_meta', {})
-        checkpoint_classes = dataset_meta.get('classes', [])
+        dataset_meta = self.checkpoint_meta.get("dataset_meta", {})
+        checkpoint_classes = dataset_meta.get("classes", [])
         if checkpoint_classes:
             print(f"Checkpoint has {len(checkpoint_classes)} classes")
             if len(checkpoint_classes) != self.num_classes:
-                print(f"WARNING: Class count mismatch! Expected {self.num_classes}, got {len(checkpoint_classes)}")
+                print(
+                    f"WARNING: Class count mismatch! Expected {self.num_classes}, got {len(checkpoint_classes)}"
+                )
 
         self.model_loaded = True
         print("Model metadata loaded successfully")
@@ -134,7 +135,7 @@ class CuneiformDetector:
             self.load_model()
 
         # Load image to get dimensions
-        img = Image.open(image_path).convert('RGB')
+        img = Image.open(image_path).convert("RGB")
         img_width, img_height = img.size
 
         print(f"Processing image: {image_path}")
@@ -150,14 +151,14 @@ class CuneiformDetector:
         """Generate mock detections for API testing."""
         # Common cuneiform signs for testing
         mock_signs = [
-            (6, 'GAL', 0.92),    # "great"
-            (33, 'AN', 0.88),    # "heaven/god"
-            (23, 'DIŠ', 0.85),   # numeral 1
-            (34, 'NA', 0.82),    # various meanings
-            (11, 'A', 0.79),     # "water"
-            (65, 'LU₂', 0.76),   # "man"
-            (22, 'E₂', 0.73),    # "house"
-            (24, 'MU', 0.70),    # "year/name"
+            (6, "GAL", 0.92),  # "great"
+            (33, "AN", 0.88),  # "heaven/god"
+            (23, "DIŠ", 0.85),  # numeral 1
+            (34, "NA", 0.82),  # various meanings
+            (11, "A", 0.79),  # "water"
+            (65, "LU₂", 0.76),  # "man"
+            (22, "E₂", 0.73),  # "house"
+            (24, "MU", 0.70),  # "year/name"
         ]
 
         detections = []
@@ -178,37 +179,41 @@ class CuneiformDetector:
             actual_conf = max(0.3, min(0.99, actual_conf))
 
             if actual_conf >= self.confidence_threshold:
-                sign_info = self.sign_mapping[class_id] if class_id < len(self.sign_mapping) else None
+                sign_info = (
+                    self.sign_mapping[class_id]
+                    if class_id < len(self.sign_mapping)
+                    else None
+                )
 
                 detection = {
-                    'class_id': class_id,
-                    'class_name': name,
-                    'confidence': float(actual_conf),
-                    'bbox': [float(x1), float(y1), float(x2), float(y2)],
-                    'bbox_normalized': [
+                    "class_id": class_id,
+                    "class_name": name,
+                    "confidence": float(actual_conf),
+                    "bbox": [float(x1), float(y1), float(x2), float(y2)],
+                    "bbox_normalized": [
                         x1 / img_width,
                         y1 / img_height,
                         x2 / img_width,
-                        y2 / img_height
+                        y2 / img_height,
                     ],
-                    'unicode': sign_info['unicode'] if sign_info else None,
-                    'mock': True  # Flag indicating this is mock data
+                    "unicode": sign_info["unicode"] if sign_info else None,
+                    "mock": True,  # Flag indicating this is mock data
                 }
                 detections.append(detection)
 
         # Sort by confidence
-        detections.sort(key=lambda x: x['confidence'], reverse=True)
+        detections.sort(key=lambda x: x["confidence"], reverse=True)
 
         return detections
 
     def get_metadata(self):
         """Return model metadata for API responses."""
         return {
-            'model_name': self.model_name,
-            'epoch': self.epoch,
-            'num_classes': self.num_classes,
-            'device': self.device,
-            'checkpoint_path': str(self.checkpoint_path)
+            "model_name": self.model_name,
+            "epoch": self.epoch,
+            "num_classes": self.num_classes,
+            "device": self.device,
+            "checkpoint_path": str(self.checkpoint_path),
         }
 
 
@@ -218,8 +223,8 @@ _detector: Optional[CuneiformDetector] = None
 
 def get_detector(
     checkpoint_path: Optional[str] = None,
-    device: str = 'auto',
-    confidence_threshold: float = 0.3
+    device: str = "auto",
+    confidence_threshold: float = 0.3,
 ) -> CuneiformDetector:
     """Get or create detector singleton."""
     global _detector
@@ -231,7 +236,7 @@ def get_detector(
         _detector = CuneiformDetector(
             checkpoint_path=checkpoint_path,
             device=device,
-            confidence_threshold=confidence_threshold
+            confidence_threshold=confidence_threshold,
         )
 
     return _detector
@@ -246,7 +251,7 @@ if __name__ == "__main__":
     detector = get_detector()
     detector.load_model()
 
-    print(f"\nDetector ready!")
+    print("\nDetector ready!")
     print(f"Device: {detector.device}")
     print(f"Classes: {len(detector.class_names)}")
 
@@ -255,12 +260,12 @@ if __name__ == "__main__":
         detections = detector.detect(image_path)
         print(f"\nFound {len(detections)} signs (mock data):")
         for det in detections[:10]:
-            unicode_char = det['unicode'] or '?'
+            unicode_char = det["unicode"] or "?"
             print(f"  {unicode_char} {det['class_name']}: {det['confidence']:.2%}")
     else:
         print("\nUsage: python inference.py <image_path>")
         print("No image provided, showing sample class data:")
         for i, cls in enumerate(detector.class_names[:10]):
             sign = detector.sign_mapping[i]
-            unicode_char = sign['unicode'] or 'N/A'
+            unicode_char = sign["unicode"] or "N/A"
             print(f"  {i}: {cls} ({unicode_char})")

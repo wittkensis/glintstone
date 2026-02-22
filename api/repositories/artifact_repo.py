@@ -6,7 +6,6 @@ from core.repository import BaseRepository
 
 
 class ArtifactRepository(BaseRepository):
-
     def search(
         self,
         search: str | None = None,
@@ -52,7 +51,8 @@ class ArtifactRepository(BaseRepository):
         params["per_page"] = per_page
         params["offset"] = offset
 
-        items = self.fetch_all(f"""
+        items = self.fetch_all(
+            f"""
             SELECT a.p_number, a.designation,
                    COALESCE(a.language_normalized, a.language) as language,
                    a.period, a.provenience, a.genre,
@@ -64,16 +64,23 @@ class ArtifactRepository(BaseRepository):
             {where}
             ORDER BY a.p_number
             LIMIT %(per_page)s OFFSET %(offset)s
-        """, params)
+        """,
+            params,
+        )
 
         # Count query (same conditions, no LIMIT)
-        count_params = {k: v for k, v in params.items() if k not in ("per_page", "offset")}
-        total = self.fetch_scalar(f"""
+        count_params = {
+            k: v for k, v in params.items() if k not in ("per_page", "offset")
+        }
+        total = self.fetch_scalar(
+            f"""
             SELECT COUNT(*)
             FROM artifacts a
             LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
             {where}
-        """, count_params)
+        """,
+            count_params,
+        )
 
         total = total or 0
         return {
@@ -85,7 +92,8 @@ class ArtifactRepository(BaseRepository):
         }
 
     def find_by_p_number(self, p_number: str) -> dict | None:
-        artifact = self.fetch_one("""
+        artifact = self.fetch_one(
+            """
             SELECT a.*, ps.physical_complete, ps.graphemic_complete,
                    ps.reading_complete, ps.linguistic_complete,
                    ps.semantic_complete, ps.has_image, ps.has_atf,
@@ -94,7 +102,9 @@ class ArtifactRepository(BaseRepository):
             FROM artifacts a
             LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
             WHERE a.p_number = %(p_number)s
-        """, {"p_number": p_number})
+        """,
+            {"p_number": p_number},
+        )
 
         if not artifact:
             return None
@@ -117,36 +127,46 @@ class ArtifactRepository(BaseRepository):
         return artifact
 
     def get_composites(self, p_number: str) -> list[dict]:
-        return self.fetch_all("""
+        return self.fetch_all(
+            """
             SELECT c.q_number, c.designation, c.language, c.period,
                    c.genre, c.exemplar_count
             FROM composites c
             JOIN artifact_composites ac ON c.q_number = ac.q_number
             WHERE ac.p_number = %(p_number)s
-        """, {"p_number": p_number})
+        """,
+            {"p_number": p_number},
+        )
 
     def get_composite_tablets(self, q_number: str) -> list[dict]:
-        return self.fetch_all("""
+        return self.fetch_all(
+            """
             SELECT a.p_number, a.designation, a.period, ps.has_image, ac.line_ref
             FROM artifact_composites ac
             JOIN artifacts a ON ac.p_number = a.p_number
             LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
             WHERE ac.q_number = %(q_number)s
             ORDER BY a.p_number
-        """, {"q_number": q_number})
+        """,
+            {"q_number": q_number},
+        )
 
     def get_images(self, p_number: str) -> list[dict]:
-        return self.fetch_all("""
+        return self.fetch_all(
+            """
             SELECT s.surface_type, si.image_path, si.is_primary, si.image_type
             FROM surfaces s
             JOIN surface_images si ON s.id = si.surface_id
             WHERE s.p_number = %(p_number)s
             ORDER BY si.is_primary DESC
-        """, {"p_number": p_number})
+        """,
+            {"p_number": p_number},
+        )
 
     def get_atf(self, p_number: str) -> dict:
         """Get ATF text lines for a tablet."""
-        lines = self.fetch_all("""
+        lines = self.fetch_all(
+            """
             SELECT
                 tl.line_number,
                 tl.raw_atf,
@@ -157,17 +177,16 @@ class ArtifactRepository(BaseRepository):
             LEFT JOIN surfaces s ON tl.surface_id = s.id
             WHERE tl.p_number = %(p_number)s
             ORDER BY tl.line_number
-        """, {"p_number": p_number})
+        """,
+            {"p_number": p_number},
+        )
 
-        return {
-            "p_number": p_number,
-            "lines": lines,
-            "total_lines": len(lines)
-        }
+        return {"p_number": p_number, "lines": lines, "total_lines": len(lines)}
 
     def get_translation(self, p_number: str) -> dict:
         """Get translation data for a tablet."""
-        translations = self.fetch_all("""
+        translations = self.fetch_all(
+            """
             SELECT
                 t.line_id,
                 tl.line_number,
@@ -178,17 +197,20 @@ class ArtifactRepository(BaseRepository):
             LEFT JOIN text_lines tl ON t.line_id = tl.id
             WHERE t.p_number = %(p_number)s
             ORDER BY tl.line_number
-        """, {"p_number": p_number})
+        """,
+            {"p_number": p_number},
+        )
 
         return {
             "p_number": p_number,
             "translations": translations,
-            "total": len(translations)
+            "total": len(translations),
         }
 
     def get_lemmas(self, p_number: str) -> dict:
         """Get lemmatization data for a tablet."""
-        lemmas = self.fetch_all("""
+        lemmas = self.fetch_all(
+            """
             SELECT
                 tl.line_number,
                 t.position,
@@ -205,10 +227,8 @@ class ArtifactRepository(BaseRepository):
             JOIN text_lines tl ON t.line_id = tl.id
             WHERE tl.p_number = %(p_number)s
             ORDER BY tl.line_number, t.position
-        """, {"p_number": p_number})
+        """,
+            {"p_number": p_number},
+        )
 
-        return {
-            "p_number": p_number,
-            "lemmas": lemmas,
-            "total": len(lemmas)
-        }
+        return {"p_number": p_number, "lemmas": lemmas, "total": len(lemmas)}

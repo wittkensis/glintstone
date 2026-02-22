@@ -20,7 +20,8 @@ class CompositeRepository(BaseRepository):
         Returns:
             List of composite dictionaries with metadata
         """
-        return self.fetch_all("""
+        return self.fetch_all(
+            """
             SELECT
                 q_number,
                 designation,
@@ -31,7 +32,9 @@ class CompositeRepository(BaseRepository):
             FROM composites
             ORDER BY q_number
             LIMIT %(limit)s OFFSET %(offset)s
-        """, {"limit": limit, "offset": offset})
+        """,
+            {"limit": limit, "offset": offset},
+        )
 
     def find_by_q_number(self, q_number: str) -> dict | None:
         """
@@ -43,7 +46,8 @@ class CompositeRepository(BaseRepository):
         Returns:
             Composite dictionary or None if not found
         """
-        return self.fetch_one("""
+        return self.fetch_one(
+            """
             SELECT
                 q_number,
                 designation,
@@ -53,7 +57,9 @@ class CompositeRepository(BaseRepository):
                 exemplar_count
             FROM composites
             WHERE q_number = %(q_number)s
-        """, {"q_number": q_number})
+        """,
+            {"q_number": q_number},
+        )
 
     def get_exemplars(self, q_number: str) -> list[dict]:
         """
@@ -65,7 +71,8 @@ class CompositeRepository(BaseRepository):
         Returns:
             List of artifact dictionaries that are exemplars of this composite
         """
-        return self.fetch_all("""
+        return self.fetch_all(
+            """
             SELECT
                 a.p_number,
                 a.designation,
@@ -78,7 +85,9 @@ class CompositeRepository(BaseRepository):
             JOIN artifact_composites ac ON a.p_number = ac.p_number
             WHERE ac.q_number = %(q_number)s
             ORDER BY a.p_number
-        """, {"q_number": q_number})
+        """,
+            {"q_number": q_number},
+        )
 
     def get_total_count(self) -> int:
         """
@@ -97,7 +106,7 @@ class CompositeRepository(BaseRepository):
         genre: str | None = None,
         search: str | None = None,
         limit: int = 100,
-        offset: int = 0
+        offset: int = 0,
     ) -> list[dict]:
         """
         Search composites with filters.
@@ -134,7 +143,8 @@ class CompositeRepository(BaseRepository):
 
         where = "WHERE " + " AND ".join(conditions) if conditions else ""
 
-        return self.fetch_all(f"""
+        return self.fetch_all(
+            f"""
             SELECT
                 q_number,
                 designation,
@@ -146,4 +156,6 @@ class CompositeRepository(BaseRepository):
             {where}
             ORDER BY q_number
             LIMIT %(limit)s OFFSET %(offset)s
-        """, params)
+        """,
+            params,
+        )

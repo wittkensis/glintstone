@@ -20,6 +20,7 @@ def tablet_list(request: Request, search: str = "", pipeline: str = "", page: in
         data = {"items": [], "total": 0, "page": 1, "per_page": 24, "total_pages": 0}
 
     from app.main import templates
+
     return templates.TemplateResponse(
         "tablets/list.html",
         {
@@ -43,9 +44,11 @@ def tablet_detail(request: Request, p_number: str):
         tablet = api.get(f"/artifacts/{p_number}")
     except Exception:
         from fastapi.responses import RedirectResponse
+
         return RedirectResponse(url="/tablets", status_code=302)
 
     from app.main import templates
+
     return templates.TemplateResponse(
         "tablets/detail.html",
         {

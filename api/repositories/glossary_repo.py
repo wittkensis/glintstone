@@ -6,7 +6,6 @@ from core.repository import BaseRepository
 
 
 class GlossaryRepository(BaseRepository):
-
     def browse(
         self,
         search: str | None = None,
@@ -85,7 +84,9 @@ class GlossaryRepository(BaseRepository):
         )
 
         # Count total
-        count_params = {k: v for k, v in params.items() if k not in ("per_page", "offset")}
+        count_params = {
+            k: v for k, v in params.items() if k not in ("per_page", "offset")
+        }
         total = self.fetch_scalar(
             f"""
             SELECT COUNT(*)

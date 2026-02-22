@@ -8,11 +8,11 @@ import torch
 import numpy as np
 from pathlib import Path
 from PIL import Image
-from typing import Optional, List, Dict
+from typing import List, Dict
 import warnings
 
 # Suppress mmdet warnings
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 
 class CuneiformDetector:
@@ -22,8 +22,8 @@ class CuneiformDetector:
         self,
         checkpoint_path: str,
         sign_mapping_path: str,
-        device: str = 'cuda',
-        confidence_threshold: float = 0.3
+        device: str = "cuda",
+        confidence_threshold: float = 0.3,
     ):
         """
         Initialize the detector.
@@ -41,17 +41,19 @@ class CuneiformDetector:
         # Extract model name from checkpoint path
         self.model_name = self.checkpoint_path.parent.name
         checkpoint_file = self.checkpoint_path.stem
-        self.epoch = checkpoint_file.split('_')[-1] if '_' in checkpoint_file else 'unknown'
+        self.epoch = (
+            checkpoint_file.split("_")[-1] if "_" in checkpoint_file else "unknown"
+        )
 
         # Device setup
         self.device = device
         print(f"Using device: {self.device}")
 
         # Load sign mapping
-        with open(self.sign_mapping_path, 'r', encoding='utf-8') as f:
+        with open(self.sign_mapping_path, "r", encoding="utf-8") as f:
             self.sign_mapping = json.load(f)
 
-        self.class_names = [s['name'] for s in self.sign_mapping]
+        self.class_names = [s["name"] for s in self.sign_mapping]
         self.num_classes = len(self.class_names)
         print(f"Loaded {self.num_classes} class names")
 
@@ -74,33 +76,28 @@ class CuneiformDetector:
 
             # Load checkpoint to inspect structure
             checkpoint = torch.load(
-                self.checkpoint_path,
-                map_location='cpu',
-                weights_only=False
+                self.checkpoint_path, map_location="cpu", weights_only=False
             )
 
-            self.checkpoint_meta = checkpoint.get('meta', {})
-            dataset_meta = self.checkpoint_meta.get('dataset_meta', {})
+            self.checkpoint_meta = checkpoint.get("meta", {})
 
             # Get config from checkpoint metadata
-            if 'cfg' in self.checkpoint_meta:
+            if "cfg" in self.checkpoint_meta:
                 # Config embedded in checkpoint
-                cfg = Config(self.checkpoint_meta['cfg'])
+                cfg = Config(self.checkpoint_meta["cfg"])
             else:
                 # Build config manually for DETR model
                 cfg = self._build_detr_config()
 
             # Override number of classes to match our dataset
-            if hasattr(cfg.model, 'bbox_head'):
+            if hasattr(cfg.model, "bbox_head"):
                 cfg.model.bbox_head.num_classes = self.num_classes
-            elif hasattr(cfg.model, 'roi_head'):
+            elif hasattr(cfg.model, "roi_head"):
                 cfg.model.roi_head.bbox_head.num_classes = self.num_classes
 
             # Initialize model
             self.model = init_detector(
-                cfg,
-                str(self.checkpoint_path),
-                device=self.device
+                cfg, str(self.checkpoint_path), device=self.device
             )
 
             self.model_loaded = True
@@ -120,82 +117,101 @@ class CuneiformDetector:
 
         cfg_dict = dict(
             model=dict(
-                type='DETR',
+                type="DETR",
                 num_queries=300,
                 backbone=dict(
-                    type='ResNet',
+                    type="ResNet",
                     depth=50,
                     num_stages=4,
                     out_indices=(3,),
                     frozen_stages=1,
-                    norm_cfg=dict(type='BN', requires_grad=False),
+                    norm_cfg=dict(type="BN", requires_grad=False),
                     norm_eval=True,
-                    style='pytorch'
+                    style="pytorch",
                 ),
                 bbox_head=dict(
-                    type='DETRHead',
+                    type="DETRHead",
                     num_classes=self.num_classes,
                     in_channels=2048,
                     transformer=dict(
-                        type='Transformer',
+                        type="Transformer",
                         encoder=dict(
-                            type='DetrTransformerEncoder',
+                            type="DetrTransformerEncoder",
                             num_layers=6,
                             transformerlayers=dict(
-                                type='BaseTransformerLayer',
+                                type="BaseTransformerLayer",
                                 attn_cfgs=dict(
-                                    type='MultiheadAttention',
+                                    type="MultiheadAttention",
                                     embed_dims=256,
                                     num_heads=8,
-                                    dropout=0.1),
+                                    dropout=0.1,
+                                ),
                                 ffn_cfgs=dict(
-                                    type='FFN',
+                                    type="FFN",
                                     embed_dims=256,
                                     feedforward_channels=2048,
                                     num_fcs=2,
                                     ffn_drop=0.1,
-                                    act_cfg=dict(type='ReLU', inplace=True)),
-                                operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
+                                    act_cfg=dict(type="ReLU", inplace=True),
+                                ),
+                                operation_order=("self_attn", "norm", "ffn", "norm"),
+                            ),
+                        ),
                         decoder=dict(
-                            type='DetrTransformerDecoder',
+                            type="DetrTransformerDecoder",
                             num_layers=6,
                             transformerlayers=dict(
-                                type='DetrTransformerDecoderLayer',
+                                type="DetrTransformerDecoderLayer",
                                 attn_cfgs=[
                                     dict(
-                                        type='MultiheadAttention',
+                                        type="MultiheadAttention",
                                         embed_dims=256,
                                         num_heads=8,
-                                        dropout=0.1),
+                                        dropout=0.1,
+                                    ),
                                     dict(
-                                        type='MultiheadAttention',
+                                        type="MultiheadAttention",
                                         embed_dims=256,
                                         num_heads=8,
-                                        dropout=0.1)
+                                        dropout=0.1,
+                                    ),
                                 ],
                                 ffn_cfgs=dict(
-                                    type='FFN',
+                                    type="FFN",
                                     embed_dims=256,
                                     feedforward_channels=2048,
                                     num_fcs=2,
                                     ffn_drop=0.1,
-                                    act_cfg=dict(type='ReLU', inplace=True)),
-                                operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
-                                                'ffn', 'norm')),
-                            return_intermediate=True)),
+                                    act_cfg=dict(type="ReLU", inplace=True),
+                                ),
+                                operation_order=(
+                                    "self_attn",
+                                    "norm",
+                                    "cross_attn",
+                                    "norm",
+                                    "ffn",
+                                    "norm",
+                                ),
+                            ),
+                            return_intermediate=True,
+                        ),
+                    ),
                     positional_encoding=dict(
-                        type='SinePositionalEncoding',
-                        num_feats=128,
-                        normalize=True)),
+                        type="SinePositionalEncoding", num_feats=128, normalize=True
+                    ),
+                ),
                 train_cfg=dict(
                     assigner=dict(
-                        type='HungarianAssigner',
+                        type="HungarianAssigner",
                         match_costs=[
-                            dict(type='ClassificationCost', weight=1.),
-                            dict(type='BBoxL1Cost', weight=5.0),
-                            dict(type='IoUCost', iou_mode='giou', weight=2.0)
-                        ])),
-                test_cfg=dict(max_per_img=100))
+                            dict(type="ClassificationCost", weight=1.0),
+                            dict(type="BBoxL1Cost", weight=5.0),
+                            dict(type="IoUCost", iou_mode="giou", weight=2.0),
+                        ],
+                    )
+                ),
+                test_cfg=dict(max_per_img=100),
+            )
         )
 
         return Config(cfg_dict)
@@ -220,7 +236,7 @@ class CuneiformDetector:
             self.load_model()
 
         # Load image to get dimensions
-        img = Image.open(image_path).convert('RGB')
+        img = Image.open(image_path).convert("RGB")
         img_width, img_height = img.size
         img_array = np.array(img)
 
@@ -237,7 +253,7 @@ class CuneiformDetector:
             detections = []
 
             # MMDet v3.x returns DetDataSample
-            if hasattr(result, 'pred_instances'):
+            if hasattr(result, "pred_instances"):
                 pred_instances = result.pred_instances
 
                 bboxes = pred_instances.bboxes.cpu().numpy()  # [N, 4] (x1, y1, x2, y2)
@@ -250,21 +266,27 @@ class CuneiformDetector:
 
                         # Get sign info
                         class_id = int(label)
-                        sign_info = self.sign_mapping[class_id] if class_id < len(self.sign_mapping) else None
-                        class_name = sign_info['name'] if sign_info else f'class_{class_id}'
+                        sign_info = (
+                            self.sign_mapping[class_id]
+                            if class_id < len(self.sign_mapping)
+                            else None
+                        )
+                        class_name = (
+                            sign_info["name"] if sign_info else f"class_{class_id}"
+                        )
 
                         detection = {
-                            'class_id': class_id,
-                            'class_name': class_name,
-                            'confidence': float(score),
-                            'bbox': [float(x1), float(y1), float(x2), float(y2)],
-                            'bbox_normalized': [
+                            "class_id": class_id,
+                            "class_name": class_name,
+                            "confidence": float(score),
+                            "bbox": [float(x1), float(y1), float(x2), float(y2)],
+                            "bbox_normalized": [
                                 x1 / img_width,
                                 y1 / img_height,
                                 x2 / img_width,
-                                y2 / img_height
+                                y2 / img_height,
                             ],
-                            'unicode': sign_info['unicode'] if sign_info else None
+                            "unicode": sign_info["unicode"] if sign_info else None,
                         }
                         detections.append(detection)
 
@@ -277,28 +299,45 @@ class CuneiformDetector:
                             x1, y1, x2, y2, score = detection
 
                             if score >= self.confidence_threshold:
-                                sign_info = self.sign_mapping[class_id] if class_id < len(self.sign_mapping) else None
-                                class_name = sign_info['name'] if sign_info else f'class_{class_id}'
+                                sign_info = (
+                                    self.sign_mapping[class_id]
+                                    if class_id < len(self.sign_mapping)
+                                    else None
+                                )
+                                class_name = (
+                                    sign_info["name"]
+                                    if sign_info
+                                    else f"class_{class_id}"
+                                )
 
                                 det_dict = {
-                                    'class_id': class_id,
-                                    'class_name': class_name,
-                                    'confidence': float(score),
-                                    'bbox': [float(x1), float(y1), float(x2), float(y2)],
-                                    'bbox_normalized': [
+                                    "class_id": class_id,
+                                    "class_name": class_name,
+                                    "confidence": float(score),
+                                    "bbox": [
+                                        float(x1),
+                                        float(y1),
+                                        float(x2),
+                                        float(y2),
+                                    ],
+                                    "bbox_normalized": [
                                         x1 / img_width,
                                         y1 / img_height,
                                         x2 / img_width,
-                                        y2 / img_height
+                                        y2 / img_height,
                                     ],
-                                    'unicode': sign_info['unicode'] if sign_info else None
+                                    "unicode": sign_info["unicode"]
+                                    if sign_info
+                                    else None,
                                 }
                                 detections.append(det_dict)
 
             # Sort by confidence
-            detections.sort(key=lambda x: x['confidence'], reverse=True)
+            detections.sort(key=lambda x: x["confidence"], reverse=True)
 
-            print(f"Found {len(detections)} detections above threshold {self.confidence_threshold}")
+            print(
+                f"Found {len(detections)} detections above threshold {self.confidence_threshold}"
+            )
 
             return detections
 
@@ -309,9 +348,9 @@ class CuneiformDetector:
     def get_metadata(self):
         """Return model metadata for API responses."""
         return {
-            'model_name': self.model_name,
-            'epoch': self.epoch,
-            'num_classes': self.num_classes,
-            'device': self.device,
-            'checkpoint_path': str(self.checkpoint_path)
+            "model_name": self.model_name,
+            "epoch": self.epoch,
+            "num_classes": self.num_classes,
+            "device": self.device,
+            "checkpoint_path": str(self.checkpoint_path),
         }

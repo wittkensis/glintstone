@@ -5,7 +5,6 @@ Deploys DETR model with MMDetection on Modal's GPU infrastructure
 
 import modal
 import os
-from pathlib import Path
 
 # Create Modal app
 app = modal.App("cuneiform-detection")
@@ -53,7 +52,10 @@ CONFIDENCE_THRESHOLD = 0.3
     container_idle_timeout=120,  # Keep warm for 2 minutes after request
 )
 @modal.web_endpoint(method="POST")
-async def detect_signs(image_path: str = modal.web_parameter(), confidence_threshold: float = modal.web_parameter(default=0.3)):
+async def detect_signs(
+    image_path: str = modal.web_parameter(),
+    confidence_threshold: float = modal.web_parameter(default=0.3),
+):
     """
     Detect cuneiform signs in an image.
 
@@ -65,7 +67,6 @@ async def detect_signs(image_path: str = modal.web_parameter(), confidence_thres
         JSON with detections, model metadata, and inference time
     """
     import time
-    import json
     import sys
     from PIL import Image
     import tempfile
@@ -83,7 +84,7 @@ async def detect_signs(image_path: str = modal.web_parameter(), confidence_thres
             checkpoint_path=MODEL_PATH,
             sign_mapping_path="/root/sign_mapping.json",
             device="cuda",
-            confidence_threshold=confidence_threshold
+            confidence_threshold=confidence_threshold,
         )
 
         # Load model if not already loaded
@@ -91,9 +92,9 @@ async def detect_signs(image_path: str = modal.web_parameter(), confidence_thres
             detector.load_model()
 
         # Handle image input
-        if image_path.startswith('http://') or image_path.startswith('https://'):
+        if image_path.startswith("http://") or image_path.startswith("https://"):
             # Download image from URL
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
                 urllib.request.urlretrieve(image_path, tmp.name)
                 local_image_path = tmp.name
         else:
@@ -108,7 +109,7 @@ async def detect_signs(image_path: str = modal.web_parameter(), confidence_thres
             img_width, img_height = img.size
 
         # Clean up temp file if downloaded
-        if image_path.startswith('http'):
+        if image_path.startswith("http"):
             os.unlink(local_image_path)
 
         # Calculate inference time
@@ -124,23 +125,19 @@ async def detect_signs(image_path: str = modal.web_parameter(), confidence_thres
             "image_height": img_height,
             "num_detections": len(detections),
             "detections": detections,
-            "model_name": metadata['model_name'],
-            "model_epoch": metadata['epoch'],
-            "model_device": metadata['device']
+            "model_name": metadata["model_name"],
+            "model_epoch": metadata["epoch"],
+            "model_device": metadata["device"],
         }
 
     except FileNotFoundError as e:
         return {
             "success": False,
             "error": f"Image file not found: {image_path}",
-            "detail": str(e)
+            "detail": str(e),
         }
     except Exception as e:
-        return {
-            "success": False,
-            "error": "Detection failed",
-            "detail": str(e)
-        }
+        return {"success": False, "error": "Detection failed", "detail": str(e)}
 
 
 @app.function(
@@ -150,7 +147,10 @@ async def detect_signs(image_path: str = modal.web_parameter(), confidence_thres
     timeout=300,
 )
 @modal.web_endpoint(method="POST")
-async def detect_signs_by_path(image_path: str = modal.web_parameter(), confidence_threshold: float = modal.web_parameter(default=0.3)):
+async def detect_signs_by_path(
+    image_path: str = modal.web_parameter(),
+    confidence_threshold: float = modal.web_parameter(default=0.3),
+):
     """
     Detect signs in an image at a local file path.
     Equivalent to the local API's /detect-signs-by-path endpoint.
@@ -158,7 +158,9 @@ async def detect_signs_by_path(image_path: str = modal.web_parameter(), confiden
     Note: This works with URLs but not with local file paths since Modal runs remotely.
     Use detect_signs() instead which handles both cases.
     """
-    return await detect_signs(image_path=image_path, confidence_threshold=confidence_threshold)
+    return await detect_signs(
+        image_path=image_path, confidence_threshold=confidence_threshold
+    )
 
 
 @app.function(image=image, volumes={"/models": volume})
@@ -166,8 +168,8 @@ async def detect_signs_by_path(image_path: str = modal.web_parameter(), confiden
 def health():
     """Health check endpoint."""
     import sys
+
     sys.path.insert(0, "/root")
-    from modal_inference import CuneiformDetector
 
     # Check if model file exists
     model_exists = os.path.exists(MODEL_PATH)
@@ -176,7 +178,7 @@ def health():
         "status": "healthy",
         "model_path": MODEL_PATH,
         "model_exists": model_exists,
-        "gpu": "T4"
+        "gpu": "T4",
     }
 
 
@@ -186,15 +188,13 @@ def classes():
     """Return the list of sign classes the model can detect."""
     import json
     import sys
+
     sys.path.insert(0, "/root")
 
-    with open("/root/sign_mapping.json", 'r', encoding='utf-8') as f:
+    with open("/root/sign_mapping.json", "r", encoding="utf-8") as f:
         sign_mapping = json.load(f)
 
-    return {
-        "num_classes": len(sign_mapping),
-        "classes": sign_mapping
-    }
+    return {"num_classes": len(sign_mapping), "classes": sign_mapping}
 
 
 # Local development entry point

@@ -4,7 +4,6 @@ from core.repository import BaseRepository
 
 
 class StatsRepository(BaseRepository):
-
     def get_kpi(self) -> dict:
         total = self.fetch_scalar("SELECT COUNT(*) FROM artifacts")
 
@@ -51,23 +50,33 @@ class StatsRepository(BaseRepository):
             "pipeline_stages": {
                 "physical": {
                     "count": lc.get("physical_count", 0),
-                    "percent": round((lc.get("physical_count", 0) / total * 100), 1) if total else 0,
+                    "percent": round((lc.get("physical_count", 0) / total * 100), 1)
+                    if total
+                    else 0,
                 },
                 "graphemic": {
                     "count": lc.get("graphemic_count", 0),
-                    "percent": round((lc.get("graphemic_count", 0) / total * 100), 1) if total else 0,
+                    "percent": round((lc.get("graphemic_count", 0) / total * 100), 1)
+                    if total
+                    else 0,
                 },
                 "reading": {
                     "count": lc.get("reading_count", 0),
-                    "percent": round((lc.get("reading_count", 0) / total * 100), 1) if total else 0,
+                    "percent": round((lc.get("reading_count", 0) / total * 100), 1)
+                    if total
+                    else 0,
                 },
                 "linguistic": {
                     "count": lc.get("linguistic_count", 0),
-                    "percent": round((lc.get("linguistic_count", 0) / total * 100), 1) if total else 0,
+                    "percent": round((lc.get("linguistic_count", 0) / total * 100), 1)
+                    if total
+                    else 0,
                 },
                 "semantic": {
                     "count": lc.get("semantic_count", 0),
-                    "percent": round((lc.get("semantic_count", 0) / total * 100), 1) if total else 0,
+                    "percent": round((lc.get("semantic_count", 0) / total * 100), 1)
+                    if total
+                    else 0,
                 },
             },
             "top_languages": top_languages,

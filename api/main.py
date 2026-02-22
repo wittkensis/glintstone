@@ -7,7 +7,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import get_settings
 from core.database import init_pool, close_pool
-from api.routes import health, image, stats, artifacts, collections, composites, dictionary
+from api.routes import (
+    health,
+    image,
+    stats,
+    artifacts,
+    collections,
+    composites,
+    dictionary,
+)
 
 
 @asynccontextmanager

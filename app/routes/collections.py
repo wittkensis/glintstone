@@ -20,6 +20,7 @@ def collection_list(request: Request):
         composites = {"items": [], "total": 0}
 
     from app.main import templates
+
     return templates.TemplateResponse(
         "collections/index.html",
         {
@@ -35,6 +36,7 @@ def collection_list(request: Request):
 @router.get("/new")
 def collection_new(request: Request):
     from app.main import templates
+
     return templates.TemplateResponse(
         "collections/form.html",
         {"request": request, "collection": None, "is_edit": False},
@@ -42,7 +44,9 @@ def collection_new(request: Request):
 
 
 @router.post("/new")
-def collection_create(request: Request, name: str = Form(...), description: str = Form("")):
+def collection_create(
+    request: Request, name: str = Form(...), description: str = Form("")
+):
     api = request.app.state.api
     result = api.post("/collections", json={"name": name, "description": description})
     return RedirectResponse(
@@ -63,6 +67,7 @@ def collection_detail(request: Request, collection_id: int, page: int = 1):
         return RedirectResponse(url="/collections", status_code=302)
 
     from app.main import templates
+
     return templates.TemplateResponse(
         "collections/detail.html",
         {
@@ -86,6 +91,7 @@ def collection_edit(request: Request, collection_id: int):
         return RedirectResponse(url="/collections", status_code=302)
 
     from app.main import templates
+
     return templates.TemplateResponse(
         "collections/form.html",
         {"request": request, "collection": collection, "is_edit": True},
@@ -100,7 +106,9 @@ def collection_update(
     description: str = Form(""),
 ):
     api = request.app.state.api
-    api.put(f"/collections/{collection_id}", json={"name": name, "description": description})
+    api.put(
+        f"/collections/{collection_id}", json={"name": name, "description": description}
+    )
     return RedirectResponse(url=f"/collections/{collection_id}", status_code=303)
 
 
@@ -112,7 +120,9 @@ def collection_delete(request: Request, collection_id: int):
 
 
 @router.post("/{collection_id}/add-tablets")
-def collection_add_tablets(request: Request, collection_id: int, p_numbers: str = Form(...)):
+def collection_add_tablets(
+    request: Request, collection_id: int, p_numbers: str = Form(...)
+):
     api = request.app.state.api
     pn_list = [p.strip() for p in p_numbers.split(",") if p.strip()]
     if pn_list:
@@ -121,7 +131,9 @@ def collection_add_tablets(request: Request, collection_id: int, p_numbers: str 
 
 
 @router.post("/{collection_id}/remove-tablet")
-def collection_remove_tablet(request: Request, collection_id: int, p_number: str = Form(...)):
+def collection_remove_tablet(
+    request: Request, collection_id: int, p_number: str = Form(...)
+):
     api = request.app.state.api
     api.delete(f"/collections/{collection_id}/tablets/{p_number}")
     return RedirectResponse(url=f"/collections/{collection_id}", status_code=303)

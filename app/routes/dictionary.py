@@ -17,6 +17,7 @@ def dictionary_index(request: Request):
         counts = {"all": 0, "pos": {}, "language": {}, "frequency": {}}
 
     from app.main import templates
+
     return templates.TemplateResponse(
         "dictionary/index.html",
         {

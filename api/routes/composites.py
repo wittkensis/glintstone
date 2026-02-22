@@ -17,7 +17,7 @@ def list_composites(
     search: str | None = Query(None, description="Search in designation"),
     limit: int = Query(100, ge=1, le=500, description="Maximum results"),
     offset: int = Query(0, ge=0, description="Results to skip"),
-    conn=Depends(get_db)
+    conn=Depends(get_db),
 ):
     """
     List all composites with optional filtering and pagination.
@@ -34,19 +34,14 @@ def list_composites(
             genre=genre,
             search=search,
             limit=limit,
-            offset=offset
+            offset=offset,
         )
     else:
         composites = repo.find_all(limit=limit, offset=offset)
 
     total = repo.get_total_count()
 
-    return {
-        "items": composites,
-        "total": total,
-        "limit": limit,
-        "offset": offset
-    }
+    return {"items": composites, "total": total, "limit": limit, "offset": offset}
 
 
 @router.get("/{q_number}")
@@ -64,10 +59,7 @@ def get_composite(q_number: str, conn=Depends(get_db)):
 
     exemplars = repo.get_exemplars(q_number)
 
-    return {
-        "composite": composite,
-        "exemplars": exemplars
-    }
+    return {"composite": composite, "exemplars": exemplars}
 
 
 @router.get("/{q_number}/exemplars")
@@ -86,8 +78,4 @@ def get_composite_exemplars(q_number: str, conn=Depends(get_db)):
 
     exemplars = repo.get_exemplars(q_number)
 
-    return {
-        "q_number": q_number,
-        "exemplars": exemplars,
-        "count": len(exemplars)
-    }
+    return {"q_number": q_number, "exemplars": exemplars, "count": len(exemplars)}

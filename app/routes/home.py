@@ -20,6 +20,7 @@ def homepage(request: Request):
         featured = []
 
     from app.main import templates
+
     return templates.TemplateResponse(
         "index.html",
         {

@@ -3,11 +3,10 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from core.config import get_settings
 from app.api_client import APIClient
 from app.routes import home, tablets, collections, dictionary
 

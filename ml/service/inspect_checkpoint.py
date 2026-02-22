@@ -16,7 +16,7 @@ def inspect_checkpoint(checkpoint_path: str):
     print(f"Loading checkpoint: {checkpoint_path}")
 
     # Load checkpoint
-    checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
 
     print(f"\nCheckpoint type: {type(checkpoint)}")
 
@@ -24,13 +24,17 @@ def inspect_checkpoint(checkpoint_path: str):
         print(f"Top-level keys: {list(checkpoint.keys())}")
 
         # Check for state_dict
-        if 'state_dict' in checkpoint:
-            state_dict = checkpoint['state_dict']
+        if "state_dict" in checkpoint:
+            state_dict = checkpoint["state_dict"]
             print(f"\nstate_dict has {len(state_dict)} keys")
 
             # Find classifier head to determine number of classes
             for key in state_dict.keys():
-                if 'class' in key.lower() or 'cls' in key.lower() or 'head' in key.lower():
+                if (
+                    "class" in key.lower()
+                    or "cls" in key.lower()
+                    or "head" in key.lower()
+                ):
                     tensor = state_dict[key]
                     print(f"  {key}: {tensor.shape}")
 
@@ -40,16 +44,16 @@ def inspect_checkpoint(checkpoint_path: str):
                 print(f"  {key}: {state_dict[key].shape}")
 
         # Check for meta info
-        if 'meta' in checkpoint:
-            meta = checkpoint['meta']
+        if "meta" in checkpoint:
+            meta = checkpoint["meta"]
             print(f"\nMeta info: {meta}")
 
         # Check for config
-        if 'cfg' in checkpoint or 'config' in checkpoint:
-            cfg_key = 'cfg' if 'cfg' in checkpoint else 'config'
+        if "cfg" in checkpoint or "config" in checkpoint:
+            cfg_key = "cfg" if "cfg" in checkpoint else "config"
             print(f"\nConfig found under '{cfg_key}'")
             cfg = checkpoint[cfg_key]
-            if hasattr(cfg, 'model'):
+            if hasattr(cfg, "model"):
                 print(f"Model config: {cfg.model}")
     else:
         # Direct state dict
@@ -60,12 +64,17 @@ def inspect_checkpoint(checkpoint_path: str):
 
 
 if __name__ == "__main__":
-    checkpoint_path = Path(__file__).parent.parent / "models/ebl_ocr/detr-173-classes-10-2025/epoch_1000.pth"
+    checkpoint_path = (
+        Path(__file__).parent.parent
+        / "models/ebl_ocr/detr-173-classes-10-2025/epoch_1000.pth"
+    )
 
     if not checkpoint_path.exists():
         print(f"Checkpoint not found at: {checkpoint_path}")
         print("Trying alternative path...")
-        checkpoint_path = Path("/Volumes/Portable Storage/CUNEIFORM/models/ebl_ocr/detr-173-classes-10-2025/epoch_1000.pth")
+        checkpoint_path = Path(
+            "/Volumes/Portable Storage/CUNEIFORM/models/ebl_ocr/detr-173-classes-10-2025/epoch_1000.pth"
+        )
 
     if checkpoint_path.exists():
         inspect_checkpoint(str(checkpoint_path))

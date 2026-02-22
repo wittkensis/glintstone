@@ -28,13 +28,16 @@ def get_artifact(p_number: str, conn=Depends(get_db)):
         raise HTTPException(status_code=404, detail="Artifact not found")
     return artifact
 
+
 @router.get("/{p_number}/atf")
 def get_artifact_atf(p_number: str, conn=Depends(get_db)):
     """Get ATF transliteration data for an artifact."""
     repo = ArtifactRepository(conn)
     atf_data = repo.get_atf(p_number)
     if not atf_data["lines"]:
-        raise HTTPException(status_code=404, detail="No ATF data found for this artifact")
+        raise HTTPException(
+            status_code=404, detail="No ATF data found for this artifact"
+        )
     return atf_data
 
 

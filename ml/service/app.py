@@ -4,7 +4,6 @@ Runs locally on port 8000.
 """
 
 import os
-import json
 import tempfile
 import time
 from pathlib import Path
@@ -12,7 +11,6 @@ from typing import Optional
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from inference import get_detector
@@ -21,7 +19,7 @@ from inference import get_detector
 app = FastAPI(
     title="Cuneiform Sign Detection API",
     description="DETR-based cuneiform sign detection for tablet images",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Add CORS middleware for local development
@@ -81,9 +79,7 @@ async def health_check():
     """Health check endpoint."""
     detector = get_detector()
     return HealthResponse(
-        status="healthy",
-        model_loaded=detector.model_loaded,
-        device=detector.device
+        status="healthy", model_loaded=detector.model_loaded, device=detector.device
     )
 
 
@@ -91,16 +87,15 @@ async def health_check():
 async def get_classes():
     """Return the list of sign classes the model can detect."""
     detector = get_detector()
-    return {
-        "num_classes": len(detector.sign_mapping),
-        "classes": detector.sign_mapping
-    }
+    return {"num_classes": len(detector.sign_mapping), "classes": detector.sign_mapping}
 
 
 @app.post("/detect-signs", response_model=DetectionResponse)
 async def detect_signs(
     file: UploadFile = File(...),
-    confidence_threshold: float = Query(0.3, ge=0.0, le=1.0, description="Minimum confidence threshold")
+    confidence_threshold: float = Query(
+        0.3, ge=0.0, le=1.0, description="Minimum confidence threshold"
+    ),
 ):
     """
     Detect cuneiform signs in an uploaded image.
@@ -113,10 +108,10 @@ async def detect_signs(
     global _model_loaded
 
     # Validate file type
-    if not file.content_type or not file.content_type.startswith('image/'):
+    if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid file type: {file.content_type}. Expected image/*"
+            detail=f"Invalid file type: {file.content_type}. Expected image/*",
         )
 
     # Save uploaded file to temp location
@@ -146,6 +141,7 @@ async def detect_signs(
 
         # Get image dimensions
         from PIL import Image
+
         with Image.open(tmp_path) as img:
             img_width, img_height = img.size
 
@@ -159,16 +155,13 @@ async def detect_signs(
             image_height=img_height,
             num_detections=len(detections),
             detections=[DetectionResult(**d) for d in detections],
-            model_name=metadata['model_name'],
-            model_epoch=metadata['epoch'],
-            model_device=metadata['device']
+            model_name=metadata["model_name"],
+            model_epoch=metadata["epoch"],
+            model_device=metadata["device"],
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Detection failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
 
     finally:
         # Clean up temp file
@@ -178,7 +171,7 @@ async def detect_signs(
 @app.post("/detect-signs-by-path")
 async def detect_signs_by_path(
     image_path: str = Query(..., description="Path to image file on disk"),
-    confidence_threshold: float = Query(0.3, ge=0.0, le=1.0)
+    confidence_threshold: float = Query(0.3, ge=0.0, le=1.0),
 ):
     """
     Detect signs in an image at a local file path.
@@ -187,10 +180,7 @@ async def detect_signs_by_path(
     global _model_loaded
 
     if not os.path.exists(image_path):
-        raise HTTPException(
-            status_code=404,
-            detail=f"Image not found: {image_path}"
-        )
+        raise HTTPException(status_code=404, detail=f"Image not found: {image_path}")
 
     try:
         detector = get_detector(confidence_threshold=confidence_threshold)
@@ -208,6 +198,7 @@ async def detect_signs_by_path(
         inference_time = (time.time() - start_time) * 1000
 
         from PIL import Image
+
         with Image.open(image_path) as img:
             img_width, img_height = img.size
 
@@ -221,16 +212,13 @@ async def detect_signs_by_path(
             "image_height": img_height,
             "num_detections": len(detections),
             "detections": detections,
-            "model_name": metadata['model_name'],
-            "model_epoch": metadata['epoch'],
-            "model_device": metadata['device']
+            "model_name": metadata["model_name"],
+            "model_epoch": metadata["epoch"],
+            "model_device": metadata["device"],
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Detection failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
 
 
 if __name__ == "__main__":
@@ -244,5 +232,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=False,  # Disable reload to keep model in memory
-        workers=1  # Single worker to share model
+        workers=1,  # Single worker to share model
     )

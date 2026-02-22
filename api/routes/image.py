@@ -1,6 +1,5 @@
 """GET /image/{p_number} — Tablet image serving with thumbnail support."""
 
-import os
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
