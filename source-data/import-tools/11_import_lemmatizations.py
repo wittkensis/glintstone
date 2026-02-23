@@ -273,13 +273,14 @@ def process_cdl_file(
                 stats["no_token_match"] += 1
                 continue
 
-            # Insert lemmatization
+            # Insert lemmatization (includes per-word language from ORACC CDL)
             cur.execute(
                 """
                 INSERT INTO lemmatizations (
                     token_id, citation_form, guide_word, sense, pos, epos,
-                    norm, base, signature, morph_raw, annotation_run_id, confidence
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1.0)
+                    norm, base, signature, morph_raw, annotation_run_id, confidence,
+                    language
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1.0, %s)
                 ON CONFLICT DO NOTHING
             """,
                 (
@@ -294,6 +295,7 @@ def process_cdl_file(
                     lemma.get("signature"),
                     lemma.get("morph_raw"),
                     annotation_run_id,
+                    lemma.get("lang"),
                 ),
             )
             stats["lemmas"] += 1

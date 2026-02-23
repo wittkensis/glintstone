@@ -270,3 +270,51 @@
     letter-spacing: 0.02em;
     color: var(--color-text);
 }
+
+
+/* ==========================================================================
+   Language Indicators (for multilingual tablets)
+   Subtle bottom-border signals Sumerian vs Akkadian words.
+   Only meaningful when both are present (bilingual context).
+   ========================================================================== */
+
+.atf-word--lang-sux {
+    border-bottom: 2px solid var(--color-lang-sux);
+}
+
+.atf-word--lang-akk {
+    border-bottom: 2px solid var(--color-lang-akk);
+}
+
+/* Sumerograms/Akkadograms: logograms from a foreign language */
+.atf-logo.atf-word--lang-sux,
+.atf-logo.atf-word--lang-akk {
+    border-bottom-style: dotted;
+}
+
+/* Language label at top of surface content */
+.atf-language-label {
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    font-family: var(--font-sans);
+    padding: var(--space-1) 0 var(--space-2) 36px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* Legend swatches for language */
+.atf-legend__swatch--lang-sux {
+    display: inline-block;
+    width: 16px;
+    height: 2px;
+    background: var(--color-lang-sux);
+    vertical-align: middle;
+}
+
+.atf-legend__swatch--lang-akk {
+    display: inline-block;
+    width: 16px;
+    height: 2px;
+    background: var(--color-lang-akk);
+    vertical-align: middle;
+}

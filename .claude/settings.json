@@ -3,7 +3,9 @@
     "allow": [
       "Bash(tar:*)",
       "WebFetch(domain:zenodo.org)",
-      "Bash(ssh:*)"
+      "Bash(ssh:*)",
+      "WebFetch(domain:cdli.mpiwg-berlin.mpg.de)",
+      "Bash(PGPASSWORD=glintstone psql:*)"
     ]
   }
 }
