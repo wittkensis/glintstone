@@ -135,12 +135,10 @@ PATTERNS = [
         r"^\s*(\d+)([\'])[\s:\.]+(.+)$",
         lambda m: {"line_number": m.group(1) + m.group(2), "confidence": 0.75},
     ),
-    # Pattern 6: Space-separated list items "1 item description"
-    # Lower confidence as this catches many false positives
-    (
-        r"^\s*(\d+)\s+(.+)$",
-        lambda m: {"line_number": m.group(1), "confidence": 0.4},
-    ),
+    # NOTE: Pattern 6 (space-separated "N text") REMOVED due to false positives
+    # It matched quantity descriptions as line references (e.g., "22 mana copper" → line 22)
+    # Created ~3,977 false positives. Future: implement context-aware version that checks
+    # whether the tablet uses explicit line notation elsewhere before applying.
 ]
 
 
@@ -250,13 +248,56 @@ def match_translation_to_line(
     return (None, 0.0)
 
 
+def should_use_positional_matching(conn, p_number: str) -> bool:
+    """
+    Determine if tablet should use context-aware positional matching.
+
+    Returns True if:
+    - Tablet has NO translations with explicit line notation
+    - Translation count ≈ text_line count (0.8:1 to 1.5:1 ratio)
+
+    This avoids false positives from quantity descriptions like "22 mana copper".
+    """
+    # Check for explicit line notation in ANY translation
+    explicit_count = conn.execute(
+        """
+        SELECT COUNT(*) as cnt FROM translations
+        WHERE p_number = %s
+          AND translation ~ '^\\s*\\d+[\\.:''\\s]+[a-zA-Z]'
+    """,
+        (p_number,),
+    ).fetchone()["cnt"]
+
+    if explicit_count > 0:
+        return False  # Tablet uses explicit notation - don't use positional
+
+    # Check translation/line ratio
+    trans_count = conn.execute(
+        """SELECT COUNT(*) as cnt FROM translations WHERE p_number = %s""",
+        (p_number,),
+    ).fetchone()["cnt"]
+
+    line_count = conn.execute(
+        """SELECT COUNT(*) as cnt FROM text_lines WHERE p_number = %s""",
+        (p_number,),
+    ).fetchone()["cnt"]
+
+    if line_count == 0:
+        return False
+
+    # Allow 0.8:1 to 1.5:1 ratio
+    ratio = trans_count / line_count
+    return 0.8 <= ratio <= 1.5
+
+
 def positional_match(
-    conn, p_number: str, translation_id: int
+    conn, p_number: str, translation_id: int, context_aware: bool = False
 ) -> tuple[int | None, float]:
     """
     Fallback: match by positional order (translation index → line sequence).
 
-    Returns (line_id, confidence=0.5).
+    Returns (line_id, confidence).
+    Confidence: 0.8 if context_aware, else 0.5.
     """
     # Get all translations for this tablet ordered by id
     all_trans = conn.execute(
@@ -300,7 +341,8 @@ def positional_match(
     ).fetchone()
 
     if line:
-        return (line["id"], 0.5)  # Lower confidence for positional
+        confidence = 0.8 if context_aware else 0.5
+        return (line["id"], confidence)
 
     return (None, 0.0)
 
@@ -404,6 +446,9 @@ def main(args):
     unmatched = []
     current_p_number = None
 
+    # Cache for context-aware positional matching detection
+    positional_cache = {}  # {p_number: should_use_positional}
+
     while True:
         # Fetch batch using cursor (id > last_processed_id)
         translations = conn.execute(
@@ -459,8 +504,15 @@ def main(args):
                 )
             else:
                 # Fallback to positional match
+                # Check if tablet qualifies for context-aware matching
+                if trans["p_number"] not in positional_cache:
+                    positional_cache[trans["p_number"]] = (
+                        should_use_positional_matching(conn, trans["p_number"])
+                    )
+
+                context_aware = positional_cache[trans["p_number"]]
                 line_id, confidence = positional_match(
-                    conn, trans["p_number"], trans["id"]
+                    conn, trans["p_number"], trans["id"], context_aware=context_aware
                 )
 
             if line_id:
