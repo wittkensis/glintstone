@@ -23,7 +23,7 @@ Every imported record links to an `annotation_run` with `source_name` identifyin
 
 | Source | Volume | Access | Format | Provider Attribution | URL |
 |--------|--------|--------|--------|---------------------|-----|
-| OpenAlex | 5-20k Assyriology works | REST, no auth | JSON | `OpenAlex` | https://docs.openalex.org/ |
+| OpenAlex | 184k+ Assyriology works (Topic T12307) | REST, no auth | JSON | `OpenAlex` | https://docs.openalex.org/ |
 | Semantic Scholar | Citation graphs for known DOIs | REST, rate-limited | JSON | `Semantic Scholar` | https://api.semanticscholar.org/ |
 
 ### Scholar Directory Sources
@@ -56,6 +56,8 @@ Every imported record links to an `annotation_run` with `source_name` identifyin
 | `08_enrich_semantic_scholar.py` | 7 | Citation graph enrichment |
 | `09_import_scholars_directory.py` | 8 | Who's Who + Wikipedia scholar import |
 | `10_seed_supersessions.py` | 9 | Manual + algorithmic supersession chains |
+| `11_cleanup_scholars.py` | 10 | Scholar deduplication, classification, and merge audit |
+| `12_link_openalex_authors.py` | 11 | Parse OpenAlex author strings into scholar links |
 
 ## Shared Libraries
 

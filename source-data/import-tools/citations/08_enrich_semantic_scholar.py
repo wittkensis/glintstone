@@ -15,11 +15,10 @@ Usage:
 import argparse
 import json
 import psycopg
+import subprocess
 import sys
 import time
 from pathlib import Path
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -109,20 +108,43 @@ class SemanticScholarEnricher:
 
         self._rate_limit()
 
-        url = f"{S2_BASE}/paper/DOI:{doi}?fields=citations.title,citations.externalIds,references.title,references.externalIds,citationCount"
+        url = f"{S2_BASE}/paper/DOI:{doi}?fields=citationCount"
 
         try:
-            req = Request(url, headers={"Accept": "application/json"})
-            with urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                cache_path.write_text(json.dumps(data, indent=2))
-                return data
-        except HTTPError as e:
-            if e.code == 404:
-                return None  # Paper not found in S2
-            if e.code == 429:
-                time.sleep(60)
-                return self._fetch_citations(doi)
+            result = subprocess.run(
+                [
+                    "curl",
+                    "-sL",
+                    "-H",
+                    "Accept: application/json",
+                    "--max-time",
+                    "30",
+                    url,
+                ],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                return None
+
+            if not result.stdout.strip():
+                return None
+
+            data = json.loads(result.stdout)
+
+            # Handle HTTP errors encoded in response
+            if "error" in data or "message" in data:
+                msg = data.get("message", data.get("error", ""))
+                if "404" in str(msg) or "not found" in str(msg).lower():
+                    return None
+                if "429" in str(msg) or "rate" in str(msg).lower():
+                    time.sleep(60)
+                    return self._fetch_citations(doi)
+                return None
+
+            cache_path.write_text(json.dumps(data, indent=2))
+            return data
+        except json.JSONDecodeError:
             return None
         except Exception:
             return None
@@ -130,10 +152,16 @@ class SemanticScholarEnricher:
     def _store_citations(
         self, conn: psycopg.Connection, pub_id: int, doi: str, data: dict
     ):
-        """Store citation count as metadata on the publication."""
-        # Store citation count (could be a column on publications or metadata)
-        # For now, just track it in the checkpoint stats
-        self.checkpoint.stats["updated"] += 1
+        """Store citation count on the publication."""
+        citation_count = data.get("citationCount")
+        if citation_count is not None:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE publications SET cited_by_count = %s WHERE id = %s",
+                    (citation_count, pub_id),
+                )
+            conn.commit()
+        self.checkpoint.stats["updated"] = self.checkpoint.stats.get("updated", 0) + 1
 
 
 def verify():

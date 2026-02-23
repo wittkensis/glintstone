@@ -15,12 +15,11 @@ import argparse
 import json
 import psycopg
 import psycopg.errors
+import subprocess
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -33,10 +32,9 @@ CACHE_DIR = Path(__file__).parent / "_cache" / "openalex"
 
 PROVIDER_NAME = "OpenAlex"
 
-# OpenAlex concept IDs for Assyriology-adjacent fields
-CONCEPT_FILTERS = [
-    "concepts.id:C2779432950",  # Assyriology
-    "concepts.id:C2777395710",  # Cuneiform
+# OpenAlex topic IDs (concepts API was deprecated)
+TOPIC_FILTERS = [
+    "topics.id:T12307",  # Ancient Near East History (Mesopotamia, cuneiform, Sumerian, Akkadian)
 ]
 
 OPENALEX_BASE = "https://api.openalex.org"
@@ -125,7 +123,7 @@ class OpenAlexEnricher:
                     print(f"    Using cached data ({len(cached):,} works)")
                     return cached
 
-        for concept_filter in CONCEPT_FILTERS:
+        for topic_filter in TOPIC_FILTERS:
             cursor = "*"
             while cursor:
                 if self.checkpoint.interrupted:
@@ -133,7 +131,7 @@ class OpenAlexEnricher:
 
                 url = (
                     f"{OPENALEX_BASE}/works?"
-                    f"filter={concept_filter}"
+                    f"filter={topic_filter}"
                     f"&per_page=200&cursor={cursor}"
                     f"&select=id,doi,title,publication_year,type,authorships,cited_by_count"
                 )
@@ -148,8 +146,9 @@ class OpenAlexEnricher:
                 if len(all_works) % 1000 == 0:
                     print(f"    Fetched {len(all_works):,}...", end="\r")
 
-        # Cache results
-        cache_path.write_text(json.dumps(all_works, indent=2))
+        # Only cache if we got meaningful results
+        if all_works:
+            cache_path.write_text(json.dumps(all_works, indent=2))
         return all_works
 
     def _backfill_dois(self, conn: psycopg.Connection, works: list) -> int:
@@ -176,14 +175,15 @@ class OpenAlexEnricher:
             norm = normalize_title(title or "")
             year_str = str(year) if year else ""
 
-            # Exact match
             doi = oa_by_title.get((norm, year_str))
             if doi:
+                clean_doi = doi.replace("https://doi.org/", "")
                 cursor.execute(
-                    "UPDATE publications SET doi = %s WHERE id = %s",
-                    (doi.replace("https://doi.org/", ""), pub_id),
+                    "UPDATE publications SET doi = %s WHERE id = %s AND NOT EXISTS (SELECT 1 FROM publications WHERE doi = %s)",
+                    (clean_doi, pub_id, clean_doi),
                 )
-                count += 1
+                if cursor.rowcount > 0:
+                    count += 1
 
         conn.commit()
         self.checkpoint.stats["updated"] += count
@@ -216,14 +216,12 @@ class OpenAlexEnricher:
             parsed = parse_name(name)
             orcid = orcid_map.get(parsed.normalized_key)
             if orcid:
-                try:
-                    cursor.execute(
-                        "UPDATE scholars SET orcid = %s WHERE id = %s",
-                        (orcid, scholar_id),
-                    )
+                cursor.execute(
+                    "UPDATE scholars SET orcid = %s WHERE id = %s AND NOT EXISTS (SELECT 1 FROM scholars WHERE orcid = %s)",
+                    (orcid, scholar_id, orcid),
+                )
+                if cursor.rowcount > 0:
                     count += 1
-                except psycopg.errors.UniqueViolation:
-                    conn.rollback()  # Required to continue after error in psycopg
 
         conn.commit()
         self.checkpoint.stats["updated"] += count
@@ -317,20 +315,35 @@ class OpenAlexEnricher:
     def _api_request(self, url: str) -> dict | None:
         time.sleep(REQUEST_DELAY)
         try:
-            req = Request(
-                url,
-                headers={
-                    "Accept": "application/json",
-                    "User-Agent": "Glintstone/1.0 (mailto:glintstone@example.com)",
-                },
+            result = subprocess.run(
+                [
+                    "curl",
+                    "-sL",
+                    "-H",
+                    "Accept: application/json",
+                    "-H",
+                    "User-Agent: Glintstone/1.0 (mailto:glintstone@example.com)",
+                    "--max-time",
+                    "30",
+                    url,
+                ],
+                capture_output=True,
+                text=True,
             )
-            with urlopen(req, timeout=30) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except HTTPError as e:
-            if e.code == 429:
-                time.sleep(5)
-                return self._api_request(url)
-            print(f"    OpenAlex HTTP error {e.code}")
+            if result.returncode != 0:
+                print(f"    curl error: {result.stderr.strip()}")
+                return None
+            data = json.loads(result.stdout)
+            # Handle rate limiting
+            if isinstance(data, dict) and data.get("error"):
+                if "429" in str(data.get("error", "")):
+                    time.sleep(5)
+                    return self._api_request(url)
+                print(f"    OpenAlex error: {data['error']}")
+                return None
+            return data
+        except json.JSONDecodeError:
+            print("    OpenAlex returned non-JSON response")
             return None
         except Exception as e:
             print(f"    OpenAlex error: {e}")

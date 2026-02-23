@@ -26,7 +26,15 @@ Numbered scripts run in order. Each step depends on earlier steps.
 | 19 | `19_match_translation_lines.py` | Match translations to text_lines by line number |
 | 20 | `20_import_collections.py` | Import curated collections |
 | 21 | `21_import_oracc_credits.py` | Import ORACC per-text credits into artifact_credits |
+| 22 | `22_import_ebl_sign_concordance.py` | Import eBL sign concordance data |
+| 23 | `23_import_unicode_signs.py` | Import Unicode cuneiform sign metadata |
 
-See `citations/` for the 10-step citation pipeline (publications, editions, bibliography).
+**Utility:**
+| Step | Script | What It Does |
+|------|--------|-------------|
+| 00 | `00_download_oracc_subprojects.py` | Download ORACC portal subproject ZIPs |
+| 05c | `05c_populate_genre_language_junctions.py` | Populate genre/language junction tables |
+
+See `citations/` for the citation pipeline (publications, editions, bibliography, scholar dedup).
 
 See `data-model/v2/import-pipeline-guide.md` for the full pipeline specification.

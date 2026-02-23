@@ -72,7 +72,11 @@ ORACC_PROJECTS = [
     "etcsri",
     "hbtin",
     "dccmt",
-]  # projects with corpusjson
+    "rinap",
+    "saao",
+    "riao",
+    "ribo",
+]  # projects with corpusjson (including portal projects with subprojects)
 
 PROJECT_TO_RUN = {
     "dcclt": "oracc/dcclt",
@@ -80,6 +84,10 @@ PROJECT_TO_RUN = {
     "etcsri": "oracc/etcsri",
     "hbtin": "oracc/hbtin",
     "dccmt": "oracc/dccmt",
+    "rinap": "oracc/rinap",
+    "saao": "oracc/saao",
+    "riao": "oracc/riao",
+    "ribo": "oracc/ribo",
 }
 
 
@@ -155,10 +163,8 @@ def walk_cdl(nodes: list, state: dict, out_lemmas: list):
                 line_n = node.get("n")
                 label = node.get("label", "")
                 if line_n is not None:
-                    try:
-                        state["line_number"] = int(line_n)
-                    except (ValueError, TypeError):
-                        pass
+                    # Keep as string — text_lines.line_number is TEXT
+                    state["line_number"] = str(line_n)
                 surf = parse_surface_from_label(label)
                 if surf:
                     state["surface"] = surf
@@ -303,19 +309,50 @@ def process_cdl_file(
     stats["tablets"] += 1
 
 
+def find_corpus_dirs(project: str) -> list[Path]:
+    """
+    Find all corpusjson directories for a project, including subproject dirs.
+
+    Handles multiple extraction layouts:
+      - dcclt/json/dcclt/corpusjson/           (direct)
+      - rinap/json/rinap/rinap1/corpusjson/    (subproject)
+      - saao/json/saao/saao/saa01/corpusjson/  (doubled parent from ZIP)
+    """
+    import os
+
+    base = ORACC_BASE / project / "json" / project
+    dirs = []
+
+    if not base.exists():
+        return dirs
+
+    for root, dirnames, filenames in os.walk(base):
+        if Path(root).name == "corpusjson":
+            # Only include dirs that actually have JSON files
+            json_files = [f for f in filenames if f.endswith(".json")]
+            if json_files:
+                dirs.append(Path(root))
+
+    return sorted(dirs)
+
+
 def build_caches(conn: psycopg.Connection, project: str) -> tuple[dict, dict]:
     """
     Build in-memory caches for line and token lookups.
     Only loads data for the given ORACC project's p_numbers.
+    Handles both direct and subproject corpus directories.
     """
     print(f"    Building lookup caches for {project}...", end=" ", flush=True)
 
-    # Get p_numbers for this project's corpus
-    corpus_dir = ORACC_BASE / project / "json" / project / "corpusjson"
-    if not corpus_dir.exists():
+    # Get p_numbers from all corpus directories for this project
+    corpus_dirs = find_corpus_dirs(project)
+    if not corpus_dirs:
         return {}, {}
 
-    p_numbers = {f.stem for f in corpus_dir.glob("P*.json")}
+    p_numbers = set()
+    for corpus_dir in corpus_dirs:
+        p_numbers.update(f.stem for f in corpus_dir.glob("P*.json"))
+
     if not p_numbers:
         return {}, {}
 
@@ -402,17 +439,31 @@ def main():
     }
 
     for project in projects:
-        corpus_dir = ORACC_BASE / project / "json" / project / "corpusjson"
-        if not corpus_dir.exists():
+        corpus_dirs = find_corpus_dirs(project)
+        if not corpus_dirs:
             print(f"\n  {project}: no corpusjson directory, skipping.")
             continue
 
-        cdl_files = sorted(corpus_dir.glob("P*.json"))
-        if not cdl_files:
+        cdl_files = []
+        q_count = 0
+        for cdir in corpus_dirs:
+            cdl_files.extend(sorted(cdir.glob("P*.json")))
+            q_count += len(list(cdir.glob("Q*.json")))
+        cdl_files.sort(key=lambda p: p.name)
+
+        if not cdl_files and q_count == 0:
             print(f"\n  {project}: no CDL files found.")
             continue
 
-        print(f"\n  {project}: {len(cdl_files)} CDL files")
+        if not cdl_files:
+            print(
+                f"\n  {project}: {q_count} Q-number files (composite texts, no P-number matches)"
+            )
+            continue
+
+        subdir_info = f" ({len(corpus_dirs)} dirs)" if len(corpus_dirs) > 1 else ""
+        q_info = f" + {q_count} Q-texts skipped" if q_count else ""
+        print(f"\n  {project}: {len(cdl_files)} CDL files{subdir_info}{q_info}")
         ann_run_id = annotation_run_ids.get(project, 1)
 
         if args.dry_run:
