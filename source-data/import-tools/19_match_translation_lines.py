@@ -104,10 +104,10 @@ PATTERNS = [
     ),
     # Pattern 1: "o 1. text" or "o i 3' text" (surface + optional column + line)
     (
-        r"^([oro]|obv?|rev?|obverse|reverse|edge)\s+([ivxIVX]*)\s*(\d+)[\'\s]*[.:]\s*(.+)$",
+        r"^([oro]|obv?|rev?|obverse|reverse|edge)\s+([ivxIVX]*)\s*(\d+)([\'])?[\s:\.]+(.+)$",
         lambda m: {
             "surface": SURFACE_MAP.get(m.group(1).lower(), m.group(1).lower()),
-            "line_number": m.group(3),
+            "line_number": m.group(3) + (m.group(4) if m.group(4) else ""),
             "confidence": 1.0,
         },
     ),
@@ -121,19 +121,25 @@ PATTERNS = [
         r"^(obverse|reverse|edge)\s+(\d+)[\'\s]*[.:]\s*(.+)$",
         lambda m: {"surface": m.group(1), "line_number": m.group(2), "confidence": 1.0},
     ),
-    # Pattern 4: Reversed surface notation "1 o." or "1 r."
+    # Pattern 4: Reversed surface notation "1 o." or "1' r."
     (
-        r"^\s*(\d+)[\'\s]*\s+([oro]|obv?|rev?)\s*[.:]\s*(.+)$",
+        r"^\s*(\d+)([\'])?\s+([oro]|obv?|rev?)\s*[.:]\s*(.+)$",
         lambda m: {
-            "line_number": m.group(1),
-            "surface": SURFACE_MAP.get(m.group(2).lower(), m.group(2).lower()),
+            "line_number": m.group(1) + (m.group(2) if m.group(2) else ""),
+            "surface": SURFACE_MAP.get(m.group(3).lower(), m.group(3).lower()),
             "confidence": 0.9,
         },
     ),
     # Pattern 5: Line with apostrophe "1' text" (primed line numbers)
     (
-        r"^\s*(\d+)[\'][\s:\.]\s*(.+)$",
-        lambda m: {"line_number": m.group(1), "confidence": 0.75},
+        r"^\s*(\d+)([\'])[\s:\.]+(.+)$",
+        lambda m: {"line_number": m.group(1) + m.group(2), "confidence": 0.75},
+    ),
+    # Pattern 6: Space-separated list items "1 item description"
+    # Lower confidence as this catches many false positives
+    (
+        r"^\s*(\d+)\s+(.+)$",
+        lambda m: {"line_number": m.group(1), "confidence": 0.4},
     ),
 ]
 
@@ -148,6 +154,35 @@ def classify_unmatchable(translation_text: str) -> str | None:
         if re.match(pattern, translation_text, re.IGNORECASE):
             return classification
     return None
+
+
+def is_lexical_glossary(translations: list) -> bool:
+    """
+    Detect if translations are dictionary definitions vs line translations.
+
+    Lexical texts (like P242433) contain glossary entries rather than
+    line-by-line translations. These should NOT match to text_lines.
+
+    Heuristics:
+    - High volume of simple word/phrase entries
+    - Parenthetical definitions: "(a kind of bread)"
+    - Semicolon-separated entries
+    - Few or no line number prefixes
+
+    Returns True if 75%+ of translations match glossary pattern.
+    """
+    if len(translations) < 20:
+        return False
+
+    # Pattern: simple words/phrases, often with parentheticals or semicolons
+    # Examples: "(a kind of bread, cake)", "to go; to walk", "king; ruler"
+    glossary_pattern = re.compile(
+        r"^[a-z\s\-,()]+;?\s*$|^\([a-z\s]+\)\s*;?\s*$|^[a-z\s]+\([a-z\s]+\)$",
+        re.IGNORECASE,
+    )
+
+    matches = sum(1 for t in translations if glossary_pattern.match(t))
+    return matches / len(translations) > 0.75  # 75%+ threshold
 
 
 def extract_line_info(translation_text: str) -> dict | None:
@@ -297,6 +332,67 @@ def main(args):
 
     checkpoint.set_total(total)
     print(f"Total translations to match: {total:,}\n")
+
+    # PHASE 0: Identify and mark lexical glossary tablets
+    print(f"{'-' * 80}")
+    print("PHASE 0: Detecting lexical glossary tablets")
+    print(f"{'-' * 80}\n")
+
+    # Get all p_numbers with translations
+    p_numbers = conn.execute("""
+        SELECT DISTINCT p_number
+        FROM translations
+        WHERE line_id IS NULL
+    """).fetchall()
+
+    glossary_tablets = []
+    for row in p_numbers:
+        p_number = row["p_number"]
+
+        # Get all translations for this tablet
+        tablet_translations = conn.execute(
+            """
+            SELECT translation FROM translations
+            WHERE p_number = %s
+            ORDER BY id
+        """,
+            (p_number,),
+        ).fetchall()
+
+        # Check if lexical glossary
+        trans_list = [t["translation"] for t in tablet_translations]
+        if is_lexical_glossary(trans_list):
+            glossary_tablets.append(p_number)
+
+            # Mark all as unmatchable
+            conn.execute(
+                """
+                UPDATE translations
+                SET line_id = NULL
+                WHERE p_number = %s
+            """,
+                (p_number,),
+            )
+
+    if glossary_tablets:
+        print(f"✓ Identified {len(glossary_tablets)} lexical glossary tablets")
+        print(f"  Examples: {', '.join(glossary_tablets[:5])}")
+        checkpoint.stats["lexical_glossaries"] = len(glossary_tablets)
+
+        # Get count of translations in these tablets
+        lexical_trans_count = conn.execute(
+            """
+            SELECT COUNT(*) as cnt FROM translations
+            WHERE p_number = ANY(%s)
+        """,
+            (glossary_tablets,),
+        ).fetchone()["cnt"]
+
+        print(f"  Total translations in glossary tablets: {lexical_trans_count:,}")
+        checkpoint.stats["lexical_translations"] = lexical_trans_count
+
+    conn.commit()
+    print()
 
     # Process in batches using cursor-based pagination
     # Use id > last_processed_id instead of OFFSET to avoid skipping records
