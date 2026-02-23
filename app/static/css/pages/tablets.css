@@ -131,6 +131,29 @@
     color: var(--color-text);
 }
 
+/* Compact attribution line */
+.tablet-meta__attribution {
+    margin: var(--space-2) 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+}
+
+.tablet-meta__attribution strong {
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+/* Wide meta item for credits text */
+.meta-item--wide {
+    flex-basis: 100%;
+}
+
+.meta-item__credits {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+}
+
 
 /* ==========================================================================
    TABLET HEADER
@@ -1542,4 +1565,3 @@ body.page-tablet-detail > .page-header {
     flex-direction: column;
     min-height: 0;
 }
-

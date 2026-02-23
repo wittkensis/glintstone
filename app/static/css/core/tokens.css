@@ -50,6 +50,12 @@
     --color-pipeline-complete: var(--color-success);
     --color-pipeline-incomplete: var(--color-warning);
 
+    /* Language colors (for multilingual tablet display) */
+    --color-lang-sux: #7eb8a0;             /* Sumerian — muted green */
+    --color-lang-akk: #b89a7e;             /* Akkadian — warm clay */
+    --color-lang-sux-20: rgba(126, 184, 160, 0.2);
+    --color-lang-akk-20: rgba(184, 154, 126, 0.2);
+
     /* Overlay colors */
     --color-overlay-light: rgba(255, 255, 255, 0.1);
     --color-overlay-medium: rgba(0, 0, 0, 0.4);

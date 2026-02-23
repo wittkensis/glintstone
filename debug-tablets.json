@@ -1,0 +1,20 @@
+[
+  {"p": "P227657", "note": "Lexical — ATF (265 lines) + translations (259 lines), no images"},
+  {"p": "P247526", "note": "Sumerian — damaged text, broken lines, ATF + translations"},
+  {"p": "P229672", "note": "Complex — fragment join, composite Q000057, structural ATF"},
+  {"p": "P104470", "note": "Unmatched translations — Old Babylonian, has image + ATF, translation lines failing to map"},
+  {"p": "P020464", "note": "Bilingual — Sumerian + Akkadian, Old Akkadian letter"},
+  {"p": "P412456", "note": "Trilingual — Akkadian + Elamite + Persian (Behistun inscription)"},
+  {"p": "P215544", "note": "Elamite — royal/monumental, Old Akkadian / Middle Elamite"},
+  {"p": "P271204", "note": "Hittite — EA 032, Middle Hittite"},
+  {"p": "P102738", "note": "Dual translation — English + German, Ur III administrative"},
+  {"p": "P020004", "note": "German only — VS 14 158, Sumerian admin, ED IIIb"},
+  {"p": "P000001", "note": "Minimal — early CDLI entry, sparse metadata"},
+  {"p": "P204982", "note": "OCR — KAR 031, Akkadian Neo-Assyrian, graphemic_complete=1.0, has image + ATF, no lemmas/translation. Only tablet with OCR data in corpus"},
+  {"p": "P034009", "note": "Attribution: 3 distinct contributors — ATF: Dahl+Englund, Translation: Englund+Heimpel, Publication: Schneider"},
+  {"p": "P154401", "note": "Attribution: single person all roles — Liu Changyu for ATF, translation, and publication"},
+  {"p": "P343972", "note": "Attribution: none — all three fields empty, compact line should not render"},
+  {"p": "P023651", "note": "Attribution: long pub author — Pettinato, Picchioni & Waetzoldt (3-name string), ATF by Jagersma"},
+  {"p": "P336287", "note": "ORACC credits: saao — rich credits string with Lemmatised by attribution, has ATF"},
+  {"p": "P269864", "note": "ORACC credits: 3 projects (rinap+riao+ribo) — tests multi-project credits display"}
+]

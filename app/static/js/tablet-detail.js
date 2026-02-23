@@ -117,7 +117,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize ATF Viewer
     const atfContainer = document.querySelector('.atf-panel');
     if (atfContainer && typeof ATFViewer !== 'undefined') {
-        TabletPage.atfViewer = new ATFViewer(atfContainer);
+        TabletPage.atfViewer = new ATFViewer(atfContainer, {
+            apiUrl: TabletPage.apiUrl,
+            language: atfContainer.dataset.language || null,
+        });
         if (TabletPage.pNumber) {
             TabletPage.atfViewer.load(TabletPage.pNumber);
         }

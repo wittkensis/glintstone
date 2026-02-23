@@ -32,6 +32,8 @@
 
 .pipeline--compact .pipeline__segment {
     background: var(--color-border);
+    border-left-width: 0;
+    border-right-width: 0;
     transition: background var(--transition-normal);
 }
 
@@ -41,16 +43,19 @@
 
 .pipeline--compact .pipeline__segment[data-status="partial"],
 .pipeline--compact .pipeline__segment[data-status="inferred"] {
-    background: var(--color-warning);
+    /* border-top: 1px solid var(--color-success); */
+    border-bottom: 1px solid var(--color-success);
 }
 
-.pipeline--compact .pipeline__segment[data-status="skipped"] {
+/* TODO: DEPRECATED/LEGACY? Not sure if this is still used. */
+/* .pipeline--compact .pipeline__segment[data-status="skipped"] {
     background: var(--color-text-subtle);
-}
+} */
 
-.pipeline--compact .pipeline__segment[data-status="missing"] {
+/* TODO: DEPRECATED/LEGACY? Not sure if this is still used. */
+/* .pipeline--compact .pipeline__segment[data-status="missing"] {
     background: var(--color-border);
-}
+} */
 
 /* Next step indicator - subtle pulse */
 .pipeline--compact .pipeline__segment--next {
@@ -77,8 +82,8 @@
 }
 
 .pipeline__dot {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--color-border);
     transition: background var(--transition-normal), transform var(--transition-normal);
@@ -90,15 +95,8 @@
 
 .pipeline__dot[data-status="partial"],
 .pipeline__dot[data-status="inferred"] {
-    background: var(--color-warning);
-}
-
-.pipeline__dot[data-status="skipped"] {
-    background: var(--color-text-subtle);
-}
-
-.pipeline__dot[data-status="missing"] {
     background: var(--color-border);
+    box-shadow: inset 0 0 0 1.5px var(--color-success);
 }
 
 /* Next step dot emphasis */
@@ -136,13 +134,12 @@
     border-radius: var(--radius-md);
     overflow: hidden;
     margin-bottom: var(--space-4);
-    gap: 0;
+    gap: 1px;
 }
 
 .pipeline--expanded .pipeline__segment {
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--color-border);
 }
 
 .pipeline--expanded .pipeline__segment:last-child {
@@ -152,21 +149,7 @@
 /* Status bar at top */
 .pipeline__bar {
     height: 4px;
-    background: var(--color-border);
     transition: background var(--transition-normal);
-}
-
-.pipeline__segment[data-status="complete"] .pipeline__bar {
-    background: var(--color-success);
-}
-
-.pipeline__segment[data-status="partial"] .pipeline__bar,
-.pipeline__segment[data-status="inferred"] .pipeline__bar {
-    background: var(--color-warning);
-}
-
-.pipeline__segment[data-status="skipped"] .pipeline__bar {
-    background: var(--color-text-subtle);
 }
 
 /* Segment body */
@@ -295,47 +278,6 @@
     height: 3px;
     z-index: 10;
     border-radius: 0;
-}
-
-/* ==========================================================================
-   Responsive
-   ========================================================================== */
-
-@media (max-width: 640px) {
-    .pipeline--expanded {
-        flex-direction: column;
-    }
-
-    .pipeline--expanded .pipeline__segment {
-        border-right: none;
-        border-bottom: 1px solid var(--color-border);
-    }
-
-    .pipeline--expanded .pipeline__segment:last-child {
-        border-bottom: none;
-    }
-
-    .pipeline__body {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        min-height: auto;
-        padding: var(--space-2) var(--space-3);
-    }
-
-    .pipeline__label {
-        margin-bottom: 0;
-    }
-
-    .pipeline__status {
-        margin-top: 0;
-        margin-left: var(--space-2);
-    }
-
-    .pipeline__next-hint {
-        margin-top: 0;
-        margin-left: var(--space-2);
-    }
 }
 
 /* ==========================================================================

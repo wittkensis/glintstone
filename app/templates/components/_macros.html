@@ -32,16 +32,28 @@
 {% endmacro %}
 
 
+{# ── OCR Badge ── #}
+{% macro ocr_badge(graphemic_score) %}
+{% if graphemic_score and graphemic_score > 0 %}
+<span class="ocr-badge" title="Has OCR/sign annotations ({{ (graphemic_score * 100)|round|int }}%)">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
+    </svg>
+    OCR
+</span>
+{% endif %}
+{% endmacro %}
+
+
 {# ── Pipeline (compact / inline / expanded) ── #}
-{# stages: dict with keys physical, graphemic, reading, linguistic, semantic #}
+{# stages: dict with keys physical, reading, linguistic, semantic #}
 {% macro pipeline(stages, variant="compact") %}
-{% set layer_names = ['physical', 'graphemic', 'reading', 'linguistic', 'semantic'] %}
+{% set layer_names = ['physical', 'reading', 'linguistic', 'semantic'] %}
 {% set layer_labels = {
-    'physical': 'Physical',
-    'graphemic': 'Graphemic',
-    'reading': 'Reading',
-    'linguistic': 'Linguistic',
-    'semantic': 'Semantic'
+    'physical': 'Image',
+    'reading': 'Transliteration',
+    'linguistic': 'Lemmatization',
+    'semantic': 'Translation'
 } %}
 
 {# Find highest completed/partial stage index for inference #}
@@ -71,7 +83,7 @@
 {% endfor %}
 
 {% if variant == "compact" %}
-<div class="pipeline pipeline--compact" aria-label="Pipeline: {{ ns.complete_count }} of 5 complete">
+<div class="pipeline pipeline--compact" aria-label="Pipeline: {{ ns.complete_count }} of 4 complete">
     {% for idx in range(layer_names|length) %}
     {% set layer = layer_names[idx] %}
     {% set score = stages.get(layer) if stages else none %}
@@ -91,7 +103,7 @@
 {% elif variant == "inline" %}
 {% set next_label = 'Needs ' ~ layer_labels.get(ns.next_stage, '') if ns.next_stage else 'Complete' %}
 <div class="pipeline pipeline--inline"
-     aria-label="Pipeline: {{ ns.complete_count }} of 5 complete"
+     aria-label="Pipeline: {{ ns.complete_count }} of 4 complete"
      title="{{ next_label }}">
     <div class="pipeline__dots">
         {% for idx in range(layer_names|length) %}
@@ -112,7 +124,7 @@
 </div>
 
 {% else %}{# expanded #}
-<nav class="pipeline pipeline--expanded" aria-label="Pipeline: {{ ns.complete_count }} of 5 complete">
+<nav class="pipeline pipeline--expanded" aria-label="Pipeline: {{ ns.complete_count }} of 4 complete">
     {% for idx in range(layer_names|length) %}
     {% set layer = layer_names[idx] %}
     {% set score = stages.get(layer) if stages else none %}
@@ -155,13 +167,22 @@
     </form>
     {% endif %}
 
-    {{ lang_badge(tablet.language) }}
+    <div class="card-badges">
+        {{ lang_badge(tablet.language) }}
+        {{ ocr_badge(tablet.graphemic_complete) }}
+    </div>
 
     <div class="card-image">
         <img src="{{ api_url }}/image/{{ tablet.p_number }}?size=200"
              alt="{{ tablet.designation or tablet.p_number }}"
              loading="lazy"
-             onerror="this.parentElement.classList.add('no-image')">
+             data-cdli-photo="https://cdli.earth/dl/photo/{{ tablet.p_number }}.jpg"
+             data-cdli-lineart="https://cdli.earth/dl/lineart/{{ tablet.p_number }}.jpg"
+             onerror="
+                if(!this.dataset.tried){this.dataset.tried='photo';this.src=this.dataset.cdliPhoto;}
+                else if(this.dataset.tried==='photo'){this.dataset.tried='lineart';this.src=this.dataset.cdliLineart;}
+                else{this.parentElement.classList.add('no-image');}
+             ">
         <div class="card-placeholder">
             <span class="cuneiform-icon">&#x12000;</span>
         </div>
@@ -170,7 +191,6 @@
     <div class="card-details card-overlay">
         {% set pipe = {
             'physical': tablet.physical_complete,
-            'graphemic': tablet.graphemic_complete,
             'reading': tablet.reading_complete,
             'linguistic': tablet.linguistic_complete,
             'semantic': tablet.semantic_complete
@@ -178,14 +198,14 @@
         {{ pipeline(pipe, 'compact') }}
 
         <span class="card-eyebrow p-number">{{ tablet.p_number }}</span>
-        {% if tablet.period %}
-        <span class="card-primary meta-period">{{ tablet.period[:25] }}</span>
-        {% endif %}
         {% if tablet.provenience %}
-        <span class="card-meta">{{ tablet.provenience[:20] }}</span>
+        <span class="card-primary">{{ tablet.provenience[:30] }}</span>
+        {% endif %}
+        {% if tablet.period %}
+        <span class="card-meta">{{ tablet.period[:30] }}</span>
         {% endif %}
         {% if tablet.genre %}
-        <span class="card-meta">{{ tablet.genre[:20] }}</span>
+        <span class="card-meta">{{ tablet.genre[:25] }}</span>
         {% endif %}
     </div>
 </a>
@@ -245,12 +265,11 @@
 
 
 {# ── Stage Filter ── #}
-{% macro stage_filter(stages, current, base_url='/tablets', search='') %}
+{% macro stage_filter(stages, current, base_url='/tablets', extra_params='') %}
 <nav class="stage-filter btn-group" aria-label="Filter by pipeline stage">
     {% for stage in stages %}
     {% set is_active = (stage.value == '' and not current) or (current == stage.value) %}
-    {% set url = base_url ~ '?' %}
-    {% if search %}{% set url = url ~ 'search=' ~ search ~ '&' %}{% endif %}
+    {% set url = base_url ~ '?' ~ extra_params %}
     {% if stage.value %}{% set url = url ~ 'pipeline=' ~ stage.value %}{% endif %}
     <a href="{{ url }}"
        class="btn btn-group-item{{ ' btn-group-item--active' if is_active }}"
@@ -278,23 +297,71 @@
 {% endmacro %}
 
 
-{# ── Filter Sidebar (search only for v2) ── #}
-{% macro filter_sidebar(search_value='', action_url='/tablets') %}
+{# ── Filter Sidebar ── #}
+{% macro filter_sidebar(search_value='', action_url='/tablets', pipeline='',
+                        period='', provenience='', genre='', language='', has_ocr='',
+                        filter_options=none) %}
 <aside class="filter-sidebar">
-    <div class="filter-section always-visible" data-filter="search">
-        <div class="filter-content">
-            <form method="GET" action="{{ action_url }}" class="search-form">
-                <div class="search-input-wrapper">
-                    <input type="text" name="search" id="search-input"
-                           class="search-input"
-                           value="{{ search_value }}"
-                           placeholder="Search">
-                    <button type="submit" class="btn search-submit">Search</button>
-                </div>
-                <div class="help-text-subtle search-help">Search P-numbers and designations. Use || for multiple.</div>
-            </form>
+    <form method="GET" action="{{ action_url }}" class="filter-form">
+        {# Preserve pipeline stage (set by btn-group outside this form) #}
+        {% if pipeline %}
+        <input type="hidden" name="pipeline" value="{{ pipeline }}">
+        {% endif %}
+
+        {# Search #}
+        <div class="filter-section" data-filter="search">
+            <div class="filter-content">
+                <input type="text" name="search" id="search-input"
+                       class="search-input filter-input"
+                       value="{{ search_value }}"
+                       placeholder="Search P-numbers, designations...">
+            </div>
         </div>
-    </div>
+
+        {# Toggle: Has ML/OCR #}
+        <div class="filter-section" data-filter="toggles">
+            <div class="filter-content">
+                <label class="filter-toggle">
+                    <input type="checkbox" name="has_ocr" value="1"
+                           {{ 'checked' if has_ocr }}>
+                    <span class="filter-toggle__label">Has ML/OCR</span>
+                </label>
+            </div>
+        </div>
+
+        {# Dropdowns #}
+        {% if filter_options %}
+        {% set dropdowns = [
+            ('period', 'Period', filter_options.period or [], period),
+            ('provenience', 'Provenience', filter_options.provenience or [], provenience),
+            ('genre', 'Genre', filter_options.genre or [], genre),
+            ('language', 'Language', filter_options.language or [], language),
+        ] %}
+        {% for name, label, options, current in dropdowns %}
+        {% if options %}
+        <div class="filter-section" data-filter="{{ name }}">
+            <div class="filter-content">
+                <label class="filter-label" for="filter-{{ name }}">{{ label }}</label>
+                <select name="{{ name }}" id="filter-{{ name }}" class="filter-select">
+                    <option value="">All</option>
+                    {% for opt in options %}
+                    <option value="{{ opt }}" {{ 'selected' if opt == current }}>{{ opt }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+
+        {# Actions #}
+        <div class="filter-section filter-actions">
+            <div class="filter-content">
+                <button type="submit" class="btn search-submit">Apply</button>
+                <a href="{{ action_url }}" class="btn btn--ghost filter-clear">Clear all</a>
+            </div>
+        </div>
+    </form>
 </aside>
 {% endmacro %}
 
@@ -401,8 +468,8 @@
     <div class="sr-only">
         Archive progress: {{ '{:,}'.format(total) }} tablets recorded.
         {{ ring1_pct }}% have images,
-        {{ ring2_pct }}% have readings,
-        {{ ring3_pct }}% have semantic data.
+        {{ ring2_pct }}% have transliterations,
+        {{ ring3_pct }}% have translations.
     </div>
 
     <svg class="progress-rings" viewBox="0 0 500 500" role="img" aria-hidden="true">
@@ -428,12 +495,12 @@
             <span class="label-count">{{ '{:,}'.format(ring1_count) }} tablets</span>
         </div>
         <div class="ring-label ring-label-2">
-            <span class="label-name">Readings</span>
+            <span class="label-name">Transliterations</span>
             <span class="label-stat">{{ ring2_pct }}%</span>
             <span class="label-count">{{ '{:,}'.format(ring2_count) }} tablets</span>
         </div>
         <div class="ring-label ring-label-3">
-            <span class="label-name">Semantic</span>
+            <span class="label-name">Translations</span>
             <span class="label-stat">{{ ring3_pct }}%</span>
             <span class="label-count">{{ '{:,}'.format(ring3_count) }} tablets</span>
         </div>

@@ -17,6 +17,8 @@ class ATFViewer {
         this.options = {
             showLegend: true,
             defaultMode: 'interactive',
+            apiUrl: '',
+            language: null,
             onWordClick: null,
             ...options
         };
@@ -104,7 +106,7 @@ class ATFViewer {
 
         try {
             // Fetch parsed ATF
-            const response = await fetch(`/api/artifacts/${pNumber}/atf`);
+            const response = await fetch(`${this.options.apiUrl}/artifacts/${pNumber}/atf`);
             if (!response.ok) throw new Error('ATF not available');
 
             const result = await this.safeJsonParse(response);
@@ -146,7 +148,7 @@ class ATFViewer {
      */
     async loadTranslation() {
         try {
-            const response = await fetch(`/api/artifacts/${this.pNumber}/translation`);
+            const response = await fetch(`${this.options.apiUrl}/artifacts/${this.pNumber}/translation`);
             if (response.ok) {
                 const result = await this.safeJsonParse(response);
                 if (result.has_translation) {
@@ -179,7 +181,7 @@ class ATFViewer {
         this.glossaryGlossCache.clear();
 
         try {
-            const response = await fetch(`/api/artifacts/${this.pNumber}/lemmas`);
+            const response = await fetch(`${this.options.apiUrl}/artifacts/${this.pNumber}/lemmas`);
             if (response.ok) {
                 const result = await this.safeJsonParse(response);
                 this.lemmasData = result.lemmas || {};
@@ -223,7 +225,7 @@ class ATFViewer {
 
         // Fetch from glossary API
         try {
-            const response = await fetch(`/api/dictionary/words?search=q=${encodeURIComponent(lookup)}&limit=1`);
+            const response = await fetch(`${this.options.apiUrl}/dictionary/words?search=q=${encodeURIComponent(lookup)}&limit=1`);
             const data = await this.safeJsonParse(response);
 
             if (data.entries && data.entries.length > 0) {
@@ -310,6 +312,14 @@ class ATFViewer {
                     if (!lookup) {
                         wordNo++;
                         continue;
+                    }
+
+                    // Tag word with per-word language from lemma data
+                    const lemmaEntry = this.lemmasData[String(lineNo)]?.[String(wordNo)];
+                    if (lemmaEntry?.lang) {
+                        const langBase = lemmaEntry.lang.split('-')[0]; // akk-x-oldbab → akk
+                        wordEl.dataset.lang = lemmaEntry.lang;
+                        wordEl.classList.add(`atf-word--lang-${langBase}`);
                     }
 
                     const glossData = await this.getWordGloss(lineNo, wordNo, lookup);
@@ -572,14 +582,17 @@ class ATFViewer {
     }
 
     /**
-     * Update legend to include gloss type indicators
-     * Called after glosses are attached to check which types are present
+     * Update legend to include gloss type and language indicators.
+     * Called after glosses are attached to check which types are present.
      */
     updateLegendWithGlossTypes() {
         const hasScholarlyGlosses = this.container.querySelectorAll('.atf-word--lemma').length > 0;
         const hasAutomaticGlosses = this.container.querySelectorAll('.atf-word--glossary').length > 0;
+        const hasSumerian = this.container.querySelectorAll('.atf-word--lang-sux').length > 0;
+        const hasAkkadian = this.container.querySelectorAll('.atf-word--lang-akk').length > 0;
 
-        if (!hasScholarlyGlosses && !hasAutomaticGlosses) return;
+        const hasAnything = hasScholarlyGlosses || hasAutomaticGlosses || (hasSumerian && hasAkkadian);
+        if (!hasAnything) return;
 
         const legendContainer = this.container.querySelector('.atf-legend__items');
         const legendEl = this.container.querySelector('.atf-legend');
@@ -587,11 +600,10 @@ class ATFViewer {
         // Show legend if hidden
         legendEl.classList.remove('is-hidden');
 
-        // Add gloss type legend items if not already present
-        const glossLegendItems = [];
+        const items = [];
 
         if (hasScholarlyGlosses && !legendContainer.querySelector('.atf-legend__swatch--scholarly-gloss')) {
-            glossLegendItems.push(`
+            items.push(`
                 <span class="atf-legend__item">
                     <span class="atf-legend__swatch atf-legend__swatch--scholarly-gloss">word</span>
                     Scholarly lemma (ORACC)
@@ -600,7 +612,7 @@ class ATFViewer {
         }
 
         if (hasAutomaticGlosses && !legendContainer.querySelector('.atf-legend__swatch--automatic-gloss')) {
-            glossLegendItems.push(`
+            items.push(`
                 <span class="atf-legend__item">
                     <span class="atf-legend__swatch atf-legend__swatch--automatic-gloss">word</span>
                     Detected word
@@ -608,9 +620,45 @@ class ATFViewer {
             `);
         }
 
-        if (glossLegendItems.length > 0) {
-            legendContainer.innerHTML += glossLegendItems.join('');
+        // Language indicators (only when both present = bilingual)
+        if (hasSumerian && hasAkkadian) {
+            if (!legendContainer.querySelector('.atf-legend__swatch--lang-sux')) {
+                items.push(`
+                    <span class="atf-legend__item">
+                        <span class="atf-legend__swatch atf-legend__swatch--lang-sux"></span>
+                        Sumerian
+                    </span>
+                `);
+            }
+            if (!legendContainer.querySelector('.atf-legend__swatch--lang-akk')) {
+                items.push(`
+                    <span class="atf-legend__item">
+                        <span class="atf-legend__swatch atf-legend__swatch--lang-akk"></span>
+                        Akkadian
+                    </span>
+                `);
+            }
         }
+
+        if (items.length > 0) {
+            legendContainer.innerHTML += items.join('');
+        }
+    }
+
+    /**
+     * Get language label for the current surface.
+     * Shows the artifact-level language when it contains multiple languages.
+     */
+    getSurfaceLanguageLabel() {
+        const lang = this.options.language;
+        if (!lang) return null;
+
+        // Only show label for multilingual tablets
+        const multiLangPatterns = [' and ', ';', '+', ','];
+        const isMultiLingual = multiLangPatterns.some(p => lang.includes(p));
+        if (!isMultiLingual) return null;
+
+        return lang;
     }
 
     /**
@@ -632,20 +680,29 @@ class ATFViewer {
         const surface = this.data.surfaces[this.currentSurface];
         let html = '';
 
+        // Surface-level language label for multilingual tablets
+        const langLabel = this.getSurfaceLanguageLabel();
+        if (langLabel) {
+            html += `<div class="atf-language-label">${this.escapeHtml(langLabel)}</div>`;
+        }
+
         // Render columns
         if (surface.columns.length > 1) {
-            html = '<div class="atf-columns">';
+            html += '<div class="atf-columns">';
             surface.columns.forEach(col => {
+                const colLabel = col.number > 0
+                    ? this.toRomanNumeral(col.number)
+                    : '';
                 html += `
                     <div class="atf-column">
-                        <div class="atf-column__header">Column ${col.number || ''}</div>
+                        <div class="atf-column__header">Column ${colLabel}</div>
                         ${this.renderLines(col.lines)}
                     </div>
                 `;
             });
             html += '</div>';
         } else if (surface.columns.length === 1) {
-            html = this.renderLines(surface.columns[0].lines);
+            html += this.renderLines(surface.columns[0].lines);
         }
 
         contentArea.innerHTML = html;
@@ -920,7 +977,7 @@ class ATFViewer {
         if (!lookups.length) return;
 
         try {
-            const response = await fetch('/api/dictionary/check', {
+            const response = await fetch(`${this.options.apiUrl}/dictionary/check`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ words: lookups })
@@ -1111,7 +1168,7 @@ class ATFViewer {
         dictContent.innerHTML = '<div class="knowledge-sidebar-dictionary__loading">Loading...</div>';
 
         try {
-            const response = await fetch(`/api/dictionary/words?search=q=${encodeURIComponent(word)}&full=1`);
+            const response = await fetch(`${this.options.apiUrl}/dictionary/words?search=q=${encodeURIComponent(word)}&full=1`);
             const data = await this.safeJsonParse(response);
 
             // Cache result
@@ -1261,7 +1318,7 @@ class ATFViewer {
                 params.append('pos', this.dictionaryFilters.pos);
             }
 
-            const response = await fetch(`/api/dictionary/words?${params}`);
+            const response = await fetch(`${this.options.apiUrl}/dictionary/words?${params}`);
             const data = await this.safeJsonParse(response);
 
             this.dictionaryResultsOffset = offset;
@@ -1609,7 +1666,7 @@ class ATFViewer {
 
         try {
             // Fetch composite data
-            const response = await fetch(`/api/composites/${qNumber}`);
+            const response = await fetch(`${this.options.apiUrl}/composites/${qNumber}`);
             if (!response.ok) throw new Error('Failed to load composite');
 
             const data = await this.safeJsonParse(response);
@@ -1707,6 +1764,19 @@ class ATFViewer {
     /**
      * Escape HTML special characters
      */
+    toRomanNumeral(num) {
+        const vals = [10, 9, 5, 4, 1];
+        const syms = ['x', 'ix', 'v', 'iv', 'i'];
+        let result = '';
+        for (let i = 0; i < vals.length; i++) {
+            while (num >= vals[i]) {
+                result += syms[i];
+                num -= vals[i];
+            }
+        }
+        return result;
+    }
+
     escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');

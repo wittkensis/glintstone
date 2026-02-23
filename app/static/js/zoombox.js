@@ -145,18 +145,13 @@ class Zoombox {
 
         const chain = [sources.local, sources.cdliPhoto, sources.cdliLineart].filter(Boolean);
 
-        console.log('[Zoombox] Attempting to load images:', chain);
-
         for (const src of chain) {
             try {
-                console.log('[Zoombox] Trying source:', src);
                 const result = await this._tryLoadImage(src);
-                console.log('[Zoombox] Successfully loaded:', src, result);
                 // Pass dimensions from the test image (which has loaded)
                 this._onImageLoaded(result.width, result.height);
                 return true;
             } catch (e) {
-                console.warn('[Zoombox] Failed to load:', src, e.message);
                 // Continue to next source
             }
         }
@@ -215,7 +210,6 @@ class Zoombox {
                 this.container.classList.remove('is-loading');
                 this.container.classList.remove('is-placeholder');
                 this.container.classList.add('has-image');
-                console.log('[Zoombox] Image displayed, container classes:', this.container.className);
 
                 // Re-enable transitions
                 requestAnimationFrame(() => {

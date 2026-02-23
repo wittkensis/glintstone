@@ -37,9 +37,8 @@ CREATE TABLE IF NOT EXISTS lexical_signs (
     shape_category TEXT,                     -- 'simple', 'composite', 'variant'
     component_signs TEXT[],                  -- For composites: ['LU', 'GAL']
 
-    -- Sign values (readings)
-    logographic_values TEXT[],               -- ['lugal', 'šarru']
-    syllabic_values TEXT[],                  -- ['lu', 'lug']
+    -- Sign values (readings) - single array matching ePSD2 structure
+    values TEXT[],                           -- ALL readings: ['lugal', 'šarru', 'lu', 'lug']
     determinative_function TEXT,             -- Semantic classifier function
 
     -- Language/Dialect/Period tracking
@@ -55,21 +54,22 @@ CREATE TABLE IF NOT EXISTS lexical_signs (
 
     -- Metadata
     created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    updated_at TIMESTAMP DEFAULT NOW(),
+
+    -- Unique constraint for idempotency (prevents duplicate imports)
+    UNIQUE(sign_name, source)
 );
 
 -- Performance indexes
 CREATE INDEX idx_lexical_signs_name ON lexical_signs(sign_name);
 CREATE INDEX idx_lexical_signs_unicode ON lexical_signs(unicode_char);
-CREATE INDEX idx_lexical_signs_values_log ON lexical_signs USING GIN(logographic_values);
-CREATE INDEX idx_lexical_signs_values_syll ON lexical_signs USING GIN(syllabic_values);
+CREATE INDEX idx_lexical_signs_values ON lexical_signs USING GIN(values);
 CREATE INDEX idx_lexical_signs_language ON lexical_signs USING GIN(language_codes);
 CREATE INDEX idx_lexical_signs_period ON lexical_signs USING GIN(periods);
 CREATE INDEX idx_lexical_signs_source ON lexical_signs(source);
 
 COMMENT ON TABLE lexical_signs IS 'Cuneiform signs with readings, values, and graphemic metadata';
-COMMENT ON COLUMN lexical_signs.logographic_values IS 'Word/concept values (e.g., LUGAL → lugal, šarru)';
-COMMENT ON COLUMN lexical_signs.syllabic_values IS 'Phonetic syllable values (e.g., DU → du, gin)';
+COMMENT ON COLUMN lexical_signs.values IS 'All sign values/readings (logographic + syllabic mixed). Reading type determined at association level.';
 COMMENT ON COLUMN lexical_signs.source IS 'Attribution to original source (epsd2-sl, oracc-sl, etc.)';
 
 -- ============================================================================
@@ -206,6 +206,7 @@ CREATE TABLE IF NOT EXISTS lexical_sign_lemma_associations (
 
     -- Reading type classification
     reading_type TEXT NOT NULL,              -- 'logographic', 'syllabic', 'determinative'
+    value TEXT,                              -- Specific sign value used (preserves subscripts: du₃, aya₂)
 
     -- Frequency & Context (pre-computed from token_readings)
     frequency INTEGER DEFAULT 0,             -- How common is this sign→lemma mapping

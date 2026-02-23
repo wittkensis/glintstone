@@ -20,6 +20,7 @@ Usage:
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -38,6 +39,21 @@ SOURCE_CITATION = (
     "ePSD2 (Electronic Pennsylvania Sumerian Dictionary), University of Pennsylvania"
 )
 SOURCE_URL = "http://psd.museum.upenn.edu/epsd2/"
+
+
+def normalize_for_matching(value: str) -> str:
+    """
+    Normalize sign value for lemma matching.
+
+    1. Strip subscripts: du₃ → du, aya₂ → aya
+    2. Lowercase for case-insensitive: Marduk → marduk
+
+    This allows matching while preserving original values with subscripts.
+    """
+    # Remove subscript numbers: du₃ → du, aya₂ → aya
+    no_subscripts = re.sub(r"[₀-₉]+", "", value)
+    # Lowercase for case-insensitive matching
+    return no_subscripts.lower()
 
 
 def log_unmapped_fields(category: str, available_fields: set, mapped_fields: set):
@@ -84,7 +100,7 @@ def import_signs(conn: psycopg.Connection, dry_run: bool) -> list[dict]:
             if unmapped:
                 print(f"  ℹ Unmapped sign fields: {', '.join(unmapped)}")
 
-        # Extract sign values (both logographic and syllabic in same array)
+        # Extract sign values (all readings in single array - matches ePSD2 structure)
         values = sign_data.get("values", [])
 
         sign = {
@@ -93,8 +109,7 @@ def import_signs(conn: psycopg.Connection, dry_run: bool) -> list[dict]:
             "sign_number": None,  # ePSD2 doesn't provide Borger/Labat numbers
             "shape_category": None,
             "component_signs": None,
-            "logographic_values": values,  # All values (will separate later if needed)
-            "syllabic_values": values,  # Same values for now
+            "values": values,  # Single array (logographic + syllabic mixed)
             "determinative_function": None,
             "language_codes": ["sux"],  # ePSD2 is Sumerian-focused
             "dialects": None,
@@ -114,15 +129,16 @@ def import_signs(conn: psycopg.Connection, dry_run: bool) -> list[dict]:
                 """
                 INSERT INTO lexical_signs (
                     sign_name, unicode_char, sign_number, shape_category,
-                    component_signs, logographic_values, syllabic_values,
-                    determinative_function, language_codes, dialects, periods,
-                    regions, source, source_citation, source_url
+                    component_signs, values, determinative_function,
+                    language_codes, dialects, periods, regions,
+                    source, source_citation, source_url
                 ) VALUES (
                     %(sign_name)s, %(unicode_char)s, %(sign_number)s, %(shape_category)s,
-                    %(component_signs)s, %(logographic_values)s, %(syllabic_values)s,
-                    %(determinative_function)s, %(language_codes)s, %(dialects)s, %(periods)s,
-                    %(regions)s, %(source)s, %(source_citation)s, %(source_url)s
+                    %(component_signs)s, %(values)s, %(determinative_function)s,
+                    %(language_codes)s, %(dialects)s, %(periods)s, %(regions)s,
+                    %(source)s, %(source_citation)s, %(source_url)s
                 )
+                ON CONFLICT (sign_name, source) DO NOTHING
                 """,
                 signs,
             )
@@ -367,17 +383,23 @@ def create_sign_lemma_associations(
 
         sign_id = sign_db["id"]
 
-        # Match logographic values
-        for log_val in sign.get("logographic_values", []):
+        # Match sign values to lemmas
+        # Normalize: strip subscripts (du₃ → du) and lowercase (Marduk → marduk)
+        # Store original value with subscripts preserved
+        for value in sign.get("values", []):
+            # Normalize for matching: du₃ → du, Marduk → marduk
+            normalized = normalize_for_matching(value)
+
+            # Case-insensitive match
             lemma = conn.execute(
                 """
                 SELECT id FROM lexical_lemmas
-                WHERE citation_form = %s
+                WHERE LOWER(citation_form) = %s
                   AND language_code = 'sux'
                   AND source = 'epsd2'
                 LIMIT 1
                 """,
-                (log_val,),
+                (normalized,),
             ).fetchone()
 
             if lemma:
@@ -385,7 +407,8 @@ def create_sign_lemma_associations(
                     {
                         "sign_id": sign_id,
                         "lemma_id": lemma["id"],
-                        "reading_type": "logographic",
+                        "value": value,  # Store ORIGINAL with subscripts (du₃)
+                        "reading_type": "logographic",  # Matched = word-reading
                         "frequency": 0,  # To be computed later
                         "context_distribution": None,
                         "source": "epsd2-sl",
@@ -394,9 +417,7 @@ def create_sign_lemma_associations(
                     }
                 )
             else:
-                unmatched_values.append(
-                    f"{sign['sign_name']} → {log_val} (logographic)"
-                )
+                unmatched_values.append(f"{sign['sign_name']} → {value}")
 
     # Bulk insert associations
     if associations:
@@ -405,10 +426,10 @@ def create_sign_lemma_associations(
             cur.executemany(
                 """
                 INSERT INTO lexical_sign_lemma_associations (
-                    sign_id, lemma_id, reading_type, frequency, context_distribution,
-                    source, source_citation, source_url
+                    sign_id, lemma_id, value, reading_type, frequency,
+                    context_distribution, source, source_citation, source_url
                 ) VALUES (
-                    %(sign_id)s, %(lemma_id)s, %(reading_type)s, %(frequency)s,
+                    %(sign_id)s, %(lemma_id)s, %(value)s, %(reading_type)s, %(frequency)s,
                     %(context_distribution)s, %(source)s, %(source_citation)s, %(source_url)s
                 )
                 ON CONFLICT DO NOTHING

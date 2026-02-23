@@ -249,6 +249,11 @@ def main():
                 parse_cdli_date(row.get("date_updated", "")),  # cdli_updated_at
                 None,  # oracc_projects (JSON, from ORACC)
                 annotation_run_id,  # annotation_run_id
+                clean_str(row.get("atf_source", "")),  # atf_source
+                clean_str(row.get("translation_source", "")),  # translation_source
+                clean_str(row.get("author", "")),  # publication_author
+                clean_str(row.get("date_entered", "")),  # cdli_date_entered
+                clean_str(row.get("db_source", "")),  # db_source
             )
 
             batch.append(record)
@@ -316,11 +321,14 @@ def flush_batch(conn: psycopg.Connection, batch: list) -> tuple[int, int]:
                 primary_publication, collection, dates_referenced,
                 date_of_origin, findspot_square, accounting_period,
                 acquisition_history, cdli_updated_at, oracc_projects,
-                annotation_run_id
+                annotation_run_id,
+                atf_source, translation_source, publication_author,
+                cdli_date_entered, db_source
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s
             )
             ON CONFLICT (p_number) DO NOTHING
         """,

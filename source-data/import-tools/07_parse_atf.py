@@ -115,6 +115,7 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
     """
     tablet = None
     current_surface_type = None  # canonical DB surface type or None
+    current_column = 0  # 0 = no column marker seen; 1+ = @column N
     line_counter = 0
 
     with open(atf_path, encoding="utf-8", errors="replace") as f:
@@ -139,11 +140,12 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
                     "p_number": m.group(1),
                     "lang": "und",
                     "surfaces": {},  # surface_type → True (just track existence)
-                    "lines": [],  # (surface_type, line_no, raw_atf, is_ruling, is_blank)
+                    "lines": [],  # (surface_type, column_num, line_no, raw_atf, is_ruling, is_blank)
                     "translations": [],  # (lang_code, text)
                     "composites": [],  # (q_number, location_label)
                 }
                 current_surface_type = None
+                current_column = 0
                 line_counter = 0
                 continue
 
@@ -163,12 +165,17 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
 
                 # Check if it's a column
                 if marker == "column":
+                    col_m = RE_COLUMN.match(line)
+                    current_column = (
+                        int(col_m.group(1)) if col_m else (current_column + 1)
+                    )
                     continue
 
                 # Map marker to DB surface type
                 db_surface = SURFACE_MAP.get(marker)
                 if db_surface is not None:
                     current_surface_type = db_surface
+                    current_column = 0  # reset column on surface change
                     if db_surface not in tablet["surfaces"]:
                         tablet["surfaces"][db_surface] = True
                 elif db_surface is None and marker in SURFACE_MAP:
@@ -197,14 +204,28 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
             if RE_RULING.match(line):
                 line_counter += 1
                 tablet["lines"].append(
-                    (current_surface_type, line_counter, line.strip(), 1, 0)
+                    (
+                        current_surface_type,
+                        current_column,
+                        line_counter,
+                        line.strip(),
+                        1,
+                        0,
+                    )
                 )
                 continue
 
             if RE_BLANK.match(line) or line.startswith("$ "):
                 line_counter += 1
                 tablet["lines"].append(
-                    (current_surface_type, line_counter, line.strip(), 0, 1)
+                    (
+                        current_surface_type,
+                        current_column,
+                        line_counter,
+                        line.strip(),
+                        0,
+                        1,
+                    )
                 )
                 continue
 
@@ -217,7 +238,9 @@ def parse_atf_file(atf_path: Path, limit: int = 0):
                 # Strip only the final period; preserve prime (') and sub-line (.a, .b1) notation
                 line_no = label.rstrip(".")
                 line_counter += 1
-                tablet["lines"].append((current_surface_type, line_no, content, 0, 0))
+                tablet["lines"].append(
+                    (current_surface_type, current_column, line_no, content, 0, 0)
+                )
                 continue
 
             # Skip comments and other markers
@@ -270,24 +293,39 @@ def flush_tablets(
                         surface_id_map[surface_type] = row[0]
 
             # --- Text lines ---
-            line_id_map = {}  # (surface_type, line_no) → text_line.id
-            for surface_type, line_no, raw_atf, is_ruling, is_blank in tablet["lines"]:
+            line_id_map = {}  # (surface_type, column_num, line_no) → text_line.id
+            for (
+                surface_type,
+                column_num,
+                line_no,
+                raw_atf,
+                is_ruling,
+                is_blank,
+            ) in tablet["lines"]:
                 surface_id = surface_id_map.get(surface_type) if surface_type else None
 
                 cur.execute(
                     """
                     INSERT INTO text_lines
-                        (p_number, surface_id, line_number, raw_atf, is_ruling, is_blank, source)
-                    VALUES (%s, %s, %s, %s, %s, %s, 'cdli')
-                    ON CONFLICT (p_number, surface_id, line_number, source) DO NOTHING
+                        (p_number, surface_id, column_number, line_number, raw_atf, is_ruling, is_blank, source)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'cdli')
+                    ON CONFLICT (p_number, surface_id, column_number, line_number, source) DO NOTHING
                     RETURNING id
                 """,
-                    (p_number, surface_id, line_no, raw_atf, is_ruling, is_blank),
+                    (
+                        p_number,
+                        surface_id,
+                        column_num,
+                        line_no,
+                        raw_atf,
+                        is_ruling,
+                        is_blank,
+                    ),
                 )
                 row = cur.fetchone()
                 if row:
                     line_id = row[0]
-                    line_id_map[(surface_type, line_no)] = line_id
+                    line_id_map[(surface_type, column_num, line_no)] = line_id
                     stats["lines"] += 1
 
                     # --- Tokens (only for real text lines, not blank/ruling) ---

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "components/_macros.html" import pipeline, lang_badge %}
+{% from "components/_macros.html" import pipeline, lang_badge, ocr_badge %}
 
 {% block title %}{{ tablet.p_number }} - Glintstone{% endblock %}
 
@@ -33,6 +33,7 @@
         <div class="page-header-actions">
                     {% set pipe = tablet.pipeline or {} %}
                     {{ pipeline(pipe, 'inline') }}
+                    {{ ocr_badge(tablet.graphemic_complete) }}
 
                     {% if tablet.composites %}
                     <button class="btn btn--icon-left btn--toggle" id="composite-toggle"
@@ -49,7 +50,7 @@
                             </svg>
                         </button>
                         <div class="actions-menu__dropdown">
-                            <a href="https://cdli.ucla.edu/search/archival_view.php?ObjectID={{ tablet.p_number }}"
+                            <a href="https://cdli.earth/artifacts/{{ tablet.p_number[1:] | int }}"
                                target="_blank" class="actions-menu__item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -57,13 +58,22 @@
                                 </svg>
                                 View on CDLI
                             </a>
+                            <a href="https://cdli.earth/artifacts/{{ tablet.p_number[1:] | int }}/history"
+                               target="_blank" class="actions-menu__item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                View history on CDLI
+                            </a>
                         </div>
             </div>
         </div>
     </div>
 
     {# Primary Metadata #}
-    {% set has_secondary = tablet.designation or tablet.museum_no or tablet.genre or (tablet.width and tablet.height) %}
+    {% set has_attribution = tablet.atf_source or tablet.translation_source or tablet.publication_author %}
+    {% set has_oracc_credits = tablet.oracc_credits and tablet.oracc_credits | length > 0 %}
+    {% set has_secondary = tablet.designation or tablet.museum_no or tablet.genre or (tablet.width and tablet.height) or has_attribution or has_oracc_credits %}
     <div class="page-header-metadata tablet-meta">
             <dl class="tablet-meta__row">
                 {% if tablet.language %}
@@ -101,6 +111,14 @@
                 </div>
                 {% endif %}
             </dl>
+
+            {# Compact attribution — always visible #}
+            {% if tablet.atf_source %}
+            <p class="tablet-meta__attribution">
+                Data by {{ tablet.atf_source }}
+            </p>
+            {% endif %}
+
             {% if has_secondary %}
             <dl class="tablet-meta__secondary" id="meta-secondary">
                 {% if tablet.designation %}
@@ -126,6 +144,36 @@
                     <dt>Dimensions</dt>
                     <dd>{{ tablet.width }}&times;{{ tablet.height }}&times;{{ tablet.thickness or '?' }} mm</dd>
                 </div>
+                {% endif %}
+                {# Full attribution breakdown #}
+                {% if has_attribution %}
+                {% if tablet.atf_source %}
+                <div class="meta-item">
+                    <dt>Transliteration</dt>
+                    <dd>{{ tablet.atf_source }}</dd>
+                </div>
+                {% endif %}
+                {% if tablet.translation_source %}
+                <div class="meta-item">
+                    <dt>Translation</dt>
+                    <dd>{{ tablet.translation_source }}</dd>
+                </div>
+                {% endif %}
+                {% if tablet.publication_author %}
+                <div class="meta-item">
+                    <dt>Publication</dt>
+                    <dd>{{ tablet.publication_author }}</dd>
+                </div>
+                {% endif %}
+                {% endif %}
+                {# ORACC per-project credits #}
+                {% if has_oracc_credits %}
+                {% for credit in tablet.oracc_credits %}
+                <div class="meta-item meta-item--wide">
+                    <dt>ORACC/{{ credit.oracc_project }}</dt>
+                    <dd class="meta-item__credits">{{ credit.credits_text }}</dd>
+                </div>
+                {% endfor %}
                 {% endif %}
             </dl>
             {% endif %}
@@ -174,7 +222,7 @@
             </section>
         </div>
 
-        <div class="atf-panel"></div>
+        <div class="atf-panel" data-language="{{ tablet.language or '' }}"></div>
 
         <aside class="atf-knowledge-sidebar" id="knowledge-sidebar" data-state="closed">
             <!-- Vertical Icon Bar -->
@@ -334,4 +382,24 @@
 <script src="/static/js/atf-viewer.js"></script>
 <script src="/static/js/atf-viewer-integration.js"></script>
 <script src="/static/js/tablet-detail.js"></script>
+{% if debug_tablets_json %}
+<script>
+(function() {
+    var tablets = JSON.parse({{ debug_tablets_json | tojson }});
+    var base = {{ web_url | tojson }};
+    console.groupCollapsed('[Glintstone Debug] Test tablets (' + tablets.length + ')');
+    tablets.forEach(function(t) {
+        console.log(base + '/tablets/' + t.p + '  %c' + t.note, 'color: gray');
+    });
+    console.groupEnd();
+})();
+</script>
+{% endif %}
+{% if debug_json %}
+<script>
+console.groupCollapsed('[Glintstone Debug] {{ tablet.p_number }} — all known data');
+console.log(JSON.parse({{ debug_json | tojson }}));
+console.groupEnd();
+</script>
+{% endif %}
 {% endblock %}

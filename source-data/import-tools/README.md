@@ -19,6 +19,7 @@ Numbered scripts run in order. Each step depends on earlier steps.
 | 15b | `15_import_compvis_annotations.py` | Import CompVis sign detection bounding boxes |
 | 19 | `19_match_translation_lines.py` | Match translations to text_lines by line number |
 | 20 | `20_import_collections.py` | Import curated collections |
+| 21 | `21_import_oracc_credits.py` | Import ORACC per-text credits into artifact_credits |
 
 See `citations/` for the 10-step citation pipeline (publications, editions, bibliography).
 

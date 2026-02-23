@@ -6,7 +6,17 @@
 {% block content %}
 <main class="layout-two-column filtered-list-page">
 <div class="page-with-sidebar">
-    {{ filter_sidebar(search_value=search or '', action_url='/tablets') }}
+    {{ filter_sidebar(
+        search_value=search or '',
+        action_url='/tablets',
+        pipeline=pipeline or '',
+        period=period or '',
+        provenience=provenience or '',
+        genre=genre or '',
+        language=language or '',
+        has_ocr=has_ocr or '',
+        filter_options=filter_options
+    ) }}
 
     <div class="main-content">
         <div class="page-header">
@@ -20,14 +30,22 @@
             </div>
         </div>
 
+        {# Build filter query string for stage filter + pagination links #}
+        {% set fq = '' %}
+        {% if search %}{% set fq = fq ~ 'search=' ~ search ~ '&' %}{% endif %}
+        {% if period %}{% set fq = fq ~ 'period=' ~ period ~ '&' %}{% endif %}
+        {% if provenience %}{% set fq = fq ~ 'provenience=' ~ provenience ~ '&' %}{% endif %}
+        {% if genre %}{% set fq = fq ~ 'genre=' ~ genre ~ '&' %}{% endif %}
+        {% if language %}{% set fq = fq ~ 'language=' ~ language ~ '&' %}{% endif %}
+        {% if has_ocr %}{% set fq = fq ~ 'has_ocr=1&' %}{% endif %}
+
         {% set stages = [
             {'label': 'All', 'value': ''},
-            {'label': 'Needs graphemic', 'value': 'needs_graphemic'},
-            {'label': 'Needs reading', 'value': 'needs_reading'},
-            {'label': 'Needs linguistic', 'value': 'needs_linguistic'},
+            {'label': 'Needs transliteration', 'value': 'needs_reading'},
+            {'label': 'Needs lemmatization', 'value': 'needs_linguistic'},
             {'label': 'Complete', 'value': 'complete'},
         ] %}
-        {{ stage_filter(stages, pipeline or '', '/tablets', search=search or '') }}
+        {{ stage_filter(stages, pipeline or '', '/tablets', extra_params=fq) }}
 
         <div class="tablet-grid">
             {% for tablet in tablets %}
@@ -41,8 +59,7 @@
             {% endfor %}
         </div>
 
-        {% set base = '/tablets?' %}
-        {% if search %}{% set base = base ~ 'search=' ~ search ~ '&' %}{% endif %}
+        {% set base = '/tablets?' ~ fq %}
         {% if pipeline %}{% set base = base ~ 'pipeline=' ~ pipeline ~ '&' %}{% endif %}
         {{ pagination(page, total_pages, base) }}
     </div>
