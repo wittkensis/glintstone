@@ -15,7 +15,8 @@ Numbered scripts run in order. Each step depends on earlier steps.
 | 10 | `10_import_token_readings.py` | Extract readings from tokens.gdl_json (Phase A) |
 | 11 | `11_import_lemmatizations.py` | Import ORACC lemmatization data |
 | 13 | `13_import_glossaries.py` | Import ORACC glossary entries and forms |
-| 15 | `15_import_compvis_annotations.py` | Import CompVis sign detection bounding boxes |
+| 15 | `15_import_epsd2_unified.py` | Import ePSD2 into unified lexical schema (signs, lemmas, senses) |
+| 15b | `15_import_compvis_annotations.py` | Import CompVis sign detection bounding boxes |
 | 19 | `19_match_translation_lines.py` | Match translations to text_lines by line number |
 | 20 | `20_import_collections.py` | Import curated collections |
 
