@@ -1,6 +1,6 @@
 """Artifact routes — search and detail."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.config import get_settings
 from core.database import get_db
@@ -10,19 +10,31 @@ router = APIRouter(prefix="/artifacts", tags=["artifacts"])
 
 
 @router.get("/filter-options")
-def get_filter_options(conn=Depends(get_db)):
+def get_filter_options(
+    period: list[str] = Query(default=[]),
+    provenience: list[str] = Query(default=[]),
+    genre: list[str] = Query(default=[]),
+    language: list[str] = Query(default=[]),
+    conn=Depends(get_db),
+):
     repo = ArtifactRepository(conn)
-    return repo.get_filter_options()
+    active = {
+        "period": period,
+        "provenience": provenience,
+        "genre": genre,
+        "language": language,
+    }
+    return repo.get_filter_options(active_filters=active)
 
 
 @router.get("")
 def search_artifacts(
     search: str | None = None,
     pipeline: str | None = None,
-    period: str | None = None,
-    provenience: str | None = None,
-    genre: str | None = None,
-    language: str | None = None,
+    period: list[str] = Query(default=[]),
+    provenience: list[str] = Query(default=[]),
+    genre: list[str] = Query(default=[]),
+    language: list[str] = Query(default=[]),
     has_ocr: bool = False,
     page: int = 1,
     per_page: int = 24,
@@ -32,10 +44,10 @@ def search_artifacts(
     return repo.search(
         search=search,
         pipeline=pipeline,
-        period=period,
-        provenience=provenience,
-        genre=genre,
-        language=language,
+        period=period or None,
+        provenience=provenience or None,
+        genre=genre or None,
+        language=language or None,
         has_ocr=has_ocr,
         page=page,
         per_page=per_page,
@@ -76,9 +88,16 @@ def get_artifact_atf(p_number: str, conn=Depends(get_db)):
 
 @router.get("/{p_number}/translation")
 def get_artifact_translation(p_number: str, conn=Depends(get_db)):
-    """Get translation data for an artifact."""
+    """Get translation data for an artifact, grouped by language."""
     repo = ArtifactRepository(conn)
     return repo.get_translation(p_number)
+
+
+@router.get("/{p_number}/normalized")
+def get_artifact_normalized(p_number: str, conn=Depends(get_db)):
+    """Get normalized readings (scholarly transliteration) for an artifact."""
+    repo = ArtifactRepository(conn)
+    return repo.get_normalized(p_number)
 
 
 @router.get("/{p_number}/lemmas")
@@ -110,6 +129,28 @@ def get_artifact_lemmas(p_number: str, conn=Depends(get_db)):
         }
 
     return {"p_number": result["p_number"], "lemmas": indexed, "total": result["total"]}
+
+
+@router.get("/{p_number}/sign-annotations")
+def get_sign_annotations(p_number: str, conn=Depends(get_db)):
+    """Get sign annotations (OCR bounding boxes) for overlay display."""
+    repo = ArtifactRepository(conn)
+    return repo.get_sign_annotations(p_number)
+
+
+@router.get("/{p_number}/research")
+def get_artifact_research(p_number: str, conn=Depends(get_db)):
+    """Return publications, scholars, and storage info for the Research tab."""
+    repo = ArtifactRepository(conn)
+    return repo.get_research(p_number)
+
+
+@router.get("/citations/{doi:path}")
+def get_citations(doi: str):
+    """Fetch citing papers from Semantic Scholar for a DOI."""
+    from api.services.semantic_scholar import get_citation_graph
+
+    return get_citation_graph(doi)
 
 
 @router.get("/{p_number}/debug")

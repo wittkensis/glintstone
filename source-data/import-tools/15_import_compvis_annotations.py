@@ -10,14 +10,16 @@ Heidelberg CompVis dataset. 81 tablets, ~8,282 sign annotations.
 Provider: CompVis Heidelberg (CC BY 4.0)
 
 Populates:
+  - surfaces: auto-created if missing for a tablet
   - surface_images: one record per unique (tablet, view) combination
   - sign_annotations: one row per detected sign with bbox
+  - pipeline_status: sets graphemic_complete for tablets with annotations
 
 Sign identity: mapped from MZL numbers using eBL's mzl.txt concordance
 (MZL label -> OGSL sign_id). Signs without OGSL mapping get sign_id=NULL.
 
 Usage:
-    python 15_import_compvis_annotations.py [--dry-run]
+    python 15_import_compvis_annotations.py [--dry-run] [--reset]
 """
 
 import argparse
@@ -143,6 +145,56 @@ def resolve_p_number(tablet_id: str, conn: psycopg.Connection) -> str | None:
     return row[0] if row else None
 
 
+def get_or_create_surface(
+    p_number: str,
+    surface_type: str,
+    conn: psycopg.Connection,
+) -> int | None:
+    """
+    Find or auto-create a surface record for (p_number, surface_type).
+    Returns surface_id or None on failure.
+    """
+    cur = conn.cursor()
+
+    # Try exact match first
+    cur.execute(
+        "SELECT id FROM surfaces WHERE p_number = %s AND surface_type = %s LIMIT 1",
+        (p_number, surface_type),
+    )
+    row = cur.fetchone()
+    if row:
+        return row[0]
+
+    # Try any existing surface for this tablet
+    cur.execute(
+        "SELECT id FROM surfaces WHERE p_number = %s LIMIT 1",
+        (p_number,),
+    )
+    row = cur.fetchone()
+    if row:
+        return row[0]
+
+    # No surfaces exist — auto-create one
+    cur.execute(
+        """INSERT INTO surfaces (p_number, surface_type)
+           VALUES (%s, %s)
+           ON CONFLICT (p_number, surface_type) DO NOTHING
+           RETURNING id""",
+        (p_number, surface_type),
+    )
+    row = cur.fetchone()
+    if row:
+        return row[0]
+
+    # ON CONFLICT hit — fetch the existing row
+    cur.execute(
+        "SELECT id FROM surfaces WHERE p_number = %s AND surface_type = %s",
+        (p_number, surface_type),
+    )
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
 def get_or_create_surface_image(
     p_number: str,
     view_desc: str,
@@ -152,29 +204,14 @@ def get_or_create_surface_image(
 ) -> int | None:
     """
     Get or create a surface_image record for this (p_number, surface_type).
-    Returns surface_image_id or None if no surface found.
+    Auto-creates the surface if it doesn't exist.
+    Returns surface_image_id or None on failure.
     """
+    surface_id = get_or_create_surface(p_number, surface_type, conn)
+    if not surface_id:
+        return None
+
     cur = conn.cursor()
-
-    # Find the surface for this p_number + surface_type
-    cur.execute(
-        """SELECT id FROM surfaces
-           WHERE p_number = %s AND surface_type = %s
-           LIMIT 1""",
-        (p_number, surface_type),
-    )
-    row = cur.fetchone()
-    if not row:
-        # Try other surface types if exact match fails
-        cur.execute(
-            "SELECT id, surface_type FROM surfaces WHERE p_number = %s LIMIT 1",
-            (p_number,),
-        )
-        row = cur.fetchone()
-        if not row:
-            return None
-
-    surface_id = row[0]
 
     # Build image_path from p_number + view_desc
     image_path = f"compvis/{p_number}/{view_desc or 'Obv'}"
@@ -213,9 +250,57 @@ def parse_bbox(bbox_str: str) -> tuple[float, float, float, float] | None:
         return None
 
 
+def reset_compvis_data(conn: psycopg.Connection, annotation_run_id: int):
+    """Delete all CompVis sign_annotations and surface_images for a clean re-import."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM sign_annotations WHERE annotation_run_id = %s",
+            (annotation_run_id,),
+        )
+        deleted_annotations = cur.rowcount
+        cur.execute(
+            "DELETE FROM surface_images WHERE annotation_run_id = %s",
+            (annotation_run_id,),
+        )
+        deleted_images = cur.rowcount
+        # Also clear orphaned annotations with NULL surface_image_id
+        cur.execute(
+            "DELETE FROM sign_annotations WHERE surface_image_id IS NULL",
+        )
+        deleted_orphans = cur.rowcount
+    conn.commit()
+    print(
+        f"  Reset: deleted {deleted_annotations} annotations, {deleted_images} surface_images, {deleted_orphans} orphans"
+    )
+
+
+def update_pipeline_status(conn: psycopg.Connection):
+    """Mark tablets with sign_annotations as having graphemic data."""
+    with conn.cursor() as cur:
+        cur.execute("""
+            UPDATE pipeline_status ps
+            SET graphemic_complete = 1.0
+            WHERE EXISTS (
+                SELECT 1 FROM sign_annotations sa
+                JOIN surface_images si ON sa.surface_image_id = si.id
+                JOIN surfaces s ON si.surface_id = s.id
+                WHERE s.p_number = ps.p_number
+            )
+            AND (ps.graphemic_complete IS NULL OR ps.graphemic_complete = 0)
+        """)
+        updated = cur.rowcount
+    conn.commit()
+    print(f"  Pipeline status: updated {updated} tablets with graphemic_complete = 1.0")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Import CompVis sign annotations")
     parser.add_argument("--dry-run", action="store_true", help="No DB writes")
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Delete existing CompVis data before re-importing",
+    )
     args = parser.parse_args()
 
     print("=" * 60)
@@ -291,6 +376,11 @@ def main():
                 row = cur.fetchone()
             annotation_run_id = row[0]
 
+        # Reset if requested
+        if args.reset:
+            print("\n  Resetting existing CompVis data...")
+            reset_compvis_data(conn, annotation_run_id)
+
         # Pre-build sign_id lookup from signs table for MZL->OGSL validation
         with conn.cursor() as cur:
             cur.execute("SELECT sign_id FROM signs")
@@ -329,13 +419,17 @@ def main():
                 view_lower, "obverse"
             )
 
-            # Get/create surface_image
+            # Get/create surface_image (auto-creates surface if needed)
             cache_key = (p_number, view_desc, surface_type)
             if cache_key not in surf_img_cache:
                 surf_img_cache[cache_key] = get_or_create_surface_image(
                     p_number, view_desc, surface_type, annotation_run_id, conn
                 )
             surface_image_id = surf_img_cache[cache_key]
+
+            if not surface_image_id:
+                annotations_skipped += 1
+                continue
 
             # Parse bbox
             bbox = parse_bbox(bbox_str)
@@ -372,7 +466,6 @@ def main():
                     annotations_skipped += 1
 
         conn.commit()
-        conn.close()
 
         print(f"\n  Annotations inserted: {annotations_inserted:,}")
         print(f"  Annotations skipped:  {annotations_skipped:,}")
@@ -381,11 +474,16 @@ def main():
                 f"  Tablets not found ({len(tablets_not_found)}): {sorted(tablets_not_found)}"
             )
 
+        # Update pipeline_status for tablets with annotations
+        update_pipeline_status(conn)
+
+        conn.close()
+
         # Validate
         assert (
             annotations_inserted > 5000
         ), f"Expected >5000 annotations, got {annotations_inserted}"
-        print("Validation: OK")
+        print("  Validation: OK")
 
     except Exception as e:
         conn.rollback()

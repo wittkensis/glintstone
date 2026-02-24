@@ -248,33 +248,33 @@ def match_translation_to_line(
     return (None, 0.0)
 
 
-def should_use_positional_matching(conn, p_number: str) -> bool:
+def should_use_positional_matching(conn, p_number: str, language: str) -> bool:
     """
-    Determine if tablet should use context-aware positional matching.
+    Determine if tablet+language should use context-aware positional matching.
 
     Returns True if:
-    - Tablet has NO translations with explicit line notation
-    - Translation count ≈ text_line count (0.8:1 to 1.5:1 ratio)
+    - This language has NO translations with explicit line notation
+    - Per-language translation count ≈ text_line count (0.8:1 to 1.5:1 ratio)
 
     This avoids false positives from quantity descriptions like "22 mana copper".
     """
-    # Check for explicit line notation in ANY translation
+    # Check for explicit line notation in THIS LANGUAGE's translations
     explicit_count = conn.execute(
         """
         SELECT COUNT(*) as cnt FROM translations
-        WHERE p_number = %s
+        WHERE p_number = %s AND language = %s
           AND translation ~ '^\\s*\\d+[\\.:''\\s]+[a-zA-Z]'
     """,
-        (p_number,),
+        (p_number, language),
     ).fetchone()["cnt"]
 
     if explicit_count > 0:
-        return False  # Tablet uses explicit notation - don't use positional
+        return False  # This language uses explicit notation - don't use positional
 
-    # Check translation/line ratio
+    # Check per-language translation/line ratio
     trans_count = conn.execute(
-        """SELECT COUNT(*) as cnt FROM translations WHERE p_number = %s""",
-        (p_number,),
+        """SELECT COUNT(*) as cnt FROM translations WHERE p_number = %s AND language = %s""",
+        (p_number, language),
     ).fetchone()["cnt"]
 
     line_count = conn.execute(
@@ -291,7 +291,11 @@ def should_use_positional_matching(conn, p_number: str) -> bool:
 
 
 def positional_match(
-    conn, p_number: str, translation_id: int, context_aware: bool = False
+    conn,
+    p_number: str,
+    translation_id: int,
+    language: str,
+    context_aware: bool = False,
 ) -> tuple[int | None, float]:
     """
     Fallback: match by positional order (translation index → line sequence).
@@ -299,14 +303,16 @@ def positional_match(
     Returns (line_id, confidence).
     Confidence: 0.8 if context_aware, else 0.5.
     """
-    # Get all translations for this tablet ordered by id
+    # Get translations for this tablet IN THE SAME LANGUAGE ordered by id.
+    # Without language filtering, interleaved en/fr/en/fr translations get
+    # assigned to sequential lines instead of the same lines.
     all_trans = conn.execute(
         """
         SELECT id FROM translations
-        WHERE p_number = %s
+        WHERE p_number = %s AND language = %s
         ORDER BY id
     """,
-        (p_number,),
+        (p_number, language),
     ).fetchall()
 
     # Find position of this translation
@@ -453,7 +459,7 @@ def main(args):
         # Fetch batch using cursor (id > last_processed_id)
         translations = conn.execute(
             """
-            SELECT id, p_number, translation, line_id
+            SELECT id, p_number, translation, line_id, language
             FROM translations
             WHERE id > %s
             ORDER BY id
@@ -503,16 +509,22 @@ def main(args):
                     conn, trans["p_number"], line_info
                 )
             else:
-                # Fallback to positional match
-                # Check if tablet qualifies for context-aware matching
-                if trans["p_number"] not in positional_cache:
-                    positional_cache[trans["p_number"]] = (
-                        should_use_positional_matching(conn, trans["p_number"])
+                # Fallback to positional match (per-language to avoid
+                # interleaved en/fr mapping to sequential lines)
+                lang = trans["language"] or "en"
+                cache_key = (trans["p_number"], lang)
+                if cache_key not in positional_cache:
+                    positional_cache[cache_key] = should_use_positional_matching(
+                        conn, trans["p_number"], lang
                     )
 
-                context_aware = positional_cache[trans["p_number"]]
+                context_aware = positional_cache[cache_key]
                 line_id, confidence = positional_match(
-                    conn, trans["p_number"], trans["id"], context_aware=context_aware
+                    conn,
+                    trans["p_number"],
+                    trans["id"],
+                    lang,
+                    context_aware=context_aware,
                 )
 
             if line_id:

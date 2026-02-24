@@ -265,19 +265,29 @@
 
 
 {# ── Stage Filter ── #}
-{% macro stage_filter(stages, current, base_url='/tablets', extra_params='') %}
-<nav class="stage-filter btn-group" aria-label="Filter by pipeline stage">
-    {% for stage in stages %}
-    {% set is_active = (stage.value == '' and not current) or (current == stage.value) %}
-    {% set url = base_url ~ '?' ~ extra_params %}
-    {% if stage.value %}{% set url = url ~ 'pipeline=' ~ stage.value %}{% endif %}
-    <a href="{{ url }}"
-       class="btn btn-group-item{{ ' btn-group-item--active' if is_active }}"
-       {{ 'aria-current=true' if is_active }}>
-        {{ stage.label }}
-    </a>
-    {% endfor %}
-</nav>
+{% macro stage_filter(stages, current, base_url='/tablets', extra_params='', has_ocr='') %}
+<div class="stage-filter-bar">
+    <nav class="stage-filter btn-group" aria-label="Filter by pipeline stage">
+        {% for stage in stages %}
+        {% set is_active = (stage.value == '' and not current) or (current == stage.value) %}
+        {% set url = base_url ~ '?' ~ extra_params %}
+        {% if stage.value %}{% set url = url ~ 'pipeline=' ~ stage.value %}{% endif %}
+        <a href="{{ url }}"
+           class="btn btn-group-item{{ ' btn-group-item--active' if is_active }}"
+           {{ 'aria-current=true' if is_active }}>
+            {{ stage.label }}
+        </a>
+        {% endfor %}
+    </nav>
+
+    <label class="toggle-switch stage-filter-bar__toggle">
+        <input type="checkbox" name="has_ocr" value="1"
+               {{ 'checked' if has_ocr }}
+               form="filter-form">
+        <span class="toggle-switch__slider"></span>
+        <span class="toggle-switch__label">Has ML/OCR</span>
+    </label>
+</div>
 {% endmacro %}
 
 
@@ -297,72 +307,328 @@
 {% endmacro %}
 
 
-{# ── Filter Sidebar ── #}
+{# ── Filter Sidebar (multi-select with grouped checkboxes) ── #}
 {% macro filter_sidebar(search_value='', action_url='/tablets', pipeline='',
-                        period='', provenience='', genre='', language='', has_ocr='',
-                        filter_options=none) %}
+                        period=[], provenience=[], genre=[], language=[],
+                        has_ocr='', filter_options=none) %}
 <aside class="filter-sidebar">
-    <form method="GET" action="{{ action_url }}" class="filter-form">
+    <form method="GET" action="{{ action_url }}" class="filter-form" id="filter-form">
         {# Preserve pipeline stage (set by btn-group outside this form) #}
         {% if pipeline %}
         <input type="hidden" name="pipeline" value="{{ pipeline }}">
+        {% endif %}
+
+        {# Search — submits on Enter #}
+        <div class="filter-section" data-filter="search">
+            <div class="filter-content">
+                <input type="text" name="search" id="search-input"
+                       value="{{ search_value }}"
+                       placeholder="Search P-numbers, designations...">
+            </div>
+        </div>
+
+        {% if filter_options %}
+
+        {# Period — grouped checkboxes #}
+        {% if filter_options.period %}
+        <div class="filter-section" data-filter="period">
+            <div class="filter-content">
+                <span class="filter-label">Period</span>
+                {% for group in filter_options.period %}
+                <details class="filter-group"
+                    {% set ns = namespace(has_sel=false) %}{% for item in group.children %}{% if item.val in period %}{% set ns.has_sel = true %}{% endif %}{% endfor %}{% if ns.has_sel %}open{% endif %}>
+                    <summary class="filter-group__header">
+                        {{ group.group }}
+                        <span class="filter-group__count">{{ '{:,}'.format(group.total) }}</span>
+                    </summary>
+                    <div class="filter-group__items">
+                        <div>
+                        {% for item in group.children %}
+                        <label class="filter-checkbox">
+                            <input type="checkbox" name="period" value="{{ item.val }}"
+                                   {% if item.val in period %}checked{% endif %}>
+                            <span class="filter-checkbox__label">
+                                {{ item.val }}
+                                {% if item.date_start is defined and item.date_start is not none %}
+                                <span class="filter-checkbox__sub">
+                                    {%- if item.date_start > 0 and item.date_end > 0 -%}
+                                        ca. {{ '{:,}'.format(item.date_start) }}–{{ '{:,}'.format(item.date_end) }} BCE
+                                    {%- elif item.date_start > 0 and item.date_end <= 0 -%}
+                                        ca. {{ '{:,}'.format(item.date_start) }} BCE – {{ '{:,}'.format(item.date_end|abs) }} CE
+                                    {%- elif item.date_start <= 0 and item.date_end <= 0 -%}
+                                        ca. {{ '{:,}'.format(item.date_start|abs) }}–{{ '{:,}'.format(item.date_end|abs) }} CE
+                                    {%- endif -%}
+                                </span>
+                                {% endif %}
+                            </span>
+                            <span class="filter-checkbox__count">{{ '{:,}'.format(item.count) }}</span>
+                        </label>
+                        {% endfor %}
+                        </div>
+                    </div>
+                </details>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Provenience — grouped checkboxes #}
+        {% if filter_options.provenience %}
+        <div class="filter-section" data-filter="provenience">
+            <div class="filter-content">
+                <span class="filter-label">Provenience</span>
+                {% for group in filter_options.provenience %}
+                <details class="filter-group"
+                    {% set ns = namespace(has_sel=false) %}{% for item in group.children %}{% if item.val in provenience %}{% set ns.has_sel = true %}{% endif %}{% endfor %}{% if ns.has_sel %}open{% endif %}>
+                    <summary class="filter-group__header">
+                        {{ group.group }}
+                        <span class="filter-group__count">{{ '{:,}'.format(group.total) }}</span>
+                    </summary>
+                    <div class="filter-group__items">
+                        <div>
+                        {% for item in group.children %}
+                        <label class="filter-checkbox">
+                            <input type="checkbox" name="provenience" value="{{ item.val }}"
+                                   {% if item.val in provenience %}checked{% endif %}>
+                            <span class="filter-checkbox__label">{{ item.val }}</span>
+                            <span class="filter-checkbox__count">{{ '{:,}'.format(item.count) }}</span>
+                        </label>
+                        {% endfor %}
+                        </div>
+                    </div>
+                </details>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Genre — flat checkboxes #}
+        {% if filter_options.genre %}
+        <div class="filter-section" data-filter="genre">
+            <div class="filter-content">
+                <span class="filter-label">Genre</span>
+                <div class="filter-flat-items{% if filter_options.genre|length > 10 %} is-truncated{% endif %}">
+                    {% for item in filter_options.genre %}
+                    <label class="filter-checkbox{% if loop.index > 10 %} filter-checkbox--overflow{% endif %}">
+                        <input type="checkbox" name="genre" value="{{ item.val }}"
+                               {% if item.val in genre %}checked{% endif %}>
+                        <span class="filter-checkbox__label">{{ item.val }}</span>
+                        <span class="filter-checkbox__count">{{ '{:,}'.format(item.count) }}</span>
+                    </label>
+                    {% endfor %}
+                    {% if filter_options.genre|length > 10 %}
+                    <button type="button" class="filter-show-all">Show all {{ filter_options.genre|length }}</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Language — flat checkboxes #}
+        {% if filter_options.language %}
+        <div class="filter-section" data-filter="language">
+            <div class="filter-content">
+                <span class="filter-label">Language</span>
+                <div class="filter-flat-items{% if filter_options.language|length > 10 %} is-truncated{% endif %}">
+                    {% for item in filter_options.language %}
+                    <label class="filter-checkbox{% if loop.index > 10 %} filter-checkbox--overflow{% endif %}">
+                        <input type="checkbox" name="language" value="{{ item.val }}"
+                               {% if item.val in language %}checked{% endif %}>
+                        <span class="filter-checkbox__label">{{ item.val }}</span>
+                        <span class="filter-checkbox__count">{{ '{:,}'.format(item.count) }}</span>
+                    </label>
+                    {% endfor %}
+                    {% if filter_options.language|length > 10 %}
+                    <button type="button" class="filter-show-all">Show all {{ filter_options.language|length }}</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% endif %}
+    </form>
+</aside>
+
+<script>
+(function() {
+    var form = document.getElementById('filter-form');
+
+    // Auto-submit on any checkbox change (sidebar + external toggle via form attr)
+    document.querySelectorAll('#filter-form .filter-checkbox input[type="checkbox"]').forEach(function(cb) {
+        cb.addEventListener('change', function() { form.submit(); });
+    });
+
+    // External toggle (Has ML/OCR) — rendered after sidebar, so defer binding
+    function bindOcrToggle() {
+        var ocrToggle = document.querySelector('.stage-filter-bar__toggle input[type="checkbox"]');
+        if (ocrToggle) {
+            ocrToggle.addEventListener('change', function() { form.submit(); });
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindOcrToggle);
+    } else {
+        bindOcrToggle();
+    }
+
+    // "Show all" buttons — reveal overflow items, remove button
+    document.querySelectorAll('.filter-show-all').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var container = this.parentElement;
+            container.classList.remove('is-truncated');
+            this.remove();
+        });
+    });
+
+    // Animate <details> close (open is handled by CSS grid transition)
+    document.querySelectorAll('.filter-group summary').forEach(function(summary) {
+        summary.addEventListener('click', function(e) {
+            var details = this.parentElement;
+            var items = details.querySelector('.filter-group__items');
+            if (details.open) {
+                e.preventDefault();
+                items.style.gridTemplateRows = '0fr';
+                items.addEventListener('transitionend', function handler() {
+                    details.removeAttribute('open');
+                    items.style.gridTemplateRows = '';
+                    items.removeEventListener('transitionend', handler);
+                }, { once: true });
+            }
+        });
+    });
+})();
+</script>
+{% endmacro %}
+
+
+{# ── Dictionary Filter Sidebar ── #}
+{% macro dictionary_filter_sidebar(level='lemmas', search_value='',
+                                    language=[], pos=[], source=[], frequency='',
+                                    filter_options=none, sort='') %}
+<aside class="filter-sidebar">
+    <form method="GET" action="/dictionary" class="filter-form" id="filter-form">
+        <input type="hidden" name="level" value="{{ level }}">
+        {% if sort %}
+        <input type="hidden" name="sort" value="{{ sort }}">
         {% endif %}
 
         {# Search #}
         <div class="filter-section" data-filter="search">
             <div class="filter-content">
                 <input type="text" name="search" id="search-input"
-                       class="search-input filter-input"
                        value="{{ search_value }}"
-                       placeholder="Search P-numbers, designations...">
+                       placeholder="Search {% if level == 'signs' %}signs{% elif level == 'meanings' %}meanings{% else %}lemmas{% endif %}...">
             </div>
         </div>
 
-        {# Toggle: Has ML/OCR #}
-        <div class="filter-section" data-filter="toggles">
-            <div class="filter-content">
-                <label class="filter-toggle">
-                    <input type="checkbox" name="has_ocr" value="1"
-                           {{ 'checked' if has_ocr }}>
-                    <span class="filter-toggle__label">Has ML/OCR</span>
-                </label>
-            </div>
-        </div>
-
-        {# Dropdowns #}
         {% if filter_options %}
-        {% set dropdowns = [
-            ('period', 'Period', filter_options.period or [], period),
-            ('provenience', 'Provenience', filter_options.provenience or [], provenience),
-            ('genre', 'Genre', filter_options.genre or [], genre),
-            ('language', 'Language', filter_options.language or [], language),
-        ] %}
-        {% for name, label, options, current in dropdowns %}
-        {% if options %}
-        <div class="filter-section" data-filter="{{ name }}">
+
+        {# Language — flat checkboxes #}
+        {% if filter_options.language %}
+        <div class="filter-section" data-filter="language">
             <div class="filter-content">
-                <label class="filter-label" for="filter-{{ name }}">{{ label }}</label>
-                <select name="{{ name }}" id="filter-{{ name }}" class="filter-select">
-                    <option value="">All</option>
-                    {% for opt in options %}
-                    <option value="{{ opt }}" {{ 'selected' if opt == current }}>{{ opt }}</option>
+                <span class="filter-label">Language</span>
+                <div class="filter-flat-items{% if filter_options.language|length > 10 %} is-truncated{% endif %}">
+                    {% for item in filter_options.language %}
+                    <label class="filter-checkbox{% if loop.index > 10 %} filter-checkbox--overflow{% endif %}">
+                        <input type="checkbox" name="language" value="{{ item.val }}"
+                               {% if item.val in language %}checked{% endif %}>
+                        <span class="filter-checkbox__label">{{ item.label }}</span>
+                        <span class="filter-checkbox__count">{{ '{:,}'.format(item.count) }}</span>
+                    </label>
                     {% endfor %}
-                </select>
+                    {% if filter_options.language|length > 10 %}
+                    <button type="button" class="filter-show-all">Show all {{ filter_options.language|length }}</button>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        {% endif %}
-        {% endfor %}
         {% endif %}
 
-        {# Actions #}
-        <div class="filter-section filter-actions">
+        {# Part of Speech — flat checkboxes (lemmas + meanings only) #}
+        {% if filter_options.pos and level != 'signs' %}
+        <div class="filter-section" data-filter="pos">
             <div class="filter-content">
-                <button type="submit" class="btn search-submit">Apply</button>
-                <a href="{{ action_url }}" class="btn btn--ghost filter-clear">Clear all</a>
+                <span class="filter-label">Part of Speech</span>
+                <div class="filter-flat-items{% if filter_options.pos|length > 10 %} is-truncated{% endif %}">
+                    {% for item in filter_options.pos %}
+                    <label class="filter-checkbox{% if loop.index > 10 %} filter-checkbox--overflow{% endif %}">
+                        <input type="checkbox" name="pos" value="{{ item.val }}"
+                               {% if item.val in pos %}checked{% endif %}>
+                        <span class="filter-checkbox__label">{{ item.label }}</span>
+                        <span class="filter-checkbox__count">{{ '{:,}'.format(item.count) }}</span>
+                    </label>
+                    {% endfor %}
+                    {% if filter_options.pos|length > 10 %}
+                    <button type="button" class="filter-show-all">Show all {{ filter_options.pos|length }}</button>
+                    {% endif %}
+                </div>
             </div>
         </div>
+        {% endif %}
+
+        {# Frequency — flat checkboxes (lemmas only) #}
+        {% if filter_options.frequency and level == 'lemmas' %}
+        <div class="filter-section" data-filter="frequency">
+            <div class="filter-content">
+                <span class="filter-label">Frequency</span>
+                <div class="filter-flat-items">
+                    {% for item in filter_options.frequency %}
+                    <label class="filter-checkbox">
+                        <input type="radio" name="frequency" value="{{ item.val }}"
+                               {% if frequency == item.val %}checked{% endif %}>
+                        <span class="filter-checkbox__label">{{ item.label }}</span>
+                        <span class="filter-checkbox__count">{{ '{:,}'.format(item.count) }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Source — flat checkboxes (signs + lemmas only) #}
+        {% if filter_options.source and level != 'meanings' %}
+        <div class="filter-section" data-filter="source">
+            <div class="filter-content">
+                <span class="filter-label">Source</span>
+                <div class="filter-flat-items{% if filter_options.source|length > 10 %} is-truncated{% endif %}">
+                    {% for item in filter_options.source %}
+                    <label class="filter-checkbox{% if loop.index > 10 %} filter-checkbox--overflow{% endif %}">
+                        <input type="checkbox" name="source" value="{{ item.val }}"
+                               {% if item.val in source %}checked{% endif %}>
+                        <span class="filter-checkbox__label">{{ item.label }}</span>
+                        <span class="filter-checkbox__count">{{ '{:,}'.format(item.count) }}</span>
+                    </label>
+                    {% endfor %}
+                    {% if filter_options.source|length > 10 %}
+                    <button type="button" class="filter-show-all">Show all {{ filter_options.source|length }}</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% endif %}
     </form>
 </aside>
+
+<script>
+(function() {
+    var form = document.getElementById('filter-form');
+    // Auto-submit on checkbox/radio change
+    form.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(function(cb) {
+        cb.addEventListener('change', function() { form.submit(); });
+    });
+    // "Show all" buttons
+    document.querySelectorAll('.filter-show-all').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            this.parentElement.classList.remove('is-truncated');
+            this.remove();
+        });
+    });
+})();
+</script>
 {% endmacro %}
 
 

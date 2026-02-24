@@ -11,6 +11,24 @@
  * </nav>
  */
 
+/* ── Stage filter bar (wraps btn-group + toggle) ── */
+
+.stage-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.stage-filter-bar .stage-filter {
+    margin-bottom: 0;
+}
+
+.stage-filter-bar__toggle {
+    flex-shrink: 0;
+}
+
 .stage-filter {
     margin-bottom: var(--space-5);
 }
@@ -20,6 +38,16 @@
    ========================================================================== */
 
 @media (max-width: 640px) {
+    .stage-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-3);
+    }
+
+    .stage-filter-bar__toggle {
+        align-self: flex-start;
+    }
+
     .stage-filter {
         flex-wrap: nowrap;
         overflow-x: auto;

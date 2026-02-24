@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
             hoverThreshold: 2,
             onImageLoad: () => {
                 updateImageSource('Loaded');
+                loadSignAnnotations();
             }
         });
 
@@ -190,6 +191,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 });
+
+// Load sign annotations (OCR overlay) after image loads
+function loadSignAnnotations() {
+    const zoombox = TabletPage.zoombox;
+    if (!zoombox || !zoombox.imageLoaded || !TabletPage.apiUrl || !TabletPage.pNumber) return;
+
+    fetch(`${TabletPage.apiUrl}/artifacts/${TabletPage.pNumber}/sign-annotations`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.annotations || data.annotations.length === 0) return;
+
+            const natW = zoombox.naturalWidth;
+            const natH = zoombox.naturalHeight;
+            if (!natW || !natH) return;
+
+            const overlays = data.annotations.map(a => ({
+                x: (a.bbox_x / natW) * 100,
+                y: (a.bbox_y / natH) * 100,
+                width: (a.bbox_w / natW) * 100,
+                height: (a.bbox_h / natH) * 100,
+                sign: a.sign_id || '',
+                surface: a.surface_type || '',
+                confidence: a.confidence || 0
+            }));
+
+            zoombox.setOverlays(overlays);
+        })
+        .catch(err => {
+            console.log('Sign annotations not available:', err.message);
+        });
+}
 
 // Load composite tablets from API
 function loadCompositeTablets(qNumber) {

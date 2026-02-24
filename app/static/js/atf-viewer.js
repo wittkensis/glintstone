@@ -33,6 +33,12 @@ class ATFViewer {
         this.translationLines = null;
         this.hasTranslation = false;
 
+        // Multi-language translation state
+        this.translationData = null;      // {lang: {matched, unmatched}}
+        this.normalizedData = null;       // ts normalized readings {matched, unmatched}
+        this.activeTransLang = null;      // Currently selected language code
+        this.availableTransLangs = [];    // Ordered language list
+
         // Definition cache
         this.definitionCache = new Map();
         this.checkedWords = new Set();
@@ -43,6 +49,10 @@ class ATFViewer {
         this.lastDictionaryWord = null;
         this.sidebarTransitioning = false;
         this.transitionTimeout = null;
+
+        // Research tab cache
+        this.researchData = null;
+        this.researchLoaded = false;
 
         // Dictionary browser state
         this.dictionaryMode = 'browse'; // 'browse' | 'word'
@@ -123,11 +133,12 @@ class ATFViewer {
             // Set initial surface
             this.currentSurface = 0;
 
-            // Check for translation
-            await this.loadTranslation();
-
-            // Load lemmas for interlinear glossing
-            await this.loadLemmas();
+            // Load translation, normalized readings, and lemmas in parallel
+            await Promise.all([
+                this.loadTranslation(),
+                this.loadNormalized(),
+                this.loadLemmas(),
+            ]);
 
             // Render content
             this.renderTabs();
@@ -144,7 +155,7 @@ class ATFViewer {
     }
 
     /**
-     * Load translation data
+     * Load translation data (multi-language + normalized readings)
      */
     async loadTranslation() {
         try {
@@ -152,25 +163,59 @@ class ATFViewer {
             if (response.ok) {
                 const result = await this.safeJsonParse(response);
                 if (result.has_translation) {
-                    this.translationLines = result.lines;
-                    this.translationRaw = result.raw;
-                    this.translationLanguage = result.language;
+                    this.translationData = result.translations || {};
+                    this.availableTransLangs = result.languages || [];
+                    this.activeTransLang = this.availableTransLangs[0] || null;
                     this.hasTranslation = true;
+                    this._syncTranslationLines();
                 }
             }
         } catch (err) {
-            // Translation not available - that's fine
             this.hasTranslation = false;
         }
 
-        // Hide the separate translation section if we have ATF viewer with translation
+        // Hide the separate (non-ATF-viewer) translation section
         if (this.hasTranslation) {
-            this.container.classList.add('atf-viewer--has-translation');
             const separateTranslationSection = document.querySelector('.translation-section');
             if (separateTranslationSection) {
                 separateTranslationSection.classList.add('is-hidden');
             }
         }
+    }
+
+    /**
+     * Load normalized readings (ts scholarly transliteration) — separate layer
+     */
+    async loadNormalized() {
+        try {
+            const response = await fetch(`${this.options.apiUrl}/artifacts/${this.pNumber}/normalized`);
+            if (response.ok) {
+                const result = await this.safeJsonParse(response);
+                if (result.has_normalized) {
+                    this.normalizedData = result;
+                }
+            }
+        } catch (err) {
+            // Normalized readings not available
+        }
+    }
+
+    /**
+     * Sync translationLines from the active language's matched dict
+     */
+    _syncTranslationLines() {
+        const active = this.translationData?.[this.activeTransLang];
+        this.translationLines = active?.matched || {};
+    }
+
+    /**
+     * Switch translation language and re-render
+     */
+    setTranslationLanguage(lang) {
+        if (!this.translationData?.[lang]) return;
+        this.activeTransLang = lang;
+        this._syncTranslationLines();
+        this.renderContent();
     }
 
     /**
@@ -696,13 +741,13 @@ class ATFViewer {
                 html += `
                     <div class="atf-column">
                         <div class="atf-column__header">Column ${colLabel}</div>
-                        ${this.renderLines(col.lines)}
+                        ${this.renderLines(col.lines, surface.name, col.number || 1)}
                     </div>
                 `;
             });
             html += '</div>';
         } else if (surface.columns.length === 1) {
-            html += this.renderLines(surface.columns[0].lines);
+            html += this.renderLines(surface.columns[0].lines, surface.name, surface.columns[0].number || 1);
         }
 
         contentArea.innerHTML = html;
@@ -715,7 +760,7 @@ class ATFViewer {
 
         // Always show translation column when available
         if (this.hasTranslation) {
-            this.renderTranslationColumn(surface);
+            this.renderTranslationColumn();
         }
 
         // Add interlinear glosses
@@ -737,54 +782,43 @@ class ATFViewer {
         const contentArea = this.container.querySelector('.atf-content');
         if (!contentArea) return;
 
-        // Remove existing footer if present
         contentArea.querySelector('.atf-viewer__footer')?.remove();
 
-        // Check for inline ATF translations (#tr.XX: lines in parsed data)
-        let hasInlineTranslations = false;
-        if (this.data?.surfaces[this.currentSurface]) {
-            const surface = this.data.surfaces[this.currentSurface];
-            for (const col of surface.columns) {
-                for (const line of col.lines) {
-                    if (line.translations && Object.keys(line.translations).length > 0) {
-                        hasInlineTranslations = true;
-                        break;
-                    }
-                }
-                if (hasInlineTranslations) break;
-            }
-        }
-
-        // Check for lemma-based glosses
         const hasLemmaGlosses = this.lemmasLoaded && Object.keys(this.lemmasData).length > 0;
+        const hasTranslations = this.hasTranslation && Object.keys(this.translationLines || {}).length > 0;
+        const hasNormalized = this.normalizedData?.matched && Object.keys(this.normalizedData.matched).length > 0;
 
-        // Show footer when we have both:
-        // 1. Any inline content (ATF translations OR lemma glosses)
-        // 2. Translation panel data
-        const hasInlineContent = hasInlineTranslations || hasLemmaGlosses;
-        const showFooter = hasInlineContent && this.hasTranslation;
+        // Show footer when multiple annotation layers are visible
+        const layerCount = [hasLemmaGlosses, hasNormalized, hasTranslations].filter(Boolean).length;
+        if (layerCount < 2) return;
 
-        if (showFooter) {
-            const footer = document.createElement('footer');
-            footer.className = 'atf-viewer__footer';
-            footer.innerHTML = `
-                <div class="atf-viewer__footer-content">
-                    <svg class="atf-viewer__footer-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                    </svg>
-                    <div class="atf-viewer__footer-text">
-                        <strong>About these translations:</strong> The gray text below each line shows detected words with dictionary definitions. The translation panel shows scholarly translations from published sources. These may differ because detected words are literal meanings, while translations capture the intended sense in context.
-                    </div>
+        const parts = [];
+        if (hasLemmaGlosses) parts.push('word glosses (dictionary definitions)');
+        if (hasNormalized) parts.push('normalized readings (scholarly transliteration)');
+        if (hasTranslations) parts.push('translations (published scholarly translations)');
+
+        const footer = document.createElement('footer');
+        footer.className = 'atf-viewer__footer';
+        footer.innerHTML = `
+            <div class="atf-viewer__footer-content">
+                <svg class="atf-viewer__footer-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                </svg>
+                <div class="atf-viewer__footer-text">
+                    <strong>Annotation layers:</strong> ${parts.join('; ')}. Word glosses are literal dictionary meanings, while translations capture the intended sense in context.
                 </div>
-            `;
-            contentArea.appendChild(footer);
-        }
+            </div>
+        `;
+        contentArea.appendChild(footer);
     }
 
     /**
-     * Render lines
+     * Render lines with inline normalized readings and translations
+     * @param {Array} lines - Parsed line objects
+     * @param {string} surfaceName - Surface name for translation key lookup
+     * @param {number} colNumber - Column number for translation key lookup
      */
-    renderLines(lines) {
+    renderLines(lines, surfaceName, colNumber) {
         return lines.map(line => {
             if (line.type === 'state') {
                 return `<div class="atf-state">$ ${this.escapeHtml(line.text)}</div>`;
@@ -797,14 +831,21 @@ class ATFViewer {
                     ? `<span class="atf-composite"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6H2V22H18V20H4V6ZM22 2H6V18H22V2ZM20 12L17.5 10.5L15 12V4H20V12Z"/></svg>${line.composite.line}</span>`
                     : '';
 
-                // Inline translation (from #tr.XX: lines in ATF)
+                // Build translation key for this line (strip trailing dot to match API keys)
+                const lineKey = `${surfaceName}_${colNumber}_${line.number.replace(/\.$/, '')}`;
+
+                // Normalized reading (ts scholarly transliteration)
+                let normalizedHtml = '';
+                const normText = this.normalizedData?.matched?.[lineKey]?.text;
+                if (normText) {
+                    normalizedHtml = `<div class="atf-line__normalized">${this.escapeHtml(normText)}</div>`;
+                }
+
+                // Inline translation from active language
                 let translationHtml = '';
-                if (line.translations) {
-                    // Prefer English, fall back to first available
-                    const transText = line.translations.en || Object.values(line.translations)[0];
-                    if (transText) {
-                        translationHtml = `<div class="atf-line__translation">${this.escapeHtml(transText)}</div>`;
-                    }
+                const transText = this.translationLines?.[lineKey]?.text;
+                if (transText) {
+                    translationHtml = `<div class="atf-line__translation">${this.escapeHtml(transText)}</div>`;
                 }
 
                 return `
@@ -812,6 +853,7 @@ class ATFViewer {
                         <span class="atf-line__number ${numberClass}">${line.number.replace('.', '').replace(/'+/g, '')}</span>
                         <span class="atf-line__content">${wordsHtml}</span>
                     </div>
+                    ${normalizedHtml}
                     ${translationHtml}
                     ${compositeHtml}
                 `;
@@ -882,66 +924,85 @@ class ATFViewer {
     }
 
     /**
-     * Render translation column (always shown when available)
-     * Shows full translation as a block since line-by-line matching is unreliable
+     * Language display labels
      */
-    renderTranslationColumn(surface) {
-        const body = this.container.querySelector('.atf-viewer__body');
+    static LANG_LABELS = {
+        en: 'English', de: 'German', fr: 'French', it: 'Italian',
+        es: 'Spanish', ca: 'Catalan', dk: 'Danish',
+    };
 
-        // Remove existing translation column
+    /**
+     * Render translation side panel — unmatched translations + language tabs.
+     * Matched translations are shown inline beneath each ATF line (renderLines).
+     */
+    renderTranslationColumn() {
+        const body = this.container.querySelector('.atf-viewer__body');
         body.querySelector('.atf-translation-column')?.remove();
 
+        const activeLang = this.translationData?.[this.activeTransLang];
+        const transUnmatched = activeLang?.unmatched || [];
+        const normUnmatched = this.normalizedData?.unmatched || [];
+        const hasUnmatched = transUnmatched.length > 0 || normUnmatched.length > 0;
+        const hasMultipleLangs = this.availableTransLangs.length > 1;
+
+        // Hide side panel entirely if single-lang with no unmatched
+        if (!hasMultipleLangs && !hasUnmatched) {
+            this.container.classList.remove('atf-viewer--has-translation');
+            return;
+        }
+
+        this.container.classList.add('atf-viewer--has-translation');
         const transCol = document.createElement('div');
         transCol.className = 'atf-translation-column';
 
-        const langLabel = this.translationLanguage?.toUpperCase() || 'EN';
+        // Header with language tabs or static label
+        let html = '<div class="atf-translation-column__header">';
+        if (hasMultipleLangs) {
+            html += '<div class="atf-translation-lang-tabs">';
+            for (const lang of this.availableTransLangs) {
+                const active = lang === this.activeTransLang ? ' is-active' : '';
+                const label = ATFViewer.LANG_LABELS[lang] || lang.toUpperCase();
+                html += `<button class="atf-translation-lang-tab${active}" data-lang="${lang}">${label}</button>`;
+            }
+            html += '</div>';
+        } else {
+            const label = ATFViewer.LANG_LABELS[this.activeTransLang] || this.activeTransLang?.toUpperCase() || 'EN';
+            html += `Translation (${label})`;
+        }
+        html += '</div>';
 
-        // Check if we have any line-matched translations
-        let hasLineMatches = false;
-        if (this.translationLines) {
-            surface.columns.forEach(col => {
-                col.lines.forEach(line => {
-                    if (line.type !== 'content') return;
-                    const key = `${surface.name}_${col.number || 1}_${line.number}`;
-                    if (this.translationLines[key]) {
-                        hasLineMatches = true;
-                    }
-                });
-            });
+        // Unmatched translations (in original translator sequence)
+        if (transUnmatched.length > 0) {
+            html += '<div class="atf-translation-unmatched">';
+            html += '<div class="atf-translation-unmatched__header">Unmatched translations</div>';
+            for (const u of transUnmatched) {
+                html += `<div class="atf-translation-unmatched__line">${this.escapeHtml(u.text)}</div>`;
+            }
+            html += '</div>';
         }
 
-        let html = `<div class="atf-translation-column__header">Translation (${langLabel})</div>`;
+        // Unmatched normalized readings
+        if (normUnmatched.length > 0) {
+            html += '<div class="atf-translation-unmatched">';
+            html += '<div class="atf-translation-unmatched__header">Unmatched normalized readings</div>';
+            for (const u of normUnmatched) {
+                html += `<div class="atf-translation-unmatched__line atf-translation-unmatched__line--normalized">${this.escapeHtml(u.text)}</div>`;
+            }
+            html += '</div>';
+        }
 
-        if (hasLineMatches) {
-            // Show line-by-line if we have matches
-            surface.columns.forEach(col => {
-                col.lines.forEach(line => {
-                    if (line.type !== 'content') return;
-
-                    const key = `${surface.name}_${col.number || 1}_${line.number}`;
-                    const trans = this.translationLines?.[key];
-
-                    html += `
-                        <div class="atf-translation-line" data-line="${line.number}">
-                            <span class="atf-translation-line__number">${line.number.replace('.', '')}</span>
-                            <span class="atf-translation-line__text">${trans ? this.escapeHtml(trans.text) : '—'}</span>
-                        </div>
-                    `;
-                });
-            });
-        } else if (this.translationRaw) {
-            // Show full translation as a block
-            html += `
-                <div class="atf-translation-block">
-                    ${this.escapeHtml(this.translationRaw).replace(/\n/g, '<br>')}
-                </div>
-            `;
-        } else {
-            html += `<div class="atf-translation-empty">Translation not available for this surface</div>`;
+        // Empty state when panel shows but no unmatched
+        if (!hasUnmatched) {
+            html += '<div class="atf-translation-empty">All translations mapped to lines</div>';
         }
 
         transCol.innerHTML = html;
         body.appendChild(transCol);
+
+        // Attach language tab click handlers
+        transCol.querySelectorAll('.atf-translation-lang-tab').forEach(btn => {
+            btn.addEventListener('click', () => this.setTranslationLanguage(btn.dataset.lang));
+        });
     }
 
     /**
@@ -1041,6 +1102,11 @@ class ATFViewer {
             bubbles: true,
             detail: { action: 'knowledge-open' }
         }));
+
+        // Load research tab content on first activation
+        if (tabToShow === 'research' && !this.researchLoaded) {
+            this.loadResearchTab();
+        }
 
         // If word provided and dictionary tab, load definition
         if (word && (tabToShow === 'dictionary')) {
@@ -1782,6 +1848,201 @@ class ATFViewer {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // ── Research Tab ───────────────────────────────────────
+
+    async loadResearchTab() {
+        const container = document.getElementById('research-tab');
+        if (!container) return;
+
+        container.innerHTML = '<div class="research-loading">Loading research data...</div>';
+
+        try {
+            const resp = await fetch(`${this.options.apiUrl}/artifacts/${this.pNumber}/research`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            this.researchData = await resp.json();
+            this.researchLoaded = true;
+            this.renderResearchTab(container);
+        } catch (e) {
+            container.innerHTML = `<div class="research-empty">Could not load research data.</div>`;
+            console.error('Research tab load error:', e);
+        }
+    }
+
+    renderResearchTab(container) {
+        const d = this.researchData;
+        if (!d) return;
+
+        const sections = [];
+
+        // Storage location
+        const museum = d.storage?.museum_no;
+        const collection = d.storage?.collection;
+        if (museum || collection) {
+            const parts = [museum, collection].filter(Boolean);
+            sections.push(`
+                <section class="research-section research-section--storage">
+                    <h4 class="research-section__title">Currently Stored</h4>
+                    <div class="research-storage">
+                        <span class="research-storage__location">${this.escapeHtml(parts.join(' \u00b7 '))}</span>
+                    </div>
+                </section>
+            `);
+        }
+
+        // Key scholars
+        if (d.scholars?.length > 0) {
+            const scholarItems = d.scholars.map(s => {
+                const orcidLink = s.orcid
+                    ? ` <a href="https://orcid.org/${this.escapeHtml(s.orcid)}" target="_blank" rel="noopener" class="research-scholar__orcid" title="ORCID profile">ORCID</a>`
+                    : '';
+                const role = s.role !== 'author' ? ` (${this.escapeHtml(s.role)})` : '';
+                const inst = s.institution ? `<span class="research-scholar__inst">${this.escapeHtml(s.institution)}</span>` : '';
+                return `
+                    <li class="research-scholar">
+                        <span class="research-scholar__name">${this.escapeHtml(s.name)}${role}${orcidLink}</span>
+                        ${inst}
+                        <span class="research-scholar__count">${s.pub_count} pub${s.pub_count !== 1 ? 's' : ''}</span>
+                    </li>`;
+            }).join('');
+            sections.push(`
+                <section class="research-section research-section--scholars">
+                    <h4 class="research-section__title">Key Scholars</h4>
+                    <ul class="research-scholars-list">${scholarItems}</ul>
+                </section>
+            `);
+        }
+
+        // Edition groups — ordered display
+        const typeOrder = [
+            ['full_edition', 'Full Editions'],
+            ['hand_copy', 'Hand Copies'],
+            ['translation_only', 'Translations'],
+            ['collation', 'Collations'],
+            ['commentary', 'Commentaries'],
+            ['catalog_entry', 'Catalog Entries'],
+            ['photograph_only', 'Photographs'],
+            ['brief_mention', 'Brief Mentions'],
+        ];
+
+        // Current edition first (if any)
+        const currentEditions = d.editions?.filter(e => e.is_current_edition === 1) || [];
+        if (currentEditions.length > 0) {
+            sections.push(`
+                <section class="research-section research-section--current">
+                    <h4 class="research-section__title">Current Edition</h4>
+                    ${currentEditions.map(e => this.renderEditionCard(e, true)).join('')}
+                </section>
+            `);
+        }
+
+        // Grouped editions (excluding current if already shown)
+        const currentIds = new Set(currentEditions.map(e => e.edition_id));
+        for (const [type, label] of typeOrder) {
+            const items = (d.editions_by_type?.[type] || []).filter(e => !currentIds.has(e.edition_id));
+            if (items.length === 0) continue;
+            sections.push(`
+                <section class="research-section">
+                    <h4 class="research-section__title">${label} <span class="research-section__count">${items.length}</span></h4>
+                    ${items.map(e => this.renderEditionCard(e, false)).join('')}
+                </section>
+            `);
+        }
+
+        if (sections.length === 0) {
+            container.innerHTML = `
+                <div class="research-empty">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18ZM12 3L1 9L12 15L21 10.09V17H23V9L12 3Z"/>
+                    </svg>
+                    <p>No publications or citations recorded for this tablet.</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = sections.join('');
+
+        // Bind citation expand buttons
+        container.querySelectorAll('.research-cite-toggle').forEach(btn => {
+            btn.addEventListener('click', () => this.expandCitations(btn));
+        });
+    }
+
+    renderEditionCard(ed, isCurrent) {
+        const title = this.escapeHtml(ed.short_title || ed.title || 'Untitled');
+        const year = ed.year ? ` (${ed.year})` : '';
+        const authors = this.escapeHtml(ed.authors || '');
+        const ref = ed.reference_string ? `<div class="research-card__ref">Ref: ${this.escapeHtml(ed.reference_string)}</div>` : '';
+        const doi = ed.doi
+            ? `<a href="https://doi.org/${this.escapeHtml(ed.doi)}" target="_blank" rel="noopener" class="research-card__doi">DOI</a>`
+            : '';
+        const citedBy = ed.cited_by_count
+            ? `<button class="research-cite-toggle" data-doi="${this.escapeHtml(ed.doi || '')}" data-count="${ed.cited_by_count}">Cited by ${ed.cited_by_count}</button>`
+            : '';
+        const currentBadge = isCurrent ? '<span class="research-card__badge">Current</span>' : '';
+        const note = ed.note ? `<div class="research-card__note">${this.escapeHtml(ed.note)}</div>` : '';
+
+        return `
+            <div class="research-card${isCurrent ? ' research-card--current' : ''}">
+                <div class="research-card__header">
+                    <span class="research-card__title">${title}${year}</span>
+                    ${currentBadge}
+                </div>
+                <div class="research-card__authors">${authors}</div>
+                ${ref}
+                ${note}
+                <div class="research-card__footer">
+                    ${doi}${citedBy}
+                </div>
+                <div class="research-card__citations" style="display:none"></div>
+            </div>`;
+    }
+
+    async expandCitations(btn) {
+        const doi = btn.dataset.doi;
+        if (!doi) return;
+
+        const card = btn.closest('.research-card');
+        const citationsDiv = card?.querySelector('.research-card__citations');
+        if (!citationsDiv) return;
+
+        // Toggle off
+        if (citationsDiv.style.display !== 'none') {
+            citationsDiv.style.display = 'none';
+            btn.classList.remove('research-cite-toggle--open');
+            return;
+        }
+
+        // Show loading
+        btn.classList.add('research-cite-toggle--open');
+        citationsDiv.style.display = 'block';
+        citationsDiv.innerHTML = '<div class="research-loading">Loading citations...</div>';
+
+        try {
+            const resp = await fetch(`${this.options.apiUrl}/artifacts/citations/${encodeURIComponent(doi)}`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+
+            if (data.citations?.length > 0) {
+                citationsDiv.innerHTML = `
+                    <ul class="research-citing-list">
+                        ${data.citations.map(c => `
+                            <li class="research-citing-paper">
+                                <span class="research-citing-paper__title">${this.escapeHtml(c.title)}</span>
+                                <span class="research-citing-paper__meta">
+                                    ${c.year || ''}${c.authors?.length ? ' \u00b7 ' + this.escapeHtml(c.authors.slice(0, 3).join(', ')) : ''}
+                                </span>
+                                ${c.doi ? `<a href="https://doi.org/${this.escapeHtml(c.doi)}" target="_blank" rel="noopener" class="research-card__doi">DOI</a>` : ''}
+                            </li>`).join('')}
+                    </ul>`;
+            } else {
+                citationsDiv.innerHTML = '<div class="research-empty-inline">No citation details available.</div>';
+            }
+        } catch (e) {
+            citationsDiv.innerHTML = '<div class="research-empty-inline">Could not fetch citation data.</div>';
+            console.error('Citation fetch error:', e);
+        }
     }
 }
 

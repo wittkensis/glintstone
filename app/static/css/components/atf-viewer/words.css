@@ -60,7 +60,19 @@
     min-width: max-content;
 }
 
-/* Inline translations (from #tr.XX: in ATF) */
+/* Normalized reading (ts scholarly transliteration) */
+.atf-line__normalized {
+    margin-left: 36px;
+    margin-top: 2px;
+    padding: var(--space-1) var(--space-2);
+    border-left: 2px solid var(--color-border);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--color-text-subtle);
+    font-size: 0.8rem;
+    font-family: var(--font-sans);
+}
+
+/* Inline translations (from DB matched translations) */
 .atf-line__translation {
     margin-left: 36px;
     margin-top: 2px;

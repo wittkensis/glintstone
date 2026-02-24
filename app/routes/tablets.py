@@ -3,8 +3,9 @@
 import json
 import logging
 from pathlib import Path
+from urllib.parse import quote
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 
 from core.config import get_settings
 
@@ -20,10 +21,10 @@ def tablet_list(
     request: Request,
     search: str = "",
     pipeline: str = "",
-    period: str = "",
-    provenience: str = "",
-    genre: str = "",
-    language: str = "",
+    period: list[str] = Query(default=[]),
+    provenience: list[str] = Query(default=[]),
+    genre: list[str] = Query(default=[]),
+    language: list[str] = Query(default=[]),
     has_ocr: str = "",
     page: int = 1,
 ):
@@ -49,29 +50,64 @@ def tablet_list(
     except Exception:
         data = {"items": [], "total": 0, "page": 1, "per_page": 24, "total_pages": 0}
 
+    # Pass active filters to filter-options for cross-filter counts
+    filter_params: dict = {}
+    if period:
+        filter_params["period"] = period
+    if provenience:
+        filter_params["provenience"] = provenience
+    if genre:
+        filter_params["genre"] = genre
+    if language:
+        filter_params["language"] = language
+
     try:
-        filter_options = api.get("/artifacts/filter-options")
+        filter_options = api.get("/artifacts/filter-options", params=filter_params)
     except Exception:
         filter_options = {"period": [], "provenience": [], "genre": [], "language": []}
 
-    from app.main import templates
-
-    # Active filters dict for template URL building
-    filters = {}
+    # Build active filter pills with remove-URLs
+    all_params: list[tuple[str, str]] = []
     if search:
-        filters["search"] = search
-    if pipeline:
-        filters["pipeline"] = pipeline
-    if period:
-        filters["period"] = period
-    if provenience:
-        filters["provenience"] = provenience
-    if genre:
-        filters["genre"] = genre
-    if language:
-        filters["language"] = language
+        all_params.append(("search", search))
+    for p in period:
+        all_params.append(("period", p))
+    for p in provenience:
+        all_params.append(("provenience", p))
+    for g in genre:
+        all_params.append(("genre", g))
+    for lang in language:
+        all_params.append(("language", lang))
     if has_ocr:
-        filters["has_ocr"] = "1"
+        all_params.append(("has_ocr", "1"))
+
+    _PILL_LABELS = {"has_ocr": "Has ML/OCR"}
+
+    def _pill_label(key: str, val: str) -> str:
+        if key in _PILL_LABELS:
+            return _PILL_LABELS[key]
+        if key == "search":
+            return f"\u201c{val}\u201d"
+        return val
+
+    active_filters: list[dict] = []
+    for i, (key, val) in enumerate(all_params):
+        remaining = [
+            f"{k}={quote(v, safe='')}" for j, (k, v) in enumerate(all_params) if j != i
+        ]
+        if pipeline:
+            remaining.append(f"pipeline={pipeline}")
+        qs = "&".join(remaining)
+        remove_url = f"/tablets?{qs}" if qs else "/tablets"
+        active_filters.append(
+            {
+                "dimension": key,
+                "label": _pill_label(key, val),
+                "remove_url": remove_url,
+            }
+        )
+
+    from app.main import templates
 
     return templates.TemplateResponse(
         "tablets/list.html",
@@ -88,8 +124,8 @@ def tablet_list(
             "genre": genre,
             "language": language,
             "has_ocr": has_ocr,
-            "filters": filters,
             "filter_options": filter_options,
+            "active_filters": active_filters,
             "api_url": request.app.state.api.base_url,
         },
     )

@@ -10,10 +10,10 @@
         search_value=search or '',
         action_url='/tablets',
         pipeline=pipeline or '',
-        period=period or '',
-        provenience=provenience or '',
-        genre=genre or '',
-        language=language or '',
+        period=period or [],
+        provenience=provenience or [],
+        genre=genre or [],
+        language=language or [],
         has_ocr=has_ocr or '',
         filter_options=filter_options
     ) }}
@@ -31,13 +31,13 @@
         </div>
 
         {# Build filter query string for stage filter + pagination links #}
-        {% set fq = '' %}
-        {% if search %}{% set fq = fq ~ 'search=' ~ search ~ '&' %}{% endif %}
-        {% if period %}{% set fq = fq ~ 'period=' ~ period ~ '&' %}{% endif %}
-        {% if provenience %}{% set fq = fq ~ 'provenience=' ~ provenience ~ '&' %}{% endif %}
-        {% if genre %}{% set fq = fq ~ 'genre=' ~ genre ~ '&' %}{% endif %}
-        {% if language %}{% set fq = fq ~ 'language=' ~ language ~ '&' %}{% endif %}
-        {% if has_ocr %}{% set fq = fq ~ 'has_ocr=1&' %}{% endif %}
+        {% set fq = namespace(s='') %}
+        {% if search %}{% set fq.s = fq.s ~ 'search=' ~ (search|urlencode) ~ '&' %}{% endif %}
+        {% for p in period %}{% set fq.s = fq.s ~ 'period=' ~ (p|urlencode) ~ '&' %}{% endfor %}
+        {% for p in provenience %}{% set fq.s = fq.s ~ 'provenience=' ~ (p|urlencode) ~ '&' %}{% endfor %}
+        {% for g in genre %}{% set fq.s = fq.s ~ 'genre=' ~ (g|urlencode) ~ '&' %}{% endfor %}
+        {% for l in language %}{% set fq.s = fq.s ~ 'language=' ~ (l|urlencode) ~ '&' %}{% endfor %}
+        {% if has_ocr %}{% set fq.s = fq.s ~ 'has_ocr=1&' %}{% endif %}
 
         {% set stages = [
             {'label': 'All', 'value': ''},
@@ -45,7 +45,22 @@
             {'label': 'Needs lemmatization', 'value': 'needs_linguistic'},
             {'label': 'Complete', 'value': 'complete'},
         ] %}
-        {{ stage_filter(stages, pipeline or '', '/tablets', extra_params=fq) }}
+        {{ stage_filter(stages, pipeline or '', '/tablets', extra_params=fq.s, has_ocr=has_ocr or '') }}
+
+        {# Active filter pills #}
+        {% if active_filters %}
+        <div class="active-filters">
+            <div class="active-filters__pills">
+                {% for f in active_filters %}
+                <a href="{{ f.remove_url }}" class="filter-pill">
+                    <span class="filter-pill__label">{{ f.label }}</span>
+                    <span class="filter-pill__remove" aria-label="Remove">&times;</span>
+                </a>
+                {% endfor %}
+            </div>
+            <a href="/tablets{% if pipeline %}?pipeline={{ pipeline }}{% endif %}" class="active-filters__clear">Clear all</a>
+        </div>
+        {% endif %}
 
         <div class="tablet-grid">
             {% for tablet in tablets %}
@@ -59,7 +74,7 @@
             {% endfor %}
         </div>
 
-        {% set base = '/tablets?' ~ fq %}
+        {% set base = '/tablets?' ~ fq.s %}
         {% if pipeline %}{% set base = base ~ 'pipeline=' ~ pipeline ~ '&' %}{% endif %}
         {{ pagination(page, total_pages, base) }}
     </div>

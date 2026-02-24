@@ -1,146 +1,182 @@
 {% extends "base.html" %}
+{% from "components/_macros.html" import dictionary_filter_sidebar, pagination %}
 
 {% block title %}Dictionary - Glintstone{% endblock %}
 
 {% block content %}
 <main class="dictionary-page">
-    <div class="page-header" style="padding: var(--space-6) var(--space-6) 0;">
-        <div class="page-header-main">
-            <div class="page-header-title">
-                <h1>Dictionary</h1>
-                <p class="subtitle">Browse Sumerian and Akkadian vocabulary</p>
+    <div class="dict-layout" data-api-url="{{ api_url }}">
+        {# Filter sidebar #}
+        {{ dictionary_filter_sidebar(
+            level=level,
+            search_value=search or '',
+            language=language or [],
+            pos=pos or [],
+            source=source or [],
+            frequency=frequency or '',
+            filter_options=filter_options,
+            sort=sort or ''
+        ) }}
+
+        {# Main content: results + detail panel #}
+        <div class="dict-main">
+            <div class="page-header">
+                <div class="page-header-main">
+                    <div class="page-header-title">
+                        <h1>Dictionary</h1>
+                        <p class="subtitle">{{ '{:,}'.format(total) }}
+                            {% if level == 'signs' %}signs{% elif level == 'meanings' %}meaning groups{% else %}lemmas{% endif %}
+                        </p>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="dict-browser" data-dict-browser data-api-url="{{ api_url }}">
-        {# Column 1: Groupings #}
-        <aside class="dict-browser__groupings">
-            <div class="dict-groupings">
-                {# All Words #}
-                <button class="dict-groupings__item dict-groupings__item--active" data-group-type="all" style="margin: var(--space-2) 0;">
-                    <span class="dict-groupings__item-label">All Words</span>
-                    <span class="dict-groupings__item-count">{{ counts.all | default(0) }}</span>
-                </button>
+            {# Level switcher #}
+            {% set fq = namespace(s='') %}
+            {% if search %}{% set fq.s = fq.s ~ 'search=' ~ (search|urlencode) ~ '&' %}{% endif %}
+            {% for l in language %}{% set fq.s = fq.s ~ 'language=' ~ (l|urlencode) ~ '&' %}{% endfor %}
+            {% for p in pos %}{% set fq.s = fq.s ~ 'pos=' ~ (p|urlencode) ~ '&' %}{% endfor %}
+            {% for s in source %}{% set fq.s = fq.s ~ 'source=' ~ (s|urlencode) ~ '&' %}{% endfor %}
+            {% if frequency %}{% set fq.s = fq.s ~ 'frequency=' ~ (frequency|urlencode) ~ '&' %}{% endif %}
 
-                {# Part of Speech #}
-                {% if counts.pos %}
-                <div class="dict-groupings__section" data-expanded="false">
-                    <button class="dict-groupings__section-header">
-                        <span>Part of Speech</span>
-                        <svg class="dict-groupings__section-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                    <div class="dict-groupings__section-content">
-                        {% for pos, count in counts.pos.items() | sort %}
-                        <button class="dict-groupings__item" data-group-type="pos" data-group-value="{{ pos }}">
-                            <span class="dict-groupings__item-label">{{ pos }}</span>
-                            <span class="dict-groupings__item-count">{{ count }}</span>
-                        </button>
+            <div class="dict-level-bar">
+                <nav class="btn-group" role="tablist">
+                    <a href="/dictionary?{{ fq.s }}level=signs"
+                       class="btn btn--sm{% if level == 'signs' %} btn--active{% endif %}"
+                       role="tab" aria-selected="{{ 'true' if level == 'signs' else 'false' }}">Signs</a>
+                    <a href="/dictionary?{{ fq.s }}level=lemmas"
+                       class="btn btn--sm{% if level == 'lemmas' %} btn--active{% endif %}"
+                       role="tab" aria-selected="{{ 'true' if level == 'lemmas' else 'false' }}">Lemmas</a>
+                    <a href="/dictionary?{{ fq.s }}level=meanings"
+                       class="btn btn--sm{% if level == 'meanings' %} btn--active{% endif %}"
+                       role="tab" aria-selected="{{ 'true' if level == 'meanings' else 'false' }}">Meanings</a>
+                </nav>
+                <div class="dict-sort">
+                    <label class="dict-sort__label" for="dict-sort-select">Sort:</label>
+                    <select id="dict-sort-select" class="dict-sort__select"
+                            onchange="var u=new URL(location);u.searchParams.set('sort',this.value);u.searchParams.delete('page');location=u">
+                        {% if level == 'signs' %}
+                        <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                        <option value="lemmas" {% if sort == 'lemmas' %}selected{% endif %}>Linked Lemmas</option>
+                        {% elif level == 'meanings' %}
+                        <option value="attestations" {% if sort != 'alpha' %}selected{% endif %}>Attestations</option>
+                        <option value="alpha" {% if sort == 'alpha' %}selected{% endif %}>Alphabetical</option>
+                        {% else %}
+                        <option value="frequency" {% if sort != 'alpha' %}selected{% endif %}>Frequency</option>
+                        <option value="alpha" {% if sort == 'alpha' %}selected{% endif %}>Alphabetical</option>
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+
+            {# Active filter pills #}
+            {% if active_filters %}
+            <div class="active-filters">
+                <div class="active-filters__pills">
+                    {% for f in active_filters %}
+                    <a href="{{ f.remove_url }}" class="filter-pill">
+                        <span class="filter-pill__label">{{ f.label }}</span>
+                        <span class="filter-pill__remove" aria-label="Remove">&times;</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                <a href="/dictionary?level={{ level }}" class="active-filters__clear">Clear all</a>
+            </div>
+            {% endif %}
+
+            {# Results + Detail split #}
+            <div class="dict-content">
+                {# Result list #}
+                <div class="dict-results" id="dict-results">
+                    {% if items %}
+                        {% for item in items %}
+
+                            {# ── SIGN CARD ── #}
+                            {% if level == 'signs' %}
+                            <button class="dict-card dict-card--sign" data-id="{{ item.id }}" data-level="signs">
+                                <div class="dict-card__header">
+                                    {% if item.unicode_char %}
+                                    <span class="dict-card__glyph">{{ item.unicode_char }}</span>
+                                    {% endif %}
+                                    <span class="dict-card__title">{{ item.sign_name }}</span>
+                                </div>
+                                <div class="dict-card__stats">
+                                    {{ item.reading_count or 0 }} readings
+                                    &middot; {{ item.lemma_count or 0 }} lemmas
+                                </div>
+                                {% if item.meanings %}
+                                <div class="dict-card__meanings">{{ item.meanings[:6]|join(', ') }}{% if item.meanings|length > 6 %}&hellip;{% endif %}</div>
+                                {% endif %}
+                                <div class="dict-card__meta">{{ item.source_label }}</div>
+                            </button>
+
+                            {# ── LEMMA CARD ── #}
+                            {% elif level == 'lemmas' %}
+                            <button class="dict-card dict-card--lemma" data-id="{{ item.id }}" data-level="lemmas">
+                                <div class="dict-card__header">
+                                    <span class="dict-card__title">{{ item.citation_form }}
+                                        {% if item.guide_word %}<span class="dict-card__guide">[{{ item.guide_word }}]</span>{% endif %}
+                                    </span>
+                                    {% if item.pos_label %}
+                                    <span class="dict-card__badge">{{ item.pos_label }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="dict-card__meta">{{ item.language_label }} &middot; {{ item.source_label }}</div>
+                                {% if item.meanings %}
+                                <div class="dict-card__meanings">{{ item.meanings[:6]|join(', ') }}{% if item.meanings|length > 6 %}&hellip;{% endif %}</div>
+                                {% endif %}
+                                <div class="dict-card__stats">{{ '{:,}'.format(item.attestation_count or 0) }} attestations</div>
+                            </button>
+
+                            {# ── MEANING CARD ── #}
+                            {% elif level == 'meanings' %}
+                            <button class="dict-card dict-card--meaning" data-id="{{ item.guide_word }}" data-level="meanings" data-pos="{{ item.pos or '' }}">
+                                <div class="dict-card__header">
+                                    <span class="dict-card__title">&ldquo;{{ item.guide_word }}&rdquo;</span>
+                                    {% if item.pos_label %}
+                                    <span class="dict-card__badge">{{ item.pos_label }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="dict-card__stats">
+                                    {{ item.lemma_count }} lemma{{ 's' if item.lemma_count != 1 }}
+                                    across {{ item.language_count }} language{{ 's' if item.language_count != 1 }}
+                                </div>
+                                {% if item.lemmas_grouped %}
+                                <div class="dict-card__langs">
+                                    {% for lang_name, cfs in item.lemmas_grouped.items() %}
+                                    <span class="dict-card__lang-group">
+                                        <span class="dict-card__lang-name">{{ lang_name }}:</span>
+                                        {{ cfs[:4]|join(', ') }}{% if cfs|length > 4 %}&hellip;{% endif %}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="dict-card__stats">{{ '{:,}'.format(item.total_attestations or 0) }} total attestations</div>
+                            </button>
+                            {% endif %}
+
                         {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">&#x12000;</div>
+                        <h3>No results found</h3>
+                        <p>Try adjusting your search or filters.</p>
                     </div>
+                    {% endif %}
                 </div>
-                {% endif %}
 
-                {# Language #}
-                {% if counts.language %}
-                <div class="dict-groupings__section" data-expanded="false">
-                    <button class="dict-groupings__section-header">
-                        <span>Language</span>
-                        <svg class="dict-groupings__section-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                    <div class="dict-groupings__section-content">
-                        {% for lang, count in counts.language.items() | sort %}
-                        <button class="dict-groupings__item" data-group-type="language" data-group-value="{{ lang }}">
-                            <span class="dict-groupings__item-label">{{ lang }}</span>
-                            <span class="dict-groupings__item-count">{{ count }}</span>
-                        </button>
-                        {% endfor %}
+                {# Detail panel #}
+                <div class="dict-detail" id="dict-detail">
+                    <div class="dict-detail__placeholder">
+                        <h3>Select an entry</h3>
+                        <p>Click a result to view its details</p>
                     </div>
                 </div>
-                {% endif %}
-
-                {# Frequency #}
-                {% if counts.frequency %}
-                <div class="dict-groupings__section" data-expanded="false">
-                    <button class="dict-groupings__section-header">
-                        <span>Frequency</span>
-                        <svg class="dict-groupings__section-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                    <div class="dict-groupings__section-content">
-                        <button class="dict-groupings__item" data-group-type="frequency" data-group-value="1">
-                            <span class="dict-groupings__item-label">Hapax (1)</span>
-                            <span class="dict-groupings__item-count">{{ counts.frequency['1'] | default(0) }}</span>
-                        </button>
-                        <button class="dict-groupings__item" data-group-type="frequency" data-group-value="2-10">
-                            <span class="dict-groupings__item-label">Rare (2-10)</span>
-                            <span class="dict-groupings__item-count">{{ counts.frequency['2-10'] | default(0) }}</span>
-                        </button>
-                        <button class="dict-groupings__item" data-group-type="frequency" data-group-value="11-100">
-                            <span class="dict-groupings__item-label">Uncommon (11-100)</span>
-                            <span class="dict-groupings__item-count">{{ counts.frequency['11-100'] | default(0) }}</span>
-                        </button>
-                        <button class="dict-groupings__item" data-group-type="frequency" data-group-value="101-500">
-                            <span class="dict-groupings__item-label">Common (101-500)</span>
-                            <span class="dict-groupings__item-count">{{ counts.frequency['101-500'] | default(0) }}</span>
-                        </button>
-                        <button class="dict-groupings__item" data-group-type="frequency" data-group-value="500+">
-                            <span class="dict-groupings__item-label">Very Common (500+)</span>
-                            <span class="dict-groupings__item-count">{{ counts.frequency['500+'] | default(0) }}</span>
-                        </button>
-                    </div>
-                </div>
-                {% endif %}
             </div>
-        </aside>
 
-        {# Column 2: Word list #}
-        <div class="dict-browser__words">
-            <div class="dict-word-list">
-                <div class="dict-word-list__search">
-                    <div class="dict-word-list__search-wrapper">
-                        <svg class="dict-word-list__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M7 12C9.76142 12 12 9.76142 12 7C12 4.23858 9.76142 2 7 2C4.23858 2 2 4.23858 2 7C2 9.76142 4.23858 12 7 12Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M14 14L10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <input type="text" placeholder="Search words..." class="dict-word-list__search-input" data-search-input>
-                        <button class="dict-word-list__search-clear" data-search-clear hidden>
-                            <svg class="dict-word-list__search-clear-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                                <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <select class="dict-word-list__sort" data-sort-select>
-                    <option value="frequency">By Frequency</option>
-                    <option value="alpha">Alphabetical</option>
-                </select>
-                <div class="dict-word-list__count" data-word-count>
-                    <span class="count">0</span> entries
-                </div>
-                <div class="dict-word-list__items" data-word-list>
-                    {# Filled by JavaScript #}
-                </div>
-                <button class="dict-word-list__load-more" data-load-more hidden>
-                    Load More
-                </button>
-            </div>
-        </div>
-
-        {# Column 3: Word detail #}
-        <div class="dict-browser__detail" data-detail-panel>
-            <div class="dict-detail-placeholder">
-                <svg class="dict-detail-placeholder__icon" width="48" height="48" viewBox="0 0 48 48" fill="none">
-                    <path d="M14 8H34M14 16H34M14 24H26M14 32H26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <h3 class="dict-detail-placeholder__title">No word selected</h3>
-                <p class="dict-detail-placeholder__description">Select a word from the list to view its details</p>
-            </div>
+            {# Pagination #}
+            {% set base = '/dictionary?' ~ fq.s ~ 'level=' ~ level ~ '&sort=' ~ sort ~ '&' %}
+            {{ pagination(page, total_pages, base) }}
         </div>
     </div>
 </main>

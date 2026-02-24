@@ -362,6 +362,9 @@ class Zoombox {
         // Direct transform: panX/panY are the translate values
         this.transform.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.scale})`;
 
+        // Expose scale as CSS custom property for counter-scaling tooltips/borders
+        this.container.style.setProperty('--zoombox-scale', this.scale);
+
         // Update zoomed state class
         const isZoomed = this.scale > this.options.minScale;
         this.container.classList.toggle('is-zoomed', isZoomed);
@@ -468,19 +471,19 @@ class Zoombox {
             box.dataset.sign = anno.sign || '';
             box.dataset.surface = anno.surface || '';
             box.dataset.source = anno.source || '';
-            box.title = `MZL ${anno.sign}` + (anno.surface ? ` (${anno.surface})` : '');
+
+            // Tooltip child (counter-scaled via CSS)
+            if (anno.sign) {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'zoombox__overlay-tooltip';
+                tooltip.textContent = anno.sign;
+                box.appendChild(tooltip);
+            }
 
             // Click handler
             box.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (this.options.onOverlayClick) {
-                    this.options.onOverlayClick(anno, box);
-                }
-            });
-
-            // Hover handlers for zoomed state
-            box.addEventListener('mouseenter', () => {
-                if (this.scale >= this.options.hoverThreshold && this.options.onOverlayClick) {
                     this.options.onOverlayClick(anno, box);
                 }
             });
