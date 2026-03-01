@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablet Citation Display — 3 Options</title>
+<style>
+/* ── Design Tokens (from Glintstone) ─────────────────────── */
+:root {
+  --color-bg: #1a1a1a;
+  --color-bg-inset: #0a0a0a;
+  --color-bg-deep: #141414;
+  --color-bg-deepest: #0f0f0f;
+  --color-bg-elevated: #242424;
+  --color-bg-subtle: #2a2a2a;
+  --color-surface: #303030;
+  --color-text: #e8e6e3;
+  --color-text-secondary: #888888;
+  --color-text-muted: #a0a0a0;
+  --color-text-subtle: #707070;
+  --color-accent: #c9a962;
+  --color-accent-hover: #d4b97a;
+  --color-accent-muted: #8b7642;
+  --color-border: #404040;
+  --color-border-subtle: #303030;
+  --color-lang-sux: #7eb8a0;
+  --color-lang-akk: #b89a7e;
+  --color-info: #7ba4c4;
+
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  --font-serif: Georgia, 'Times New Roman', serif;
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.4;
+  padding: var(--space-6);
+}
+
+/* ── Page Layout ─────────────────────────────────────────── */
+.options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.option-section {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.option-label {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-deep);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+
+.option-label span {
+  color: var(--color-text-subtle);
+  font-weight: 400;
+  margin-left: var(--space-2);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   OPTION 1: BIBLIOGRAPHIC CARD
+   Full catalog-style block above ATF text
+   ══════════════════════════════════════════════════════════ */
+
+.biblio-card {
+  background: var(--color-bg-elevated);
+  padding: var(--space-6);
+}
+
+.biblio-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 2px solid var(--color-accent-muted);
+}
+
+.biblio-card__designation {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.biblio-card__pnumber {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.biblio-card__sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6) var(--space-8);
+}
+
+.biblio-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.biblio-section__title {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent-muted);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.biblio-field {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.biblio-field dt {
+  flex: 0 0 100px;
+  font-size: 0.6875rem;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-top: 1px;
+}
+
+.biblio-field dd {
+  font-size: 0.8125rem;
+  color: var(--color-text);
+}
+
+.biblio-field dd a {
+  color: var(--color-info);
+  text-decoration: none;
+}
+
+.biblio-field dd a:hover {
+  text-decoration: underline;
+}
+
+.biblio-citation {
+  grid-column: 1 / -1;
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-deep);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.biblio-citation__text {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.biblio-citation__copy {
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.biblio-citation__copy:hover {
+  color: var(--color-text);
+  border-color: var(--color-accent-muted);
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   OPTION 2: COMPACT HEADER + METADATA CHIPS
+   Dense header above ATF, progressive disclosure
+   ══════════════════════════════════════════════════════════ */
+
+.compact-header {
+  background: var(--color-bg-elevated);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.compact-header__row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.compact-header__designation {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.compact-header__ids {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.compact-header__ids span {
+  color: var(--color-text-subtle);
+}
+
+.compact-header__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.chip--period { background: #2d3a30; color: #a8d4b8; border-color: #3a4d3e; }
+.chip--prov   { background: #3a3528; color: #d4c49a; border-color: #4d4535; }
+.chip--genre  { background: #3b3052; color: #d4c5f9; border-color: #4d3f6a; }
+.chip--lang   { background: #2d4a3e; color: var(--color-lang-sux); border-color: #3a5e4e; }
+
+.compact-header__stats {
+  font-size: 0.75rem;
+  color: var(--color-text-subtle);
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.compact-header__stats .sep {
+  color: var(--color-border);
+}
+
+.compact-header__pub {
+  font-size: 0.6875rem;
+  color: var(--color-text-subtle);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.compact-header__pub a {
+  color: var(--color-info);
+  text-decoration: none;
+}
+
+.compact-header__pub a:hover {
+  text-decoration: underline;
+}
+
+.compact-header__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-subtle);
+  font-size: 0.6875rem;
+  cursor: pointer;
+}
+
+.compact-header__toggle:hover {
+  color: var(--color-text-muted);
+}
+
+.compact-header__toggle svg {
+  transition: transform 0.15s ease;
+}
+
+.compact-header__toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.compact-header__drawer {
+  display: none;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+  margin-top: var(--space-2);
+}
+
+.compact-header__drawer.is-open {
+  display: block;
+}
+
+.compact-drawer__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+}
+
+.compact-drawer__field {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.compact-drawer__field dt {
+  font-size: 0.5625rem;
+  font-weight: 500;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.compact-drawer__field dd {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.compact-drawer__actions {
+  margin-top: var(--space-3);
+  display: flex;
+  gap: var(--space-2);
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   OPTION 3: STRUCTURED SIDEBAR
+   Persistent column beside ATF text
+   ══════════════════════════════════════════════════════════ */
+
+.sidebar-layout {
+  display: flex;
+  height: 480px;
+  background: var(--color-bg-elevated);
+}
+
+.sidebar-pane {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--color-bg-deep);
+  border-right: 1px solid var(--color-border-subtle);
+  padding: var(--space-4) var(--space-4);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sidebar-section__label {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-subtle);
+  margin-bottom: 2px;
+}
+
+.sidebar-section__value {
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.sidebar-section__value--secondary {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.sidebar-section__value--mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: var(--color-border-subtle);
+}
+
+.sidebar-links {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.sidebar-link {
+  font-size: 0.6875rem;
+  color: var(--color-info);
+  text-decoration: none;
+  padding: 2px 8px;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-link:hover {
+  background: var(--color-bg-subtle);
+}
+
+.sidebar-copy {
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+}
+
+.sidebar-copy:hover {
+  color: var(--color-text);
+  border-color: var(--color-accent-muted);
+}
+
+
+/* ── Shared: ATF Preview ─────────────────────────────────── */
+.atf-preview {
+  flex: 1;
+  background: var(--color-bg-deepest);
+  padding: var(--space-4) var(--space-5);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--color-text);
+  overflow-y: auto;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.atf-preview--beside {
+  border-top: none;
+  border-left: none;
+}
+
+.atf-surface {
+  color: var(--color-accent-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.atf-surface:first-child {
+  margin-top: 0;
+}
+
+.atf-line {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.atf-line__num {
+  flex: 0 0 32px;
+  text-align: right;
+  color: var(--color-text-subtle);
+  font-size: 0.6875rem;
+  user-select: none;
+}
+
+.atf-line__text {
+  color: var(--color-text);
+}
+
+.atf-break {
+  color: var(--color-text-subtle);
+  font-style: italic;
+  font-size: 0.75rem;
+  padding: var(--space-1) 0;
+}
+
+.atf-damaged {
+  color: var(--color-text-muted);
+}
+</style>
+</head>
+<body>
+
+<div class="options-grid">
+
+<!-- ════════════════════════════════════════════════════════
+     OPTION 1: BIBLIOGRAPHIC CARD
+     ════════════════════════════════════════════════════════ -->
+<div class="option-section">
+  <div class="option-label">Option 1: Bibliographic Card <span>Library catalog format above ATF text</span></div>
+
+  <div class="biblio-card">
+    <div class="biblio-card__header">
+      <div class="biblio-card__designation">CM 26, 037</div>
+      <div class="biblio-card__pnumber">P134010</div>
+    </div>
+
+    <div class="biblio-card__sections">
+
+      <div class="biblio-section">
+        <div class="biblio-section__title">Identification</div>
+        <dl class="biblio-field">
+          <dt>Museum no.</dt>
+          <dd>NBC 00419</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>Collection</dt>
+          <dd>Nies Babylonian Collection, Yale Babylonian Collection, New Haven, Connecticut</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>Seal</dt>
+          <dd>S000207</dd>
+        </dl>
+      </div>
+
+      <div class="biblio-section">
+        <div class="biblio-section__title">Physical Description</div>
+        <dl class="biblio-field">
+          <dt>Object</dt>
+          <dd>tablet &middot; clay</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>Dimensions</dt>
+          <dd>38 &times; 38 &times; 15 mm (W &times; H &times; T)</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>Surfaces</dt>
+          <dd>obverse &middot; reverse</dd>
+        </dl>
+      </div>
+
+      <div class="biblio-section">
+        <div class="biblio-section__title">Text</div>
+        <dl class="biblio-field">
+          <dt>Language</dt>
+          <dd>Sumerian</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>Lines</dt>
+          <dd>502</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>Genre</dt>
+          <dd>Administrative &middot; metro-mathematical</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>ATF source</dt>
+          <dd>Molina, Manuel (cdlistaff)</dd>
+        </dl>
+      </div>
+
+      <div class="biblio-section">
+        <div class="biblio-section__title">Provenance</div>
+        <dl class="biblio-field">
+          <dt>Provenience</dt>
+          <dd>Puzri&scaron;-Dagan (mod. Drehem)</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>Period</dt>
+          <dd>Ur III (ca. 2100&ndash;2000 BC)</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>Date</dt>
+          <dd>&Scaron;ulgi.47.12.23 (us&#x2082; year)</dd>
+        </dl>
+      </div>
+
+      <div class="biblio-section" style="grid-column: 1 / -1;">
+        <div class="biblio-section__title">Bibliography</div>
+        <dl class="biblio-field">
+          <dt>Primary pub.</dt>
+          <dd>CM 26, 037</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>Author</dt>
+          <dd>Sharlach, Tonia M.</dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>ORACC</dt>
+          <dd><a href="#">epsd2</a></dd>
+        </dl>
+        <dl class="biblio-field">
+          <dt>CDLI</dt>
+          <dd><a href="#">cdli.earth/artifacts/134010</a></dd>
+        </dl>
+      </div>
+
+      <div class="biblio-citation">
+        <div class="biblio-citation__text">
+          Sharlach, T.M. CM 26, 037. NBC 00419. Nies Babylonian Collection, Yale. CDLI P134010.
+        </div>
+        <button class="biblio-citation__copy">Copy citation</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="atf-preview">
+    <div class="atf-surface">@obverse</div>
+    <div class="atf-break">$ beginning broken</div>
+    <div class="atf-line"><span class="atf-line__num">1'</span> <span class="atf-line__text"><span class="atf-damaged">[...]</span>-nita2# szu</span></div>
+    <div class="atf-line"><span class="atf-line__num">2'</span> <span class="atf-line__text"><span class="atf-damaged">[...]</span> AN</span></div>
+    <div class="atf-line"><span class="atf-line__num">3'</span> <span class="atf-line__text"><span class="atf-damaged">[x]</span> masz2-gal</span></div>
+    <div class="atf-line"><span class="atf-line__num">4'</span> <span class="atf-line__text"><span class="atf-damaged">[x]</span> masz2-nita2</span></div>
+    <div class="atf-line"><span class="atf-line__num">5'</span> <span class="atf-line__text">ur-{d}lamma</span></div>
+    <div class="atf-line"><span class="atf-line__num">6'</span> <span class="atf-line__text">1(u) 3(disz) ud5 1(u) 1(disz) masz2-nita2</span></div>
+    <div class="atf-line"><span class="atf-line__num">7'</span> <span class="atf-line__text">a-ra2 1(disz)-kam</span></div>
+    <div class="atf-line"><span class="atf-line__num">8'</span> <span class="atf-line__text">2(disz) udu 5(disz) masz2-gal</span></div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════
+     OPTION 2: COMPACT HEADER + CHIPS
+     ════════════════════════════════════════════════════════ -->
+<div class="option-section">
+  <div class="option-label">Option 2: Compact Header + Chips <span>Dense header with progressive disclosure</span></div>
+
+  <div class="compact-header">
+    <div class="compact-header__row1">
+      <div class="compact-header__designation">CM 26, 037</div>
+      <div class="compact-header__ids">NBC 00419 <span>&middot;</span> Nies Babylonian Coll., Yale</div>
+    </div>
+
+    <div class="compact-header__chips">
+      <span class="chip chip--period">Ur III</span>
+      <span class="chip chip--prov">Puzri&scaron;-Dagan</span>
+      <span class="chip chip--genre">Administrative</span>
+      <span class="chip chip--lang">Sumerian</span>
+    </div>
+
+    <div class="compact-header__stats">
+      502 lines <span class="sep">&middot;</span>
+      obv + rev <span class="sep">&middot;</span>
+      38&times;38&times;15 mm <span class="sep">&middot;</span>
+      Seal S000207 <span class="sep">&middot;</span>
+      &Scaron;ulgi.47.12.23
+    </div>
+
+    <div class="compact-header__pub">
+      Pub: Sharlach, T.M. <span class="sep">&middot;</span>
+      <a href="#">CDLI P134010</a> <span class="sep">&middot;</span>
+      <a href="#">ORACC: epsd2</a> <span class="sep">&middot;</span>
+
+      <button class="compact-header__toggle" id="toggle-2" aria-expanded="false" onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded') === 'true' ? 'false' : 'true'); document.getElementById('drawer-2').classList.toggle('is-open')">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+        More
+      </button>
+    </div>
+
+    <div class="compact-header__drawer" id="drawer-2">
+      <div class="compact-drawer__grid">
+        <div class="compact-drawer__field">
+          <dt>Material</dt>
+          <dd>clay tablet</dd>
+        </div>
+        <div class="compact-drawer__field">
+          <dt>Subgenre</dt>
+          <dd>metro-mathematical</dd>
+        </div>
+        <div class="compact-drawer__field">
+          <dt>ATF source</dt>
+          <dd>Molina, Manuel</dd>
+        </div>
+        <div class="compact-drawer__field">
+          <dt>Translation</dt>
+          <dd>not available</dd>
+        </div>
+        <div class="compact-drawer__field">
+          <dt>CDLI entered</dt>
+          <dd>2006-02-07</dd>
+        </div>
+        <div class="compact-drawer__field">
+          <dt>CDLI updated</dt>
+          <dd>2020-02-12</dd>
+        </div>
+      </div>
+      <div class="compact-drawer__actions">
+        <button class="biblio-citation__copy">Copy citation</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="atf-preview">
+    <div class="atf-surface">@obverse</div>
+    <div class="atf-break">$ beginning broken</div>
+    <div class="atf-line"><span class="atf-line__num">1'</span> <span class="atf-line__text"><span class="atf-damaged">[...]</span>-nita2# szu</span></div>
+    <div class="atf-line"><span class="atf-line__num">2'</span> <span class="atf-line__text"><span class="atf-damaged">[...]</span> AN</span></div>
+    <div class="atf-line"><span class="atf-line__num">3'</span> <span class="atf-line__text"><span class="atf-damaged">[x]</span> masz2-gal</span></div>
+    <div class="atf-line"><span class="atf-line__num">4'</span> <span class="atf-line__text"><span class="atf-damaged">[x]</span> masz2-nita2</span></div>
+    <div class="atf-line"><span class="atf-line__num">5'</span> <span class="atf-line__text">ur-{d}lamma</span></div>
+    <div class="atf-line"><span class="atf-line__num">6'</span> <span class="atf-line__text">1(u) 3(disz) ud5 1(u) 1(disz) masz2-nita2</span></div>
+    <div class="atf-line"><span class="atf-line__num">7'</span> <span class="atf-line__text">a-ra2 1(disz)-kam</span></div>
+    <div class="atf-line"><span class="atf-line__num">8'</span> <span class="atf-line__text">2(disz) udu 5(disz) masz2-gal</span></div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════
+     OPTION 3: STRUCTURED SIDEBAR
+     ════════════════════════════════════════════════════════ -->
+<div class="option-section">
+  <div class="option-label">Option 3: Structured Sidebar <span>Persistent reference column beside ATF text</span></div>
+
+  <div class="sidebar-layout">
+    <div class="sidebar-pane">
+
+      <div class="sidebar-section">
+        <div class="sidebar-section__value" style="font-size: 1rem; font-weight: 600;">CM 26, 037</div>
+        <div class="sidebar-section__value--mono">P134010</div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section__label">Museum</div>
+        <div class="sidebar-section__value">NBC 00419</div>
+        <div class="sidebar-section__value--secondary">Nies Babylonian Coll., Yale</div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section__label">Physical</div>
+        <div class="sidebar-section__value--secondary">tablet &middot; clay</div>
+        <div class="sidebar-section__value--secondary">38 &times; 38 &times; 15 mm</div>
+        <div class="sidebar-section__value--secondary">obv &middot; rev</div>
+        <div class="sidebar-section__value--secondary">Seal S000207</div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section__label">Context</div>
+        <div class="sidebar-section__value">Ur III</div>
+        <div class="sidebar-section__value--secondary">Puzri&scaron;-Dagan (Drehem)</div>
+        <div class="sidebar-section__value--secondary">Administrative</div>
+        <div class="sidebar-section__value--secondary" style="color: var(--color-lang-sux)">Sumerian</div>
+        <div class="sidebar-section__value--secondary">&Scaron;ulgi.47.12.23</div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section__label">Publication</div>
+        <div class="sidebar-section__value--secondary">Sharlach, T.M.</div>
+        <div class="sidebar-section__value--secondary">502 lines</div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section__label">Links</div>
+        <div class="sidebar-links">
+          <a href="#" class="sidebar-link">CDLI</a>
+          <a href="#" class="sidebar-link">ORACC</a>
+        </div>
+      </div>
+
+      <div style="margin-top: auto;">
+        <button class="sidebar-copy">Copy citation</button>
+      </div>
+
+    </div>
+
+    <div class="atf-preview atf-preview--beside">
+      <div class="atf-surface">@obverse</div>
+      <div class="atf-break">$ beginning broken</div>
+      <div class="atf-line"><span class="atf-line__num">1'</span> <span class="atf-line__text"><span class="atf-damaged">[...]</span>-nita2# szu</span></div>
+      <div class="atf-line"><span class="atf-line__num">2'</span> <span class="atf-line__text"><span class="atf-damaged">[...]</span> AN</span></div>
+      <div class="atf-line"><span class="atf-line__num">3'</span> <span class="atf-line__text"><span class="atf-damaged">[x]</span> masz2-gal</span></div>
+      <div class="atf-line"><span class="atf-line__num">4'</span> <span class="atf-line__text"><span class="atf-damaged">[x]</span> masz2-nita2</span></div>
+      <div class="atf-line"><span class="atf-line__num">5'</span> <span class="atf-line__text">ur-{d}lamma</span></div>
+      <div class="atf-line"><span class="atf-line__num">6'</span> <span class="atf-line__text">1(u) 3(disz) ud5 1(u) 1(disz) masz2-nita2</span></div>
+      <div class="atf-line"><span class="atf-line__num">7'</span> <span class="atf-line__text">a-ra2 1(disz)-kam</span></div>
+      <div class="atf-line"><span class="atf-line__num">8'</span> <span class="atf-line__text">2(disz) udu 5(disz) masz2-gal</span></div>
+      <div class="atf-line"><span class="atf-line__num">9'</span> <span class="atf-line__text">lu2-kal-la</span></div>
+      <div class="atf-line"><span class="atf-line__num">10'</span> <span class="atf-line__text">3(disz) udu-nita2 6(disz) ud5</span></div>
+      <div class="atf-line"><span class="atf-line__num">11'</span> <span class="atf-line__text">1(disz) sila4 3(disz) masz2-gal</span></div>
+      <div class="atf-line"><span class="atf-line__num">12'</span> <span class="atf-line__text">2(disz) masz2-nita2</span></div>
+      <div class="atf-line"><span class="atf-line__num">13'</span> <span class="atf-line__text">a-ra2 1(disz)-kam</span></div>
+      <div class="atf-line"><span class="atf-line__num">14'</span> <span class="atf-line__text">4(disz) udu-nita2 4(disz) ud5</span></div>
+      <div class="atf-line"><span class="atf-line__num">15'</span> <span class="atf-line__text">1(disz) sila4 4(disz) masz2-gal</span></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /options-grid -->
+
+</body>
+</html>
