@@ -22,7 +22,8 @@ Numbered scripts run in order. Each step depends on earlier steps.
 | 15e | `15e_verify_results.py` | Verify Phase 3 results (sign counts, associations, subscripts) |
 | 16 | `16_import_oracc_glossaries.py` | Import ORACC glossaries (8 projects, 6 languages, dialects) |
 | 17 | `17_test_lexical_api.py` | Test lexical API functions with sample queries |
-| 18 | `15_import_compvis_annotations.py` | Import CompVis sign detection bounding boxes |
+| 18 | `18_import_norms.py` | Import normalization bridge (norms, norm-forms) from ORACC glossaries |
+| 18b | `15_import_compvis_annotations.py` | Import CompVis sign detection bounding boxes |
 | 19 | `19_match_translation_lines.py` | Match translations to text_lines by line number |
 | 20 | `20_import_collections.py` | Import curated collections |
 | 21 | `21_import_oracc_credits.py` | Import ORACC per-text credits into artifact_credits |
