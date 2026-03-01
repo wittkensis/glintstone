@@ -155,7 +155,7 @@
     margin-bottom: var(--space-1);
 }
 
-.dict-card__meanings {
+.dict-card__glosses {
     font-size: var(--text-sm);
     color: var(--color-text-secondary, var(--color-text-muted));
     line-height: 1.4;
@@ -184,7 +184,7 @@
 }
 
 /* ==========================================================================
-   Meaning Card Specifics
+   Gloss Card Specifics
    ========================================================================== */
 
 .dict-card__langs {

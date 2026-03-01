@@ -2,7 +2,7 @@
 -- Migration 008: Unified Lexical Resource Architecture
 -- ============================================================================
 -- Purpose: Create three-dimensional lexical model organized by linguistic
---          dimensions (Glyphs, Lemmas, Meanings) rather than arbitrary sources
+--          dimensions (Glyphs, Lemmas, Glosses) rather than arbitrary sources
 --
 -- Strategic Vision: Coherent lexical platform for exploring cuneiform data
 --                   across multiple dimensions with proper source attribution
@@ -140,9 +140,9 @@ COMMENT ON COLUMN lexical_lemmas.attestation_count IS 'Pre-computed from token_r
 COMMENT ON COLUMN lexical_lemmas.source IS 'Attribution to dictionary/glossary source';
 
 -- ============================================================================
--- DIMENSION 3: MEANINGS (Semantic)
+-- DIMENSION 3: GLOSSES (Semantic)
 -- ============================================================================
--- Senses represent the semantic dimension - meaning distinctions (polysemy),
+-- Senses represent the semantic dimension - gloss distinctions (polysemy),
 -- contextual usage, and translation equivalents. Linked to parent lemmas.
 -- ============================================================================
 
@@ -153,7 +153,7 @@ CREATE TABLE IF NOT EXISTS lexical_senses (
     lemma_id INTEGER NOT NULL REFERENCES lexical_lemmas(id) ON DELETE CASCADE,
 
     -- Polysemy tracking
-    sense_number INTEGER DEFAULT 1,          -- 1, 2, 3 for multiple meanings
+    sense_number INTEGER DEFAULT 1,          -- 1, 2, 3 for multiple glosses
 
     -- MODULAR DEFINITIONS (array for separate editing)
     definition_parts TEXT[],                 -- ['king', 'ruler', 'master']
@@ -185,9 +185,9 @@ CREATE INDEX idx_lexical_senses_lemma ON lexical_senses(lemma_id);
 CREATE INDEX idx_lexical_senses_domain ON lexical_senses(semantic_domain);
 CREATE INDEX idx_lexical_senses_source ON lexical_senses(source);
 
-COMMENT ON TABLE lexical_senses IS 'Semantic meanings and contextual usage for lemmas';
+COMMENT ON TABLE lexical_senses IS 'Semantic glosses and contextual usage for lemmas';
 COMMENT ON COLUMN lexical_senses.definition_parts IS 'Array of definition components for modular editing';
-COMMENT ON COLUMN lexical_senses.sense_number IS 'Polysemy tracking: 1, 2, 3 for multiple meanings';
+COMMENT ON COLUMN lexical_senses.sense_number IS 'Polysemy tracking: 1, 2, 3 for multiple glosses';
 COMMENT ON COLUMN lexical_senses.translations IS 'Cross-language equivalents as JSONB: {en: [...], de: [...]}';
 
 -- ============================================================================

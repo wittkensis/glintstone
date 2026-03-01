@@ -77,8 +77,8 @@
     var url;
     if (level === 'signs') {
       url = apiUrl + '/dictionary/signs/' + encodeURIComponent(id);
-    } else if (level === 'meanings') {
-      url = apiUrl + '/dictionary/meanings/' + encodeURIComponent(id);
+    } else if (level === 'glosses') {
+      url = apiUrl + '/dictionary/glosses/' + encodeURIComponent(id);
       if (pos) url += '?pos=' + encodeURIComponent(pos);
     } else {
       url = apiUrl + '/dictionary/lemmas/' + encodeURIComponent(id);
@@ -91,7 +91,7 @@
       })
       .then(function (data) {
         if (level === 'signs') renderSignDetail(data);
-        else if (level === 'meanings') renderMeaningDetail(data);
+        else if (level === 'glosses') renderGlossDetail(data);
         else renderLemmaDetail(data);
       })
       .catch(function () {
@@ -122,7 +122,7 @@
     h += '</div>';
 
     if (data.senses && data.senses.length) {
-      h += '<div class="dict-detail__section"><h3>Meanings</h3><ol>';
+      h += '<div class="dict-detail__section"><h3>Glosses</h3><ol>';
       data.senses.forEach(function (s) {
         var def = (s.definition_parts || []).join(', ');
         h += '<li>' + esc(def);
@@ -185,7 +185,7 @@
     panel.innerHTML = h;
   }
 
-  function renderMeaningDetail(data) {
+  function renderGlossDetail(data) {
     var h = '<div class="dict-detail__content">';
     h += '<h2 class="dict-detail__title">&ldquo;' + esc(data.guide_word) + '&rdquo;</h2>';
     h += '<div class="dict-detail__meta">';
@@ -199,8 +199,8 @@
         h += '<li><strong>' + esc(l.citation_form) + '</strong>';
         if (l.guide_word) h += ' [' + esc(l.guide_word) + ']';
         h += ' <span class="dict-detail__note">' + esc(l.language_label) + ' &middot; ' + esc(l.source_label) + '</span>';
-        if (l.meanings && l.meanings.length) {
-          h += '<br><span class="dict-detail__sub">' + l.meanings.map(esc).join(', ') + '</span>';
+        if (l.glosses && l.glosses.length) {
+          h += '<br><span class="dict-detail__sub">' + l.glosses.map(esc).join(', ') + '</span>';
         }
         h += '</li>';
       });

@@ -25,7 +25,7 @@
                     <div class="page-header-title">
                         <h1>Dictionary</h1>
                         <p class="subtitle">{{ '{:,}'.format(total) }}
-                            {% if level == 'signs' %}signs{% elif level == 'meanings' %}meaning groups{% else %}lemmas{% endif %}
+                            {% if level == 'signs' %}signs{% elif level == 'glosses' %}gloss groups{% else %}lemmas{% endif %}
                         </p>
                     </div>
                 </div>
@@ -47,18 +47,17 @@
                     <a href="/dictionary?{{ fq.s }}level=lemmas"
                        class="btn btn--sm{% if level == 'lemmas' %} btn--active{% endif %}"
                        role="tab" aria-selected="{{ 'true' if level == 'lemmas' else 'false' }}">Lemmas</a>
-                    <a href="/dictionary?{{ fq.s }}level=meanings"
-                       class="btn btn--sm{% if level == 'meanings' %} btn--active{% endif %}"
-                       role="tab" aria-selected="{{ 'true' if level == 'meanings' else 'false' }}">Meanings</a>
+                    <a href="/dictionary?{{ fq.s }}level=glosses"
+                       class="btn btn--sm{% if level == 'glosses' %} btn--active{% endif %}"
+                       role="tab" aria-selected="{{ 'true' if level == 'glosses' else 'false' }}">Glosses</a>
                 </nav>
                 <div class="dict-sort">
                     <label class="dict-sort__label" for="dict-sort-select">Sort:</label>
-                    <select id="dict-sort-select" class="dict-sort__select"
-                            onchange="var u=new URL(location);u.searchParams.set('sort',this.value);u.searchParams.delete('page');location=u">
+                    <select id="dict-sort-select" class="dict-sort__select">
                         {% if level == 'signs' %}
                         <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
                         <option value="lemmas" {% if sort == 'lemmas' %}selected{% endif %}>Linked Lemmas</option>
-                        {% elif level == 'meanings' %}
+                        {% elif level == 'glosses' %}
                         <option value="attestations" {% if sort != 'alpha' %}selected{% endif %}>Attestations</option>
                         <option value="alpha" {% if sort == 'alpha' %}selected{% endif %}>Alphabetical</option>
                         {% else %}
@@ -104,8 +103,8 @@
                                     {{ item.reading_count or 0 }} readings
                                     &middot; {{ item.lemma_count or 0 }} lemmas
                                 </div>
-                                {% if item.meanings %}
-                                <div class="dict-card__meanings">{{ item.meanings[:6]|join(', ') }}{% if item.meanings|length > 6 %}&hellip;{% endif %}</div>
+                                {% if item.glosses %}
+                                <div class="dict-card__glosses">{{ item.glosses[:6]|join(', ') }}{% if item.glosses|length > 6 %}&hellip;{% endif %}</div>
                                 {% endif %}
                                 <div class="dict-card__meta">{{ item.source_label }}</div>
                             </button>
@@ -122,15 +121,15 @@
                                     {% endif %}
                                 </div>
                                 <div class="dict-card__meta">{{ item.language_label }} &middot; {{ item.source_label }}</div>
-                                {% if item.meanings %}
-                                <div class="dict-card__meanings">{{ item.meanings[:6]|join(', ') }}{% if item.meanings|length > 6 %}&hellip;{% endif %}</div>
+                                {% if item.glosses %}
+                                <div class="dict-card__glosses">{{ item.glosses[:6]|join(', ') }}{% if item.glosses|length > 6 %}&hellip;{% endif %}</div>
                                 {% endif %}
                                 <div class="dict-card__stats">{{ '{:,}'.format(item.attestation_count or 0) }} attestations</div>
                             </button>
 
-                            {# ── MEANING CARD ── #}
-                            {% elif level == 'meanings' %}
-                            <button class="dict-card dict-card--meaning" data-id="{{ item.guide_word }}" data-level="meanings" data-pos="{{ item.pos or '' }}">
+                            {# ── GLOSS CARD ── #}
+                            {% elif level == 'glosses' %}
+                            <button class="dict-card dict-card--gloss" data-id="{{ item.guide_word }}" data-level="glosses" data-pos="{{ item.pos or '' }}">
                                 <div class="dict-card__header">
                                     <span class="dict-card__title">&ldquo;{{ item.guide_word }}&rdquo;</span>
                                     {% if item.pos_label %}
@@ -183,5 +182,18 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+(function() {
+    var sortSelect = document.getElementById('dict-sort-select');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            var url = new URL(window.location.href);
+            url.searchParams.set('sort', this.value);
+            url.searchParams.delete('page');
+            window.location.href = url.href;
+        });
+    }
+})();
+</script>
 <script src="/static/js/dictionary-browser.js"></script>
 {% endblock %}

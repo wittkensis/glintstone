@@ -4,7 +4,7 @@ Step 16: Import ORACC glossaries into unified lexical schema.
 
 Imports glossaries from all ORACC projects into:
   - lexical_lemmas (citation forms with morphological metadata)
-  - lexical_senses (meanings and contextual usage)
+  - lexical_senses (glosses and contextual usage)
 
 Projects: dcclt, blms, etcsri, dccmt, hbtin, ribo, rinap, saao
 
@@ -157,7 +157,7 @@ def import_glossary_file(
         senses_data = entry.get("senses", [])
         if senses_data:
             for sense_num, sense_data in enumerate(senses_data, 1):
-                # Extract definition/meaning
+                # Extract definition/gloss
                 mng = sense_data.get("mng") or sense_data.get("sense") or ""
 
                 sense = {

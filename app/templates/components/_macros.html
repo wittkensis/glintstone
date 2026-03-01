@@ -518,7 +518,7 @@
             <div class="filter-content">
                 <input type="text" name="search" id="search-input"
                        value="{{ search_value }}"
-                       placeholder="Search {% if level == 'signs' %}signs{% elif level == 'meanings' %}meanings{% else %}lemmas{% endif %}...">
+                       placeholder="Search {% if level == 'signs' %}signs{% elif level == 'glosses' %}glosses{% else %}lemmas{% endif %}...">
             </div>
         </div>
 
@@ -546,7 +546,7 @@
         </div>
         {% endif %}
 
-        {# Part of Speech — flat checkboxes (lemmas + meanings only) #}
+        {# Part of Speech — flat checkboxes (lemmas + glosses only) #}
         {% if filter_options.pos and level != 'signs' %}
         <div class="filter-section" data-filter="pos">
             <div class="filter-content">
@@ -588,7 +588,7 @@
         {% endif %}
 
         {# Source — flat checkboxes (signs + lemmas only) #}
-        {% if filter_options.source and level != 'meanings' %}
+        {% if filter_options.source and level != 'glosses' %}
         <div class="filter-section" data-filter="source">
             <div class="filter-content">
                 <span class="filter-label">Source</span>

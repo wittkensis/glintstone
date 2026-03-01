@@ -1,4 +1,4 @@
-"""Dictionary route — browse signs, lemmas, and meanings."""
+"""Dictionary route — browse signs, lemmas, and glosses."""
 
 from urllib.parse import quote
 
@@ -22,7 +22,7 @@ def dictionary_index(
     api = request.app.state.api
 
     # Normalize level
-    if level not in ("signs", "lemmas", "meanings"):
+    if level not in ("signs", "lemmas", "glosses"):
         level = "lemmas"
 
     # Default sort per level

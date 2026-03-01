@@ -1,4 +1,4 @@
-"""Dictionary API routes — browse signs/lemmas/meanings, filter options, detail."""
+"""Dictionary API routes — browse signs/lemmas/glosses, filter options, detail."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from urllib.parse import unquote
@@ -33,8 +33,8 @@ def browse_dictionary(
             page=page,
             per_page=per_page,
         )
-    elif level == "meanings":
-        return repo.browse_meanings(
+    elif level == "glosses":
+        return repo.browse_glosses(
             search=search,
             language=language or None,
             pos=pos or None,
@@ -95,15 +95,40 @@ def get_lemma_detail(lemma_id: int, conn=Depends(get_db)):
     return result
 
 
-@router.get("/meanings/{guide_word}")
-def get_meaning_detail(
+@router.get("/lookup")
+def lookup_written_form(
+    form: str = Query(
+        ..., min_length=1, description="Written/orthographic form to look up"
+    ),
+    language: str | None = Query(None, description="Language filter (e.g., akk, sux)"),
+    conn=Depends(get_db),
+):
+    """Look up candidate lemmas for a written form via normalization bridge.
+
+    Traverses: written_form -> normalized_form -> lemma -> glosses.
+    Returns candidates ranked by attestation frequency.
+    """
+    repo = LexicalRepository(conn)
+    return repo.lookup_by_written_form(form, language)
+
+
+@router.get("/lemmas/{lemma_id}/norms")
+def get_lemma_norms(lemma_id: int, conn=Depends(get_db)):
+    """Get all normalized forms and their written spellings for a lemma."""
+    repo = LexicalRepository(conn)
+    norms = repo.get_norms_for_lemma(lemma_id)
+    return {"lemma_id": lemma_id, "norms": norms}
+
+
+@router.get("/glosses/{guide_word}")
+def get_gloss_detail(
     guide_word: str,
     pos: str | None = None,
     conn=Depends(get_db),
 ):
     repo = LexicalRepository(conn)
     gw = unquote(guide_word)
-    result = repo.get_meaning_detail(gw, pos)
+    result = repo.get_gloss_detail(gw, pos)
     if not result:
-        raise HTTPException(status_code=404, detail="Meaning group not found")
+        raise HTTPException(status_code=404, detail="Gloss group not found")
     return result

@@ -1,4 +1,4 @@
-"""Lexical repository — browse signs, lemmas, and meanings with filters."""
+"""Lexical repository — browse signs, lemmas, and glosses with filters."""
 
 import math
 from collections import defaultdict
@@ -171,7 +171,7 @@ class LexicalRepository(BaseRepository):
                     FROM lexical_senses s,
                          LATERAL unnest(s.definition_parts) dp
                     WHERE s.lemma_id = l.id
-                   ) AS meanings
+                   ) AS glosses
             FROM lexical_lemmas l
             {where}
             {order}
@@ -198,8 +198,8 @@ class LexicalRepository(BaseRepository):
             )
             item["pos_label"] = pos_label(item["pos"]) if item["pos"] else ""
             item["source_label"] = source_label(item["source"])
-            if not item["meanings"]:
-                item["meanings"] = []
+            if not item["glosses"]:
+                item["glosses"] = []
 
         return {
             "items": items,
@@ -265,7 +265,7 @@ class LexicalRepository(BaseRepository):
                     CROSS JOIN LATERAL unnest(sen.definition_parts) dp
                     WHERE sla2.sign_id = s.id
                     LIMIT 1
-                   ) AS meanings
+                   ) AS glosses
             FROM lexical_signs s
             LEFT JOIN lexical_sign_lemma_associations sla ON s.id = sla.sign_id
             {where}
@@ -291,8 +291,8 @@ class LexicalRepository(BaseRepository):
 
         for item in items:
             item["source_label"] = source_label(item["source"])
-            if not item["meanings"]:
-                item["meanings"] = []
+            if not item["glosses"]:
+                item["glosses"] = []
             if not item["reading_count"]:
                 item["reading_count"] = 0
 
@@ -304,9 +304,9 @@ class LexicalRepository(BaseRepository):
             "total_pages": math.ceil(total / per_page) if per_page else 0,
         }
 
-    # ── Browse meanings (grouped by guide_word) ───────────────
+    # ── Browse glosses (grouped by guide_word) ────────────────
 
-    def browse_meanings(
+    def browse_glosses(
         self,
         search: str | None = None,
         language: list[str] | None = None,
@@ -469,9 +469,7 @@ class LexicalRepository(BaseRepository):
 
         return {"sign": sign, "lemmas": lemmas}
 
-    def get_meaning_detail(
-        self, guide_word: str, pos: str | None = None
-    ) -> dict | None:
+    def get_gloss_detail(self, guide_word: str, pos: str | None = None) -> dict | None:
         conditions = ["l.guide_word = %(gw)s"]
         params: dict = {"gw": guide_word}
         if pos:
@@ -487,7 +485,7 @@ class LexicalRepository(BaseRepository):
                         FROM lexical_senses s,
                              LATERAL unnest(s.definition_parts) dp
                         WHERE s.lemma_id = l.id
-                       ) AS meanings
+                       ) AS glosses
                 FROM lexical_lemmas l
                 {where}
                 ORDER BY l.attestation_count DESC NULLS LAST""",
@@ -502,8 +500,8 @@ class LexicalRepository(BaseRepository):
             lem["language_label"] = lm.get(lem["language_code"], lem["language_code"])
             lem["pos_label"] = pos_label(lem["pos"]) if lem["pos"] else ""
             lem["source_label"] = source_label(lem["source"])
-            if not lem["meanings"]:
-                lem["meanings"] = []
+            if not lem["glosses"]:
+                lem["glosses"] = []
 
         return {
             "guide_word": guide_word,
@@ -514,6 +512,95 @@ class LexicalRepository(BaseRepository):
                 (row["attestation_count"] or 0) for row in lemmas
             ),
         }
+
+    # ── Normalization bridge ─────────────────────────────────
+
+    def lookup_by_written_form(
+        self, form_text: str, language: str | None = None
+    ) -> list[dict]:
+        """Look up candidate lemmas for a written/orthographic form.
+
+        Traverses: written_form -> norm -> lemma.
+        Returns candidates ranked by attestation count.
+        Used by Knowledge Bar for S1/S3 disambiguation.
+        """
+        params: dict = {"form": form_text}
+        lang_filter = ""
+        if language:
+            lang_filter = "AND ll.language_code LIKE %(lang)s"
+            params["lang"] = f"{language}%"
+
+        rows = self.fetch_all(
+            f"""
+            SELECT ln.id AS norm_id, ln.norm, ln.attestation_count AS norm_attestations,
+                   ln.attestation_pct,
+                   ll.id AS lemma_id, ll.citation_form, ll.guide_word, ll.pos,
+                   ll.language_code, ll.attestation_count AS lemma_attestations,
+                   ll.source,
+                   lnf.attestation_count AS form_attestations
+            FROM lexical_norm_forms lnf
+            JOIN lexical_norms ln ON lnf.norm_id = ln.id
+            JOIN lexical_lemmas ll ON ln.lemma_id = ll.id
+            WHERE lnf.written_form = %(form)s
+            {lang_filter}
+            ORDER BY ln.attestation_count DESC
+            """,
+            params,
+        )
+        lm = self._lang_map()
+        for r in rows:
+            r["language_label"] = lm.get(r["language_code"], r["language_code"])
+            r["pos_label"] = pos_label(r["pos"]) if r["pos"] else ""
+            r["source_label"] = source_label(r["source"])
+        return rows
+
+    def get_norms_for_lemma(self, lemma_id: int) -> list[dict]:
+        """Get all normalized forms and their written spellings for a lemma.
+
+        Returns norms ranked by attestation, each with nested forms array.
+        Used by Knowledge Bar S4 spellings section and lemma detail page.
+        """
+        norms = self.fetch_all(
+            """
+            SELECT ln.id, ln.norm, ln.attestation_count, ln.attestation_pct,
+                   ln.source
+            FROM lexical_norms ln
+            WHERE ln.lemma_id = %(lemma_id)s
+            ORDER BY ln.attestation_count DESC
+            """,
+            {"lemma_id": lemma_id},
+        )
+
+        if not norms:
+            return []
+
+        norm_ids = [n["id"] for n in norms]
+        # Fetch all forms for these norms in one query
+        clause, params = self.build_in_clause(norm_ids, prefix="nid")
+        forms = self.fetch_all(
+            f"""
+            SELECT norm_id, written_form, attestation_count
+            FROM lexical_norm_forms
+            WHERE norm_id {clause}
+            ORDER BY attestation_count DESC
+            """,
+            params,
+        )
+
+        # Group forms by norm_id
+        forms_by_norm: dict[int, list[dict]] = defaultdict(list)
+        for f in forms:
+            forms_by_norm[f["norm_id"]].append(
+                {
+                    "form": f["written_form"],
+                    "count": f["attestation_count"],
+                }
+            )
+
+        for n in norms:
+            n["forms"] = forms_by_norm.get(n["id"], [])
+
+        return norms
 
     # ── Filter options ────────────────────────────────────────
 
@@ -533,9 +620,9 @@ class LexicalRepository(BaseRepository):
             options["pos"] = self._lemma_pos_counts(af)
             options["source"] = self._lemma_source_counts(af)
             options["frequency"] = self._lemma_frequency_counts(af)
-        elif level == "meanings":
-            options["language"] = self._meaning_language_counts(af)
-            options["pos"] = self._meaning_pos_counts(af)
+        elif level == "glosses":
+            options["language"] = self._gloss_language_counts(af)
+            options["pos"] = self._gloss_pos_counts(af)
 
         return options
 
@@ -722,7 +809,7 @@ class LexicalRepository(BaseRepository):
             for r in rows
         ]
 
-    def _meaning_language_counts(self, af: dict) -> list[dict]:
+    def _gloss_language_counts(self, af: dict) -> list[dict]:
         xf, params = self._lemma_where(af, "language")
         extra = f"AND {xf}" if xf else ""
         rows = self.fetch_all(
@@ -753,7 +840,7 @@ class LexicalRepository(BaseRepository):
             for r in rows
         ]
 
-    def _meaning_pos_counts(self, af: dict) -> list[dict]:
+    def _gloss_pos_counts(self, af: dict) -> list[dict]:
         xf, params = self._lemma_where(af, "pos")
         extra = f"AND {xf}" if xf else ""
         rows = self.fetch_all(

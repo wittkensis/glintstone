@@ -207,7 +207,7 @@ class GlossaryRepository(BaseRepository):
             {"entry_id": entry_id},
         )
 
-        # Senses (meanings)
+        # Senses (glosses)
         senses = self.fetch_all(
             """
             SELECT sense_number, guide_word, definition, pos

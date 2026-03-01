@@ -5,7 +5,7 @@ Run migration 008: Unified Lexical Resource Architecture
 Creates tables for the three-dimensional lexical model:
   - signs (Glyphs - graphemic dimension)
   - lemmas (Lemmas - lexemic dimension)
-  - senses (Meanings - semantic dimension)
+  - senses (Glosses - semantic dimension)
   - sign_lemma_associations (M:N join table)
   - lexical_tablet_occurrences (pre-computed associations)
 """
