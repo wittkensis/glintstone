@@ -12,6 +12,8 @@
 > ```
 >
 > Already ported to v2:
+> - `01_seed_lookup_tables.py` → [`ingestion/connectors/lookup_tables.py`](../../ingestion/connectors/lookup_tables.py)
+>   *(seeds all 7 canon tables; must run before `cdli-catalog`)*
 > - `05_import_artifacts.py` → [`ingestion/connectors/cdli_catalog.py`](../../ingestion/connectors/cdli_catalog.py)
 > - `19_match_translation_lines.py` → [`ingestion/connectors/translation_line_matcher.py`](../../ingestion/connectors/translation_line_matcher.py)
 >   *(unmatched rows now land in `import_dead_letters`, not on-disk JSON)*
