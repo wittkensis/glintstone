@@ -1,149 +1,163 @@
-#!/bin/bash
-# Glintstone v2 — Deploy to Production
-# Syncs code, installs deps, runs migrations, restarts services.
+#!/usr/bin/env bash
+# Glintstone v2 — Deploy to Hostinger VPS
+#
+# Works from either:
+#   1. Local laptop  (reads DEPLOY_HOST from .env)
+#   2. GitHub Actions (reads DEPLOY_HOST, SSH_KEY_PATH, RELEASE_TAG from env)
+#
+# Deploys to a versioned release directory and swaps a `current` symlink so
+# rollback is one symlink change away.
 #
 # Usage:
-#   ./ops/deploy/deploy.sh                  # deploy everything
-#   ./ops/deploy/deploy.sh api              # deploy API only
-#   ./ops/deploy/deploy.sh app              # deploy web app only
-#   ./ops/deploy/deploy.sh marketing        # deploy marketing site only
-#   ./ops/deploy/deploy.sh api app          # deploy API + web app
-set -e
+#   ./ops/deploy/deploy.sh                      # deploy everything
+#   ./ops/deploy/deploy.sh api                  # API only
+#   ./ops/deploy/deploy.sh app marketing        # web app + marketing site
+#
+# Env vars (all optional unless noted):
+#   DEPLOY_HOST       — VPS IP or hostname (REQUIRED; loaded from .env if unset)
+#   DEPLOY_USER       — defaults to "deploy"
+#   DEPLOY_REMOTE_DIR — defaults to /var/www/glintstone
+#   RELEASE_TAG       — versioned release name (defaults to YYYYmmdd-HHMMSS-<short-sha>)
+#   SSH_KEY_PATH      — path to private SSH key (defaults to ssh agent)
+#   APP_ENV           — production | staging (defaults to production)
+#   KEEP_RELEASES     — how many old releases to retain on the server (default 5)
+
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-REMOTE_DIR="/var/www/glintstone"
 
-# Load deploy target from .env or default
-if [ -f "$PROJECT_DIR/.env" ]; then
-    DEPLOY_HOST=$(grep -E '^DEPLOY_HOST=' "$PROJECT_DIR/.env" | cut -d= -f2)
+# Load .env if we have one and the env vars aren't already set (CI sets them directly).
+if [ -z "${DEPLOY_HOST:-}" ] && [ -f "$PROJECT_DIR/.env" ]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$PROJECT_DIR/.env"
+    set +a
 fi
-REMOTE="deploy@${DEPLOY_HOST:-76.13.208.149}"
 
-# Parse targets (default: all)
+DEPLOY_HOST="${DEPLOY_HOST:?DEPLOY_HOST not set; export it or add to .env}"
+DEPLOY_USER="${DEPLOY_USER:-deploy}"
+REMOTE_DIR="${DEPLOY_REMOTE_DIR:-/var/www/glintstone}"
+APP_ENV="${APP_ENV:-production}"
+KEEP_RELEASES="${KEEP_RELEASES:-5}"
+
+# Generate a release tag if none provided.
+if [ -z "${RELEASE_TAG:-}" ]; then
+    short_sha="$(git -C "$PROJECT_DIR" rev-parse --short HEAD 2>/dev/null || echo nogit)"
+    RELEASE_TAG="$(date -u +%Y%m%d-%H%M%S)-${short_sha}"
+fi
+
+RELEASES_DIR="$REMOTE_DIR/releases"
+RELEASE_DIR="$RELEASES_DIR/$RELEASE_TAG"
+CURRENT_LINK="$REMOTE_DIR/current"
+SHARED_DIR="$REMOTE_DIR/shared"
+
+REMOTE="$DEPLOY_USER@$DEPLOY_HOST"
+
+# SSH options — pin known_hosts location, use deploy key if provided.
+SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=~/.ssh/known_hosts)
+if [ -n "${SSH_KEY_PATH:-}" ]; then
+    SSH_OPTS+=(-i "$SSH_KEY_PATH")
+fi
+
+ssh_run() { ssh "${SSH_OPTS[@]}" "$REMOTE" "$@"; }
+rsync_to() { rsync -avz --delete -e "ssh ${SSH_OPTS[*]}" "$@"; }
+
+# --- Parse deploy targets ---
 TARGETS=("$@")
 if [ ${#TARGETS[@]} -eq 0 ]; then
     TARGETS=(api app marketing)
 fi
-
-deploy_api=false
-deploy_app=false
-deploy_marketing=false
+deploy_api=false; deploy_app=false; deploy_marketing=false
 for target in "${TARGETS[@]}"; do
     case "$target" in
         api)       deploy_api=true ;;
         app)       deploy_app=true ;;
         marketing) deploy_marketing=true ;;
-        *)         echo "Unknown target: $target (use: api, app, marketing)"; exit 1 ;;
+        *) echo "Unknown target: $target (use: api, app, marketing)" >&2; exit 1 ;;
     esac
 done
 
-echo "=== Deploying Glintstone v2 to $REMOTE ==="
-echo "  Targets: ${TARGETS[*]}"
-echo ""
+echo "=== Glintstone deploy ==="
+echo "  Host:        $REMOTE"
+echo "  Environment: $APP_ENV"
+echo "  Release:     $RELEASE_TAG"
+echo "  Targets:     ${TARGETS[*]}"
+echo
 
-# --- Shared rsync excludes ---
+# --- Prepare release directory on the server ---
+ssh_run "mkdir -p $RELEASE_DIR $SHARED_DIR"
+
+# Exclusions: anything not needed at runtime.
 EXCLUDES=(
     --exclude='.git'
+    --exclude='.github'
     --exclude='.env'
+    --exclude='.env.*'
     --exclude='.pids'
     --exclude='venv'
     --exclude='__pycache__'
+    --exclude='.pytest_cache'
+    --exclude='.mypy_cache'
+    --exclude='.ruff_cache'
     --exclude='app-v0.1'
     --exclude='_archive'
+    --exclude='_progress'
     --exclude='data'
     --exclude='RESEARCH'
+    --exclude='PLAN'
+    --exclude='PLANNING'
+    --exclude='PRDs'
     --exclude='data-model/v1'
-    --exclude='data-model/v2'
     --exclude='data-model/source-schemas'
-    --exclude='source-data'
+    --exclude='source-data/sources'
     --exclude='ml'
     --exclude='.DS_Store'
     --exclude='.claude'
     --exclude='*.log'
     --exclude='TODO.md'
+    --exclude='tests'
     --exclude='glintstone.code-workspace'
     --exclude='ops/local'
 )
 
-# --- Sync nginx configs first (needed before individual targets install them) ---
-echo "Syncing nginx configs..."
-ssh "$REMOTE" "mkdir -p $REMOTE_DIR/ops/deploy/nginx"
-rsync -avz "$PROJECT_DIR/ops/deploy/nginx/" "$REMOTE:$REMOTE_DIR/ops/deploy/nginx/"
+# --- Always sync shared core + dependencies into the release ---
+echo "Syncing core/, requirements.txt, data-model/, ingestion/..."
+for d in core api app ingestion data-model marketing ops; do
+    [ -d "$PROJECT_DIR/$d" ] || continue
+    rsync_to "${EXCLUDES[@]}" "$PROJECT_DIR/$d/" "$REMOTE:$RELEASE_DIR/$d/" >/dev/null
+done
+rsync_to "$PROJECT_DIR/requirements.txt" "$REMOTE:$RELEASE_DIR/requirements.txt" >/dev/null
 
-# --- Sync shared library (always, if deploying api or app) ---
-if $deploy_api || $deploy_app; then
-    echo "Syncing shared library (core/)..."
-    rsync -avz "${EXCLUDES[@]}" \
-        "$PROJECT_DIR/core/" "$REMOTE:$REMOTE_DIR/core/"
-    rsync -avz "$PROJECT_DIR/requirements.txt" "$REMOTE:$REMOTE_DIR/requirements.txt"
+# --- Install dependencies inside the release's venv ---
+echo "Installing dependencies into release venv..."
+ssh_run "cd $RELEASE_DIR && python3 -m venv venv && venv/bin/pip install --quiet --upgrade pip && venv/bin/pip install --quiet -r requirements.txt"
 
-    echo "Installing dependencies..."
-    ssh "$REMOTE" "cd $REMOTE_DIR && venv/bin/pip install --quiet -r requirements.txt"
+# --- Symlink shared state (the .env stays out of releases for safety) ---
+ssh_run "ln -sfn $SHARED_DIR/.env $RELEASE_DIR/.env"
 
-    echo "Running migrations..."
-    rsync -avz "${EXCLUDES[@]}" \
-        "$PROJECT_DIR/data-model/" "$REMOTE:$REMOTE_DIR/data-model/"
-    ssh "$REMOTE" "cd $REMOTE_DIR && venv/bin/python data-model/migrate.py"
-fi
+# --- Swap the `current` symlink atomically ---
+echo "Swapping current → $RELEASE_TAG..."
+ssh_run "ln -sfn $RELEASE_DIR $CURRENT_LINK.new && mv -Tf $CURRENT_LINK.new $CURRENT_LINK"
 
-# --- API ---
+# --- Restart services ---
 if $deploy_api; then
-    echo ""
-    echo "Deploying API..."
-    rsync -avz "${EXCLUDES[@]}" \
-        "$PROJECT_DIR/api/" "$REMOTE:$REMOTE_DIR/api/"
-
-    ssh "$REMOTE" "
-        if [ ! -f /etc/nginx/http.d/api.glintstone.org.conf ]; then
-            sudo cp $REMOTE_DIR/ops/deploy/nginx/api.glintstone.org.conf /etc/nginx/http.d/
-            echo '  Installed nginx config: api.glintstone.org'
-        fi
-    "
-
-    ssh "$REMOTE" "sudo supervisorctl restart glintstone-api"
-    echo "  API restarted"
+    ssh_run "sudo supervisorctl restart glintstone-api" || true
+    echo "  glintstone-api restarted"
 fi
-
-# --- Web App ---
 if $deploy_app; then
-    echo ""
-    echo "Deploying web app..."
-    rsync -avz "${EXCLUDES[@]}" \
-        "$PROJECT_DIR/app/" "$REMOTE:$REMOTE_DIR/app/"
-
-    ssh "$REMOTE" "
-        if [ ! -f /etc/nginx/http.d/app.glintstone.org.conf ]; then
-            sudo cp $REMOTE_DIR/ops/deploy/nginx/app.glintstone.org.conf /etc/nginx/http.d/
-            echo '  Installed nginx config: app.glintstone.org'
-        fi
-    "
-
-    ssh "$REMOTE" "sudo supervisorctl restart glintstone-web"
-    echo "  Web app restarted"
+    ssh_run "sudo supervisorctl restart glintstone-web" || true
+    echo "  glintstone-web restarted"
 fi
-
-# --- Marketing ---
 if $deploy_marketing; then
-    echo ""
-    echo "Deploying marketing site..."
-    rsync -avz "${EXCLUDES[@]}" \
-        "$PROJECT_DIR/marketing/" "$REMOTE:$REMOTE_DIR/marketing/"
-
-    ssh "$REMOTE" "
-        if [ ! -f /etc/nginx/http.d/glintstone.org.conf ]; then
-            sudo cp $REMOTE_DIR/ops/deploy/nginx/glintstone.org.conf /etc/nginx/http.d/
-            echo '  Installed nginx config: glintstone.org'
-        fi
-    "
-    echo "  Marketing synced"
+    ssh_run "sudo rc-service nginx reload" 2>/dev/null || true
+    echo "  marketing/nginx reloaded"
 fi
 
-# --- Reload nginx ---
-ssh "$REMOTE" "sudo rc-service nginx reload" 2>/dev/null || true
+# --- Trim old releases ---
+ssh_run "cd $RELEASES_DIR && ls -1t | tail -n +$((KEEP_RELEASES + 1)) | xargs -r rm -rf"
 
-echo ""
+echo
 echo "=== Deploy complete ==="
-$deploy_api       && echo "  API:       https://api.glintstone.org/health"
-$deploy_app       && echo "  App:       https://app.glintstone.org"
-$deploy_marketing && echo "  Marketing: https://glintstone.org"
+echo "  Release:  $RELEASE_TAG"
+echo "  Rollback: ops/deploy/rollback.sh <previous-tag>"

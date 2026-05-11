@@ -74,8 +74,10 @@ data-model/glintstone.db-wal
 .pids/
 ops/logs/
 
-# Deploy (contains server-specific configs)
-ops/deploy/
+# Deploy: scripts and nginx configs are tracked (needed by GitHub Actions);
+# logs and provisioning credentials are not.
+ops/deploy/_logs/
+ops/deploy/secrets/
 
 # Archive
 _archive/

@@ -1,0 +1,74 @@
+name: deploy
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which environment to deploy
+        required: true
+        type: choice
+        options: [staging, production]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set environment
+        id: env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "app_env=production" >> "$GITHUB_OUTPUT"
+            echo "release_tag=prod-$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          else
+            echo "app_env=staging" >> "$GITHUB_OUTPUT"
+            echo "release_tag=staging-$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          SSH_HOST: ${{ secrets.HOSTINGER_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Run migrations against target DB
+        env:
+          DATABASE_URL: ${{ secrets[format('DATABASE_URL_{0}', steps.env.outputs.app_env == 'production' && 'PROD' || 'STAGING')] }}
+          APP_ENV: ${{ steps.env.outputs.app_env }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python data-model/migrate.py status
+          python data-model/migrate.py up
+
+      - name: Deploy to Hostinger
+        env:
+          DEPLOY_HOST: ${{ secrets.HOSTINGER_HOST }}
+          DEPLOY_USER: deploy
+          RELEASE_TAG: ${{ steps.env.outputs.release_tag }}
+          APP_ENV: ${{ steps.env.outputs.app_env }}
+          SSH_KEY_PATH: ~/.ssh/deploy_key
+        run: |
+          bash ops/deploy/deploy.sh

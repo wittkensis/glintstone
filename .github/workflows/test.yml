@@ -1,0 +1,37 @@
+name: tests
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main, staging]
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+
+      - name: Run pytest
+        env:
+          # When DATABASE_URL is provided as a secret, integration tests run
+          # against it. When absent, integration tests are skipped (see
+          # tests/conftest.py::has_database_url).
+          DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING }}
+        run: |
+          python -m pytest tests/ -v --tb=short

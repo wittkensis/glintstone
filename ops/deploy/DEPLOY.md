@@ -1,19 +1,87 @@
-# Glintstone v2 — Deploy Protocol
+# Glintstone v2 — Deploy
 
-Target: Hostinger VPS (Alpine Linux, 8GB RAM, 100GB storage, 2 CPU)
+Two deploy paths, same end state: a versioned release directory on the
+Hostinger VPS with a `current` symlink that gets swapped atomically.
 
----
+```
+/var/www/glintstone/
+  ├── current                  → releases/20260511-103200-abc1234
+  ├── shared/
+  │   └── .env                 (per-environment secrets, never in git)
+  └── releases/
+      ├── 20260511-103200-abc1234/   (latest)
+      ├── 20260511-101500-9def567/
+      └── 20260510-180000-1234567/   (older — auto-trimmed beyond KEEP_RELEASES)
+```
 
-## 1. SSH Key Setup (one-time, local machine)
+## Automated deployment (preferred)
+
+Pushing to GitHub triggers deploys. Configure secrets once; nothing else
+needed.
+
+### Required GitHub repository secrets
+
+| Secret | Value |
+|---|---|
+| `HOSTINGER_HOST` | VPS IP or hostname |
+| `HOSTINGER_SSH_KEY` | Private key for the `deploy` user on the VPS |
+| `DATABASE_URL_PROD` | Neon production branch URL |
+| `DATABASE_URL_STAGING` | Neon staging branch URL |
+
+### GitHub Environments
+
+Configure two environments in the repo settings (`Settings → Environments`):
+
+- `production` — protect with required reviewer (yourself) so deploys to
+  `main` need a click-through approval
+- `staging` — no reviewer; auto-deploys from `staging` branch
+
+### Trigger rules
+
+| Action | Result |
+|---|---|
+| Push to `staging` branch | tests run → deploy to staging |
+| Push to `main` | tests run → deploy to production (with approval gate) |
+| `workflow_dispatch` | manual deploy from the Actions tab |
+
+### One-time VPS setup
+
+If this is a fresh VPS, run `provision.sh` once (see "Hostinger VPS Setup"
+below) and place a per-environment `.env` in `/var/www/glintstone/shared/.env`.
+The deploy script never writes this file — only the symlink to it.
+
+## Manual deployment (local machine)
 
 ```bash
-# Generate key (if you don't have one)
+./ops/deploy/deploy.sh                  # deploy all targets
+./ops/deploy/deploy.sh api              # API only
+./ops/deploy/deploy.sh app marketing    # web app + marketing
+```
+
+Requires `DEPLOY_HOST` either in your `.env` or as an env var.
+
+## Rollback
+
+```bash
+./ops/deploy/rollback.sh                  # list releases on the server
+./ops/deploy/rollback.sh 20260511-101500-9def567   # roll back to that release
+```
+
+Rollback is one symlink change — same atomicity as a forward deploy.
+
+## Migrations
+
+`data-model/migrate.py` runs against whatever `DATABASE_URL` is in the
+active environment. GitHub Actions runs `migrate.py up` against the
+target Neon branch BEFORE swapping the symlink — so a failed migration
+fails the deploy without affecting the running release.
+
+## Hostinger VPS Setup (one-time)
+
+### SSH key
+
+```bash
 ssh-keygen -t ed25519 -C "glintstone-deploy" -f ~/.ssh/glintstone_deploy
-
-# Add to SSH agent
-ssh-add ~/.ssh/glintstone_deploy
-
-# Copy public key to clipboard
 pbcopy < ~/.ssh/glintstone_deploy.pub
 ```
 
@@ -27,168 +95,62 @@ Host glintstone
     Port 22
 ```
 
----
+### Hostinger VPS (hPanel)
 
-## 2. Hostinger VPS Setup (one-time, hPanel)
+1. KVM 2 (8 GB / 100 GB / 2 CPU), Alpine Linux
+2. Paste the public key during setup (or hPanel → VPS → Manage → Settings → SSH Keys)
+3. Firewall: open TCP 22, 80, 443 (hPanel → VPS → Manage → Security)
 
-1. **Create VPS** — Choose KVM 2 plan (8GB/100GB/2CPU)
-2. **OS** — Select Alpine Linux (plain, no control panel)
-3. **SSH key** — Paste `~/.ssh/glintstone_deploy.pub` during setup
-   - Or add later: hPanel > VPS > Manage > Settings > SSH Keys
-4. **Note the IP** — Update `~/.ssh/config` and `.env` with it
-
-### hPanel Firewall
-
-hPanel > VPS > Manage > Security > Firewall
-
-Create a firewall group with these rules:
-
-| Protocol | Port | Source | Action |
-|----------|------|--------|--------|
-| TCP      | 22   | Any    | Accept |
-| TCP      | 80   | Any    | Accept |
-| TCP      | 443  | Any    | Accept |
-
-Apply the group to your server. Without these rules, all inbound traffic is dropped.
-
----
-
-## 3. First-Time Server Provisioning
+### Provision
 
 ```bash
-# SSH in as root (password from Hostinger email)
-ssh root@76.13.208.149
-
-# Or pipe the provision script directly
-ssh root@76.13.208.149 'sh -s' < ops/deploy/provision.sh
+ssh root@YOUR_VPS_IP 'sh -s' < ops/deploy/provision.sh
 ```
 
-The provision script installs: nginx, Python 3, PostgreSQL 17, supervisor, certbot.
+Installs: nginx, Python 3, supervisor, certbot. **Postgres is no longer
+installed on the VPS** — the database lives at Neon.
 
-**Save the DB password it outputs.** You need it for the .env file.
+### Per-environment .env
 
-### Post-provision checklist
+Create `/var/www/glintstone/shared/.env` on the VPS:
 
 ```bash
-# 1. Create production .env on the server
-ssh deploy@76.13.208.149 "cat > /var/www/glintstone/.env" << 'EOF'
+ssh deploy@YOUR_VPS_IP "mkdir -p /var/www/glintstone/shared && cat > /var/www/glintstone/shared/.env" << 'EOF'
 APP_ENV=production
 APP_DEBUG=false
-
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_NAME=glintstone
-DB_USER=glintstone
-DB_PASSWORD=THE_PASSWORD_FROM_PROVISION
-
+DATABASE_URL=postgresql://USER:PASS@HOST/dbname?sslmode=require
 API_PORT=8001
 WEB_PORT=8002
-
 API_URL=https://api.glintstone.org
 WEB_URL=https://app.glintstone.org
 MARKETING_URL=https://glintstone.org
-
-IMAGE_PATH=/var/www/glintstone/data/images
+IMAGE_PATH=/var/www/glintstone/shared/images
 EOF
 ```
 
----
-
-## 4. DNS (one-time, your domain registrar)
-
-Add A records pointing to VPS IP:
+### DNS
 
 | Record | Name | Value |
-|--------|------|-------|
-| A      | @    | VPS_IP |
-| A      | api  | VPS_IP |
-| A      | app  | VPS_IP |
-| A      | www  | VPS_IP |
+|---|---|---|
+| A | @ | VPS_IP |
+| A | api | VPS_IP |
+| A | app | VPS_IP |
+| A | staging | VPS_IP |
+| A | www | VPS_IP |
 
-Wait for propagation (~5 min to 24 hours).
-
----
-
-## 5. SSL Certificates (one-time, on server)
+### SSL
 
 ```bash
-ssh root@YOUR_VPS_IP
-certbot --nginx \
-    -d glintstone.org \
-    -d www.glintstone.org \
-    -d api.glintstone.org \
-    -d app.glintstone.org
+ssh root@VPS_IP "certbot --nginx -d glintstone.org -d www.glintstone.org -d api.glintstone.org -d app.glintstone.org -d staging.glintstone.org"
 ```
-
-Certbot auto-renews via cron.
-
----
-
-## 6. Deploy
-
-Set `DEPLOY_HOST` in your local `.env`:
-
-```
-DEPLOY_HOST=YOUR_VPS_IP
-```
-
-### Deploy everything
-
-```bash
-./ops/deploy/deploy.sh
-```
-
-### Deploy specific targets
-
-```bash
-./ops/deploy/deploy.sh api              # API only
-./ops/deploy/deploy.sh app              # Web app only
-./ops/deploy/deploy.sh marketing        # Marketing site only
-./ops/deploy/deploy.sh api app          # API + web app
-```
-
-### What each target does
-
-| Target | Syncs | Restarts |
-|--------|-------|----------|
-| `api` | `core/`, `api/`, `data-model/`, `requirements.txt` | glintstone-api (supervisor) |
-| `app` | `core/`, `app/`, `data-model/`, `requirements.txt` | glintstone-web (supervisor) |
-| `marketing` | `marketing/` | nginx reload |
-
-Both `api` and `app` also run `pip install` and `data-model/migrate.py`.
-
----
-
-## 7. Server Commands Reference
-
-```bash
-# SSH in
-ssh glintstone                          # uses ~/.ssh/config alias
-
-# Logs
-ssh glintstone "tail -50 /var/log/glintstone-api.err.log"
-ssh glintstone "tail -50 /var/log/glintstone-web.err.log"
-
-# Restart services
-ssh glintstone "sudo supervisorctl restart glintstone-api"
-ssh glintstone "sudo supervisorctl restart glintstone-web"
-ssh glintstone "sudo rc-service nginx reload"
-
-# Service status
-ssh glintstone "sudo supervisorctl status"
-
-# DB access
-ssh glintstone "psql -U glintstone glintstone"
-```
-
----
 
 ## Troubleshooting
 
-**Can't SSH in** — Check hPanel firewall has port 22 open. Hostinger's managed firewall is separate from the OS firewall.
-
-**502 Bad Gateway** — uvicorn not running. Check `supervisorctl status` and error logs.
-
-**CORS errors** — Verify `API_URL` and `WEB_URL` in production `.env` use `https://`.
-
-**certbot fails** — DNS not propagated yet. Verify with `dig api.glintstone.org`.
+| Symptom | Likely cause |
+|---|---|
+| `DEPLOY_HOST not set` from CI | Missing `HOSTINGER_HOST` repo secret |
+| `Permission denied (publickey)` | `HOSTINGER_SSH_KEY` secret doesn't match the public key on the VPS |
+| `502 Bad Gateway` after deploy | supervisor didn't restart — check `ssh deploy@host "sudo supervisorctl status"` |
+| Migrations failed in CI | Bad `DATABASE_URL_*` secret, or a SQL error in the new migration |
+| CORS errors after deploy | `API_URL` / `WEB_URL` in `shared/.env` use `http://` instead of `https://` |
+| Rollback fails | The release directory was trimmed — increase `KEEP_RELEASES` |
