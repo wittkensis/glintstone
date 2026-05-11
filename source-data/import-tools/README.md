@@ -13,10 +13,30 @@
 >
 > Already ported to v2:
 > - `01_seed_lookup_tables.py` → [`ingestion/connectors/lookup_tables.py`](../../ingestion/connectors/lookup_tables.py)
->   *(seeds all 7 canon tables; must run before `cdli-catalog`)*
+> - `02_seed_annotation_runs.py` → [`ingestion/connectors/annotation_runs.py`](../../ingestion/connectors/annotation_runs.py)
+> - `03_import_scholars.py` → [`ingestion/connectors/scholars.py`](../../ingestion/connectors/scholars.py)
+> - `04_import_signs.py` → [`ingestion/connectors/ogsl_signs.py`](../../ingestion/connectors/ogsl_signs.py)
 > - `05_import_artifacts.py` → [`ingestion/connectors/cdli_catalog.py`](../../ingestion/connectors/cdli_catalog.py)
+> - `05b_enrich_artifacts_oracc.py` → [`ingestion/connectors/oracc_enrichment.py`](../../ingestion/connectors/oracc_enrichment.py)
+> - `05c_populate_genre_language_junctions.py` → [`ingestion/connectors/genre_language_junctions.py`](../../ingestion/connectors/genre_language_junctions.py)
+> - `06_seed_artifact_identifiers.py` → [`ingestion/connectors/artifact_identifiers.py`](../../ingestion/connectors/artifact_identifiers.py)
+> - `07_parse_atf.py` → [`ingestion/connectors/atf_parser.py`](../../ingestion/connectors/atf_parser.py)
+> - `10_import_token_readings.py` → [`ingestion/connectors/token_readings.py`](../../ingestion/connectors/token_readings.py)
+> - `11_import_lemmatizations.py` → [`ingestion/connectors/oracc_lemmatizations.py`](../../ingestion/connectors/oracc_lemmatizations.py)
+> - `13_import_glossaries.py` → [`ingestion/connectors/oracc_glossaries.py`](../../ingestion/connectors/oracc_glossaries.py)
+> - `15_import_epsd2_unified.py` → [`ingestion/connectors/epsd2.py`](../../ingestion/connectors/epsd2.py)
+> - `16_import_oracc_glossaries.py` → [`ingestion/connectors/oracc_lexical_glossaries.py`](../../ingestion/connectors/oracc_lexical_glossaries.py)
+> - `18_import_norms.py` → [`ingestion/connectors/oracc_norms.py`](../../ingestion/connectors/oracc_norms.py)
 > - `19_match_translation_lines.py` → [`ingestion/connectors/translation_line_matcher.py`](../../ingestion/connectors/translation_line_matcher.py)
->   *(unmatched rows now land in `import_dead_letters`, not on-disk JSON)*
+> - `21_import_oracc_credits.py` → [`ingestion/connectors/oracc_credits.py`](../../ingestion/connectors/oracc_credits.py)
+> - `22_import_ebl_sign_concordance.py` → [`ingestion/connectors/ebl_sign_concordance.py`](../../ingestion/connectors/ebl_sign_concordance.py)
+> - `23_import_unicode_signs.py` → [`ingestion/connectors/unicode_signs.py`](../../ingestion/connectors/unicode_signs.py)
+>
+> **Not ported (no v2 equivalent needed):**
+> - `00_download_oracc_subprojects.py` — download utility, not an import connector
+> - `17_test_lexical_api.py` — test script, not an import
+> - `20_import_collections.py` — depends on `app-v0.1/database/glintstone.db` (archived)
+> - `15b/15c/15d/15e` — one-time cleanup orchestration, superseded by normal re-runs
 >
 > See GitHub issue [#60](https://github.com/wittkensis/glintstone/issues/60)
 > for the v2 migration plan and port status.
