@@ -105,6 +105,34 @@ stderr_logfile=/var/log/glintstone-web.err.log
 stdout_logfile=/var/log/glintstone-web.out.log
 SUPERVISOR
 
+# --- Staging services (ports 8003/8004, separate deploy dir) ---
+mkdir -p /var/www/glintstone-staging
+chown "$DEPLOY_USER:$DEPLOY_USER" /var/www/glintstone-staging
+
+cat > /etc/supervisor.d/glintstone-staging-api.ini << 'SUPERVISOR'
+[program:glintstone-staging-api]
+command=/var/www/glintstone-staging/venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8003
+directory=/var/www/glintstone-staging
+user=deploy
+autostart=false
+autorestart=true
+environment=APP_ENV="staging"
+stderr_logfile=/var/log/glintstone-staging-api.err.log
+stdout_logfile=/var/log/glintstone-staging-api.out.log
+SUPERVISOR
+
+cat > /etc/supervisor.d/glintstone-staging-web.ini << 'SUPERVISOR'
+[program:glintstone-staging-web]
+command=/var/www/glintstone-staging/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8004
+directory=/var/www/glintstone-staging
+user=deploy
+autostart=false
+autorestart=true
+environment=APP_ENV="staging"
+stderr_logfile=/var/log/glintstone-staging-web.err.log
+stdout_logfile=/var/log/glintstone-staging-web.out.log
+SUPERVISOR
+
 # --- Services ---
 rc-update add nginx default
 rc-update add supervisord default
@@ -125,8 +153,13 @@ echo "  SAVE THIS PASSWORD NOW."
 echo ""
 echo "  Next steps:"
 echo "    1. In Hostinger hPanel: create firewall group with ports 22, 80, 443"
-echo "    2. Point DNS A records: glintstone.org, api.glintstone.org, app.glintstone.org -> this VPS"
-echo "    3. Create $APP_DIR/.env with production values (see ops/deploy/DEPLOY.md)"
-echo "    4. From local machine: ./ops/deploy/deploy.sh"
-echo "    5. SSL: certbot --nginx -d glintstone.org -d api.glintstone.org -d app.glintstone.org"
+echo "    2. Point DNS A records (all -> this VPS):"
+echo "         glintstone.org, api.glintstone.org, app.glintstone.org"
+echo "         staging.glintstone.org, staging-api.glintstone.org"
+echo "    3. Copy nginx configs: cp /path/to/ops/deploy/nginx/*.conf /etc/nginx/http.d/"
+echo "       Then reload: rc-service nginx reload"
+echo "    4. Create $APP_DIR/.env with production values (see ops/deploy/DEPLOY.md)"
+echo "    5. From local machine: ./ops/deploy/deploy.sh"
+echo "    6. SSL: certbot --nginx -d glintstone.org -d api.glintstone.org -d app.glintstone.org"
+echo "             certbot --nginx -d staging.glintstone.org -d staging-api.glintstone.org"
 echo ""

@@ -24,10 +24,16 @@ structured events logged (import_run_events).
 from __future__ import annotations
 
 import abc
+import json as _json
+import os
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, ClassVar, Iterable, Iterator, Optional
+
+# Set GLINTSTONE_LOG_FORMAT=json to emit JSON lines; default is human-readable.
+_LOG_FORMAT = os.environ.get("GLINTSTONE_LOG_FORMAT", "human")
 
 
 class RunMode(str, Enum):
@@ -110,7 +116,11 @@ class RunContext:
         message: str,
         **context: Any,
     ) -> None:
-        """Write a row to import_run_events, also echo to stdout for live tail."""
+        """Write a row to import_run_events and emit to stdout.
+
+        Set GLINTSTONE_LOG_FORMAT=json for JSON-lines output (log aggregators).
+        Default is human-readable for interactive sessions.
+        """
         self.db.execute(
             """
             INSERT INTO import_run_events (run_id, level, message, context)
@@ -119,8 +129,19 @@ class RunContext:
             (self.run_id, level, message, _json_or_null(context)),
         )
         self.db.commit()
-        # Echo for interactive sessions; CI suppresses via -q
-        print(f"  [{level}] {message}" + (f"  {context}" if context else ""))
+        if _LOG_FORMAT == "json":
+            entry = {
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "run_id": self.run_id,
+                "connector": self.connector_id,
+                "level": level,
+                "msg": message,
+            }
+            if context:
+                entry.update(context)
+            print(_json.dumps(entry, default=str), file=sys.stderr)
+        else:
+            print(f"  [{level}] {message}" + (f"  {context}" if context else ""))
 
     def info(self, msg: str, **ctx: Any) -> None:
         self.log("info", msg, **ctx)

@@ -21,19 +21,28 @@ needed.
 
 ### Required GitHub repository secrets
 
-| Secret | Value |
-|---|---|
-| `HOSTINGER_HOST` | VPS IP or hostname |
-| `HOSTINGER_SSH_KEY` | Private key for the `deploy` user on the VPS |
-| `DATABASE_URL_PROD` | Neon production branch URL |
-| `DATABASE_URL_STAGING` | Neon staging branch URL |
+| Secret | Status | Value |
+|---|---|---|
+| `HOSTINGER_HOST` | ✅ set | 76.13.208.149 |
+| `HOSTINGER_SSH_KEY` | ✅ set | `~/.ssh/glintstone_deploy` (private key) |
+| `DATABASE_URL_PROD` | ✅ set | Neon production branch URL |
+| `DATABASE_URL_STAGING` | ⚠️ pending | Create a Neon staging branch, then: `gh secret set DATABASE_URL_STAGING --body "postgresql://..."` |
+
+To create the Neon staging branch:
+1. Neon Console → Project → Branches → New Branch → name it `staging`
+2. Copy the connection string
+3. `gh secret set DATABASE_URL_STAGING --body "postgresql://..." --repo wittkensis/glintstone`
 
 ### GitHub Environments
 
-Configure two environments in the repo settings (`Settings → Environments`):
+Both environments are created. To add a required-reviewer gate to production
+(prevents auto-deploy on `main` without a click-through approval):
 
-- `production` — protect with required reviewer (yourself) so deploys to
-  `main` need a click-through approval
+```
+Settings → Environments → production → Required reviewers → add yourself
+```
+
+- `production` — currently unprotected; add reviewer gate above
 - `staging` — no reviewer; auto-deploys from `staging` branch
 
 ### Trigger rules

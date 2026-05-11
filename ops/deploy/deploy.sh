@@ -37,9 +37,15 @@ fi
 
 DEPLOY_HOST="${DEPLOY_HOST:?DEPLOY_HOST not set; export it or add to .env}"
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
-REMOTE_DIR="${DEPLOY_REMOTE_DIR:-/var/www/glintstone}"
 APP_ENV="${APP_ENV:-production}"
 KEEP_RELEASES="${KEEP_RELEASES:-5}"
+
+# Staging deploys to a separate directory so production and staging coexist.
+if [ "$APP_ENV" = "staging" ]; then
+    REMOTE_DIR="${DEPLOY_REMOTE_DIR:-/var/www/glintstone-staging}"
+else
+    REMOTE_DIR="${DEPLOY_REMOTE_DIR:-/var/www/glintstone}"
+fi
 
 # Generate a release tag if none provided.
 if [ -z "${RELEASE_TAG:-}" ]; then
@@ -141,13 +147,21 @@ echo "Swapping current → $RELEASE_TAG..."
 ssh_run "ln -sfn $RELEASE_DIR $CURRENT_LINK.new && mv -Tf $CURRENT_LINK.new $CURRENT_LINK"
 
 # --- Restart services ---
+if [ "$APP_ENV" = "staging" ]; then
+    API_SVC="glintstone-staging-api"
+    WEB_SVC="glintstone-staging-web"
+else
+    API_SVC="glintstone-api"
+    WEB_SVC="glintstone-web"
+fi
+
 if $deploy_api; then
-    ssh_run "sudo supervisorctl restart glintstone-api" || true
-    echo "  glintstone-api restarted"
+    ssh_run "sudo supervisorctl restart $API_SVC" || true
+    echo "  $API_SVC restarted"
 fi
 if $deploy_app; then
-    ssh_run "sudo supervisorctl restart glintstone-web" || true
-    echo "  glintstone-web restarted"
+    ssh_run "sudo supervisorctl restart $WEB_SVC" || true
+    echo "  $WEB_SVC restarted"
 fi
 if $deploy_marketing; then
     ssh_run "sudo rc-service nginx reload" 2>/dev/null || true
