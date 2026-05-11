@@ -1,0 +1,697 @@
+/* =============================================================================
+   PERSONA DOCUMENT STYLES
+   A general-purpose stylesheet for user persona documents.
+   Optimized for both human readability and agent parsing.
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   CSS Variables / Design Tokens
+   ----------------------------------------------------------------------------- */
+:root {
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Fira Mono", Menlo, Monaco, Consolas, monospace;
+
+  /* Font Sizes */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  /* Colors - Neutral */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* Colors - Semantic */
+  --color-primary: #2563eb;
+  --color-primary-light: #3b82f6;
+  --color-primary-dark: #1d4ed8;
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
+  /* Persona Type Colors */
+  --persona-primary: #7c3aed;
+  --persona-secondary: #0891b2;
+  --persona-tertiary: #65a30d;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Layout */
+  --max-width: 52rem;
+  --content-padding: var(--space-6);
+}
+
+/* -----------------------------------------------------------------------------
+   Base Reset & Typography
+   ----------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--gray-800);
+  background-color: var(--gray-50);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 var(--space-4) 0;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--gray-900);
+}
+
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl); }
+h4 { font-size: var(--text-lg); }
+
+p {
+  margin: 0 0 var(--space-4) 0;
+}
+
+ul, ol {
+  margin: 0 0 var(--space-4) 0;
+  padding-left: var(--space-6);
+}
+
+li {
+  margin-bottom: var(--space-2);
+}
+
+blockquote {
+  margin: var(--space-4) 0;
+  padding: var(--space-4) var(--space-6);
+  border-left: 4px solid var(--gray-300);
+  background-color: var(--gray-100);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-style: italic;
+  color: var(--gray-700);
+}
+
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background-color: var(--gray-100);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+/* -----------------------------------------------------------------------------
+   Document Layout
+   ----------------------------------------------------------------------------- */
+.persona-document {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-8) var(--content-padding);
+}
+
+/* -----------------------------------------------------------------------------
+   Header Section
+   ----------------------------------------------------------------------------- */
+.persona-header {
+  margin-bottom: var(--space-10);
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.persona-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.persona-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius-md);
+  background-color: var(--gray-100);
+  color: var(--gray-600);
+}
+
+.persona-tag[data-type="primary"] {
+  background-color: #ede9fe;
+  color: var(--persona-primary);
+}
+
+.persona-tag[data-type="secondary"] {
+  background-color: #cffafe;
+  color: var(--persona-secondary);
+}
+
+.persona-tag[data-type="tertiary"] {
+  background-color: #ecfccb;
+  color: var(--persona-tertiary);
+}
+
+.persona-name {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.persona-archetype {
+  font-size: var(--text-xl);
+  font-weight: 400;
+  color: var(--gray-500);
+  margin-bottom: var(--space-6);
+}
+
+/* Identity Grid */
+.persona-identity {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+}
+
+.identity-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.identity-label {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gray-500);
+}
+
+.identity-value {
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--gray-900);
+}
+
+/* -----------------------------------------------------------------------------
+   Content Sections
+   ----------------------------------------------------------------------------- */
+.persona-section {
+  margin-bottom: var(--space-10);
+}
+
+.section-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 2px solid var(--gray-200);
+}
+
+.section-content {
+  color: var(--gray-700);
+}
+
+/* -----------------------------------------------------------------------------
+   Structured Lists (Goals, Needs, Pain Points)
+   ----------------------------------------------------------------------------- */
+.structured-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.structured-list li {
+  position: relative;
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  background-color: white;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+}
+
+.structured-list li::before {
+  content: attr(data-number);
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background-color: var(--gray-100);
+  color: var(--gray-600);
+  border-radius: 50%;
+}
+
+.structured-list li[data-number] {
+  padding-left: calc(var(--space-4) + 2rem);
+}
+
+/* Variant: Goals */
+.structured-list.goals li::before {
+  background-color: #dbeafe;
+  color: var(--color-primary);
+}
+
+/* Variant: Needs */
+.structured-list.needs li {
+  border-left: 3px solid var(--color-success);
+}
+
+.structured-list.needs li::before {
+  background-color: #d1fae5;
+  color: var(--color-success);
+}
+
+/* Variant: Pain Points */
+.structured-list.pain-points li {
+  border-left: 3px solid var(--color-danger);
+}
+
+.structured-list.pain-points li::before {
+  background-color: #fee2e2;
+  color: var(--color-danger);
+}
+
+/* List Item Structure */
+.list-item-title {
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: var(--space-1);
+}
+
+.list-item-description {
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+  margin: 0;
+}
+
+/* -----------------------------------------------------------------------------
+   Key-Value Displays
+   ----------------------------------------------------------------------------- */
+.kv-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.kv-item {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.kv-item:last-child {
+  border-bottom: none;
+}
+
+.kv-key {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--gray-500);
+}
+
+.kv-value {
+  font-size: var(--text-sm);
+  color: var(--gray-800);
+}
+
+/* -----------------------------------------------------------------------------
+   Test Scenarios Table
+   ----------------------------------------------------------------------------- */
+.scenarios-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  background-color: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+}
+
+.scenarios-table th,
+.scenarios-table td {
+  padding: var(--space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.scenarios-table th {
+  background-color: var(--gray-50);
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scenarios-table tr:last-child td {
+  border-bottom: none;
+}
+
+.scenarios-table tr:hover td {
+  background-color: var(--gray-50);
+}
+
+.scenario-id {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+}
+
+/* -----------------------------------------------------------------------------
+   Metrics Display
+   ----------------------------------------------------------------------------- */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+
+.metric-card {
+  padding: var(--space-5);
+  background-color: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+}
+
+.metric-label {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gray-500);
+  margin-bottom: var(--space-2);
+}
+
+.metric-value {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.metric-target {
+  font-size: var(--text-sm);
+  color: var(--gray-500);
+  margin-top: var(--space-1);
+}
+
+/* -----------------------------------------------------------------------------
+   Quotes Section
+   ----------------------------------------------------------------------------- */
+.quotes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.persona-quote {
+  position: relative;
+  padding: var(--space-6);
+  padding-left: var(--space-10);
+  background-color: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+  font-style: italic;
+  color: var(--gray-700);
+}
+
+.persona-quote::before {
+  content: "\201C";
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-4);
+  font-size: var(--text-3xl);
+  font-family: Georgia, serif;
+  color: var(--gray-300);
+  line-height: 1;
+}
+
+/* -----------------------------------------------------------------------------
+   Time Budget Section
+   ----------------------------------------------------------------------------- */
+.time-budget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.time-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background-color: white;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-200);
+}
+
+.time-category {
+  font-weight: 500;
+  color: var(--gray-700);
+  min-width: 140px;
+}
+
+.time-value {
+  color: var(--gray-600);
+}
+
+.time-bar {
+  flex: 1;
+  height: 8px;
+  background-color: var(--gray-100);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.time-bar-fill {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+
+/* -----------------------------------------------------------------------------
+   Index Page Styles
+   ----------------------------------------------------------------------------- */
+.persona-index {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--content-padding);
+}
+
+.index-header {
+  text-align: center;
+  margin-bottom: var(--space-12);
+}
+
+.index-title {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  margin-bottom: var(--space-4);
+}
+
+.index-description {
+  font-size: var(--text-lg);
+  color: var(--gray-600);
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.persona-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-6);
+}
+
+.persona-card {
+  display: block;
+  padding: var(--space-6);
+  background-color: white;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.persona-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.card-meta {
+  margin-bottom: var(--space-3);
+}
+
+.card-name {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: var(--space-1);
+}
+
+.card-archetype {
+  font-size: var(--text-sm);
+  color: var(--gray-500);
+  margin-bottom: var(--space-3);
+}
+
+.card-summary {
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+  line-height: 1.5;
+}
+
+/* Section Headers for Index */
+.index-section {
+  margin-bottom: var(--space-10);
+}
+
+.index-section-title {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--gray-200);
+}
+
+/* -----------------------------------------------------------------------------
+   Agent Parsing Helpers (Hidden visually, present in DOM)
+   ----------------------------------------------------------------------------- */
+.agent-data {
+  display: none;
+}
+
+/* When viewing raw HTML or for agent parsing */
+@media print {
+  .agent-data {
+    display: block;
+    padding: var(--space-4);
+    background-color: var(--gray-100);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    white-space: pre-wrap;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Print Styles
+   ----------------------------------------------------------------------------- */
+@media print {
+  body {
+    background-color: white;
+    font-size: 11pt;
+  }
+
+  .persona-document {
+    max-width: none;
+    padding: 0;
+  }
+
+  .persona-section {
+    break-inside: avoid;
+  }
+
+  .persona-card {
+    box-shadow: none;
+    border: 1px solid var(--gray-300);
+  }
+
+  .structured-list li,
+  .metric-card,
+  .persona-quote {
+    box-shadow: none;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Responsive Adjustments
+   ----------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  :root {
+    --content-padding: var(--space-4);
+  }
+
+  .persona-identity {
+    grid-template-columns: 1fr;
+  }
+
+  .kv-item {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scenarios-table {
+    font-size: var(--text-xs);
+  }
+
+  .scenarios-table th,
+  .scenarios-table td {
+    padding: var(--space-2);
+  }
+}

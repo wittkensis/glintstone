@@ -106,11 +106,12 @@ For detailed field mappings, update frequencies, and access methods per source, 
 
 ## Tech Stack
 
-- **Backend**: Python 3.9+ / FastAPI / Uvicorn
-- **Database**: PostgreSQL (psycopg3)
+- **Backend**: Python 3.13 / FastAPI / Uvicorn / psycopg 3
+- **Database**: PostgreSQL 17 (hosted at [Neon](https://neon.tech))
 - **Web**: FastAPI + Jinja2 (server-rendered)
-- **Proxy**: nginx (local dev: `*.glintstone.test` domains)
-- **Import pipeline**: Python scripts (`source-data/import-tools/`)
+- **Proxy**: nginx (local dev: `*.glintstone.test` domains; prod: Hostinger VPS)
+- **Ingestion (v2)**: `ingestion/` connector framework with DB-backed run tracking
+- **CI/CD**: GitHub Actions → Hostinger VPS with versioned releases + symlink rollback
 - **Marketing site**: Static HTML + Tailwind
 
 ---
@@ -121,19 +122,30 @@ For detailed field mappings, update frequencies, and access methods per source, 
 api/                    FastAPI app (api.glintstone.org)
 app/                    Server-rendered web app (app.glintstone.org)
 core/                   Shared Python package (config, database, repository)
+ingestion/              v2 ingestion framework
+  base.py                SourceConnector + ModelConnector contract
+  registry.py            Auto-discovery + topo-sort by runs_after
+  runner.py              Full run lifecycle with DB-backed progress
+  loader.py              Upsert helpers (SKIP / UPDATE policies)
+  dead_letters.py        DeadLetterSink for failed-to-integrate records
+  cli.py                 `python -m ingestion.cli` entry point
+  connectors/            Concrete connectors (one file per source)
 data-model/
-  seeds/                Seed data
-  v2/                   v2 schema, docs, mappings
-  v1/                   v1 reference
-  source-schemas/       Raw source format documentation
+  migrate.py             Generic SQL migration runner
+  v2/                    v2 schema, docs, mappings
+  seeds/                 Seed data
 source-data/
-  import-tools/         Numbered import scripts (01-15)
-  sources/              Raw source data (not in repo)
+  migrations/            NNN_*.sql files applied by data-model/migrate.py
+  import-tools/          [LEGACY] v1 numbered import scripts, retiring as v2
+                         connectors are ported
+  sources/               Raw source data (not in repo)
 marketing/              Static marketing site (glintstone.org)
 ml/models/              ML model sub-repos
 ops/
-  local/                Local dev setup, nginx, start/stop scripts
-  deploy/               VPS provisioning and deployment
+  local/                 Local dev setup, nginx, start/stop scripts
+  deploy/                deploy.sh + rollback.sh + nginx configs + DEPLOY.md
+tests/                  pytest suite (config, database, migrate, ingestion)
+.github/workflows/      test.yml + deploy.yml (Actions)
 ```
 
 ---
@@ -142,30 +154,56 @@ ops/
 
 ### Prerequisites
 
-- macOS with Homebrew
-- Python 3.9+
-- PostgreSQL 15+
-- nginx
+- Python 3.13+
+- A PostgreSQL DATABASE_URL (local Postgres, Neon, Railway, Supabase, or RDS)
 
 ### Setup
 
 ```bash
-# One-time setup
-./ops/local/setup.sh
+# 1. Configure environment
+cp .env.example .env
+# Edit .env and set DATABASE_URL=postgresql://...
 
-# Start all services
+# 2. Install dependencies
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+
+# 3. Apply schema
+python data-model/migrate.py up
+
+# 4. Start local dev (optional nginx-routed domains)
 ./ops/local/start.sh
 ```
 
-Opens at http://app.glintstone.test (web) and http://api.glintstone.test (API). See `ops/deploy/DEPLOY.md` for production deployment.
+Opens at http://app.glintstone.test (web) and http://api.glintstone.test (API). See [ops/deploy/DEPLOY.md](ops/deploy/DEPLOY.md) for the automated GitHub Actions deploy to production.
 
-### Data
+### Ingestion (v2)
 
-Source data is not included in the repository. To populate:
+```bash
+python -m ingestion.cli list                # show registered connectors
+python -m ingestion.cli run cdli-catalog    # run one connector
+python -m ingestion.cli status              # recent runs across all connectors
+python -m ingestion.cli dead-letters cdli-catalog   # triage failures
+```
 
-1. Download source data into `source-data/sources/`
-2. Copy `.env.example` to `.env` and configure database credentials
-3. Run import pipeline scripts in `source-data/import-tools/` (numbered order)
+Open `/admin/ingestion` in the web app for the dashboard view.
+
+### Database location
+
+The app reads `DATABASE_URL` from `.env`. Swapping environments is one line:
+
+```bash
+# Local Postgres
+DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/glintstone
+
+# Neon staging branch
+DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require
+
+# Railway
+DATABASE_URL=postgresql://user:pass@xxx.railway.app:5432/railway
+```
+
+The legacy discrete `DB_HOST`/`DB_PORT`/etc. vars still work as fallback.
 
 ---
 

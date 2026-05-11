@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Navigation Prototype – Glintstone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display&family=Noto+Sans+Cuneiform&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #1a1a1a;
+      --bg-elevated:   #242424;
+      --bg-deepest:    #0f0f0f;
+      --bg-inset:      rgba(10,10,10,0.82);
+      --text:          #e8e6e3;
+      --text-muted:    #a0a0a0;
+      --text-subtle:   #707070;
+      --accent:        #c9a962;
+      --border:        #333;
+      --border-mid:    #404040;
+      --intelligence:  #8ad7c8;
+      --sign:          #a18769;
+      --pipeline-done: #41a230;
+      --pipeline-act:  #bd984e;
+      --pipeline-off:  #404040;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; }
+    body { display: flex; flex-direction: column; }
+
+    /* ─── GLOBAL HEADER ─────────────────────────────────────── */
+    #g-header {
+      background: var(--bg-deepest);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+    .g-header-row {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      width: 160px;
+    }
+
+    /* ─── SEARCH ─────────────────────────────────────────────── */
+    .search-root {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+      width: 500px;
+      position: relative;
+    }
+    .search-input-wrap {
+      width: 100%;
+      height: 44px;
+      border-radius: 9999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      box-shadow: 0 0 8px 0 black;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px 6px 40px;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .search-root.hover .search-input-wrap { background: rgba(10,10,10,0.5); }
+    .search-root.focused .search-input-wrap,
+    .search-root.searching-loading .search-input-wrap,
+    .search-root.searching .search-input-wrap,
+    .search-root.record-focused .search-input-wrap { border-color: var(--accent); cursor: text; }
+
+    .search-icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px; opacity: 0.45; pointer-events: none;
+      transition: opacity 0.15s; color: var(--text-muted);
+    }
+    .search-root.hover .search-icon { opacity: 0.7; }
+    .search-root.focused .search-icon,
+    .search-root.searching-loading .search-icon,
+    .search-root.searching .search-icon,
+    .search-root.record-focused .search-icon,
+    .search-root.record-default .search-icon { opacity: 0.9; }
+
+    .search-placeholder {
+      font-size: 14px; color: var(--text-muted); opacity: 0.5;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; pointer-events: none;
+    }
+    .search-root.focused .search-placeholder { opacity: 0.2; }
+    .search-root.searching-loading .search-placeholder,
+    .search-root.searching .search-placeholder,
+    .search-root.record-default .search-placeholder,
+    .search-root.record-focused .search-placeholder { display: none; }
+
+    .search-text {
+      display: none; font-size: 14px; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
+    }
+    .search-root.searching-loading .search-text,
+    .search-root.searching .search-text { display: block; }
+
+    .search-cursor {
+      width: 1px; height: 15px; background: var(--accent);
+      animation: blink 1s step-end infinite; display: none;
+    }
+    .search-root.focused .search-cursor,
+    .search-root.searching-loading .search-cursor,
+    .search-root.searching .search-cursor,
+    .search-root.record-focused .search-cursor { display: block; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    .search-clear {
+      width: 18px; height: 18px; flex-shrink: 0; display: none; cursor: pointer;
+      color: var(--text-muted); font-size: 16px; line-height: 18px; text-align: center;
+    }
+    .search-root.searching-loading .search-clear,
+    .search-root.searching .search-clear,
+    .search-root.record-default .search-clear,
+    .search-root.record-focused .search-clear { display: block; }
+
+    .search-chip { display: none; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+    .search-root.record-default .search-chip,
+    .search-root.record-focused .search-chip { display: flex; }
+
+    .chip-label {
+      background: var(--accent); color: var(--bg-deepest);
+      font-size: 12px; padding: 4px 6px; border-radius: 4px; white-space: nowrap;
+    }
+    .chip-value { font-size: 14px; color: var(--text); white-space: nowrap; }
+
+    /* ─── BROWSE NAV ─────────────────────────────────────────── */
+    .browse-nav {
+      display: flex; align-items: center; gap: 4px; padding-left: 20px;
+      transition: opacity 0.15s;
+    }
+    /* Hide on detail page */
+    body.on-detail .browse-nav { opacity: 0; pointer-events: none; }
+
+    .browse-label { font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+    .browse-nav-item {
+      font-size: 12px; color: var(--text-muted); padding: 4px 6px; border-radius: 4px;
+      cursor: pointer; white-space: nowrap; transition: color 0.1s, background 0.1s;
+    }
+    .browse-nav-item:hover { background: var(--bg-elevated); color: var(--text); }
+    .browse-nav-item.active { color: var(--text); }
+
+    /* spacer to balance logo */
+    .header-spacer { width: 160px; }
+
+    /* ─── DROPDOWN ───────────────────────────────────────────── */
+    .search-dropdown {
+      display: none; position: absolute; top: 52px; left: 0; width: 500px;
+      background: var(--bg-inset); backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px); border-radius: 18px; z-index: 100;
+      flex-direction: column; padding: 12px 0; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    .search-root.focused .search-dropdown,
+    .search-root.searching-loading .search-dropdown,
+    .search-root.searching .search-dropdown,
+    .search-root.record-focused .search-dropdown { display: flex; }
+
+    .dd-empty { display: none; padding: 12px 35px; font-size: 14px; color: var(--text-muted); }
+    .search-root.focused .dd-empty { display: block; }
+
+    .dd-loading { display: none; flex-direction: column; gap: 2px; padding: 8px 0; }
+    .search-root.searching-loading .dd-loading { display: flex; }
+
+    .dd-results { display: none; flex-direction: column; width: 100%; }
+    /* Only show multi-type results when scope is "all" */
+    .search-root.searching[data-scope="all"] .dd-results { display: flex; }
+
+    .dd-results-focused { display: none; flex-direction: column; width: 100%; }
+    .search-root.record-focused .dd-results-focused { display: flex; }
+
+    /* ─── SCOPED RESULTS ─────────────────────────────────────── */
+    .dd-scoped { display: none; flex-direction: column; width: 100%; }
+    .search-root.searching[data-scope="tablets"]     .dd-scoped-tablets     { display: flex; }
+    .search-root.searching[data-scope="collections"] .dd-scoped-collections { display: flex; }
+    .search-root.searching[data-scope="dictionary"]  .dd-scoped-dictionary  { display: flex; }
+    .search-root.searching[data-scope="scholars"]    .dd-scoped-scholars    { display: flex; }
+
+    .dd-scope-header {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 6px 20px 2px;
+    }
+    .dd-scope-count  { font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-subtle); }
+    .dd-scope-total  { font-size: 10px; color: var(--text-subtle); }
+    .dd-scope-more   { padding: 6px 20px 10px; font-size: 10px; color: var(--text-subtle); text-decoration: underline; cursor: pointer; }
+    .dd-scope-more:hover { color: var(--text-muted); }
+
+    /* Scholar thumb */
+    .dd-thumb-scholar { background: linear-gradient(135deg, #1e1e2a, #2e2e48); display: flex; align-items: center; justify-content: center; }
+    .dd-scholar-initial { font-size: 16px; font-weight: 700; color: rgba(160,155,210,0.45); }
+
+    .dd-section-label {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--text-subtle); padding: 6px 20px 2px;
+    }
+    .dd-result {
+      display: flex; align-items: center; gap: 8px; padding: 10px 20px;
+      cursor: pointer; transition: background 0.1s; border-radius: 8px; margin: 0 4px;
+    }
+    .dd-result:hover { background: rgba(255,255,255,0.05); }
+    .dd-thumb {
+      width: 50px; height: 40px; border-radius: 4px;
+      flex-shrink: 0; overflow: hidden; position: relative;
+    }
+    .dd-thumb-tablet     { background: linear-gradient(135deg, #3a2e1e 0%, #5c4a2a 50%, #3a2e1e 100%); }
+    .dd-thumb-collection { background: linear-gradient(135deg, #2a3a1e 0%, #3a5c2a 50%, #2a3a1e 100%); }
+    .dd-thumb-composite  { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .dd-thumb-composite > div { background: linear-gradient(135deg, #3a2e1e 0%, #5c4a2a 100%); }
+    .dd-thumb-composite > div:nth-child(1),
+    .dd-thumb-composite > div:nth-child(2) { border-bottom: 1px solid #000; }
+    .dd-thumb-composite > div:nth-child(1),
+    .dd-thumb-composite > div:nth-child(3) { border-right: 1px solid #000; }
+    .dd-thumb-sign  { background: var(--sign);         display: flex; align-items: center; justify-content: center; }
+    .dd-thumb-lemma { background: var(--intelligence); display: flex; align-items: center; justify-content: center; }
+    .dd-sign-char        { font-family: 'Noto Sans Cuneiform', sans-serif; font-size: 20px; color: var(--bg-deepest); line-height: 1; }
+    .dd-sign-placeholder { font-family: 'Noto Sans Cuneiform', sans-serif; font-size: 14px; color: rgba(47,26,10,0.25); line-height: 1; }
+    .dd-meta  { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .dd-name  { font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dd-sub   { font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1; }
+    .dd-more  { padding: 4px 20px 10px; font-size: 10px; color: var(--text-subtle); text-decoration: underline; cursor: pointer; }
+    .dd-more:hover { color: var(--text-muted); }
+
+    /* Pipeline mini */
+    .pipeline-mini { display: flex; align-items: center; gap: 8px; }
+    .pipeline-dots { display: flex; align-items: center; gap: 3px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pipeline-off); }
+    .dot.done   { background: var(--pipeline-done); opacity: 0.4; }
+    .dot.active { background: var(--pipeline-act);  opacity: 1; }
+    .pipeline-label { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ─── PAGES ─────────────────────────────────────────────── */
+    .page { display: none; flex: 1; flex-direction: column; min-height: 0; }
+    .page.active { display: flex; }
+
+    /* ─── BROWSE PAGE LAYOUT ─────────────────────────────────── */
+    .page-body { flex: 1; display: flex; }
+    .browse-sidebar {
+      width: 300px; background: var(--bg-deepest); border-right: 1px solid var(--border);
+      padding: 24px 16px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto;
+    }
+    .sidebar-section-label {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--text-subtle); padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+    .sidebar-placeholder-row { height: 20px; background: var(--border); border-radius: 3px; opacity: 0.4; }
+    .browse-main { flex: 1; padding: 24px 32px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+    .browse-count { font-size: 18px; color: var(--text-muted); }
+    .browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .card-placeholder {
+      aspect-ratio: 1; border-radius: 6px; border: 1px solid var(--border);
+    }
+    .card-placeholder.tablet     { background: linear-gradient(135deg, #2a2218 0%, #3a3020 50%, #2a2218 100%); }
+    .card-placeholder.collection { background: linear-gradient(135deg, #1e2a18 0%, #253820 50%, #1e2a18 100%); aspect-ratio: 3/2; }
+    .card-placeholder.lemma      { background: linear-gradient(135deg, #1a2a28 0%, #203530 50%, #1a2a28 100%); aspect-ratio: unset; height: 52px; }
+    .card-placeholder.scholar    { background: linear-gradient(135deg, #1e1e2a 0%, #252538 50%, #1e1e2a 100%); aspect-ratio: unset; height: 52px; }
+
+    /* List layout for Dictionary + Scholars */
+    .browse-list { display: flex; flex-direction: column; gap: 4px; }
+
+    /* ─── TABLET DETAIL HEADER ───────────────────────────────── */
+    .tablet-header {
+      border-bottom: 1px solid var(--border); padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-deepest); flex-shrink: 0;
+    }
+    .tablet-back { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .back-chevron { font-size: 18px; color: var(--text-muted); transition: color 0.1s; }
+    .tablet-back:hover .back-chevron { color: var(--text); }
+    .tablet-pnum { font-family: 'Playfair Display', serif; font-size: 40px; color: var(--text); line-height: 1.3; }
+    .composite-nav { display: flex; align-items: center; gap: 2px; }
+    .comp-btn {
+      width: 50px; height: 32px; border-radius: 4px;
+      background: linear-gradient(135deg, #3a2e1e, #5c4a2a);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px; color: var(--text-muted); transition: color 0.1s;
+    }
+    .comp-btn:hover { color: var(--text); }
+    .comp-current {
+      width: 80px; height: 32px; border-radius: 4px;
+      background: linear-gradient(135deg, #3a2e1e, #5c4a2a);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    }
+    .comp-id  { font-size: 10px; font-weight: 700; color: #fff; }
+    .comp-pos { font-size: 10px; color: var(--text-muted); opacity: 0.6; }
+    .tablet-actions { display: flex; align-items: center; gap: 8px; }
+    .pipeline-status { display: flex; align-items: center; gap: 6px; }
+    .pipeline-segs   { display: flex; align-items: center; gap: 3px; }
+    .seg { width: 8px; height: 8px; border-radius: 4px; }
+    .pipeline-text   { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+    .icon-btn {
+      width: 32px; height: 32px; background: #303030; border: 1px solid var(--border-mid);
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px; color: var(--text-muted);
+    }
+    .icon-btn:hover { background: var(--bg-elevated); color: var(--text); }
+    .detail-body {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      opacity: 0.15; font-size: 13px; color: var(--text-muted);
+      letter-spacing: 1px; text-transform: uppercase; font-weight: 500;
+    }
+
+    /* ─── LOADING BAR ─────────────────────────────────────── */
+    @keyframes progress-run {
+      0%   { transform: scaleX(0);    opacity: 1; }
+      75%  { transform: scaleX(0.82); opacity: 1; }
+      95%  { transform: scaleX(1);    opacity: 1; }
+      100% { transform: scaleX(1);    opacity: 0; }
+    }
+    #loading-bar {
+      position: fixed; top: 0; left: 0; height: 2px; width: 100%;
+      background: var(--accent); transform-origin: left center;
+      transform: scaleX(0); opacity: 0; z-index: 1000;
+      pointer-events: none; box-shadow: 0 0 6px var(--accent);
+    }
+    #loading-bar.active {
+      animation: progress-run 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    /* ─── SKELETON SHIMMER ────────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position:  400px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #252525 25%, #303030 50%, #252525 75%);
+      background-size: 800px 100%; animation: shimmer 1.4s ease-in-out infinite; border-radius: 3px;
+    }
+    .dd-skel-row   { display: flex; align-items: center; gap: 10px; padding: 10px 20px; }
+    .dd-skel-thumb { width: 50px; height: 40px; border-radius: 4px; flex-shrink: 0; }
+    .dd-skel-lines { display: flex; flex-direction: column; gap: 7px; flex: 1; }
+    .dd-skel-line  { height: 12px; }
+    .dd-skel-sub   { height: 8px; width: 55%; }
+
+    /* ─── SCOPE PILL (inside input bar) ─────────────────────── */
+    .scope-pill {
+      display: none;
+      align-items: center; gap: 3px;
+      padding: 3px 7px;
+      border-radius: 4px; border: 1px solid var(--border-mid);
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      font-size: 11px; color: var(--text-subtle); line-height: 1;
+      background: transparent;
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+    }
+    /* Show only when dropdown is open */
+    .search-root.focused .scope-pill,
+    .search-root.searching-loading .scope-pill,
+    .search-root.searching .scope-pill { display: flex; }
+
+    .scope-pill:hover { border-color: var(--text-subtle); color: var(--text-muted); }
+    /* Scoped (non-all) appearance */
+    .search-root[data-scope]:not([data-scope="all"]) .scope-pill {
+      border-color: rgba(201,169,98,0.5); color: var(--accent); background: rgba(201,169,98,0.08);
+    }
+    .scope-pill-arrow { font-size: 8px; opacity: 0.55; }
+
+    /* ─── SCOPE BAR (top of dropdown) ───────────────────────── */
+    .scope-bar {
+      display: flex; align-items: center; gap: 4px;
+      padding: 10px 16px 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      flex-wrap: wrap;
+    }
+    .scope-bar-label {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--text-subtle); margin-right: 2px; white-space: nowrap;
+    }
+    .scope-opt {
+      font-size: 11px; color: var(--text-subtle);
+      padding: 3px 8px; border-radius: 4px;
+      border: 1px solid transparent; background: transparent;
+      cursor: pointer; white-space: nowrap; transition: all 0.12s;
+    }
+    .scope-opt:hover { color: var(--text-muted); border-color: var(--border-mid); background: rgba(255,255,255,0.04); }
+    .scope-opt.active { color: var(--accent); border-color: rgba(201,169,98,0.4); background: rgba(201,169,98,0.08); }
+    /* Keyboard hint */
+    .scope-kb-hint { margin-left: auto; font-size: 10px; color: var(--text-subtle); opacity: 0.6; white-space: nowrap; }
+    .scope-kb-hint kbd {
+      font-family: inherit; font-size: 9px; padding: 1px 4px;
+      border: 1px solid var(--border-mid); border-radius: 3px; color: var(--text-subtle);
+    }
+
+    /* ─── PAGE BODY DIM (during navigation) ───────────────── */
+    .page-dimming .page-body,
+    .page-dimming .tablet-header,
+    .page-dimming .detail-body {
+      opacity: 0.2; pointer-events: none; transition: opacity 0.1s;
+    }
+
+    /* ─── OVERLAY ────────────────────────────────────────── */
+    .overlay { display: none; position: fixed; inset: 0; z-index: 50; }
+    .overlay.active { display: block; }
+
+    /* ─── DEV PANEL ──────────────────────────────────────── */
+    .state-indicator {
+      position: fixed; bottom: 16px; right: 16px; background: var(--bg-elevated);
+      border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px;
+      font-size: 11px; color: var(--text-muted); z-index: 200;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .state-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .state-btn {
+      padding: 3px 8px; border-radius: 3px; cursor: pointer; background: var(--border);
+      color: var(--text-muted); font-size: 10px; border: 1px solid transparent; transition: all 0.1s;
+    }
+    .state-btn:hover { background: var(--bg-elevated); border-color: var(--border-mid); color: var(--text); }
+    .state-btn.current { border-color: var(--accent); color: var(--accent); background: rgba(201,169,98,0.1); }
+    .state-label { font-size: 10px; color: var(--text-subtle); }
+  </style>
+</head>
+<body>
+
+<div id="loading-bar"></div>
+<div class="overlay" id="overlay"></div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SHARED GLOBAL HEADER
+═══════════════════════════════════════════════════════════ -->
+<header id="g-header">
+  <div class="g-header-row">
+    <div class="logo">Glintstone</div>
+
+    <div class="search-root default" id="search-root" data-scope="all">
+      <div class="search-input-wrap" id="search-input">
+        <svg class="search-icon" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M11.5 11.5L16 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+
+        <!-- Scope pill — visible when dropdown open, hidden in record states -->
+        <button class="scope-pill" id="scope-pill">
+          <span class="scope-pill-text">All</span>
+          <span class="scope-pill-arrow">▾</span>
+        </button>
+
+        <div class="search-chip">
+          <div class="chip-label">Tablet</div>
+          <div class="chip-value">P3928244</div>
+          <div class="search-cursor"></div>
+        </div>
+
+        <span class="search-placeholder">battles during Esarhaddon's reign</span>
+        <span class="search-text">Gilgamesh</span>
+        <div class="search-cursor"></div>
+        <div class="search-clear" id="search-clear-btn">✕</div>
+      </div>
+
+      <!-- Browse nav -->
+      <div class="browse-nav">
+        <span class="browse-label">Browse:</span>
+        <span class="browse-nav-item" data-browse="tablets">Tablets</span>
+        <span class="browse-nav-item" data-browse="collections">Collections</span>
+        <span class="browse-nav-item" data-browse="dictionary">Dictionary</span>
+        <span class="browse-nav-item" data-browse="scholars">Scholars</span>
+      </div>
+
+      <!-- Dropdown -->
+      <div class="search-dropdown">
+
+        <!-- Scope bar — always visible when dropdown open -->
+        <div class="scope-bar">
+          <span class="scope-bar-label">In:</span>
+          <button class="scope-opt active" data-scope="all">All</button>
+          <button class="scope-opt" data-scope="tablets">Tablets</button>
+          <button class="scope-opt" data-scope="collections">Collections</button>
+          <button class="scope-opt" data-scope="dictionary">Dictionary</button>
+          <button class="scope-opt" data-scope="scholars">Scholars</button>
+          <span class="scope-kb-hint"><kbd>Tab</kbd> to cycle</span>
+        </div>
+
+        <div class="dd-empty">Search tablets, signs, words&hellip;</div>
+
+        <!-- Skeleton loading -->
+        <div class="dd-loading">
+          <div class="dd-skel-row"><div class="dd-skel-thumb skeleton"></div><div class="dd-skel-lines"><div class="dd-skel-line skeleton"></div><div class="dd-skel-sub skeleton"></div></div></div>
+          <div class="dd-skel-row"><div class="dd-skel-thumb skeleton"></div><div class="dd-skel-lines"><div class="dd-skel-line skeleton"></div><div class="dd-skel-sub skeleton"></div></div></div>
+          <div class="dd-skel-row"><div class="dd-skel-thumb skeleton"></div><div class="dd-skel-lines"><div class="dd-skel-line skeleton"></div><div class="dd-skel-sub skeleton"></div></div></div>
+        </div>
+
+        <!-- Results -->
+        <div class="dd-results">
+          <div class="dd-section-label">Collections</div>
+          <div class="dd-result" data-action="browse" data-target="collections">
+            <div class="dd-thumb dd-thumb-collection"></div>
+            <div class="dd-meta"><div class="dd-name">Stories of Gilgamesh</div><div class="dd-sub">The popular book category started long ago.</div></div>
+          </div>
+
+          <div class="dd-section-label">Composites</div>
+          <div class="dd-result">
+            <div class="dd-thumb dd-thumb-composite"><div></div><div></div><div></div><div></div></div>
+            <div class="dd-meta">
+              <div class="dd-name">Q3945294</div>
+              <div class="dd-sub">Gilgamesh going into the woods</div>
+              <div class="pipeline-mini">
+                <div class="pipeline-dots">
+                  <div class="dot done"></div><div class="dot done"></div>
+                  <div class="dot active"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+                <div class="pipeline-label">Needs Lemmas</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dd-section-label">Tablets</div>
+          <div class="dd-result" data-action="detail">
+            <div class="dd-thumb dd-thumb-tablet"></div>
+            <div class="dd-meta"><div class="dd-name">P3928244</div><div class="dd-sub">Gilgamesh going into the woods</div></div>
+          </div>
+          <div class="dd-result" data-action="detail">
+            <div class="dd-thumb dd-thumb-tablet"></div>
+            <div class="dd-meta"><div class="dd-name">P3928245</div><div class="dd-sub">Gilgamesh going into the woods</div></div>
+          </div>
+          <div class="dd-result" data-action="detail">
+            <div class="dd-thumb dd-thumb-tablet"></div>
+            <div class="dd-meta"><div class="dd-name">P3928246</div><div class="dd-sub">Gilgamesh going into the woods</div></div>
+          </div>
+          <div class="dd-more">128 results</div>
+
+          <div class="dd-section-label">Lemmas</div>
+          <div class="dd-result" data-action="browse" data-target="dictionary">
+            <div class="dd-thumb dd-thumb-lemma"><span class="dd-sign-char">DN</span></div>
+            <div class="dd-meta"><div class="dd-name">Gilgame&#353;</div><div class="dd-sub">Proper noun, divine name</div></div>
+          </div>
+          <div class="dd-result" data-action="browse" data-target="dictionary">
+            <div class="dd-thumb dd-thumb-lemma"><span class="dd-sign-char">DN</span></div>
+            <div class="dd-meta"><div class="dd-name">&#299;&#353;k&#257;r Gilgame&#353;</div><div class="dd-sub">Text series name</div></div>
+          </div>
+          <div class="dd-result" data-action="browse" data-target="dictionary">
+            <div class="dd-thumb dd-thumb-lemma"><span class="dd-sign-char">DN</span></div>
+            <div class="dd-meta"><div class="dd-name">Ezembilgames</div><div class="dd-sub">Variant spelling</div></div>
+          </div>
+          <div class="dd-result" data-action="browse" data-target="dictionary">
+            <div class="dd-thumb dd-thumb-lemma"><span class="dd-sign-char">DN</span></div>
+            <div class="dd-meta"><div class="dd-name">pabilga</div><div class="dd-sub">Sumerian epithet</div></div>
+          </div>
+
+          <div class="dd-section-label">Signs</div>
+          <div class="dd-result">
+            <div class="dd-thumb dd-thumb-sign"><span class="dd-sign-placeholder">--</span></div>
+            <div class="dd-meta"><div class="dd-name">BIL<sub>4</sub>.MES.GA</div><div class="dd-sub">Sign compound</div></div>
+          </div>
+          <div class="dd-result">
+            <div class="dd-thumb dd-thumb-sign"><span class="dd-sign-char">𒈩</span></div>
+            <div class="dd-meta"><div class="dd-name">MES</div><div class="dd-sub">Sign reading</div></div>
+          </div>
+          <div class="dd-result">
+            <div class="dd-thumb dd-thumb-sign"><span class="dd-sign-char">𒉈</span></div>
+            <div class="dd-meta"><div class="dd-name">NE</div><div class="dd-sub">Sign reading</div></div>
+          </div>
+
+          <div class="dd-section-label">Glosses</div>
+          <div class="dd-result" data-action="detail">
+            <div class="dd-thumb dd-thumb-tablet"></div>
+            <div class="dd-meta"><div class="dd-name">&ldquo;gilgamesh&rdquo;</div><div class="dd-sub">Gloss in P3928244</div></div>
+          </div>
+        </div><!-- /dd-results -->
+
+        <!-- Record-focused results -->
+        <div class="dd-results-focused">
+          <div class="dd-section-label">Tablets</div>
+          <div class="dd-result" data-action="detail">
+            <div class="dd-thumb dd-thumb-tablet"></div>
+            <div class="dd-meta"><div class="dd-name">P3928244</div><div class="dd-sub">Gilgamesh going into the woods</div></div>
+          </div>
+        </div>
+
+        <!-- ── SCOPED: TABLETS ─────────────────────────────── -->
+        <div class="dd-scoped dd-scoped-tablets">
+          <div class="dd-scope-header">
+            <span class="dd-scope-count">Tablets</span>
+            <span class="dd-scope-total">128 matches</span>
+          </div>
+          <div class="dd-result" data-action="detail"><div class="dd-thumb dd-thumb-tablet"></div><div class="dd-meta"><div class="dd-name">P3928244</div><div class="dd-sub">Gilgamesh going into the woods · Ur III</div></div></div>
+          <div class="dd-result" data-action="detail"><div class="dd-thumb dd-thumb-tablet"></div><div class="dd-meta"><div class="dd-name">P3928245</div><div class="dd-sub">Gilgamesh going into the woods · Ur III</div></div></div>
+          <div class="dd-result" data-action="detail"><div class="dd-thumb dd-thumb-tablet"></div><div class="dd-meta"><div class="dd-name">P3928246</div><div class="dd-sub">Gilgamesh going into the woods · Old Babylonian</div></div></div>
+          <div class="dd-result" data-action="detail"><div class="dd-thumb dd-thumb-tablet"></div><div class="dd-meta"><div class="dd-name">P3928247</div><div class="dd-sub">Gilgamesh epic, tablet XI · Old Babylonian</div></div></div>
+          <div class="dd-result" data-action="detail"><div class="dd-thumb dd-thumb-tablet"></div><div class="dd-meta"><div class="dd-name">P3928248</div><div class="dd-sub">Gilgamesh epic, tablet XI · Neo-Babylonian</div></div></div>
+          <div class="dd-result" data-action="detail"><div class="dd-thumb dd-thumb-tablet"></div><div class="dd-meta"><div class="dd-name">P3928249</div><div class="dd-sub">The death of Gilgamesh · Ur III</div></div></div>
+          <div class="dd-scope-more">View all 128 tablets</div>
+        </div>
+
+        <!-- ── SCOPED: COLLECTIONS ─────────────────────────── -->
+        <div class="dd-scoped dd-scoped-collections">
+          <div class="dd-scope-header">
+            <span class="dd-scope-count">Collections</span>
+            <span class="dd-scope-total">12 matches</span>
+          </div>
+          <div class="dd-result" data-action="browse" data-target="collections"><div class="dd-thumb dd-thumb-collection"></div><div class="dd-meta"><div class="dd-name">Stories of Gilgamesh</div><div class="dd-sub">Canonical & variant versions, all periods</div></div></div>
+          <div class="dd-result" data-action="browse" data-target="collections"><div class="dd-thumb dd-thumb-collection"></div><div class="dd-meta"><div class="dd-name">The Gilgamesh Epic Manuscripts</div><div class="dd-sub">Nineveh library tablets, Sin-leqi-unninni recension</div></div></div>
+          <div class="dd-result" data-action="browse" data-target="collections"><div class="dd-thumb dd-thumb-collection"></div><div class="dd-meta"><div class="dd-name">Babylonian Hero Myths</div><div class="dd-sub">Incl. Gilgamesh, Etana, Adapa</div></div></div>
+          <div class="dd-scope-more">View all 12 collections</div>
+        </div>
+
+        <!-- ── SCOPED: DICTIONARY ──────────────────────────── -->
+        <div class="dd-scoped dd-scoped-dictionary">
+          <div class="dd-scope-header">
+            <span class="dd-scope-count">Lemmas</span>
+            <span class="dd-scope-total">8 matches</span>
+          </div>
+          <div class="dd-result" data-action="browse" data-target="dictionary"><div class="dd-thumb dd-thumb-lemma"><span class="dd-sign-char">DN</span></div><div class="dd-meta"><div class="dd-name">Gilgame&#353;</div><div class="dd-sub">Divine name · Sumerian proper noun</div></div></div>
+          <div class="dd-result" data-action="browse" data-target="dictionary"><div class="dd-thumb dd-thumb-lemma"><span class="dd-sign-char">DN</span></div><div class="dd-meta"><div class="dd-name">&#299;&#353;k&#257;r Gilgame&#353;</div><div class="dd-sub">Text series name · Akkadian</div></div></div>
+          <div class="dd-result" data-action="browse" data-target="dictionary"><div class="dd-thumb dd-thumb-lemma"><span class="dd-sign-char">DN</span></div><div class="dd-meta"><div class="dd-name">Ezembilgames</div><div class="dd-sub">Variant spelling · Hurrian borrowing</div></div></div>
+          <div class="dd-result" data-action="browse" data-target="dictionary"><div class="dd-thumb dd-thumb-lemma"><span class="dd-sign-char">DN</span></div><div class="dd-meta"><div class="dd-name">pabilga</div><div class="dd-sub">Sumerian epithet · "fore-father"</div></div></div>
+          <div class="dd-scope-header" style="margin-top:4px">
+            <span class="dd-scope-count">Signs</span>
+            <span class="dd-scope-total">3 matches</span>
+          </div>
+          <div class="dd-result"><div class="dd-thumb dd-thumb-sign"><span class="dd-sign-char">𒈩</span></div><div class="dd-meta"><div class="dd-name">MES</div><div class="dd-sub">In BIL.MES.GA compound · 1,243 occurrences</div></div></div>
+          <div class="dd-result"><div class="dd-thumb dd-thumb-sign"><span class="dd-sign-char">𒉈</span></div><div class="dd-meta"><div class="dd-name">NE</div><div class="dd-sub">Sign reading · 892 occurrences</div></div></div>
+          <div class="dd-result"><div class="dd-thumb dd-thumb-sign"><span class="dd-sign-placeholder">--</span></div><div class="dd-meta"><div class="dd-name">BIL<sub>4</sub>.MES.GA</div><div class="dd-sub">Sign compound · 47 occurrences</div></div></div>
+          <div class="dd-scope-more">View all 28 dictionary entries</div>
+        </div>
+
+        <!-- ── SCOPED: SCHOLARS ────────────────────────────── -->
+        <div class="dd-scoped dd-scoped-scholars">
+          <div class="dd-scope-header">
+            <span class="dd-scope-count">Scholars</span>
+            <span class="dd-scope-total">7 matches</span>
+          </div>
+          <div class="dd-result" data-action="browse" data-target="scholars"><div class="dd-thumb dd-thumb-scholar"><span class="dd-scholar-initial">AG</span></div><div class="dd-meta"><div class="dd-name">Andrew George</div><div class="dd-sub">Gilgamesh specialist · SOAS, University of London</div></div></div>
+          <div class="dd-result" data-action="browse" data-target="scholars"><div class="dd-thumb dd-thumb-scholar"><span class="dd-scholar-initial">MK</span></div><div class="dd-meta"><div class="dd-name">Maureen Gallery Kovacs</div><div class="dd-sub">Translator, <em>The Epic of Gilgamesh</em> (1989)</div></div></div>
+          <div class="dd-result" data-action="browse" data-target="scholars"><div class="dd-thumb dd-thumb-scholar"><span class="dd-scholar-initial">JT</span></div><div class="dd-meta"><div class="dd-name">Jeffrey Tigay</div><div class="dd-sub">Evolution of Gilgamesh epic · University of Pennsylvania</div></div></div>
+          <div class="dd-scope-more">View all 7 scholars</div>
+        </div>
+
+      </div><!-- /dropdown -->
+    </div><!-- /search-root -->
+
+    <div class="header-spacer"></div>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PAGE: TABLETS
+═══════════════════════════════════════════════════════════ -->
+<div class="page active" id="page-tablets">
+  <div class="page-body">
+    <aside class="browse-sidebar">
+      <div>
+        <div class="sidebar-section-label">Period</div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px">
+          <div class="sidebar-placeholder-row" style="width:80%"></div>
+          <div class="sidebar-placeholder-row" style="width:65%"></div>
+          <div class="sidebar-placeholder-row" style="width:72%"></div>
+          <div class="sidebar-placeholder-row" style="width:55%"></div>
+          <div class="sidebar-placeholder-row" style="width:60%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="sidebar-section-label">Provenience</div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px">
+          <div class="sidebar-placeholder-row" style="width:70%"></div>
+          <div class="sidebar-placeholder-row" style="width:85%"></div>
+          <div class="sidebar-placeholder-row" style="width:50%"></div>
+          <div class="sidebar-placeholder-row" style="width:78%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="sidebar-section-label">Genre</div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px">
+          <div class="sidebar-placeholder-row" style="width:60%"></div>
+          <div class="sidebar-placeholder-row" style="width:40%"></div>
+          <div class="sidebar-placeholder-row" style="width:55%"></div>
+        </div>
+      </div>
+    </aside>
+    <div class="browse-main">
+      <div class="browse-count">353,283 tablets</div>
+      <div class="browse-grid">
+        <div class="card-placeholder tablet"></div><div class="card-placeholder tablet"></div>
+        <div class="card-placeholder tablet"></div><div class="card-placeholder tablet"></div>
+        <div class="card-placeholder tablet"></div><div class="card-placeholder tablet"></div>
+        <div class="card-placeholder tablet"></div><div class="card-placeholder tablet"></div>
+        <div class="card-placeholder tablet"></div><div class="card-placeholder tablet"></div>
+        <div class="card-placeholder tablet"></div><div class="card-placeholder tablet"></div>
+        <div class="card-placeholder tablet"></div><div class="card-placeholder tablet"></div>
+        <div class="card-placeholder tablet"></div><div class="card-placeholder tablet"></div>
+        <div class="card-placeholder tablet"></div><div class="card-placeholder tablet"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PAGE: COLLECTIONS
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-collections">
+  <div class="page-body">
+    <aside class="browse-sidebar">
+      <div>
+        <div class="sidebar-section-label">Type</div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px">
+          <div class="sidebar-placeholder-row" style="width:55%"></div>
+          <div class="sidebar-placeholder-row" style="width:70%"></div>
+          <div class="sidebar-placeholder-row" style="width:45%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="sidebar-section-label">Period</div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px">
+          <div class="sidebar-placeholder-row" style="width:80%"></div>
+          <div class="sidebar-placeholder-row" style="width:60%"></div>
+          <div class="sidebar-placeholder-row" style="width:75%"></div>
+          <div class="sidebar-placeholder-row" style="width:50%"></div>
+        </div>
+      </div>
+    </aside>
+    <div class="browse-main">
+      <div class="browse-count">2,847 collections</div>
+      <div class="browse-grid">
+        <div class="card-placeholder collection"></div><div class="card-placeholder collection"></div>
+        <div class="card-placeholder collection"></div><div class="card-placeholder collection"></div>
+        <div class="card-placeholder collection"></div><div class="card-placeholder collection"></div>
+        <div class="card-placeholder collection"></div><div class="card-placeholder collection"></div>
+        <div class="card-placeholder collection"></div><div class="card-placeholder collection"></div>
+        <div class="card-placeholder collection"></div><div class="card-placeholder collection"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PAGE: DICTIONARY
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-dictionary">
+  <div class="page-body">
+    <aside class="browse-sidebar">
+      <div>
+        <div class="sidebar-section-label">Language</div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px">
+          <div class="sidebar-placeholder-row" style="width:55%"></div>
+          <div class="sidebar-placeholder-row" style="width:45%"></div>
+          <div class="sidebar-placeholder-row" style="width:65%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="sidebar-section-label">Part of Speech</div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px">
+          <div class="sidebar-placeholder-row" style="width:40%"></div>
+          <div class="sidebar-placeholder-row" style="width:50%"></div>
+          <div class="sidebar-placeholder-row" style="width:35%"></div>
+          <div class="sidebar-placeholder-row" style="width:60%"></div>
+        </div>
+      </div>
+    </aside>
+    <div class="browse-main">
+      <div class="browse-count">48,291 lemmas</div>
+      <div class="browse-list">
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+        <div class="card-placeholder lemma"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PAGE: SCHOLARS
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-scholars">
+  <div class="page-body">
+    <aside class="browse-sidebar">
+      <div>
+        <div class="sidebar-section-label">Era</div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px">
+          <div class="sidebar-placeholder-row" style="width:65%"></div>
+          <div class="sidebar-placeholder-row" style="width:50%"></div>
+          <div class="sidebar-placeholder-row" style="width:75%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="sidebar-section-label">Institution</div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px">
+          <div class="sidebar-placeholder-row" style="width:80%"></div>
+          <div class="sidebar-placeholder-row" style="width:60%"></div>
+          <div class="sidebar-placeholder-row" style="width:45%"></div>
+          <div class="sidebar-placeholder-row" style="width:70%"></div>
+        </div>
+      </div>
+    </aside>
+    <div class="browse-main">
+      <div class="browse-count">1,203 scholars</div>
+      <div class="browse-list">
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+        <div class="card-placeholder scholar"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PAGE: TABLET DETAIL
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="page-detail">
+  <div class="tablet-header">
+    <div class="tablet-back" id="back-btn">
+      <span class="back-chevron">&#8249;</span>
+      <div class="tablet-pnum">P334357</div>
+    </div>
+    <div class="composite-nav">
+      <div class="comp-btn">&#8249;</div>
+      <div class="comp-current">
+        <div class="comp-id">Q000343</div>
+        <div class="comp-pos">3 / 394</div>
+      </div>
+      <div class="comp-btn">&#8250;</div>
+    </div>
+    <div class="tablet-actions">
+      <div class="pipeline-status">
+        <div class="pipeline-segs">
+          <div class="seg" style="background:var(--pipeline-off)"></div>
+          <div class="seg" style="background:var(--pipeline-done)"></div>
+          <div class="seg" style="background:var(--pipeline-off)"></div>
+          <div class="seg" style="background:var(--pipeline-done)"></div>
+        </div>
+        <div class="pipeline-text">Complete</div>
+      </div>
+      <div class="icon-btn">&#8942;</div>
+    </div>
+  </div>
+  <div class="detail-body">Tablet viewer &middot; ATF panel &middot; Knowledge sidebar</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     DEV PANEL
+═══════════════════════════════════════════════════════════ -->
+<div class="state-indicator">
+  <div class="state-label">Search state</div>
+  <div class="state-row">
+    <button class="state-btn current" data-state="default">Default</button>
+    <button class="state-btn" data-state="hover">Hover</button>
+    <button class="state-btn" data-state="focused">Focused</button>
+    <button class="state-btn" data-state="searching-loading">Loading</button>
+    <button class="state-btn" data-state="searching">Searching</button>
+    <button class="state-btn" data-state="record-default">Record</button>
+    <button class="state-btn" data-state="record-focused">Record+</button>
+  </div>
+  <div class="state-label">Page</div>
+  <div class="state-row">
+    <button class="state-btn current" data-page="tablets">Tablets</button>
+    <button class="state-btn" data-page="collections">Collections</button>
+    <button class="state-btn" data-page="dictionary">Dictionary</button>
+    <button class="state-btn" data-page="scholars">Scholars</button>
+    <button class="state-btn" data-page="detail">Detail</button>
+  </div>
+</div>
+
+
+<script>
+  const LOAD_MS = 1500;
+
+  let currentPage     = 'tablets';
+  let previousPage    = 'tablets';
+  let searchState     = 'default';
+  let searchScope     = 'all';
+  let isNavigating    = false;
+  let searchLoadTimer = null;
+
+  const SCOPE_LABELS = {
+    all: 'All', tablets: 'Tablets', collections: 'Collections',
+    dictionary: 'Dictionary', scholars: 'Scholars'
+  };
+  const SCOPE_PLACEHOLDERS = {
+    all:         "battles during Esarhaddon's reign",
+    tablets:     'Search 353,283 tablets...',
+    collections: 'Search 2,847 collections...',
+    dictionary:  'Search lemmas, signs, glosses...',
+    scholars:    'Search 1,203 scholars...'
+  };
+  const SCOPE_HINTS = {
+    all:         'Search tablets, signs, words\u2026',
+    tablets:     'Search 353,283 tablets\u2026',
+    collections: 'Search 2,847 collections\u2026',
+    dictionary:  'Search lemmas, signs, glosses\u2026',
+    scholars:    'Search 1,203 scholars\u2026'
+  };
+  // Which scope corresponds to each browse page
+  const PAGE_SCOPE = { tablets: 'tablets', collections: 'collections', dictionary: 'dictionary', scholars: 'scholars' };
+
+  // ── Scope setter ───────────────────────────────────────────────
+  function setScope(scope) {
+    searchScope = scope;
+    const root = document.getElementById('search-root');
+    root.dataset.scope = scope;
+
+    // Pill text
+    document.querySelector('.scope-pill-text').textContent = SCOPE_LABELS[scope];
+    // Placeholder
+    document.querySelector('.search-placeholder').textContent = SCOPE_PLACEHOLDERS[scope];
+    // Empty hint
+    document.querySelector('.dd-empty').textContent = SCOPE_HINTS[scope];
+
+    // Scope bar active state
+    document.querySelectorAll('.scope-opt').forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.scope === scope);
+    });
+  }
+
+  // ── Core setters ───────────────────────────────────────────────
+  function setPage(page) {
+    previousPage = (currentPage !== 'detail') ? currentPage : previousPage;
+    currentPage  = page;
+
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+
+    document.body.classList.toggle('on-detail', page === 'detail');
+
+    document.querySelectorAll('.browse-nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.browse === page);
+    });
+    document.querySelectorAll('[data-page]').forEach(btn => {
+      btn.classList.toggle('current', btn.dataset.page === page);
+    });
+
+    // Auto-set scope to match the browse page context
+    if (PAGE_SCOPE[page]) {
+      setScope(PAGE_SCOPE[page]);
+    } else if (page === 'detail') {
+      setScope('all'); // detail page searches everything
+    }
+
+    if (page === 'detail') {
+      setSearchState('record-default');
+    } else if (searchState === 'record-default' || searchState === 'record-focused') {
+      setSearchState('default');
+    }
+  }
+
+  function setSearchState(state) {
+    searchState = state;
+    const el = document.getElementById('search-root');
+    // Preserve data-scope attribute when re-setting className
+    if (el) {
+      el.className = 'search-root ' + state;
+      el.dataset.scope = searchScope; // className reset clears data attrs? No, but be safe
+    }
+
+    const needsOverlay = ['focused','searching-loading','searching','record-focused'].includes(state);
+    document.getElementById('overlay').classList.toggle('active', needsOverlay);
+
+    document.querySelectorAll('[data-state]').forEach(btn => {
+      btn.classList.toggle('current', btn.dataset.state === state);
+    });
+  }
+
+  function closeDropdown() {
+    clearTimeout(searchLoadTimer);
+    if (['focused','searching-loading','searching'].includes(searchState)) {
+      setSearchState('default');
+    } else if (searchState === 'record-focused') {
+      setSearchState('record-default');
+    }
+  }
+
+  // ── Loading helpers ────────────────────────────────────────────
+  function startSearchLoading() {
+    clearTimeout(searchLoadTimer);
+    setSearchState('searching-loading');
+    searchLoadTimer = setTimeout(() => {
+      if (searchState === 'searching-loading') setSearchState('searching');
+    }, LOAD_MS);
+  }
+
+  function navigateTo(targetPage) {
+    if (isNavigating) return;
+    isNavigating = true;
+    closeDropdown();
+
+    const bar = document.getElementById('loading-bar');
+    bar.classList.remove('active');
+    void bar.offsetWidth;
+    bar.classList.add('active');
+
+    const activePage = document.querySelector('.page.active');
+    if (activePage) activePage.classList.add('page-dimming');
+
+    setTimeout(() => {
+      isNavigating = false;
+      bar.classList.remove('active');
+      if (activePage) activePage.classList.remove('page-dimming');
+      setPage(targetPage);
+    }, LOAD_MS);
+  }
+
+  // ── Interactions ───────────────────────────────────────────────
+
+  // Search input
+  document.getElementById('search-input').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isNavigating) return;
+    if (searchState === 'default' || searchState === 'hover') {
+      setSearchState('focused');
+    } else if (searchState === 'focused') {
+      startSearchLoading();
+    } else if (searchState === 'record-default') {
+      setSearchState('record-focused');
+    }
+  });
+
+  // Hover
+  document.getElementById('search-input').addEventListener('mouseenter', () => {
+    if (searchState === 'default') setSearchState('hover');
+  });
+  document.getElementById('search-input').addEventListener('mouseleave', () => {
+    if (searchState === 'hover') setSearchState('default');
+  });
+
+  // Clear
+  document.getElementById('search-clear-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearTimeout(searchLoadTimer);
+    setSearchState('default');
+  });
+
+  // Browse nav items → navigate with loading
+  document.querySelectorAll('.browse-nav-item').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const target = el.dataset.browse;
+      if (target !== currentPage) navigateTo(target);
+    });
+  });
+
+  // Result actions
+  document.querySelectorAll('[data-action]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = el.dataset.action;
+      if (action === 'detail') {
+        navigateTo('detail');
+      } else if (action === 'browse') {
+        navigateTo(el.dataset.target);
+      }
+    });
+  });
+
+  // Back button
+  document.getElementById('back-btn').addEventListener('click', () => {
+    navigateTo(previousPage || 'tablets');
+  });
+
+  // Overlay click
+  document.getElementById('overlay').addEventListener('click', () => {
+    closeDropdown();
+  });
+
+  // ── Scope interactions ─────────────────────────────────────────
+  const SCOPE_ORDER = ['all', 'tablets', 'collections', 'dictionary', 'scholars'];
+
+  // Scope pill: toggle between All and current page's contextual scope
+  document.getElementById('scope-pill').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const contextScope = PAGE_SCOPE[currentPage] || 'all';
+    const next = (searchScope === 'all' && contextScope !== 'all') ? contextScope : 'all';
+    setScope(next);
+    // If already showing results, no re-load needed — CSS handles it instantly
+    if (searchState !== 'searching-loading' && searchState !== 'searching') {
+      setSearchState('focused');
+    }
+  });
+
+  // Scope bar options: instant switch (no loading — just re-filter visible results)
+  document.querySelectorAll('.scope-opt').forEach(opt => {
+    opt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setScope(opt.dataset.scope);
+      // Stay in current search state; CSS immediately shows right results
+    });
+  });
+
+  // Dev panel — instant
+  document.querySelectorAll('[data-state]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      clearTimeout(searchLoadTimer);
+      setSearchState(btn.dataset.state);
+    });
+  });
+  document.querySelectorAll('[data-page]').forEach(btn => {
+    btn.addEventListener('click', () => setPage(btn.dataset.page));
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDropdown();
+    if (searchState === 'focused' && e.key.length === 1) startSearchLoading();
+    // Tab cycles scope when dropdown is open
+    if (e.key === 'Tab' && ['focused','searching-loading','searching'].includes(searchState)) {
+      e.preventDefault();
+      const idx = SCOPE_ORDER.indexOf(searchScope);
+      const next = SCOPE_ORDER[(idx + 1) % SCOPE_ORDER.length];
+      setScope(next);
+    }
+  });
+
+  // Init
+  setPage('tablets');
+</script>
+
+</body>
+</html>

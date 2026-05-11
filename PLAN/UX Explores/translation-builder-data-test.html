@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Translation Builder — Data Pressure Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1a1a;
+  --bg-panel: #222222;
+  --bg-header: #303030;
+  --border: #404040;
+  --accent: #c9a962;
+  --text: #e8e6e3;
+  --text-subtle: #707070;
+  --text-red: #e23838;
+  --green: #6b8e6b;
+  --blue: #8ab4d4;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-ui: 'Inter', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.4; }
+
+.page { max-width: 1520px; margin: 0 auto; padding: 32px 24px 64px; }
+
+/* ── Intro ── */
+.intro {
+  background: #1a221a; border: 1px solid #3a5a3a; border-radius: 6px;
+  padding: 16px 20px; margin-bottom: 40px; color: #8ab88a; font-size: 12px; line-height: 1.7;
+}
+.intro h1 { font-size: 14px; font-weight: 600; color: #aad4aa; margin-bottom: 6px; }
+.intro code { font-family: var(--font-mono); font-size: 11px; opacity: 0.8; }
+
+/* ── Section heading ── */
+.section-heading {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-subtle); margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
+}
+.section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.page-section { margin-bottom: 52px; }
+
+/* ── Tablet viewer shell ── */
+.tablet-viewer {
+  background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+}
+
+/* ── Header bar ── */
+.tb-header {
+  background: var(--bg-header); border-bottom: 1px solid var(--border);
+  height: 45px; display: flex; align-items: stretch; padding: 0 8px; gap: 4px;
+}
+.tb-meta {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 12px 0 4px; border-right: 1px solid var(--border); flex-shrink: 0;
+}
+.meta-designation { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; }
+.chip {
+  font-size: 10px; padding: 2px 7px; border-radius: 3px;
+  border: 1px solid var(--border); color: var(--text-subtle); white-space: nowrap;
+}
+.chip.join { color: var(--accent); border-color: rgba(201,169,98,.3); background: rgba(201,169,98,.07); }
+.chip.composite { color: var(--blue); border-color: rgba(138,180,212,.3); background: rgba(138,180,212,.07); }
+.chip.period { background: rgba(255,255,255,.04); }
+.chip.lang { background: rgba(255,255,255,.04); }
+.surface-tabs { display: flex; align-items: stretch; border-bottom: 2px solid var(--border); flex: 1; }
+.tab {
+  display: flex; align-items: center; padding: 12px 14px 14px;
+  font-size: 14px; font-weight: 500; color: var(--text-subtle);
+  border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; white-space: nowrap;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Content grid ── */
+.tb-content { padding: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+
+/* ── Column ── */
+.tb-column { display: flex; flex-direction: column; gap: 6px; }
+.col-header {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text-subtle); margin-bottom: 2px;
+}
+.coverage-badge {
+  font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
+}
+.coverage-badge.good { color: #6ab06a; background: rgba(106,176,106,.1); }
+.coverage-badge.partial { color: var(--accent); background: rgba(201,169,98,.1); }
+.coverage-badge.poor { color: var(--text-red); background: rgba(226,56,56,.1); }
+
+.empty-col {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 180px; border: 1px dashed rgba(255,255,255,.07);
+  border-radius: 4px; color: rgba(255,255,255,.18); font-size: 11px; font-style: italic;
+}
+
+/* ── Row ── */
+.tb-row { display: flex; gap: 6px; align-items: flex-start; }
+.tb-row.broken { opacity: .35; }
+
+.row-num {
+  background: var(--bg); border-radius: 4px;
+  padding: 14px 6px 14px 8px; min-width: 30px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--text);
+  flex-shrink: 0; align-self: stretch;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px;
+}
+.row-num .sub-bracket { width: 2px; background: rgba(255,255,255,.1); border-radius: 1px; flex: 1; min-height: 10px; }
+
+.ribbons { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+/* ── Token ribbon ── */
+.ribbon-tokens { display: flex; align-items: flex-start; padding-bottom: 3px; overflow-x: visible; }
+
+.token {
+  display: flex; flex-direction: column; min-width: 88px; flex-shrink: 0;
+  border-left: 1px solid rgba(255,255,255,.06); position: relative;
+}
+.token:first-child { border-left: none; }
+.token.lang-akk { border-top: 2px solid rgba(138,180,212,.45); }
+.token.lang-sux { border-top: 2px solid rgba(106,176,106,.45); }
+.token.pending { opacity: .55; }
+
+.tok-flags {
+  display: flex; align-items: center; height: 18px; padding: 0 6px; gap: 3px;
+}
+.tok-flag {
+  font-family: var(--font-mono); font-size: 8px; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--text-subtle);
+}
+.tok-flag.dmg { color: var(--text-red); font-weight: 700; }
+.tok-flag.unc { color: #e2a038; }
+.tok-flag.lang { color: var(--blue); background: rgba(138,180,212,.1); border-radius: 2px; padding: 0 3px; font-size: 7px; }
+.tok-flag.lang-sux { color: #6ab06a; background: rgba(106,176,106,.1); border-radius: 2px; padding: 0 3px; font-size: 7px; }
+.tok-flag.rubric { color: #b48ad4; background: rgba(180,138,212,.1); border-radius: 2px; padding: 0 3px; font-size: 7px; }
+
+.tok-row {
+  display: flex; align-items: center; height: 22px; padding: 0 6px;
+  border-top: 1px dashed rgba(255,255,255,.05);
+}
+.tok-reading {
+  font-family: var(--font-mono); font-size: 10px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tok-reading.dmg { color: #c8786a; text-decoration: underline dotted rgba(226,56,56,.4); }
+.tok-reading.broken { color: rgba(255,255,255,.25); font-style: italic; }
+.tok-reading.structural { color: rgba(255,255,255,.2); font-style: italic; font-size: 9px; }
+.tok-norm { font-family: var(--font-mono); font-size: 10px; color: var(--text-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tok-lemma { font-family: var(--font-mono); font-size: 10px; color: var(--text-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tok-gloss { font-size: 10px; color: var(--text-subtle); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tok-pending { font-size: 9px; color: rgba(255,255,255,.2); font-style: italic; }
+
+/* Structural token (non-linguistic ATF element) */
+.token.structural-tok {
+  min-width: 28px; max-width: 28px; opacity: .35;
+  border-left: 1px solid rgba(255,255,255,.04);
+}
+
+/* ── Translation ribbon ── */
+.ribbon-trans {
+  display: flex; align-items: center; gap: 8px; min-height: 32px;
+  padding: 5px 10px; background: rgba(26,26,26,.5); border-radius: 4px;
+}
+.trans-dot { width: 6px; height: 20px; border-radius: 3px; flex-shrink: 0; }
+.trans-dot.matched { background: var(--accent); }
+.trans-dot.unmatched { background: var(--border); }
+.trans-text { font-size: 10px; color: var(--accent); line-height: 1.5; flex: 1; min-width: 0; }
+.trans-text.unmatched { color: var(--text-subtle); font-style: italic; }
+.trans-text.empty { color: rgba(255,255,255,.15); font-style: italic; }
+
+/* ── Structural / ruling lines ── */
+.struct-line {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px 5px 36px; font-size: 10px; color: var(--text-subtle); font-style: italic;
+}
+.struct-line.ruling {
+  border-top: 1px solid rgba(255,255,255,.1); border-bottom: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.02); padding: 3px 8px 3px 36px;
+}
+.struct-line.broken {
+  background: rgba(226,56,56,.04); border-left: 2px solid rgba(226,56,56,.2);
+  border-radius: 0 2px 2px 0; color: rgba(226,56,56,.6);
+}
+.struct-tag {
+  font-family: var(--font-mono); font-size: 9px; text-transform: uppercase;
+  letter-spacing: .05em; padding: 1px 4px; border-radius: 2px;
+}
+.struct-line.ruling .struct-tag { background: rgba(255,255,255,.06); color: var(--text-subtle); }
+.struct-line.broken .struct-tag { background: rgba(226,56,56,.1); color: rgba(226,56,56,.8); }
+
+/* ── Language separator ── */
+.lang-sep {
+  display: flex; align-items: center; gap: 8px; margin: 2px 0; padding: 0 0 0 36px;
+}
+.lang-sep-line { flex: 1; height: 1px; background: var(--border); }
+.lang-sep-label {
+  font-size: 9px; letter-spacing: .07em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 10px; white-space: nowrap;
+}
+.lang-sep-label.sux { color: #6ab06a; background: rgba(106,176,106,.1); border: 1px solid rgba(106,176,106,.2); }
+.lang-sep-label.akk { color: var(--blue); background: rgba(138,180,212,.1); border: 1px solid rgba(138,180,212,.2); }
+.lang-sep-label.unk { color: var(--text-subtle); background: rgba(255,255,255,.04); border: 1px solid var(--border); }
+
+/* ── Composite ref pill ── */
+.composite-ref {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--font-mono); font-size: 8px; color: var(--blue);
+  background: rgba(138,180,212,.08); border: 1px solid rgba(138,180,212,.2);
+  border-radius: 3px; padding: 1px 5px; white-space: nowrap; margin-left: 4px;
+}
+
+/* ── View controls ── */
+.view-controls {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px; background: rgba(10,10,10,.7); border-top: 1px solid var(--border);
+}
+.btn-group { display: flex; border-radius: 4px; overflow: hidden; }
+.btn-density {
+  background: var(--bg-header); border: 1px solid var(--border);
+  padding: 6px 9px; cursor: pointer; color: var(--text-subtle);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-density.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.density-icon { width: 12px; height: 10px; display: flex; flex-direction: column; justify-content: space-between; }
+.density-icon span { display: block; height: 2px; background: currentColor; border-radius: 1px; }
+.density-icon.compact span:nth-child(2) { opacity: .4; }
+.lang-select {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  padding: 5px 10px; color: var(--text-subtle); font-size: 12px;
+  font-family: var(--font-ui); min-width: 90px; cursor: pointer;
+}
+.toggle-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.toggle-track {
+  width: 44px; height: 24px; background: #404040; border-radius: 12px;
+  position: relative; transition: background .2s; flex-shrink: 0;
+}
+.toggle-track.on { background: var(--accent); }
+.toggle-thumb {
+  position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+  background: var(--text); border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,.3); transition: left .2s;
+}
+.toggle-track.on .toggle-thumb { left: 22px; }
+.toggle-label { font-size: 12px; color: var(--text); }
+
+/* ── Edge case callouts ── */
+.callout {
+  margin: 2px 0; padding: 7px 10px; border-radius: 4px;
+  font-size: 11px; line-height: 1.55; display: flex; gap: 8px; align-items: flex-start;
+}
+.callout.warn { background: rgba(201,169,98,.07); border: 1px solid rgba(201,169,98,.22); color: #c9a962; }
+.callout.err { background: rgba(226,56,56,.06); border: 1px solid rgba(226,56,56,.18); color: #e28080; }
+.callout.info { background: rgba(138,180,212,.06); border: 1px solid rgba(138,180,212,.18); color: var(--blue); }
+.callout-tag {
+  font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  padding: 2px 5px; border-radius: 2px; flex-shrink: 0; margin-top: 1px;
+}
+.callout.warn .callout-tag { background: rgba(201,169,98,.18); }
+.callout.err .callout-tag { background: rgba(226,56,56,.14); }
+.callout.info .callout-tag { background: rgba(138,180,212,.14); }
+
+/* ── Suggestions ── */
+.sug-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sug-card {
+  background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 18px;
+}
+.sug-card.hi { border-color: rgba(226,56,56,.28); }
+.sug-card.med { border-color: rgba(201,169,98,.2); }
+.sug-num {
+  font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--text-subtle); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.pri { font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 2px; }
+.pri.hi { color: #e28080; background: rgba(226,56,56,.1); }
+.pri.med { color: var(--accent); background: rgba(201,169,98,.1); }
+.pri.lo { color: var(--text-subtle); background: rgba(255,255,255,.05); }
+.sug-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 7px; }
+.sug-body { font-size: 12px; color: var(--text-subtle); line-height: 1.65; }
+.sug-persona {
+  display: inline-block; margin-top: 9px; font-size: 10px; color: var(--accent);
+  background: rgba(201,169,98,.08); border: 1px solid rgba(201,169,98,.2);
+  border-radius: 10px; padding: 2px 8px;
+}
+.sug-mockup {
+  background: var(--bg); border-radius: 4px; padding: 10px 12px; margin-top: 11px;
+  font-size: 10px; font-family: var(--font-mono); color: var(--text-subtle); line-height: 1.9;
+}
+.sug-mockup .hi { color: var(--accent); }
+.sug-mockup .new { color: #6ab06a; }
+.sug-mockup .dim { color: rgba(255,255,255,.2); }
+.sug-mockup .lbl { color: var(--blue); }
+
+/* ── Compact token view (toggle off) ── */
+body.tokens-compact .tok-row:has(.tok-norm),
+body.tokens-compact .tok-row:has(.tok-lemma),
+body.tokens-compact .tok-row:has(.tok-gloss),
+body.tokens-compact .tok-row:has(.tok-pending) {
+  display: none;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ══════════════════════════════════════════════
+     INTRO
+════════════════════════════════════════════════ -->
+<div class="intro">
+  <h1>Translation Builder — UI Data Pressure Test</h1>
+  <p>Static prototype testing Figma design <code>node 309:18114</code> against real ATF data from <code>debug-tablets.json</code>.
+  Three tablets shown across increasing complexity. Token stacks for Tablet 1 reflect the "ideal state" (once
+  <code>token_readings</code> + lemmatizations are populated). Tablets 2 &amp; 3 show current-state data gaps and edge cases.
+  Edge case callouts appear inline. Improvement suggestions are collected at the bottom.</p>
+  <p style="margin-top:6px">Source tablets: <strong>P227657</strong> KTT 188 (control — lexical, clean),
+  <strong>P229672</strong> K 03254 + K 03779 (Diri bilingual, joins, language switches),
+  <strong>P020464</strong> (bilingual Sumerian + Akkadian letter)</p>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     TABLET 1 — P227657 "KTT 188"
+     Lexical list, Akkadian, Old Babylonian
+     Control case: clean data, 259/265 translations matched
+     No physical columns — single column on a tag
+════════════════════════════════════════════════ -->
+<div class="page-section">
+<h2 class="section-heading">Tablet 1 — P227657 · KTT 188 · Lexical list (control case)</h2>
+
+<div class="tablet-viewer">
+
+  <!-- Header -->
+  <div class="tb-header">
+    <div class="tb-meta">
+      <span class="meta-designation">KTT 188</span>
+      <span class="chip period">Old Babylonian</span>
+      <span class="chip lang">Akkadian</span>
+      <span class="chip">Administrative / LEX</span>
+      <span class="chip">P227657</span>
+    </div>
+    <div class="surface-tabs">
+      <div class="tab active">Obverse</div>
+      <div class="tab">Reverse</div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="tb-content">
+
+    <!-- Column 1 — lines 1–6 -->
+    <div class="tb-column">
+      <div class="col-header">
+        Column 1
+        <span class="coverage-badge good">259 / 265 translated</span>
+      </div>
+
+      <!-- Row 1: a / water -->
+      <div class="tb-row">
+        <div class="row-num">1</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">SYL</span></div>
+              <div class="tok-row"><span class="tok-reading">a</span></div>
+              <div class="tok-row"><span class="tok-norm">ā</span></div>
+              <div class="tok-row"><span class="tok-lemma">a[water]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">water</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">water</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: ninda / bread -->
+      <div class="tb-row">
+        <div class="row-num">2</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">ninda</span></div>
+              <div class="tok-row"><span class="tok-norm">ninda</span></div>
+              <div class="tok-row"><span class="tok-lemma">ninda[bread]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">bread</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">bread</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: kasz / beer -->
+      <div class="tb-row">
+        <div class="row-num">3</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">kaš₂</span></div>
+              <div class="tok-row"><span class="tok-norm">kaš</span></div>
+              <div class="tok-row"><span class="tok-lemma">kaš[beer]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">beer</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">beer</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 4: tu7 / soup -->
+      <div class="tb-row">
+        <div class="row-num">4</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">tu₇</span></div>
+              <div class="tok-row"><span class="tok-norm">tu</span></div>
+              <div class="tok-row"><span class="tok-lemma">tu[soup]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">soup</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">soup</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 5: [tu7] saga / good quality soup — BROKEN TOKEN -->
+      <div class="tb-row">
+        <div class="row-num">5</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"></div>
+              <div class="tok-row"><span class="tok-reading broken">[tu₇]</span></div>
+              <div class="tok-row"><span class="tok-norm" style="opacity:.3">—</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="opacity:.3">—</span></div>
+              <div class="tok-row"><span class="tok-gloss" style="opacity:.3">…</span></div>
+            </div>
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">saga</span></div>
+              <div class="tok-row"><span class="tok-norm">saga</span></div>
+              <div class="tok-row"><span class="tok-lemma">saga[good]AJ</span></div>
+              <div class="tok-row"><span class="tok-gloss">good</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">good quality soup</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 6: tu7# gu2# gal — DAMAGED TOKENS -->
+      <div class="tb-row">
+        <div class="row-num">6</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag dmg">#</span></div>
+              <div class="tok-row"><span class="tok-reading dmg">tu₇</span></div>
+              <div class="tok-row"><span class="tok-norm">tu</span></div>
+              <div class="tok-row"><span class="tok-lemma">tu[soup]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">soup</span></div>
+            </div>
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag dmg">#</span></div>
+              <div class="tok-row"><span class="tok-reading dmg">gu₂</span></div>
+              <div class="tok-row"><span class="tok-norm">gu</span></div>
+              <div class="tok-row"><span class="tok-lemma">gu[bean]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">bean</span></div>
+            </div>
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">gal</span></div>
+              <div class="tok-row"><span class="tok-norm">gal</span></div>
+              <div class="tok-row"><span class="tok-lemma">gal[big]AJ</span></div>
+              <div class="tok-row"><span class="tok-gloss">big, broad</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">soup made with broad beans</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col 1 -->
+
+    <!-- Column 2 — lines 7–12 including SI#!? edge case -->
+    <div class="tb-column">
+      <div class="col-header">Column 2</div>
+
+      <!-- Row 7: tu7 gu2 tur -->
+      <div class="tb-row">
+        <div class="row-num">7</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">tu₇</span></div>
+              <div class="tok-row"><span class="tok-norm">tu</span></div>
+              <div class="tok-row"><span class="tok-lemma">tu[soup]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">soup</span></div>
+            </div>
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">gu₂</span></div>
+              <div class="tok-row"><span class="tok-norm">gu</span></div>
+              <div class="tok-row"><span class="tok-lemma">gu[bean]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">bean</span></div>
+            </div>
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">tur</span></div>
+              <div class="tok-row"><span class="tok-norm">tur</span></div>
+              <div class="tok-row"><span class="tok-lemma">tur[small]AJ</span></div>
+              <div class="tok-row"><span class="tok-gloss">small, lentil</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">lentil soup</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 8: tu7 gu2 nig2-ar3-ra -->
+      <div class="tb-row">
+        <div class="row-num">8</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">tu₇</span></div>
+              <div class="tok-row"><span class="tok-norm">tu</span></div>
+              <div class="tok-row"><span class="tok-lemma">tu[soup]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">soup</span></div>
+            </div>
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">gu₂</span></div>
+              <div class="tok-row"><span class="tok-norm">gu</span></div>
+              <div class="tok-row"><span class="tok-lemma">gu[bean]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">bean</span></div>
+            </div>
+            <div class="token" style="min-width:108px">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">nig₂-ar₃-ra</span></div>
+              <div class="tok-row"><span class="tok-norm" style="font-size:9px">nigar</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">nigar[vetch]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">vetch</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">soup made with vetch</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 9: tu7 SI#!? gu2 ASZ — EDGE CASE: damaged + uncertain -->
+      <div class="tb-row">
+        <div class="row-num">9</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">tu₇</span></div>
+              <div class="tok-row"><span class="tok-norm">tu</span></div>
+              <div class="tok-row"><span class="tok-lemma">tu[soup]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">soup</span></div>
+            </div>
+            <!-- SI#!? — damaged AND uncertain — no '?' flag in current design -->
+            <div class="token">
+              <div class="tok-flags">
+                <span class="tok-flag dmg">#</span>
+                <span class="tok-flag unc">?</span>
+              </div>
+              <div class="tok-row"><span class="tok-reading dmg">SI</span></div>
+              <div class="tok-row"><span class="tok-norm" style="opacity:.4">?</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="opacity:.4">unknown</span></div>
+              <div class="tok-row"><span class="tok-gloss" style="opacity:.4">…</span></div>
+            </div>
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">gu₂</span></div>
+              <div class="tok-row"><span class="tok-norm">gu</span></div>
+              <div class="tok-row"><span class="tok-lemma">gu[bean]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">bean</span></div>
+            </div>
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">AŠ</span></div>
+              <div class="tok-row"><span class="tok-norm">aš</span></div>
+              <div class="tok-row"><span class="tok-lemma">aš[pulse]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">pulse</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">soup made with the flour of the … pulse</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout err">
+        <span class="callout-tag">Edge</span>
+        <span>ATF <code>SI#!?</code> = damaged (<code>#</code>) AND uncertain (<code>!?</code>) on same sign. The Token component only has a <code>#</code> damage flag. No <code>?</code>/<code>!?</code> uncertain flag exists in the current design — shown here as a proposed orange <code>?</code> chip. This combination appears in ~8% of lines with damage markers.</span>
+      </div>
+
+      <!-- Row 10: tu7 ar-za-na -->
+      <div class="tb-row">
+        <div class="row-num">10</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">tu₇</span></div>
+              <div class="tok-row"><span class="tok-norm">tu</span></div>
+              <div class="tok-row"><span class="tok-lemma">tu[soup]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">soup</span></div>
+            </div>
+            <div class="token" style="min-width:100px">
+              <div class="tok-flags"><span class="tok-flag">SYL</span></div>
+              <div class="tok-row"><span class="tok-reading">ar-za-na</span></div>
+              <div class="tok-row"><span class="tok-norm">arzana</span></div>
+              <div class="tok-row"><span class="tok-lemma">arzana[barley]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">groats</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">soup made with barley groats</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 11: no translation (simulated gap) -->
+      <div class="tb-row">
+        <div class="row-num">11</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">tu₇</span></div>
+              <div class="tok-row"><span class="tok-norm">tu</span></div>
+              <div class="tok-row"><span class="tok-lemma">tu[soup]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">soup</span></div>
+            </div>
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">LOG</span></div>
+              <div class="tok-row"><span class="tok-reading">gig₂</span></div>
+              <div class="tok-row"><span class="tok-norm">gig</span></div>
+              <div class="tok-row"><span class="tok-lemma">gig[dark]AJ</span></div>
+              <div class="tok-row"><span class="tok-gloss">dark</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot unmatched"></div>
+            <span class="trans-text unmatched">— no translation —</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-tag">Edge</span>
+        <span>Line 11 has no matched translation (6 lines in P227657 are unmatched). The translation ribbon exists but shows nothing — no visual distinction from a line that hasn't been translated yet vs. one with a missing match. The dot is grey but gives no further context. An "unmatched" state label or icon is absent.</span>
+      </div>
+
+    </div><!-- /col 2 -->
+
+    <!-- Column 3 — empty for this tablet (it's a tag, no physical columns) -->
+    <div class="tb-column">
+      <div class="col-header">Column 3</div>
+      <div class="empty-col">No column 3 — this artifact is a single-column tag</div>
+      <div class="callout warn" style="margin-top:8px">
+        <span class="callout-tag">Edge</span>
+        <span>Many tablets in the corpus are single-column (tags, envelopes, small tablets). When fewer than 3 columns exist, the 3-column grid renders empty panels. The current design has no "no column" state — should these cells collapse, show a message, or be hidden entirely?</span>
+      </div>
+    </div>
+
+  </div><!-- /tb-content -->
+
+  <!-- View controls -->
+  <div class="view-controls">
+    <div class="btn-group">
+      <button class="btn-density">
+        <div class="density-icon compact"><span></span><span></span><span></span></div>
+      </button>
+      <button class="btn-density active">
+        <div class="density-icon"><span></span><span></span><span></span><span></span></div>
+      </button>
+    </div>
+    <select class="lang-select"><option>English</option></select>
+    <div class="toggle-wrap">
+      <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+      <span class="toggle-label">Show analysis layers</span>
+    </div>
+  </div>
+
+</div><!-- /tablet-viewer -->
+</div><!-- /page-section -->
+
+
+<!-- ══════════════════════════════════════════════
+     TABLET 2 — P229672 "K 03254 + K 03779"
+     Diri sign list, Neo-Assyrian
+     Fragment join · Composite Q000057 · %a language switches
+     Structural lines ($) · Sub-line notation · >>Q composite refs
+════════════════════════════════════════════════ -->
+<div class="page-section">
+<h2 class="section-heading">Tablet 2 — P229672 · K 03254 + K 03779 · Diri lexical (edge cases)</h2>
+
+<div class="tablet-viewer">
+
+  <div class="tb-header">
+    <div class="tb-meta">
+      <span class="meta-designation">K 03254 + K 03779</span>
+      <span class="chip join">⊕ Fragment join</span>
+      <span class="chip composite">Q000057 exemplar</span>
+      <span class="chip period">Neo-Assyrian</span>
+      <span class="chip lang">Akkadian / Sumerian</span>
+    </div>
+    <div class="surface-tabs">
+      <div class="tab active">Obverse</div>
+      <div class="tab">Reverse</div>
+    </div>
+  </div>
+
+  <div class="tb-content">
+
+    <!-- Column 1 — beginning broken + lines 1–4 -->
+    <div class="tb-column">
+      <div class="col-header">
+        Column 1
+        <span class="coverage-badge partial">3 / 5 translated</span>
+      </div>
+
+      <!-- $ beginning broken -->
+      <div class="struct-line broken">
+        <span class="struct-tag">$ editorial</span>
+        beginning broken
+      </div>
+
+      <div class="callout err">
+        <span class="callout-tag">Edge</span>
+        <span><code>$ beginning broken</code> is an editorial note marking a missing section. It is not a text line — it has no tokens, no translation. The current Row component would not render this correctly; it needs a dedicated <strong>structural line type</strong> distinct from token rows.</span>
+      </div>
+
+      <!-- Line 1: diri ~ [...]-um# = wide (damaged Akkadian) -->
+      <div class="tb-row">
+        <div class="row-num">1</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <!-- Sumerian token -->
+            <div class="token lang-sux">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading">diri</span></div>
+              <div class="tok-row"><span class="tok-norm">diri</span></div>
+              <div class="tok-row"><span class="tok-lemma">diri[sign]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">sign name</span></div>
+            </div>
+            <!-- Structural: ~ -->
+            <div class="token structural-tok">
+              <div class="tok-flags"></div>
+              <div class="tok-row"><span class="tok-reading structural">~</span></div>
+              <div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div>
+            </div>
+            <!-- Structural: ($ blank space $) -->
+            <div class="token structural-tok" style="min-width:50px">
+              <div class="tok-flags"></div>
+              <div class="tok-row"><span class="tok-reading structural">(blank)</span></div>
+              <div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div>
+            </div>
+            <!-- Structural: = -->
+            <div class="token structural-tok">
+              <div class="tok-flags"></div>
+              <div class="tok-row"><span class="tok-reading structural">=</span></div>
+              <div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div>
+            </div>
+            <!-- Akkadian token (damaged) -->
+            <div class="token lang-akk">
+              <div class="tok-flags">
+                <span class="tok-flag lang">AKK</span>
+                <span class="tok-flag dmg">#</span>
+              </div>
+              <div class="tok-row"><span class="tok-reading broken">[…]-um</span></div>
+              <div class="tok-row"><span class="tok-norm" style="opacity:.35">?</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="opacity:.35">unknown</span></div>
+              <div class="tok-row"><span class="tok-gloss" style="opacity:.35">…</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">wide</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout err">
+        <span class="callout-tag">Edge</span>
+        <span>The ATF <code># diri ~ ($ blank space $) = %a sza-ba-bu-um</code> contains <strong>structural operators</strong> (<code>~</code>, <code>=</code>, <code>($blank$)</code>) that are not linguistic tokens. The current Token component would render them identically to real tokens, creating noise in the reading layer. These need a "structural element" variant — shown here as dim ghost tokens.</span>
+      </div>
+
+      <!-- Line 3: diri ~ (blank) = %a sza-ba-bu-um (to walk) -->
+      <div class="tb-row">
+        <div class="row-num">3</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading">diri</span></div>
+              <div class="tok-row"><span class="tok-norm">diri</span></div>
+              <div class="tok-row"><span class="tok-lemma">diri[sign]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">sign name</span></div>
+            </div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">~</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok" style="min-width:50px"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">(blank)</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">=</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token lang-akk" style="min-width:110px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">sza-ba-bu-um</span></div>
+              <div class="tok-row"><span class="tok-norm">šabābu</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">šabābu[walk]V</span></div>
+              <div class="tok-row"><span class="tok-gloss">to walk fast</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">to walk</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line 4: diri ~ (blank) = %a na-ha-al-lum (gorge) -->
+      <div class="tb-row">
+        <div class="row-num">4</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading">diri</span></div>
+              <div class="tok-row"><span class="tok-norm">diri</span></div>
+              <div class="tok-row"><span class="tok-lemma">diri[sign]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">sign name</span></div>
+            </div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">~</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok" style="min-width:50px"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">(blank)</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">=</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token lang-akk" style="min-width:108px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">na-ha-al-lum</span></div>
+              <div class="tok-row"><span class="tok-norm">nahallu</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">nahallu[gorge]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">gorge, wadi</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">gorge</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col 1 -->
+
+    <!-- Column 2 — ruling + lines 5–9, long syllabic overflow -->
+    <div class="tb-column">
+      <div class="col-header">Column 2</div>
+
+      <!-- $ single ruling -->
+      <div class="struct-line ruling">
+        <span class="struct-tag">$ ruling</span>
+        single ruling
+      </div>
+
+      <!-- Line 5 -->
+      <div class="tb-row">
+        <div class="row-num">5</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux"><div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div><div class="tok-row"><span class="tok-reading">diri</span></div><div class="tok-row"><span class="tok-norm">diri</span></div><div class="tok-row"><span class="tok-lemma">diri[sign]N</span></div><div class="tok-row"><span class="tok-gloss">sign name</span></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">~</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok" style="min-width:50px"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">(blank)</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">=</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token lang-akk" style="min-width:112px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">na-pi-il-tum</span></div>
+              <div class="tok-row"><span class="tok-norm">napiltu</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">napiltu[life]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">life, living</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">elevated ground</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line 6 -->
+      <div class="tb-row">
+        <div class="row-num">6</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux"><div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div><div class="tok-row"><span class="tok-reading">diri</span></div><div class="tok-row"><span class="tok-norm">diri</span></div><div class="tok-row"><span class="tok-lemma">diri[sign]N</span></div><div class="tok-row"><span class="tok-gloss">sign name</span></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">~</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok" style="min-width:50px"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">(blank)</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">=</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token lang-akk" style="min-width:108px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">qer-bu-um</span></div>
+              <div class="tok-row"><span class="tok-norm">qerbu</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">qerbu[midst]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">middle</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">middle, midst</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line 7 — very long Akkadian syllabic chain — overflow edge case -->
+      <div class="tb-row">
+        <div class="row-num">7</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux"><div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div><div class="tok-row"><span class="tok-reading">diri</span></div><div class="tok-row"><span class="tok-norm">diri</span></div><div class="tok-row"><span class="tok-lemma">diri[sign]N</span></div><div class="tok-row"><span class="tok-gloss">sign name</span></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">~</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok" style="min-width:50px"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">(blank)</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">=</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <!-- Long syllabic chain: ka-la-ma-ah-hu-um — overflows 90px token -->
+            <div class="token lang-akk" style="min-width:138px; border: 1px dashed rgba(226,56,56,.4)">
+              <div class="tok-flags">
+                <span class="tok-flag lang">AKK</span>
+                <span style="font-size:8px; color:var(--text-red); margin-left:4px">← overflow</span>
+              </div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px; color:var(--text-red)">ka-la-ma-ah-hu-um</span></div>
+              <div class="tok-row"><span class="tok-norm" style="font-size:9px">kalamāhhu</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">kalamāhhu[powerful]AJ</span></div>
+              <div class="tok-row"><span class="tok-gloss">mighty, powerful</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">powerful, mighty</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout err">
+        <span class="callout-tag">Edge</span>
+        <span>Long Akkadian syllabic chains (<code>ka-la-ma-ah-hu-um</code>, <code>i-na-an-na-pa-ra-ku</code>) exceed the 90px token width. The fixed-width token design has no overflow strategy — text clips silently. Tokens need either a minimum-content width, tooltip on hover, or allow the column to scroll horizontally.</span>
+      </div>
+
+    </div><!-- /col 2 -->
+
+    <!-- Column 3 — sub-lines + composite ref -->
+    <div class="tb-column">
+      <div class="col-header">Column 3</div>
+
+      <!-- $ single ruling -->
+      <div class="struct-line ruling">
+        <span class="struct-tag">$ ruling</span>
+        single ruling
+      </div>
+
+      <!-- Line 13.a — sub-line notation -->
+      <div class="tb-row">
+        <div class="row-num" style="font-size:9px; padding:14px 4px">13.a</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux"><div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div><div class="tok-row"><span class="tok-reading">diri</span></div><div class="tok-row"><span class="tok-norm">diri</span></div><div class="tok-row"><span class="tok-lemma">diri[sign]N</span></div><div class="tok-row"><span class="tok-gloss">sign name</span></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">~</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok" style="min-width:50px"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">(blank)</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">=</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token lang-akk" style="min-width:106px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">na-ra-mu-um</span></div>
+              <div class="tok-row"><span class="tok-norm">narāmu</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">narāmu[beloved]AJ</span></div>
+              <div class="tok-row"><span class="tok-gloss">beloved</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">beloved</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line 13.b — sub-line sibling -->
+      <div class="tb-row">
+        <div class="row-num" style="font-size:9px; padding:14px 4px">13.b</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux"><div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div><div class="tok-row"><span class="tok-reading">diri</span></div><div class="tok-row"><span class="tok-norm">diri</span></div><div class="tok-row"><span class="tok-lemma">diri[sign]N</span></div><div class="tok-row"><span class="tok-gloss">sign name</span></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">~</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok" style="min-width:50px"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">(blank)</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">=</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token lang-akk" style="min-width:106px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">zi-ka-ru-um</span></div>
+              <div class="tok-row"><span class="tok-norm">zikaru</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">zikaru[male]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">male person</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">male</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-tag">Edge</span>
+        <span>Sub-line labels <code>13.a</code>, <code>13.b</code> (administrative variant readings of same sign) are sibling rows sharing a parent. The row-number cell is too narrow for this label (<code>13.b1</code> = 5 chars) and there is no visual grouping between sub-lines. A bracket in the gutter and slight indentation would clarify the relationship.</span>
+      </div>
+
+      <!-- Line 14 with >>Q composite ref -->
+      <div class="tb-row">
+        <div class="row-num" style="font-size:9px; padding:14px 4px; position:relative">
+          14
+          <span class="composite-ref" style="position:static; margin-top:4px; font-size:7px">Q000057<br>l.047</span>
+        </div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux"><div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div><div class="tok-row"><span class="tok-reading">diri</span></div><div class="tok-row"><span class="tok-norm">diri</span></div><div class="tok-row"><span class="tok-lemma">diri[sign]N</span></div><div class="tok-row"><span class="tok-gloss">sign name</span></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">~</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok" style="min-width:50px"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">(blank)</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token structural-tok"><div class="tok-flags"></div><div class="tok-row"><span class="tok-reading structural">=</span></div><div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div></div>
+            <div class="token lang-akk" style="min-width:110px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">asz-ra-tu-um</span></div>
+              <div class="tok-row"><span class="tok-norm">ašratu</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">ašratu[seat]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">family seat</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">family seat, dwelling</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-tag">Edge</span>
+        <span><code>&gt;&gt;Q000057 047</code> appears on the same ATF line as content. This cross-reference links to the ideal composite text. There is no component to display this — here shown as a small pill in the row-number gutter. It should link to the composite view for Q000057.</span>
+      </div>
+
+    </div><!-- /col 3 -->
+
+  </div><!-- /tb-content -->
+
+  <div class="view-controls">
+    <div class="btn-group">
+      <button class="btn-density"><div class="density-icon compact"><span></span><span></span><span></span></div></button>
+      <button class="btn-density active"><div class="density-icon"><span></span><span></span><span></span><span></span></div></button>
+    </div>
+    <select class="lang-select"><option>English</option></select>
+    <div class="toggle-wrap">
+      <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+      <span class="toggle-label">Show analysis layers</span>
+    </div>
+  </div>
+
+</div><!-- /tablet-viewer -->
+
+<div class="callout warn" style="margin-top:10px">
+  <span class="callout-tag">Design Gap</span>
+  <span>The "Show analysis layers" toggle exists in View Controls but <strong>the design doesn't specify what "on" looks like</strong>. In this prototype, language switches are shown as colored top-borders on tokens (blue = Akkadian, green = Sumerian) and a <code>AKK</code>/<code>SUX</code> flag chip. When toggle is off, these would disappear — but no design spec exists for either state. This is the most impactful gap: without language indicators, bilingual lines (which make up ~18% of the corpus) are visually ambiguous.</span>
+</div>
+
+</div><!-- /page-section -->
+
+
+<!-- ══════════════════════════════════════════════
+     TABLET 3 — P020464
+     Old Akkadian bilingual letter
+     Mid-sentence %sux / %akk language switches
+     Mixed-language formulae, sub-clauses in different language
+════════════════════════════════════════════════ -->
+<div class="page-section">
+<h2 class="section-heading">Tablet 3 — P020464 · Old Akkadian bilingual letter (language switches)</h2>
+
+<div class="tablet-viewer">
+
+  <div class="tb-header">
+    <div class="tb-meta">
+      <span class="meta-designation">P020464</span>
+      <span class="chip period">Old Akkadian</span>
+      <span class="chip lang">Sumerian + Akkadian</span>
+      <span class="chip">Letter</span>
+    </div>
+    <div class="surface-tabs">
+      <div class="tab active">Obverse</div>
+      <div class="tab">Reverse</div>
+    </div>
+  </div>
+
+  <div class="tb-content">
+
+    <!-- Column 1 — letter opening in Akkadian, switch to Sumerian -->
+    <div class="tb-column">
+      <div class="col-header">
+        Column 1
+        <span class="coverage-badge partial">7 / 9 translated</span>
+      </div>
+
+      <!-- Rows 1-3: Akkadian epistolary formula (no language switch yet) -->
+      <div class="tb-row">
+        <div class="row-num">1</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">SYL</span></div>
+              <div class="tok-row"><span class="tok-reading">a-na</span></div>
+              <div class="tok-row"><span class="tok-norm">ana</span></div>
+              <div class="tok-row"><span class="tok-lemma">ana[to]PRP</span></div>
+              <div class="tok-row"><span class="tok-gloss">to</span></div>
+            </div>
+            <div class="token pending" style="min-width:110px">
+              <div class="tok-flags"><span class="tok-flag" style="opacity:.5">DET</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">{d}EN.ZU-ba-ni</span></div>
+              <div class="tok-row"><span class="tok-pending">pending</span></div>
+              <div class="tok-row"><span class="tok-pending">pending</span></div>
+              <div class="tok-row"><span class="tok-pending">pending</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">to Sîn-bāni</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tb-row">
+        <div class="row-num">2</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token" style="min-width:100px">
+              <div class="tok-flags"><span class="tok-flag">SYL</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">qi₂-bi₂-ma</span></div>
+              <div class="tok-row"><span class="tok-norm">qibīma</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">qabû[speak]V.IMP</span></div>
+              <div class="tok-row"><span class="tok-gloss">speak!</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">speak!</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tb-row">
+        <div class="row-num">3</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token">
+              <div class="tok-flags"><span class="tok-flag">SYL</span></div>
+              <div class="tok-row"><span class="tok-reading">um-ma</span></div>
+              <div class="tok-row"><span class="tok-norm">umma</span></div>
+              <div class="tok-row"><span class="tok-lemma">umma[thus]PRT</span></div>
+              <div class="tok-row"><span class="tok-gloss">thus</span></div>
+            </div>
+            <div class="token pending" style="min-width:116px">
+              <div class="tok-flags"><span class="tok-flag" style="opacity:.5">DET</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">{d}EN.ZU-DU₁₀-GA-ma</span></div>
+              <div class="tok-row"><span class="tok-pending">pending</span></div>
+              <div class="tok-row"><span class="tok-pending">pending</span></div>
+              <div class="tok-row"><span class="tok-pending">pending</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">thus says Sîn-damqam:</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LANGUAGE SWITCH: Akkadian → Sumerian -->
+      <div class="lang-sep">
+        <div class="lang-sep-line"></div>
+        <span class="lang-sep-label sux">%sux — Sumerian</span>
+        <div class="lang-sep-line"></div>
+      </div>
+
+      <!-- Row 4: %sux ma-da lu2-ba-tum -->
+      <div class="tb-row">
+        <div class="row-num">4</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading">ma-da</span></div>
+              <div class="tok-row"><span class="tok-norm">mada</span></div>
+              <div class="tok-row"><span class="tok-lemma">mada[land]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">land</span></div>
+            </div>
+            <div class="token lang-sux">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading">lu₂</span></div>
+              <div class="tok-row"><span class="tok-norm">lu</span></div>
+              <div class="tok-row"><span class="tok-lemma">lu[man]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">man</span></div>
+            </div>
+            <div class="token lang-sux" style="min-width:102px">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">ba-ra-tum</span></div>
+              <div class="tok-row"><span class="tok-norm">baratum</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">bārum[see]V.PTCP</span></div>
+              <div class="tok-row"><span class="tok-gloss">overseer</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">may the land of the overseers</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 5: %sux he2-en-ne-eb-su3 -->
+      <div class="tb-row">
+        <div class="row-num">5</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux" style="min-width:128px">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">he₂-en-ne-eb-su₃</span></div>
+              <div class="tok-row"><span class="tok-norm" style="font-size:9px">henenebsu</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">šutu[fill]V.PREC</span></div>
+              <div class="tok-row"><span class="tok-gloss">may it be filled</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">may it be at peace</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LANGUAGE SWITCH BACK: Sumerian → Akkadian -->
+      <div class="lang-sep">
+        <div class="lang-sep-line"></div>
+        <span class="lang-sep-label akk">%akk — Akkadian</span>
+        <div class="lang-sep-line"></div>
+      </div>
+
+      <!-- Row 6: %akk a-na i-li2-ka -->
+      <div class="tb-row">
+        <div class="row-num">6</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">a-na</span></div>
+              <div class="tok-row"><span class="tok-norm">ana</span></div>
+              <div class="tok-row"><span class="tok-lemma">ana[to]PRP</span></div>
+              <div class="tok-row"><span class="tok-gloss">to</span></div>
+            </div>
+            <div class="token lang-akk" style="min-width:100px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">i-li₂-ka</span></div>
+              <div class="tok-row"><span class="tok-norm">ilīka</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">ilum[god]N.2SG</span></div>
+              <div class="tok-row"><span class="tok-gloss">your god</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">before your god</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-tag">Edge</span>
+        <span>Language switches here are between <em>full lines</em> (entire line 4 = Sumerian, entire line 6 = Akkadian). But in some tablets switches happen <em>mid-line</em>: <code>%sux lugal-gu10 %akk ina pī šarrim</code> — Sumerian phrase followed by Akkadian continuation in the same line. A single language indicator on the row is insufficient; per-<em>token</em> language tags are required.</span>
+      </div>
+
+    </div><!-- /col 1 -->
+
+    <!-- Column 2 — continuation, switches within a line -->
+    <div class="tb-column">
+      <div class="col-header">Column 2</div>
+
+      <div class="callout info" style="margin-bottom:6px">
+        <span class="callout-tag">Mid-line switch</span>
+        <span>The rows below simulate a mid-line language switch — tokens on the <em>same line</em> in different languages. Row 2 shows <code>%sux lugal-gu10</code> then <code>%akk ina pī šarrim</code> — the scribe switches languages within a single line of text. This is the hardest case for the current layout: the <code>AKK</code>/<code>SUX</code> border treatment must apply at the token level, not the row level.</span>
+      </div>
+
+      <!-- Row 1: all Akkadian -->
+      <div class="tb-row">
+        <div class="row-num">1</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">u₃</span></div>
+              <div class="tok-row"><span class="tok-norm">u</span></div>
+              <div class="tok-row"><span class="tok-lemma">u[and]CNJ</span></div>
+              <div class="tok-row"><span class="tok-gloss">and</span></div>
+            </div>
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">i-na</span></div>
+              <div class="tok-row"><span class="tok-norm">ina</span></div>
+              <div class="tok-row"><span class="tok-lemma">ina[in]PRP</span></div>
+              <div class="tok-row"><span class="tok-gloss">in</span></div>
+            </div>
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">ma-tim</span></div>
+              <div class="tok-row"><span class="tok-norm">mātim</span></div>
+              <div class="tok-row"><span class="tok-lemma">mātu[land]N.GEN</span></div>
+              <div class="tok-row"><span class="tok-gloss">of the land</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">and in the land</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: MID-LINE SWITCH — Sumerian then Akkadian on same line -->
+      <div class="tb-row">
+        <div class="row-num">2</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <!-- Sumerian tokens -->
+            <div class="token lang-sux">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading">lugal-gu10</span></div>
+              <div class="tok-row"><span class="tok-norm">lugalgu</span></div>
+              <div class="tok-row"><span class="tok-lemma">lugal[king]N.1SG</span></div>
+              <div class="tok-row"><span class="tok-gloss">my king</span></div>
+            </div>
+            <!-- Switch marker -->
+            <div class="token structural-tok">
+              <div class="tok-flags"></div>
+              <div class="tok-row"><span class="tok-reading structural">%akk</span></div>
+              <div class="tok-row"></div><div class="tok-row"></div><div class="tok-row"></div>
+            </div>
+            <!-- Akkadian continuation on same line -->
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">i-na</span></div>
+              <div class="tok-row"><span class="tok-norm">ina</span></div>
+              <div class="tok-row"><span class="tok-lemma">ina[in]PRP</span></div>
+              <div class="tok-row"><span class="tok-gloss">in</span></div>
+            </div>
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">pī</span></div>
+              <div class="tok-row"><span class="tok-norm">pī</span></div>
+              <div class="tok-row"><span class="tok-lemma">pûm[mouth]N.CS</span></div>
+              <div class="tok-row"><span class="tok-gloss">in the mouth of</span></div>
+            </div>
+            <div class="token lang-akk" style="min-width:100px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">šar-ri-im</span></div>
+              <div class="tok-row"><span class="tok-norm">šarrim</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">šarrum[king]N.GEN</span></div>
+              <div class="tok-row"><span class="tok-gloss">of the king</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">my king — by the word of the king</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Sumerian blessing phrase -->
+      <div class="tb-row">
+        <div class="row-num">3</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading">ki</span></div>
+              <div class="tok-row"><span class="tok-norm">ki</span></div>
+              <div class="tok-row"><span class="tok-lemma">ki[place]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">place</span></div>
+            </div>
+            <div class="token lang-sux">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading">ag₂-ga₂</span></div>
+              <div class="tok-row"><span class="tok-norm">agga</span></div>
+              <div class="tok-row"><span class="tok-lemma">aga[love]V.PTCP</span></div>
+              <div class="tok-row"><span class="tok-gloss">loved</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">at the beloved place</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 4: Akkadian business clause -->
+      <div class="tb-row">
+        <div class="row-num">4</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">a-na</span></div>
+              <div class="tok-row"><span class="tok-norm">ana</span></div>
+              <div class="tok-row"><span class="tok-lemma">ana[to]PRP</span></div>
+              <div class="tok-row"><span class="tok-gloss">to</span></div>
+            </div>
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">qa₂-ti</span></div>
+              <div class="tok-row"><span class="tok-norm">qāti</span></div>
+              <div class="tok-row"><span class="tok-lemma">qātu[hand]N.CS</span></div>
+              <div class="tok-row"><span class="tok-gloss">hand of</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot unmatched"></div>
+            <span class="trans-text unmatched">— no translation —</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 5: Akkadian with long personal name (PENDING token) -->
+      <div class="tb-row">
+        <div class="row-num">5</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">li-it</span></div>
+              <div class="tok-row"><span class="tok-norm">lī</span></div>
+              <div class="tok-row"><span class="tok-lemma">alāku[go]V.PREC</span></div>
+              <div class="tok-row"><span class="tok-gloss">let him go</span></div>
+            </div>
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">ru-dam</span></div>
+              <div class="tok-row"><span class="tok-norm">rudam</span></div>
+              <div class="tok-row"><span class="tok-lemma">wārum[send]V.VEN</span></div>
+              <div class="tok-row"><span class="tok-gloss">send here</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot matched"></div>
+            <span class="trans-text">let him send it to me</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col 2 -->
+
+    <!-- Column 3 — pending state demonstration -->
+    <div class="tb-column">
+      <div class="col-header">
+        Column 3
+        <span class="coverage-badge poor">0 / 6 translated</span>
+      </div>
+
+      <div class="callout err" style="margin-bottom:6px">
+        <span class="callout-tag">Edge</span>
+        <span>Column 3 of this letter has no matched translations (the <code>line_id = NULL</code> problem means positional matching ran out of pairs). The translation ribbon renders an empty/unmatched state for every line — indistinguishable from "no translation exists." This column also has no token_readings, so the full pending state appears: token rows exist but content is empty. How does the user know whether to wait for data or accept that no translation exists?</span>
+      </div>
+
+      <!-- All pending rows -->
+      <div class="tb-row">
+        <div class="row-num">1</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token pending">
+              <div class="tok-flags"><span class="tok-flag" style="opacity:.3">???</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px; opacity:.5">su-ul-ma-ku-um</span></div>
+              <div class="tok-row"><span class="tok-pending">no token data</span></div>
+              <div class="tok-row"><span class="tok-pending">—</span></div>
+              <div class="tok-row"><span class="tok-pending">—</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot unmatched"></div>
+            <span class="trans-text empty">token readings pending</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tb-row">
+        <div class="row-num">2</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token pending">
+              <div class="tok-flags"><span class="tok-flag" style="opacity:.3">???</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px; opacity:.5">a-wi-la-am</span></div>
+              <div class="tok-row"><span class="tok-pending">no token data</span></div>
+              <div class="tok-row"><span class="tok-pending">—</span></div>
+              <div class="tok-row"><span class="tok-pending">—</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot unmatched"></div>
+            <span class="trans-text empty">token readings pending</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tb-row">
+        <div class="row-num">3</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token pending">
+              <div class="tok-flags"><span class="tok-flag" style="opacity:.3">???</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px; opacity:.5">i-na-an-na</span></div>
+              <div class="tok-row"><span class="tok-pending">no token data</span></div>
+              <div class="tok-row"><span class="tok-pending">—</span></div>
+              <div class="tok-row"><span class="tok-pending">—</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot unmatched"></div>
+            <span class="trans-text empty">token readings pending</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col 3 -->
+
+  </div><!-- /tb-content -->
+
+  <div class="view-controls">
+    <div class="btn-group">
+      <button class="btn-density"><div class="density-icon compact"><span></span><span></span><span></span></div></button>
+      <button class="btn-density active"><div class="density-icon"><span></span><span></span><span></span><span></span></div></button>
+    </div>
+    <select class="lang-select"><option>English</option><option>Transliteration (ts)</option></select>
+    <div class="toggle-wrap">
+      <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+      <span class="toggle-label">Show analysis layers</span>
+    </div>
+  </div>
+
+</div><!-- /tablet-viewer -->
+</div><!-- /page-section -->
+
+
+<!-- ══════════════════════════════════════════════
+     SUGGESTIONS
+════════════════════════════════════════════════ -->
+<div class="page-section">
+<h2 class="section-heading">Improvement Suggestions — 12 Scholar-Informed Ideas</h2>
+<p style="font-size:12px; color:var(--text-subtle); margin-bottom:20px; line-height:1.6">
+  Based on PLANNING research: personas (Dr. Al-Rashid, Aisha Okonkwo, Marcus Chen), domain reports, and the ATF format spec.
+  Priority ratings reflect likely impact × implementation cost.
+</p>
+
+<div class="sug-grid">
+
+  <!-- 1 -->
+  <div class="sug-card hi">
+    <div class="sug-num">01 <span class="pri hi">High Priority</span></div>
+    <div class="sug-title">Language separator row — define the "Show analysis layers" behavior</div>
+    <div class="sug-body">
+      The toggle exists but no design specifies what it does. Proposal: when ON, insert a thin full-width band between token rows whenever the active language changes, with a language label chip. This handles both line-level and mid-line switches consistently. When OFF, the bands hide and tokens lose their language-color top borders.
+      <br><br>Critical for all bilingual/multilingual tablets (~18% of corpus: Sumerian+Akkadian, Elamite, Hittite).
+    </div>
+    <span class="sug-persona">Dr. Al-Rashid · Aisha Okonkwo</span>
+    <div class="sug-mockup">
+<span class="dim">row 3 — [akk tokens…]</span>
+<span class="new">────── %sux — SUMERIAN ────────────</span>
+<span class="hi">row 4 — [sux tokens…]</span>
+<span class="new">────── %akk — AKKADIAN ────────────</span>
+<span class="hi">row 5 — [akk tokens…]</span>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="sug-card hi">
+    <div class="sug-num">02 <span class="pri hi">High Priority</span></div>
+    <div class="sug-title">Structural line types — ruling, editorial note, blank space</div>
+    <div class="sug-body">
+      <code>$ beginning broken</code>, <code>$ single ruling</code>, <code>$ blank space</code>, <code>$ rest broken</code> are physical/editorial annotations, not text lines. They need three distinct non-token row variants: (a) <strong>Ruling</strong> — a visual hr with label; (b) <strong>Editorial note</strong> — full-width italic text with a distinct background; (c) <strong>Missing section</strong> — a red-tinted banner spanning the full column width.
+    </div>
+    <span class="sug-persona">All scholars</span>
+    <div class="sug-mockup">
+<span class="dim">row 4 — tu₇ / soup</span>
+<span class="new">┄┄┄┄┄ RULING ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄</span>
+<span class="hi">row 5 — ninda / bread</span>
+<span style="color:rgba(226,56,56,.7)">█ beginning broken ████████████████</span>
+<span class="hi">row 6' — [...]</span>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="sug-card med">
+    <div class="sug-num">03 <span class="pri med">Medium Priority</span></div>
+    <div class="sug-title">Translation coverage badge per column header</div>
+    <div class="sug-body">
+      Scholars need to know at a glance how complete the translation is for each column. Add a small <code>N/M translated</code> chip in the column header (seen in prototyped form above). Color-code: green (>90%), amber (50–90%), red (&lt;50%). This is especially important for tablets with patchy matches due to the <code>line_id = NULL</code> data gap, helping scholars prioritize which columns need editorial attention.
+    </div>
+    <span class="sug-persona">Dr. Al-Rashid · Aisha (dissertation work)</span>
+    <div class="sug-mockup">
+<span class="lbl">Column 1</span>  <span class="new">259/265 ✓</span>
+<span class="lbl">Column 2</span>  <span class="hi">12/18 ●</span>
+<span class="lbl">Column 3</span>  <span style="color:rgba(226,56,56,.8)">0/9 ✗</span>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="sug-card med">
+    <div class="sug-num">04 <span class="pri med">Medium Priority</span></div>
+    <div class="sug-title">Uncertain token flag — <code>?</code> / <code>!?</code> in addition to <code>#</code></div>
+    <div class="sug-body">
+      ATF uses <code>#</code> (damaged), <code>?</code> (uncertain reading), and <code>!?</code> (emendation + uncertain). The current Token component only supports <code>#</code>. Tokens like <code>SI#!?</code> have both damage and uncertainty — two distinct scholarly judgments. Add an amber <code>?</code> flag chip to the Token Flags row, visually distinct from the red <code>#</code>. Also add <code>!</code> for emendation (corrected reading by modern editor).
+    </div>
+    <span class="sug-persona">Dr. Al-Rashid (quality control)</span>
+    <div class="sug-mockup">
+<span class="dim">┌ flags ┐</span>
+<span class="hi"># </span><span style="color:#e2a038">?</span><span class="dim">  — damaged AND uncertain</span>
+<span style="color:#b48ad4">!</span><span class="dim">    — emended (corrected) reading</span>
+<span class="new">SYL</span><span class="dim">  — syllabic (existing)</span>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="sug-card hi">
+    <div class="sug-num">05 <span class="pri hi">High Priority</span></div>
+    <div class="sug-title">Sub-line grouping — visual bracket for 1.a / 1.b notation</div>
+    <div class="sug-body">
+      Sub-lines (<code>1.a</code>, <code>1.b</code>, <code>3.b1</code>) represent variant or parallel readings of the same line number, common in administrative texts. Currently they would render as independent rows with no visual connection. Add: (1) a thin left-side bracket in the row-number gutter connecting sibling sub-lines; (2) slight indentation of sub-line token ribbons; (3) the row number column must accommodate 4-character labels (<code>3.b1</code>).
+    </div>
+    <span class="sug-persona">Assyriologists parsing administrative contracts</span>
+    <div class="sug-mockup">
+<span class="dim">13 ┬─ [diri ~ = %a na-ra-mu-um]</span>
+<span class="dim">   ├─ </span><span class="lbl">13.a</span><span class="dim"> beloved</span>
+<span class="dim">   └─ </span><span class="lbl">13.b</span><span class="dim"> male person</span>
+<span class="dim">14 ── [diri ~ = %a asz-ra-tu-um]</span>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="sug-card med">
+    <div class="sug-num">06 <span class="pri med">Medium Priority</span></div>
+    <div class="sug-title">Inline composite reference badge in row-number gutter</div>
+    <div class="sug-body">
+      <code>&gt;&gt;Q000057 047</code> (composite cross-reference) appears on the same ATF line as the text content. There is no component to display this. Proposal: a small <code>Q######</code> pill at the bottom of the row-number cell, linking to the composite text view. This is essential for understanding where this exemplar fits within the broader text tradition — a core scholarly task (Dr. Al-Rashid's quality control workflow).
+    </div>
+    <span class="sug-persona">Dr. Al-Rashid · Graduate researchers</span>
+  </div>
+
+  <!-- 7 -->
+  <div class="sug-card med">
+    <div class="sug-num">07 <span class="pri med">Medium Priority</span></div>
+    <div class="sug-title">Pending data shimmer state — distinguish "no data yet" from "no data exists"</div>
+    <div class="sug-body">
+      Token rows where <code>token_readings = []</code> currently render empty/silent. Users cannot distinguish: (a) data not yet processed, (b) data is genuinely missing from source, (c) line is structural and has no tokens. Proposal: empty token stacks in pending-state tablets get a subtle diagonal-stripe overlay pattern + "token readings pending" label in the translation ribbon. This sets accurate expectations and prevents scholars from assuming the data is wrong.
+    </div>
+    <span class="sug-persona">Marcus Chen (hobbyist) · All new users</span>
+    <div class="sug-mockup">
+<span class="dim">╔══════════════════╗</span>
+<span class="dim">║ </span><span style="color:rgba(255,255,255,.3)">░░░ processing ░░░</span><span class="dim"> ║</span>
+<span class="dim">╚══════════════════╝</span>
+<span style="color:rgba(255,255,255,.25)">● token readings pending (pipeline step 10)</span>
+    </div>
+  </div>
+
+  <!-- 8 -->
+  <div class="sug-card med">
+    <div class="sug-num">08 <span class="pri med">Medium Priority</span></div>
+    <div class="sug-title">Rubric protocol marker flags — !qt, !cm, !bs</div>
+    <div class="sug-body">
+      ATF uses rubric markers (<code>!qt</code> = quotation, <code>!cm</code> = commentary line, <code>!bs</code> = base text, <code>!zz</code> = uncertain genre) to annotate scholarly context inline. These are absent from the current Token Flags design. A purple <code>CM</code> / <code>QT</code> / <code>BS</code> chip in the flags row would let scholars immediately identify quotation and commentary layers — critical for literary and canonical texts where these distinctions determine textual hierarchy.
+    </div>
+    <span class="sug-persona">Dr. Al-Rashid · Canonical text specialists</span>
+    <div class="sug-mockup">
+<span class="dim">┌ flags ┐</span>
+<span style="color:#b48ad4">CM</span><span class="dim">   — commentary line (!cm)</span>
+<span style="color:#b48ad4">QT</span><span class="dim">   — quotation (!qt)</span>
+<span style="color:#b48ad4">BS</span><span class="dim">   — base text (!bs)</span>
+    </div>
+  </div>
+
+  <!-- 9 -->
+  <div class="sug-card med">
+    <div class="sug-num">09 <span class="pri med">Medium Priority</span></div>
+    <div class="sug-title">Per-line attribution tooltip on row-number hover</div>
+    <div class="sug-body">
+      Glintstone tracks which scholar contributed each line's ATF transcription via <code>annotation_runs</code>. This data is never surfaced in the current UI. A hover tooltip on the row number showing "ATF: Englund 2001 · Trans: Heimpel 1990" would support granular scholarly crediting — critical for a platform that aims to be academically citable. Especially important for P034009 (3 distinct contributors per field) and P336287 (rich ORACC credits).
+    </div>
+    <span class="sug-persona">Dr. Al-Rashid (attribution) · Aisha (citation)</span>
+  </div>
+
+  <!-- 10 -->
+  <div class="sug-card med">
+    <div class="sug-num">10 <span class="pri med">Medium Priority</span></div>
+    <div class="sug-title">Line selection + export for dissertation workflow</div>
+    <div class="sug-body">
+      Graduate scholars (Aisha persona) need to extract specific lines for dissertation preparation. Currently there is no selection mechanism. Proposal: on row hover, show a checkbox in the row-number gutter; selected rows highlight; a floating toolbar appears offering "Copy as ATF", "Copy as transliteration", and "Export citation (BibTeX/Chicago)". This turns the viewer into a research tool, not just a reading interface.
+    </div>
+    <span class="sug-persona">Aisha Okonkwo (PhD candidate) · Educators</span>
+    <div class="sug-mockup">
+<span class="new">[✓] 3  tu₇ gu₂ gal / broad bean soup</span>
+<span class="new">[✓] 4  tu₇ gu₂ tur / lentil soup</span>
+<span class="dim">─────────────────────────────</span>
+<span class="hi">Copy ATF  |  Copy trans  |  Cite</span>
+    </div>
+  </div>
+
+  <!-- 11 -->
+  <div class="sug-card">
+    <div class="sug-num">11 <span class="pri lo">Lower Priority</span></div>
+    <div class="sug-title">Parallel exemplar compare mode</div>
+    <div class="sug-body">
+      When a tablet is an exemplar of a composite (Q-number), scholars frequently want to compare it against another exemplar of the same text. A "Compare with exemplar" button in the header (enabled when <code>artifact_composites</code> linkage exists) could open a split-pane view showing two tablets side by side. This is how most Assyriologists work with lexical texts — comparing witness manuscripts is the primary scholarly task. Currently requires switching between tabs or browser windows.
+    </div>
+    <span class="sug-persona">Dr. Al-Rashid · Aisha (text tradition analysis)</span>
+  </div>
+
+  <!-- 12 -->
+  <div class="sug-card">
+    <div class="sug-num">12 <span class="pri lo">Lower Priority</span></div>
+    <div class="sug-title">Damage gradient — visual opacity spectrum for text certainty</div>
+    <div class="sug-body">
+      Currently damage is binary: either the <code>#</code> flag appears or it doesn't. ATF actually encodes a spectrum: <code>sign</code> (certain) → <code>sign#</code> (damaged but read) → <code>sign?</code> (uncertain) → <code>[sign]</code> (broken, restored by editor) → <code>[x]</code> (broken, unreadable) → <code>[...]</code> (full lacuna). Mapping these states to a visual opacity or color ramp would let scholars immediately perceive text confidence. Full lacunae (<code>[...]</code>) at ~25% opacity; restored readings slightly dimmed; certain readings at full brightness.
+    </div>
+    <span class="sug-persona">All scholars assessing textual reliability</span>
+    <div class="sug-mockup">
+<span style="opacity:1.0">tu₇</span><span class="dim">     — certain (100%)</span>
+<span style="opacity:0.75; color:var(--text)">tu₇#</span><span class="dim">    — damaged (~75%)</span>
+<span style="opacity:0.55; color:var(--text)">tu₇?</span><span class="dim">    — uncertain (~55%)</span>
+<span style="opacity:0.35; color:var(--text)">[tu₇]</span><span class="dim">   — restored (~35%)</span>
+<span style="opacity:0.2; color:var(--text)">[...]</span><span class="dim">   — lacuna (~20%)</span>
+    </div>
+  </div>
+
+</div><!-- /sug-grid -->
+</div><!-- /page-section -->
+
+</div><!-- /page -->
+
+<script>
+  var isOn = true; // default: all layers visible
+
+  document.querySelectorAll('.toggle-wrap').forEach(function(wrap) {
+    wrap.addEventListener('click', function() {
+      isOn = !isOn;
+
+      // Sync all toggles
+      document.querySelectorAll('.toggle-track').forEach(function(track) {
+        track.classList.toggle('on', isOn);
+      });
+
+      // Show/hide analysis layers globally
+      document.body.classList.toggle('tokens-compact', !isOn);
+    });
+  });
+</script>
+</body>
+</html>

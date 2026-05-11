@@ -1,4 +1,27 @@
-# Import Pipeline
+# Import Pipeline (v1 — being retired)
+
+> **Status:** these numbered scripts are the **v1 ingestion path**. They are
+> retiring one-by-one as the v2 framework gains coverage.
+>
+> **v2 lives at:** [`ingestion/`](../../ingestion/)
+>
+> Run v2 connectors via:
+> ```
+> python -m ingestion.cli list
+> python -m ingestion.cli run <connector-id>
+> ```
+>
+> Already ported to v2:
+> - `05_import_artifacts.py` → [`ingestion/connectors/cdli_catalog.py`](../../ingestion/connectors/cdli_catalog.py)
+> - `19_match_translation_lines.py` → [`ingestion/connectors/translation_line_matcher.py`](../../ingestion/connectors/translation_line_matcher.py)
+>   *(unmatched rows now land in `import_dead_letters`, not on-disk JSON)*
+>
+> See GitHub issue [#60](https://github.com/wittkensis/glintstone/issues/60)
+> for the v2 migration plan and port status.
+
+---
+
+## v1 numbered scripts
 
 Numbered scripts run in order. Each step depends on earlier steps.
 

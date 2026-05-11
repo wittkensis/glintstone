@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Navigation V3 – Glintstone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display&family=Noto+Sans+Cuneiform&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #1a1a1a;
+      --bg-elevated:   #1e1e1e;
+      --bg-deepest:    #0f0f0f;
+      --bg-surface:    #171717;
+      --text:          #e8e6e3;
+      --text-muted:    #a0a0a0;
+      --text-subtle:   #606060;
+      --accent:        #c9a962;
+      --border:        #2e2e2e;
+      --border-mid:    #3a3a3a;
+      --intelligence:  #8ad7c8;
+      --sign:          #a18769;
+      --pipeline-done: #41a230;
+      --pipeline-act:  #bd984e;
+      --pipeline-off:  #404040;
+
+      /* Scope-specific colors — per entity type */
+      --scope-tablets:     #c9a962;  /* gold */
+      --scope-collections: #7ec8a4;  /* sage */
+      --scope-dictionary:  #8ad7c8;  /* teal */
+      --scope-scholars:    #a09bd2;  /* lavender */
+    }
+
+    html, body {
+      height: 100%; background: var(--bg); color: var(--text);
+      font-family: 'Inter', sans-serif; font-size: 14px;
+    }
+    body { display: flex; flex-direction: column; padding-top: 24px; }
+
+    /* ─── ACCESSIBILITY ──────────────────────────────────────────── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    :focus-visible { outline: 2px solid rgba(201,169,98,0.6); outline-offset: 2px; }
+
+    /* ─── URL DEBUG BAR ──────────────────────────────────────────── */
+    #url-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 24px;
+      background: #0a0a0a; border-bottom: 1px solid #1a1a1a;
+      display: flex; align-items: center; padding: 0 12px; gap: 10px;
+      z-index: 999; pointer-events: none;
+    }
+    #url-bar-label {
+      font-size: 9px; font-weight: 500; letter-spacing: 0.6px; text-transform: uppercase;
+      color: #3a3a3a; white-space: nowrap; flex-shrink: 0;
+    }
+    #url-bar-text {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .url-host  { color: #3a3a3a; }
+    .url-path  { color: #5a5a5a; }
+    .url-query { color: #4a6040; }
+    .url-param { color: #5a6a3a; }
+
+    /* ─── GLOBAL HEADER ──────────────────────────────────────────── */
+    #g-header {
+      background: var(--bg-deepest);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0; flex-shrink: 0; position: relative; z-index: 10;
+    }
+    .g-header-row {
+      width: 100%; display: flex; align-items: flex-start;
+      justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Playfair Display', serif; font-size: 20px; color: var(--accent);
+      letter-spacing: 0.5px; white-space: nowrap; width: 160px; padding-top: 12px;
+    }
+    .header-spacer { width: 160px; }
+
+    /* ─── SEARCH WRAPPER ─────────────────────────────────────────── */
+    .search-wrapper {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0; width: 580px;
+    }
+
+    /* ─── SEARCH SURFACE (pill input; body floats absolutely) ───────── */
+
+    /* Resting: warm-tinted border + a soft ambient gold haze */
+    @keyframes search-breathe {
+      0%, 100% { box-shadow: 0 0 18px rgba(201,169,98,0.05), 0 1px 14px rgba(0,0,0,0.55); }
+      50%       { box-shadow: 0 0 28px rgba(201,169,98,0.11), 0 1px 14px rgba(0,0,0,0.55); }
+    }
+
+    #search-surface {
+      width: 100%;
+      position: relative;
+      border: 1px solid #3d3830; /* warm-tinted, more visible than neutral #2e2e2e */
+      border-radius: 9999px;
+      background: var(--bg-elevated);
+      animation: search-breathe 5s ease-in-out infinite;
+      transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.25s ease;
+      cursor: text;
+    }
+
+    /* Hover: glow lifts, border warms to gold, background gains a hint of warmth */
+    #search-surface:hover:not(.open) {
+      animation-play-state: paused;
+      border-color: rgba(201,169,98,0.5);
+      background: rgba(201,169,98,0.03);
+      box-shadow: 0 0 36px rgba(201,169,98,0.15), 0 4px 24px rgba(0,0,0,0.65);
+    }
+    #search-surface:hover:not(.open) .search-icon {
+      opacity: 0.85;
+      color: var(--accent);
+    }
+
+    /* When open: accent border, stop breathing */
+    #search-surface.open {
+      animation-play-state: paused;
+      border-color: var(--accent);
+      box-shadow: 0 0 28px rgba(201,169,98,0.12), 0 1px 14px rgba(0,0,0,0.55);
+    }
+
+    /* ─── INPUT ROW ──────────────────────────────────────────────── */
+    .search-input-row {
+      height: 52px; display: flex; align-items: center; gap: 0;
+      padding: 0 16px 0 20px; cursor: text; position: relative;
+    }
+    .search-icon {
+      width: 17px; height: 17px; flex-shrink: 0; margin-right: 10px;
+      color: var(--text-subtle); opacity: 0.6; pointer-events: none;
+      transition: opacity 0.12s;
+    }
+    #search-surface.open .search-icon { opacity: 0.85; }
+
+    /* Scope infix — colored per entity, hidden when scope=all */
+    .scope-infix {
+      display: none; align-items: center; gap: 5px; flex-shrink: 0; margin-right: 3px;
+    }
+    #search-surface:not([data-scope="all"]) .scope-infix { display: flex; }
+    .scope-infix-name {
+      font-size: 14px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap;
+    }
+    #search-surface[data-scope="tablets"]     .scope-infix-name { color: var(--scope-tablets); }
+    #search-surface[data-scope="collections"] .scope-infix-name { color: var(--scope-collections); }
+    #search-surface[data-scope="dictionary"]  .scope-infix-name { color: var(--scope-dictionary); }
+    #search-surface[data-scope="scholars"]    .scope-infix-name { color: var(--scope-scholars); }
+    .scope-infix-sep { font-size: 14px; color: var(--border-mid); user-select: none; }
+
+    /* Real input */
+    #search-text-input {
+      background: transparent; border: none; outline: none;
+      font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text);
+      flex: 1; min-width: 0; caret-color: var(--accent);
+    }
+    #search-text-input::placeholder { color: #7a6e5c; font-size: 14px; } /* warm, more legible than text-subtle */
+
+    /* Clear button — shown when input has content */
+    .search-clear {
+      width: 20px; height: 20px; flex-shrink: 0; flex-shrink: 0;
+      cursor: pointer; color: var(--text-subtle); font-size: 13px;
+      line-height: 20px; text-align: center; border-radius: 50%;
+      display: none; border: none; background: transparent;
+      transition: background 0.1s, color 0.1s;
+    }
+    .search-clear.visible { display: block; }
+    .search-clear:hover { background: var(--border-mid); color: var(--text-muted); }
+
+    /* ─── SEARCH BODY — absolutely positioned, floats below header ── */
+    .search-body {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 6px;    /* small breathing gap below the pill */
+      display: none;
+      flex-direction: column;
+      border: 1px solid rgba(255,255,255,0.1); /* visible but neutral — no amber */
+      border-radius: 16px;
+      background: #131313;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.03);
+      z-index: 100;
+    }
+    #search-surface.open .search-body { display: flex; }
+
+    /* ─── SCOPE BAR ──────────────────────────────────────────────── */
+    .scope-bar {
+      display: flex; align-items: center; gap: 3px; padding: 9px 14px 9px;
+      border-bottom: 1px solid rgba(255,255,255,0.04); flex-wrap: wrap; flex-shrink: 0;
+    }
+    .scope-bar-label {
+      font-size: 9px; font-weight: 500; letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--text-subtle); margin-right: 3px; white-space: nowrap;
+    }
+    .scope-opt {
+      font-size: 11px; color: var(--text-subtle); padding: 3px 8px; border-radius: 4px;
+      border: 1px solid transparent; background: transparent;
+      cursor: pointer; white-space: nowrap; transition: all 0.1s;
+    }
+    .scope-opt:hover { color: var(--text-muted); border-color: var(--border-mid); background: rgba(255,255,255,0.03); }
+
+    /* Per-entity-type active colors */
+    .scope-opt[data-scope="all"].active        { color: var(--accent); border-color: rgba(201,169,98,0.35); background: rgba(201,169,98,0.07); }
+    .scope-opt[data-scope="tablets"].active    { color: var(--scope-tablets);     border-color: rgba(201,169,98,0.35); background: rgba(201,169,98,0.07); }
+    .scope-opt[data-scope="collections"].active{ color: var(--scope-collections); border-color: rgba(126,200,164,0.35); background: rgba(126,200,164,0.07); }
+    .scope-opt[data-scope="dictionary"].active { color: var(--scope-dictionary);  border-color: rgba(138,215,200,0.35); background: rgba(138,215,200,0.07); }
+    .scope-opt[data-scope="scholars"].active   { color: var(--scope-scholars);    border-color: rgba(160,155,210,0.35); background: rgba(160,155,210,0.07); }
+
+    @keyframes scope-pulse {
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.06); }
+    }
+    .scope-opt.just-changed { animation: scope-pulse 0.3s ease; }
+
+    .scope-kb-hint { margin-left: auto; font-size: 10px; color: var(--text-subtle); opacity: 0.5; white-space: nowrap; }
+    .scope-kb-hint kbd {
+      font-family: inherit; font-size: 9px; padding: 1px 4px;
+      border: 1px solid var(--border-mid); border-radius: 3px;
+    }
+
+    /* ─── DROPDOWN SCROLL ────────────────────────────────────────── */
+    .dropdown-scroll { overflow-y: auto; max-height: 456px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+    .dropdown-scroll::-webkit-scrollbar { width: 3px; }
+    .dropdown-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ─── BLANK STATE ────────────────────────────────────────────── */
+    .dd-blank { display: none; flex-direction: column; padding: 6px 0 0; }
+    #search-surface.open-blank .dd-blank { display: flex; }
+    .dd-recent-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 18px; cursor: pointer; border-radius: 7px; margin: 0 3px;
+      font-size: 13px; color: var(--text-muted); transition: background 0.1s;
+    }
+    .dd-recent-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .dd-recent-icon { font-size: 11px; opacity: 0.4; flex-shrink: 0; }
+    .dd-recent-clear { margin-left: auto; font-size: 10px; color: var(--text-subtle); opacity: 0; cursor: pointer; }
+    .dd-recent-item:hover .dd-recent-clear { opacity: 0.7; }
+    .dd-suggestions-row { display: flex; gap: 5px; padding: 4px 18px 10px; flex-wrap: wrap; }
+    .dd-suggestion-chip {
+      font-size: 11px; color: var(--text-subtle); padding: 3px 10px; border-radius: 20px;
+      border: 1px solid var(--border); background: transparent; cursor: pointer;
+      transition: all 0.1s; white-space: nowrap;
+    }
+    .dd-suggestion-chip:hover { border-color: var(--border-mid); color: var(--text-muted); background: rgba(255,255,255,0.03); }
+    .dd-kb-row {
+      display: flex; gap: 10px; padding: 8px 18px 10px; flex-wrap: wrap;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .dd-kb-hint { font-size: 9px; color: var(--text-subtle); opacity: 0.55; white-space: nowrap; }
+    .dd-kb-hint kbd { font-family: inherit; font-size: 9px; padding: 1px 4px; border: 1px solid var(--border-mid); border-radius: 3px; }
+
+    /* ─── LOADING SKELETON ────────────────────────────────────────── */
+    @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+    .skeleton { background: linear-gradient(90deg, #252525 25%, #2e2e2e 50%, #252525 75%); background-size: 800px 100%; animation: shimmer 1.4s ease-in-out infinite; border-radius: 3px; }
+    .dd-loading { display: none; flex-direction: column; gap: 2px; padding: 6px 0; }
+    #search-surface.open-loading .dd-loading { display: flex; }
+    .dd-skel-row   { display: flex; align-items: center; gap: 10px; padding: 9px 18px; }
+    .dd-skel-thumb { width: 50px; height: 40px; border-radius: 4px; flex-shrink: 0; }
+    .dd-skel-lines { display: flex; flex-direction: column; gap: 7px; flex: 1; }
+    .dd-skel-line  { height: 11px; }
+    .dd-skel-sub   { height: 8px; width: 50%; }
+
+    /* ─── RESULTS ─────────────────────────────────────────────────── */
+    #dd-results-container { display: flex; flex-direction: column; width: 100%; }
+
+    .dd-section-header {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 8px 18px 2px;
+    }
+    .dd-section-label {
+      font-size: 9px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--text-subtle);
+    }
+    .dd-section-count { font-size: 9px; color: var(--text-subtle); }
+
+    .dd-result {
+      display: flex; align-items: center; gap: 9px; padding: 8px 18px;
+      cursor: pointer; transition: background 0.1s; border-radius: 7px; margin: 0 3px;
+    }
+    .dd-result:hover, .dd-result:focus { background: rgba(255,255,255,0.04); outline: none; }
+    .dd-result:focus-visible { outline: 2px solid rgba(201,169,98,0.5); outline-offset: -2px; }
+
+    .dd-thumb { width: 50px; height: 40px; border-radius: 4px; flex-shrink: 0; overflow: hidden; }
+    .dd-thumb-tablet     { background: linear-gradient(135deg, #362a1b 0%, #52401e 50%, #362a1b 100%); }
+    .dd-thumb-collection { background: linear-gradient(135deg, #263520 0%, #324526 50%, #263520 100%); }
+    .dd-thumb-composite  { display: grid; grid-template-columns: 1fr 1fr; }
+    .dd-thumb-composite > div { background: linear-gradient(135deg, #362a1b 0%, #52401e 100%); }
+    .dd-thumb-composite > div:nth-child(-n+2) { border-bottom: 1px solid #0a0a0a; }
+    .dd-thumb-composite > div:nth-child(odd)  { border-right:  1px solid #0a0a0a; }
+    .dd-thumb-sign   { background: var(--sign);         display: flex; align-items: center; justify-content: center; }
+    .dd-thumb-lemma  { background: var(--intelligence); display: flex; align-items: center; justify-content: center; }
+    .dd-thumb-scholar { background: linear-gradient(135deg, #1c1c2a, #282840); display: flex; align-items: center; justify-content: center; }
+    .dd-sign-char   { font-family: 'Noto Sans Cuneiform', sans-serif; font-size: 20px; color: var(--bg-deepest); line-height: 1; }
+    .dd-sign-ph     { font-family: 'Noto Sans Cuneiform', sans-serif; font-size: 13px; color: rgba(47,26,10,0.2); line-height: 1; }
+    .dd-scholar-init { font-size: 14px; font-weight: 700; color: rgba(160,155,210,0.4); }
+
+    .dd-meta  { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+    .dd-name  { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dd-sub   { font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+    .dd-name em { font-style: normal; color: var(--accent); }
+
+    .dd-confidence {
+      display: inline-block; font-size: 9px; font-weight: 500; letter-spacing: 0.4px;
+      text-transform: uppercase; padding: 2px 5px; border-radius: 3px; margin-top: 1px;
+      background: rgba(65,162,48,0.12); color: #6bcf5a; border: 1px solid rgba(65,162,48,0.25);
+    }
+
+    /* View all button */
+    .dd-view-all {
+      display: flex; align-items: center; gap: 5px;
+      margin: 3px 3px 8px; padding: 7px 14px;
+      font-size: 11px; color: var(--text-subtle); cursor: pointer; text-align: left;
+      border-radius: 7px; border: 1px solid var(--border); background: transparent;
+      transition: all 0.1s;
+    }
+    .dd-view-all:hover { color: var(--text-muted); border-color: var(--border-mid); background: rgba(255,255,255,0.03); }
+    .dd-view-all-arr { margin-left: auto; opacity: 0.5; }
+    .dd-divider { border: none; border-top: 1px solid rgba(255,255,255,0.04); margin: 4px 0; }
+
+    /* Pipeline mini */
+    .pipeline-mini { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+    .pipeline-dots { display: flex; align-items: center; gap: 3px; }
+    .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--pipeline-off); }
+    .dot.done   { background: var(--pipeline-done); opacity: 0.35; }
+    .dot.active { background: var(--pipeline-act); }
+    .pipeline-label { font-size: 9px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ─── NO RESULTS ─────────────────────────────────────────────── */
+    .dd-noresults { display: none; flex-direction: column; padding: 22px 18px 18px; gap: 8px; align-items: flex-start; }
+    #search-surface.open-noresults .dd-noresults { display: flex; }
+    .dd-noresults-title { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .dd-noresults-title strong { color: var(--text); }
+    .dd-noresults-sub { font-size: 11px; color: var(--text-subtle); }
+    .dd-noresults-cta {
+      font-size: 11px; color: var(--accent); padding: 5px 12px; border-radius: 5px;
+      border: 1px solid rgba(201,169,98,0.3); background: rgba(201,169,98,0.07);
+      cursor: pointer; transition: background 0.1s; margin-top: 2px;
+    }
+    .dd-noresults-cta:hover { background: rgba(201,169,98,0.14); }
+
+    /* ─── BROWSE NAV (always visible, all pages) ─────────────────── */
+    .browse-nav {
+      display: flex; align-items: center; gap: 3px;
+      padding: 5px 0 0 18px; /* align with scope infix */
+    }
+    .browse-label { font-size: 11px; font-weight: 600; color: var(--text-subtle); white-space: nowrap; margin-right: 1px; }
+    .browse-nav-item {
+      font-size: 11px; color: var(--text-subtle); padding: 4px 6px; border-radius: 4px;
+      cursor: pointer; white-space: nowrap; transition: color 0.1s, background 0.1s;
+    }
+    .browse-nav-item:hover  { color: var(--text-muted); background: rgba(255,255,255,0.04); }
+    .browse-nav-item.active { color: var(--text); }
+
+    /* ─── LOADING BAR ────────────────────────────────────────────── */
+    @keyframes progress-run {
+      0%   { transform: scaleX(0); opacity: 1; }
+      80%  { transform: scaleX(0.88); opacity: 1; }
+      100% { transform: scaleX(1);  opacity: 0; }
+    }
+    #loading-bar {
+      position: fixed; top: 24px; left: 0; height: 2px; width: 100%;
+      background: var(--accent); transform-origin: left; transform: scaleX(0); opacity: 0;
+      z-index: 998; pointer-events: none; box-shadow: 0 0 6px var(--accent);
+    }
+    #loading-bar.active { animation: progress-run 1.5s cubic-bezier(0.4,0,0.2,1) forwards; }
+
+    /* ─── PAGE DIM ───────────────────────────────────────────────── */
+    .page-dimming .page-body,
+    .page-dimming .tablet-header,
+    .page-dimming .detail-body { opacity: 0.2; pointer-events: none; transition: opacity 0.1s; }
+
+    /* ─── OVERLAY — dims page content behind open dropdown ──────── */
+    .overlay {
+      position: fixed; inset: 0; z-index: 8;
+      background: transparent;
+      pointer-events: none;
+      transition: background 0.25s ease;
+    }
+    .overlay.active {
+      background: rgba(0,0,0,0.55);
+      pointer-events: auto;
+    }
+
+    /* ─── PAGES ──────────────────────────────────────────────────── */
+    .page { display: none; flex: 1; flex-direction: column; min-height: 0; }
+    .page.active { display: flex; }
+    .page-body { flex: 1; display: flex; }
+    .browse-sidebar {
+      width: 280px; background: var(--bg-deepest); border-right: 1px solid var(--border);
+      padding: 20px 14px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto;
+    }
+    .sidebar-section-label {
+      font-size: 9px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--text-subtle); padding-bottom: 7px; border-bottom: 1px solid var(--border);
+    }
+    .sidebar-ph { height: 18px; background: var(--border); border-radius: 3px; opacity: 0.35; }
+    .browse-main { flex: 1; padding: 20px 28px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+
+    /* Browse header: count + filter chip */
+    .browse-header { display: flex; flex-direction: column; gap: 8px; }
+    .browse-count  { font-size: 16px; color: var(--text-muted); }
+    .browse-filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .filter-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 8px 4px 10px; border-radius: 20px;
+      border: 1px solid rgba(201,169,98,0.3); background: rgba(201,169,98,0.07);
+      font-size: 11px; color: var(--accent);
+    }
+    .filter-chip-label { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .filter-chip-clear {
+      width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 9px; cursor: pointer; color: var(--accent);
+      background: transparent; border: none; opacity: 0.6; transition: opacity 0.1s;
+    }
+    .filter-chip-clear:hover { opacity: 1; }
+    .browse-filter-note { font-size: 10px; color: var(--text-subtle); }
+
+    .browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+    .card-ph { aspect-ratio: 1; border-radius: 5px; border: 1px solid var(--border); }
+    .card-ph.tablet     { background: linear-gradient(135deg, #26201a 0%, #342c1e 50%, #26201a 100%); }
+    .card-ph.collection { background: linear-gradient(135deg, #1c2818 0%, #24351e 50%, #1c2818 100%); aspect-ratio: 4/3; }
+    .browse-list  { display: flex; flex-direction: column; gap: 3px; }
+    .card-ph.row  { aspect-ratio: unset; height: 48px; border-radius: 5px; border: 1px solid var(--border); background: linear-gradient(135deg, #1a1c24 0%, #1e2030 100%); }
+
+    /* ─── TABLET DETAIL ──────────────────────────────────────────── */
+    .tablet-header {
+      border-bottom: 1px solid var(--border); padding: 18px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-deepest); flex-shrink: 0;
+    }
+    .tablet-back { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+    .back-chevron { font-size: 18px; color: var(--text-muted); transition: color 0.1s; }
+    .tablet-back:hover .back-chevron { color: var(--text); }
+    .tablet-pnum { font-family: 'Playfair Display', serif; font-size: 38px; color: var(--text); line-height: 1.2; }
+    .composite-nav { display: flex; align-items: center; gap: 2px; }
+    .comp-btn {
+      width: 48px; height: 30px; border-radius: 4px;
+      background: linear-gradient(135deg, #362a1b, #52401e);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px; color: var(--text-muted); transition: color 0.1s;
+    }
+    .comp-btn:hover { color: var(--text); }
+    .comp-current {
+      width: 78px; height: 30px; border-radius: 4px;
+      background: linear-gradient(135deg, #362a1b, #52401e);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    }
+    .comp-id  { font-size: 9px; font-weight: 700; color: #fff; }
+    .comp-pos { font-size: 9px; color: var(--text-muted); opacity: 0.55; }
+    .tablet-actions { display: flex; align-items: center; gap: 7px; }
+    .pipeline-status { display: flex; align-items: center; gap: 5px; }
+    .pipeline-segs { display: flex; align-items: center; gap: 3px; }
+    .seg { width: 7px; height: 7px; border-radius: 3px; }
+    .pipeline-text { font-size: 10px; font-weight: 500; color: var(--text-muted); }
+    .icon-btn {
+      width: 30px; height: 30px; background: #242424; border: 1px solid var(--border-mid);
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 15px; color: var(--text-muted);
+    }
+    .icon-btn:hover { background: #2e2e2e; color: var(--text); }
+    .detail-body {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      opacity: 0.12; font-size: 12px; color: var(--text-muted);
+      letter-spacing: 1px; text-transform: uppercase; font-weight: 500;
+    }
+
+    /* ─── DEV PANEL ──────────────────────────────────────────────── */
+    .dev-panel {
+      position: fixed; bottom: 14px; right: 14px; background: #111;
+      border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+      z-index: 200; display: flex; flex-direction: column; gap: 7px;
+    }
+    .dev-row  { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+    .dev-label { font-size: 9px; color: var(--text-subtle); width: 38px; flex-shrink: 0; letter-spacing: 0.4px; text-transform: uppercase; }
+    .dev-btn {
+      padding: 2px 7px; border-radius: 3px; cursor: pointer; background: #1e1e1e;
+      color: var(--text-subtle); font-size: 10px; border: 1px solid var(--border); transition: all 0.1s;
+    }
+    .dev-btn:hover { background: #2a2a2a; border-color: var(--border-mid); color: var(--text-muted); }
+    .dev-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(201,169,98,0.08); }
+    .dev-divider { border: none; border-top: 1px solid var(--border); margin: 1px 0; }
+  </style>
+</head>
+<body>
+
+<!-- URL debug bar -->
+<div id="url-bar">
+  <span id="url-bar-label">URL</span>
+  <span id="url-bar-text"><span class="url-host">https://glintstone.app</span><span class="url-path">/tablets</span></span>
+</div>
+
+<!-- Loading bar -->
+<div id="loading-bar"></div>
+<!-- Overlay (close dropdown on outside click) -->
+<div class="overlay" id="overlay"></div>
+<!-- Screen reader announcer -->
+<div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+
+<!-- ════════════════════════════════════════════════════════════
+     GLOBAL HEADER
+════════════════════════════════════════════════════════════ -->
+<header id="g-header">
+  <div class="g-header-row">
+    <div class="logo">Glintstone</div>
+
+    <!-- Search wrapper: surface + browse nav -->
+    <div class="search-wrapper">
+
+      <!-- Connected search surface -->
+      <div id="search-surface"
+           role="combobox"
+           aria-expanded="false"
+           aria-haspopup="listbox"
+           aria-owns="search-body"
+           aria-label="Search Glintstone"
+           data-scope="all">
+
+        <!-- Input row -->
+        <div class="search-input-row">
+          <svg class="search-icon" aria-hidden="true" viewBox="0 0 18 18" fill="none">
+            <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M11.5 11.5L16 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+
+          <!-- Scope infix (no caret — plain text indicator) -->
+          <span class="scope-infix" id="scope-infix" aria-hidden="true">
+            <span class="scope-infix-name" id="scope-infix-name">Tablets</span>
+            <span class="scope-infix-sep">/</span>
+          </span>
+
+          <!-- Real text input -->
+          <input type="text" id="search-text-input"
+                 role="textbox"
+                 aria-autocomplete="list"
+                 aria-controls="search-body"
+                 aria-activedescendant=""
+                 placeholder="Try: battles during Esarhaddon's reign"
+                 autocomplete="off" spellcheck="false" />
+
+          <!-- Clear: always shown when input has text -->
+          <button class="search-clear" id="search-clear-btn" aria-label="Clear search">✕</button>
+        </div>
+
+        <!-- Body: scope bar + results (expands when open) -->
+        <div id="search-body" class="search-body" role="listbox" aria-label="Search results">
+
+          <!-- Scope bar -->
+          <div class="scope-bar" role="group" aria-label="Narrow to category">
+            <span class="scope-bar-label" aria-hidden="true">In:</span>
+            <button class="scope-opt active" data-scope="all"         aria-selected="true"  aria-label="All types">All</button>
+            <button class="scope-opt"        data-scope="tablets"     aria-selected="false" aria-label="Tablets only">Tablets</button>
+            <button class="scope-opt"        data-scope="collections" aria-selected="false" aria-label="Collections only">Collections</button>
+            <button class="scope-opt"        data-scope="dictionary"  aria-selected="false" aria-label="Dictionary only">Dictionary</button>
+            <button class="scope-opt"        data-scope="scholars"    aria-selected="false" aria-label="Scholars only">Scholars</button>
+            <span class="scope-kb-hint" aria-hidden="true"><kbd>Tab</kbd> cycle</span>
+          </div>
+
+          <div class="dropdown-scroll">
+
+            <!-- Blank state -->
+            <div class="dd-blank" id="dd-blank" aria-label="Search suggestions">
+              <div class="dd-section-header" style="padding-top:6px">
+                <span class="dd-section-label">Recent</span>
+              </div>
+              <div class="dd-recent-item" role="option" tabindex="-1" data-fill="battles during Esarhaddon's reign">
+                <span class="dd-recent-icon" aria-hidden="true">↩</span>
+                battles during Esarhaddon's reign
+                <span class="dd-recent-clear" aria-label="Remove from recent">✕</span>
+              </div>
+              <div class="dd-recent-item" role="option" tabindex="-1" data-fill="ration distribution records">
+                <span class="dd-recent-icon" aria-hidden="true">↩</span>
+                ration distribution records
+                <span class="dd-recent-clear" aria-label="Remove from recent">✕</span>
+              </div>
+              <div class="dd-recent-item" role="option" tabindex="-1" data-fill="Gilgamesh">
+                <span class="dd-recent-icon" aria-hidden="true">↩</span>
+                Gilgamesh
+                <span class="dd-recent-clear" aria-label="Remove from recent">✕</span>
+              </div>
+              <div class="dd-section-header" style="padding-top:6px">
+                <span class="dd-section-label" id="suggestions-label">Try searching</span>
+              </div>
+              <div class="dd-suggestions-row" id="dd-suggestions" aria-labelledby="suggestions-label"></div>
+              <div class="dd-kb-row" role="note">
+                <span class="dd-kb-hint"><kbd>↑↓</kbd> navigate</span>
+                <span class="dd-kb-hint"><kbd>↵</kbd> select</span>
+                <span class="dd-kb-hint"><kbd>Esc</kbd> close</span>
+                <span class="dd-kb-hint"><kbd>Tab</kbd> scope</span>
+              </div>
+            </div>
+
+            <!-- Loading skeleton -->
+            <div class="dd-loading" id="dd-loading" aria-label="Loading" aria-busy="true">
+              <div class="dd-skel-row"><div class="dd-skel-thumb skeleton"></div><div class="dd-skel-lines"><div class="dd-skel-line skeleton"></div><div class="dd-skel-sub skeleton"></div></div></div>
+              <div class="dd-skel-row"><div class="dd-skel-thumb skeleton"></div><div class="dd-skel-lines"><div class="dd-skel-line skeleton"></div><div class="dd-skel-sub skeleton"></div></div></div>
+              <div class="dd-skel-row"><div class="dd-skel-thumb skeleton"></div><div class="dd-skel-lines"><div class="dd-skel-line skeleton"></div><div class="dd-skel-sub skeleton"></div></div></div>
+            </div>
+
+            <!-- Results (populated by JS) -->
+            <div id="dd-results-container"></div>
+
+            <!-- No results -->
+            <div class="dd-noresults" id="dd-noresults" role="status">
+              <div class="dd-noresults-title">
+                No <strong id="nr-scope">results</strong> match
+                "<strong id="nr-query"></strong>"
+              </div>
+              <div class="dd-noresults-sub">Try a broader query, or search All types.</div>
+              <button class="dd-noresults-cta" id="nr-all-btn">Search All types</button>
+            </div>
+
+          </div><!-- /dropdown-scroll -->
+        </div><!-- /search-body -->
+
+      </div><!-- /search-surface -->
+
+      <!-- Browse nav — always visible on all pages -->
+      <nav class="browse-nav" aria-label="Browse section">
+        <span class="browse-label" aria-hidden="true">Browse:</span>
+        <a class="browse-nav-item" data-browse="tablets"     tabindex="0" role="link">Tablets</a>
+        <a class="browse-nav-item" data-browse="collections" tabindex="0" role="link">Collections</a>
+        <a class="browse-nav-item" data-browse="dictionary"  tabindex="0" role="link">Dictionary</a>
+        <a class="browse-nav-item" data-browse="scholars"    tabindex="0" role="link">Scholars</a>
+      </nav>
+
+    </div><!-- /search-wrapper -->
+
+    <div class="header-spacer"></div>
+  </div>
+</header>
+
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGES
+════════════════════════════════════════════════════════════ -->
+<div class="page active" id="page-tablets">
+  <div class="page-body">
+    <aside class="browse-sidebar">
+      <div><div class="sidebar-section-label">Period</div><div style="display:flex;flex-direction:column;gap:7px;padding-top:10px"><div class="sidebar-ph" style="width:78%"></div><div class="sidebar-ph" style="width:63%"></div><div class="sidebar-ph" style="width:70%"></div><div class="sidebar-ph" style="width:52%"></div></div></div>
+      <div><div class="sidebar-section-label">Provenience</div><div style="display:flex;flex-direction:column;gap:7px;padding-top:10px"><div class="sidebar-ph" style="width:68%"></div><div class="sidebar-ph" style="width:82%"></div><div class="sidebar-ph" style="width:48%"></div></div></div>
+      <div><div class="sidebar-section-label">Genre</div><div style="display:flex;flex-direction:column;gap:7px;padding-top:10px"><div class="sidebar-ph" style="width:58%"></div><div class="sidebar-ph" style="width:38%"></div></div></div>
+    </aside>
+    <main class="browse-main">
+      <div class="browse-header">
+        <div class="browse-count" id="tablets-count">353,283 tablets</div>
+        <div class="browse-filter-row" id="tablets-filter-row" style="display:none">
+          <div class="filter-chip">
+            <span class="filter-chip-label" id="tablets-filter-label"></span>
+            <button class="filter-chip-clear" id="tablets-filter-clear" aria-label="Clear filter">✕</button>
+          </div>
+          <span class="browse-filter-note">Showing semantic matches</span>
+        </div>
+      </div>
+      <div class="browse-grid">
+        <div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div>
+        <div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div>
+        <div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div>
+        <div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div>
+        <div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="page" id="page-collections">
+  <div class="page-body">
+    <aside class="browse-sidebar">
+      <div><div class="sidebar-section-label">Type</div><div style="display:flex;flex-direction:column;gap:7px;padding-top:10px"><div class="sidebar-ph" style="width:52%"></div><div class="sidebar-ph" style="width:68%"></div></div></div>
+      <div><div class="sidebar-section-label">Period</div><div style="display:flex;flex-direction:column;gap:7px;padding-top:10px"><div class="sidebar-ph" style="width:78%"></div><div class="sidebar-ph" style="width:58%"></div></div></div>
+    </aside>
+    <main class="browse-main">
+      <div class="browse-header">
+        <div class="browse-count" id="collections-count">2,847 collections</div>
+        <div class="browse-filter-row" id="collections-filter-row" style="display:none">
+          <div class="filter-chip"><span class="filter-chip-label" id="collections-filter-label"></span><button class="filter-chip-clear" id="collections-filter-clear">✕</button></div>
+          <span class="browse-filter-note">Showing semantic matches</span>
+        </div>
+      </div>
+      <div class="browse-grid">
+        <div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div>
+        <div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div>
+        <div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="page" id="page-dictionary">
+  <div class="page-body">
+    <aside class="browse-sidebar">
+      <div><div class="sidebar-section-label">Language</div><div style="display:flex;flex-direction:column;gap:7px;padding-top:10px"><div class="sidebar-ph" style="width:52%"></div><div class="sidebar-ph" style="width:44%"></div></div></div>
+      <div><div class="sidebar-section-label">Part of speech</div><div style="display:flex;flex-direction:column;gap:7px;padding-top:10px"><div class="sidebar-ph" style="width:38%"></div><div class="sidebar-ph" style="width:58%"></div><div class="sidebar-ph" style="width:32%"></div></div></div>
+    </aside>
+    <main class="browse-main">
+      <div class="browse-header"><div class="browse-count">48,291 lemmas</div></div>
+      <div class="browse-list"><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div></div>
+    </main>
+  </div>
+</div>
+
+<div class="page" id="page-scholars">
+  <div class="page-body">
+    <aside class="browse-sidebar">
+      <div><div class="sidebar-section-label">Era</div><div style="display:flex;flex-direction:column;gap:7px;padding-top:10px"><div class="sidebar-ph" style="width:62%"></div><div class="sidebar-ph" style="width:48%"></div></div></div>
+    </aside>
+    <main class="browse-main">
+      <div class="browse-header"><div class="browse-count">1,203 scholars</div></div>
+      <div class="browse-list"><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div></div>
+    </main>
+  </div>
+</div>
+
+<div class="page" id="page-detail">
+  <div class="tablet-header">
+    <button class="tablet-back" id="back-btn" aria-label="Back to Tablets">
+      <span class="back-chevron">‹</span>
+      <div class="tablet-pnum">P334357</div>
+    </button>
+    <div class="composite-nav" aria-label="Composite navigation">
+      <button class="comp-btn">‹</button>
+      <div class="comp-current"><div class="comp-id">Q000343</div><div class="comp-pos">3 / 394</div></div>
+      <button class="comp-btn">›</button>
+    </div>
+    <div class="tablet-actions">
+      <div class="pipeline-status">
+        <div class="pipeline-segs">
+          <div class="seg" style="background:var(--pipeline-off)"></div>
+          <div class="seg" style="background:var(--pipeline-done)"></div>
+          <div class="seg" style="background:var(--pipeline-off)"></div>
+          <div class="seg" style="background:var(--pipeline-done)"></div>
+        </div>
+        <div class="pipeline-text">Complete</div>
+      </div>
+      <button class="icon-btn">⋮</button>
+    </div>
+  </div>
+  <div class="detail-body">Tablet viewer · ATF panel · Knowledge sidebar</div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════
+     DEV PANEL
+════════════════════════════════════════════════════════════ -->
+<div class="dev-panel" aria-label="Prototype controls">
+  <div class="dev-row">
+    <span class="dev-label">Query</span>
+    <button class="dev-btn active" data-query="esarhaddon">Esarhaddon</button>
+    <button class="dev-btn" data-query="gilgamesh">Gilgamesh</button>
+    <button class="dev-btn" data-query="urIII">Ur III</button>
+    <button class="dev-btn" data-query="pnum">P-number</button>
+    <button class="dev-btn" data-query="noresults">no results</button>
+  </div>
+  <hr class="dev-divider">
+  <div class="dev-row">
+    <span class="dev-label">Page</span>
+    <button class="dev-btn active" data-page="tablets">Tablets</button>
+    <button class="dev-btn" data-page="collections">Collections</button>
+    <button class="dev-btn" data-page="dictionary">Dictionary</button>
+    <button class="dev-btn" data-page="scholars">Scholars</button>
+    <button class="dev-btn" data-page="detail">Detail</button>
+  </div>
+</div>
+
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// QUERY DATA
+// ════════════════════════════════════════════════════════════════
+
+const T = {
+  tablet:     ()  => `<div class="dd-thumb dd-thumb-tablet"></div>`,
+  collection: ()  => `<div class="dd-thumb dd-thumb-collection"></div>`,
+  composite:  ()  => `<div class="dd-thumb dd-thumb-composite"><div></div><div></div><div></div><div></div></div>`,
+  lemma:     (c)  => `<div class="dd-thumb dd-thumb-lemma"><span class="dd-sign-char">${c}</span></div>`,
+  sign:      (c)  => `<div class="dd-thumb dd-thumb-sign"><span class="dd-sign-char">${c}</span></div>`,
+  signPh:     ()  => `<div class="dd-thumb dd-thumb-sign"><span class="dd-sign-ph">--</span></div>`,
+  scholar:   (i)  => `<div class="dd-thumb dd-thumb-scholar"><span class="dd-scholar-init">${i}</span></div>`,
+};
+
+function S(label, count) {
+  return `<div class="dd-section-header"><span class="dd-section-label">${label}</span>${count ? `<span class="dd-section-count">${count}</span>` : ''}</div>`;
+}
+
+function R(thumb, name, sub, extra, action, target) {
+  const at = action === 'detail'  ? `data-action="detail"` :
+             action === 'browse'  ? `data-action="browse" data-target="${target}"` : '';
+  return `<div class="dd-result" role="option" tabindex="-1" aria-selected="false" ${at}>
+    ${thumb}<div class="dd-meta"><div class="dd-name">${name}</div><div class="dd-sub">${sub}</div>${extra||''}</div></div>`;
+}
+
+function pipe(dots, label) {
+  return `<div class="pipeline-mini"><div class="pipeline-dots">${dots.map(d=>`<div class="dot${d===2?' done':d===1?' active':''}"></div>`).join('')}</div><div class="pipeline-label">${label}</div></div>`;
+}
+
+function VA(label, count, page, qKey) {
+  // View all: navigates to browse page + applies filter from this query
+  return `<button class="dd-view-all" data-action="viewall" data-page="${page}" data-qkey="${qKey}" aria-label="View all ${count} ${label}">View all ${count} ${label} <span class="dd-view-all-arr" aria-hidden="true">→</span></button>`;
+}
+
+// ── ESARHADDON ────────────────────────────────────────────────────
+const Q_ESARHADDON = {
+  label: "battles during Esarhaddon's reign",
+  description: 'Phrase query — proper noun + topic + temporal qualifier',
+  all: () => `
+    ${S('Tablets', '47')}
+    ${R(T.tablet(), 'P393112', "Esarhaddon's campaign against Egypt · Neo-Assyrian",       pipe([2,2,2,2,0],'Needs Translation'), 'detail')}
+    ${R(T.tablet(), 'P393113', 'Battle record, year 2 of Esarhaddon · Nineveh',            pipe([2,2,1,0,0],'Needs Lemmas'), 'detail')}
+    ${R(T.tablet(), 'P393114', 'Annals, military summary · Neo-Assyrian royal inscription', pipe([2,2,2,0,0],'Needs Translation'), 'detail')}
+    ${VA('tablets', 47, 'tablets', 'esarhaddon')}
+    <hr class="dd-divider">
+    ${S('Collections', '3')}
+    ${R(T.collection(), 'Esarhaddon Royal Inscriptions', 'RINAP 4 · Royal Inscriptions of the Neo-Assyrian Period', null, 'browse', 'collections')}
+    ${R(T.collection(), 'Assyrian Royal Annals', 'Campaigns and building accounts, 9th–7th c. BCE', null, 'browse', 'collections')}
+    ${VA('collections', 3, 'collections', 'esarhaddon')}
+    <hr class="dd-divider">
+    ${S('Dictionary', '12')}
+    ${R(T.lemma('RN'), 'Aššur-aḫu-iddina', 'Royal name (Esarhaddon) · Akkadian', null, 'browse', 'dictionary')}
+    ${R(T.lemma('N'), 'qablu', 'Battle, combat · Akkadian noun · 1,847 occ.', null, 'browse', 'dictionary')}
+    ${VA('dictionary entries', 12, 'dictionary', 'esarhaddon')}
+    <hr class="dd-divider">
+    ${S('Scholars', '5')}
+    ${R(T.scholar('EL'), 'Erle Leichty', 'Esarhaddon specialist · RINAP 4 editor · Penn Museum', null, 'browse', 'scholars')}
+    ${R(T.scholar('SP'), 'Simo Parpola', 'Neo-Assyrian Text Corpus · University of Helsinki', null, 'browse', 'scholars')}
+    ${VA('scholars', 5, 'scholars', 'esarhaddon')}
+  `,
+  tablets: () => `
+    ${S('Tablets', '47 matches')}
+    ${R(T.tablet(), 'P393112', "Esarhaddon's campaign against Egypt · Neo-Assyrian",       pipe([2,2,2,2,0],'Needs Translation'), 'detail')}
+    ${R(T.tablet(), 'P393113', 'Battle record, year 2 of Esarhaddon · Nineveh',            pipe([2,2,1,0,0],'Needs Lemmas'), 'detail')}
+    ${R(T.tablet(), 'P393114', 'Annals, military summary · Neo-Assyrian royal inscription', pipe([2,2,2,0,0],'Needs Translation'), 'detail')}
+    ${R(T.tablet(), 'P393115', 'Letter to Esarhaddon from a border official · SAA',         pipe([2,2,2,2,2],'Complete'), 'detail')}
+    ${R(T.tablet(), 'P393116', 'Omen series: celestial omens, reign of Esarhaddon',        pipe([2,1,0,0,0],'Needs Reading'), 'detail')}
+    ${R(T.tablet(), 'P393117', 'Treaty of Esarhaddon with Median vassals',                  pipe([2,2,2,1,0],'Needs Lemmas'), 'detail')}
+    ${VA('tablets', 47, 'tablets', 'esarhaddon')}
+  `,
+  collections: () => `
+    ${S('Collections', '3 matches')}
+    ${R(T.collection(), 'Esarhaddon Royal Inscriptions', 'RINAP 4 · Royal Inscriptions of the Neo-Assyrian Period', null, 'browse', 'collections')}
+    ${R(T.collection(), 'Assyrian Royal Annals', 'Campaigns and building accounts, 9th–7th c. BCE', null, 'browse', 'collections')}
+    ${R(T.collection(), 'State Archives of Assyria', 'SAA series · Letters and administrative texts', null, 'browse', 'collections')}
+    ${VA('collections', 3, 'collections', 'esarhaddon')}
+  `,
+  dictionary: () => `
+    ${S('Lemmas', '12 matches')}
+    ${R(T.lemma('RN'), 'Aššur-aḫu-iddina', 'Royal name (Esarhaddon) · Akkadian · Neo-Assyrian', null, 'browse', 'dictionary')}
+    ${R(T.lemma('N'), 'qablu', 'Battle, combat, waist · Akkadian noun · 1,847 occ.', null, 'browse', 'dictionary')}
+    ${R(T.lemma('V'), 'danānu', 'To be strong, victorious · Akkadian verb', null, 'browse', 'dictionary')}
+    ${R(T.lemma('N'), 'tāḫāzu', 'Battle, fight · common in annals', null, 'browse', 'dictionary')}
+    ${R(T.lemma('N'), 'šarru', 'King · in royal epithets', null, 'browse', 'dictionary')}
+    ${VA('dictionary entries', 12, 'dictionary', 'esarhaddon')}
+  `,
+  scholars: () => `
+    ${S('Scholars', '5 matches')}
+    ${R(T.scholar('EL'), 'Erle Leichty', 'Esarhaddon specialist · RINAP 4 editor · Penn Museum', null, 'browse', 'scholars')}
+    ${R(T.scholar('SP'), 'Simo Parpola', 'Neo-Assyrian Text Corpus · University of Helsinki', null, 'browse', 'scholars')}
+    ${R(T.scholar('KR'), 'Karen Radner', 'Neo-Assyrian history · LMU Munich', null, 'browse', 'scholars')}
+    ${R(T.scholar('AB'), 'Andrew Baruchi-Unna', "Esarhaddon's succession crisis", null, 'browse', 'scholars')}
+    ${R(T.scholar('IR'), 'Ilan Sharon', 'Levantine context of Esarhaddon campaigns', null, 'browse', 'scholars')}
+    ${VA('scholars', 5, 'scholars', 'esarhaddon')}
+  `,
+};
+
+// ── GILGAMESH ─────────────────────────────────────────────────────
+const Q_GILGAMESH = {
+  label: 'Gilgamesh',
+  description: 'Proper noun — divine name across multiple entity types',
+  all: () => `
+    ${S('Collections', '12')}
+    ${R(T.collection(), 'Stories of Gilgamesh', 'Canonical & variant versions, all periods', null, 'browse', 'collections')}
+    ${S('Composites')}
+    ${R(T.composite(), 'Q3945294', 'Gilgamesh going into the woods')}
+    ${S('Tablets', '128')}
+    ${R(T.tablet(), 'P3928244', 'Gilgamesh going into the woods · Ur III',    pipe([2,2,1,0,0],'Needs Lemmas'), 'detail')}
+    ${R(T.tablet(), 'P3928245', 'Gilgamesh epic, tablet XI · Old Babylonian', pipe([2,2,2,0,0],'Needs Translation'), 'detail')}
+    ${R(T.tablet(), 'P3928246', 'The death of Gilgamesh · Ur III',             pipe([2,2,2,2,2],'Complete'), 'detail')}
+    ${VA('tablets', 128, 'tablets', 'gilgamesh')}
+    <hr class="dd-divider">
+    ${S('Dictionary', '28')}
+    ${R(T.lemma('DN'), 'Gilgame&#353;', 'Divine name · Sumerian proper noun', null, 'browse', 'dictionary')}
+    ${R(T.lemma('DN'), '&#299;&#353;k&#257;r Gilgame&#353;', 'Text series name · Akkadian', null, 'browse', 'dictionary')}
+    ${VA('lemmas', 28, 'dictionary', 'gilgamesh')}
+    <hr class="dd-divider">
+    ${S('Scholars', '7')}
+    ${R(T.scholar('AG'), 'Andrew George', 'Gilgamesh specialist · SOAS, University of London', null, 'browse', 'scholars')}
+    ${R(T.scholar('MK'), 'Maureen Gallery Kovacs', 'Translator, <em>The Epic of Gilgamesh</em> (1989)', null, 'browse', 'scholars')}
+    ${VA('scholars', 7, 'scholars', 'gilgamesh')}
+  `,
+  tablets: () => `
+    ${S('Tablets', '128 matches')}
+    ${R(T.tablet(), 'P3928244', 'Gilgamesh going into the woods · Ur III',         pipe([2,2,1,0,0],'Needs Lemmas'), 'detail')}
+    ${R(T.tablet(), 'P3928245', 'Gilgamesh epic, tablet XI · Old Babylonian',      pipe([2,2,2,0,0],'Needs Translation'), 'detail')}
+    ${R(T.tablet(), 'P3928246', 'The death of Gilgamesh · Ur III',                  pipe([2,2,2,2,2],'Complete'), 'detail')}
+    ${R(T.tablet(), 'P3928247', 'Gilgamesh and the Bull of Heaven · Old Babylonian',pipe([2,1,0,0,0],'Needs Reading'), 'detail')}
+    ${R(T.tablet(), 'P3928248', 'Gilgamesh epic, tablet I · Neo-Babylonian',       pipe([2,2,2,1,0],'Needs Lemmas'), 'detail')}
+    ${R(T.tablet(), 'P3928249', 'Gilgamesh and Huwawa · Ur III',                    pipe([2,2,2,2,2],'Complete'), 'detail')}
+    ${VA('tablets', 128, 'tablets', 'gilgamesh')}
+  `,
+  collections: () => `
+    ${S('Collections', '12 matches')}
+    ${R(T.collection(), 'Stories of Gilgamesh', 'Canonical & variant versions, all periods', null, 'browse', 'collections')}
+    ${R(T.collection(), 'The Gilgamesh Epic Manuscripts', 'Nineveh library tablets, Sin-leqi-unninni recension', null, 'browse', 'collections')}
+    ${R(T.collection(), 'Babylonian Hero Myths', 'Incl. Gilgamesh, Etana, Adapa', null, 'browse', 'collections')}
+    ${VA('collections', 12, 'collections', 'gilgamesh')}
+  `,
+  dictionary: () => `
+    ${S('Lemmas', '8 matches')}
+    ${R(T.lemma('DN'), 'Gilgame&#353;', 'Divine name · Sumerian proper noun', null, 'browse', 'dictionary')}
+    ${R(T.lemma('DN'), '&#299;&#353;k&#257;r Gilgame&#353;', 'Text series name · Akkadian', null, 'browse', 'dictionary')}
+    ${R(T.lemma('DN'), 'Ezembilgames', 'Variant spelling · Hurrian borrowing', null, 'browse', 'dictionary')}
+    ${S('Signs', '3 matches')}
+    ${R(T.sign('𒈩'), 'MES', 'In BIL.MES.GA compound · 1,243 occ.')}
+    ${R(T.sign('𒉈'), 'NE', 'Sign reading · 892 occ.')}
+    ${VA('dictionary entries', 28, 'dictionary', 'gilgamesh')}
+  `,
+  scholars: () => `
+    ${S('Scholars', '7 matches')}
+    ${R(T.scholar('AG'), 'Andrew George', 'Gilgamesh specialist · SOAS, University of London', null, 'browse', 'scholars')}
+    ${R(T.scholar('MK'), 'Maureen Gallery Kovacs', 'Translator, <em>The Epic of Gilgamesh</em> (1989)', null, 'browse', 'scholars')}
+    ${R(T.scholar('JT'), 'Jeffrey Tigay', 'Evolution of Gilgamesh epic · University of Pennsylvania', null, 'browse', 'scholars')}
+    ${VA('scholars', 7, 'scholars', 'gilgamesh')}
+  `,
+};
+
+// ── UR III ────────────────────────────────────────────────────────
+const Q_URIII = {
+  label: 'Ur III',
+  description: 'Period name — mostly administrative tablets',
+  all: () => `
+    ${S('Tablets', '41,382')}
+    ${R(T.tablet(), 'P100203', 'Ration list for weavers · Drehem, Ur III', pipe([2,2,2,2,2],'Complete'), 'detail')}
+    ${R(T.tablet(), 'P100204', 'Labor assignment · Umma, Ur III',           pipe([2,2,1,0,0],'Needs Lemmas'), 'detail')}
+    ${R(T.tablet(), 'P100205', 'Temple receipt · Nippur, Ur III',            pipe([2,2,2,0,0],'Needs Translation'), 'detail')}
+    ${VA('tablets', '41,382', 'tablets', 'urIII')}
+    <hr class="dd-divider">
+    ${S('Collections', '24')}
+    ${R(T.collection(), 'Ur III Administrative Texts', 'Ration lists, labor, temple accounts')}
+    ${R(T.collection(), 'Third Dynasty of Ur', 'Political, legal, literary texts 2112–2004 BCE')}
+    ${VA('collections', 24, 'collections', 'urIII')}
+  `,
+  tablets: () => `
+    ${S('Tablets', '41,382 matches')}
+    ${R(T.tablet(), 'P100203', 'Ration list for weavers · Drehem, Ur III', pipe([2,2,2,2,2],'Complete'), 'detail')}
+    ${R(T.tablet(), 'P100204', 'Labor assignment · Umma, Ur III',           pipe([2,2,1,0,0],'Needs Lemmas'), 'detail')}
+    ${R(T.tablet(), 'P100205', 'Temple receipt · Nippur, Ur III',            pipe([2,2,2,0,0],'Needs Translation'), 'detail')}
+    ${R(T.tablet(), 'P100206', 'Silver account · Ur, Ur III',                pipe([2,2,2,2,2],'Complete'), 'detail')}
+    ${R(T.tablet(), 'P100207', 'Animal delivery record · Drehem, Ur III',   pipe([2,1,0,0,0],'Needs Reading'), 'detail')}
+    ${R(T.tablet(), 'P100208', 'Messenger tablet · Lagash, Ur III',          pipe([2,2,2,1,0],'Needs Lemmas'), 'detail')}
+    ${VA('tablets', '41,382', 'tablets', 'urIII')}
+  `,
+  collections: () => `
+    ${S('Collections', '24 matches')}
+    ${R(T.collection(), 'Ur III Administrative Texts', 'Ration lists, labor assignments, temple accounts')}
+    ${R(T.collection(), 'Third Dynasty of Ur', 'Political, legal, literary texts 2112–2004 BCE')}
+    ${R(T.collection(), 'Drehem Archive', 'Animal management, Ur III royal court')}
+    ${VA('collections', 24, 'collections', 'urIII')}
+  `,
+  dictionary: 'noresults',
+  scholars: () => `
+    ${S('Scholars', '18 matches')}
+    ${R(T.scholar('TP'), 'Tonia Sharlach', 'Ur III provincial administration')}
+    ${R(T.scholar('WS'), 'Walther Sallaberger', 'Ur III calendar and administration')}
+    ${VA('scholars', 18, 'scholars', 'urIII')}
+  `,
+};
+
+// ── P-NUMBER ──────────────────────────────────────────────────────
+const Q_PNUM = {
+  label: 'P3928244',
+  description: 'Direct ID lookup — single confident match',
+  all: () => `
+    ${S('Tablets')}
+    <div class="dd-result" role="option" tabindex="-1" aria-selected="false" data-action="detail">
+      ${T.tablet()}
+      <div class="dd-meta">
+        <div class="dd-name">P3928244</div>
+        <div class="dd-sub">Gilgamesh going into the woods · Ur III · Nippur</div>
+        <span class="dd-confidence">Direct match</span>
+      </div>
+    </div>
+  `,
+  tablets: () => `
+    ${S('Tablets')}
+    <div class="dd-result" role="option" tabindex="-1" aria-selected="false" data-action="detail">
+      ${T.tablet()}
+      <div class="dd-meta">
+        <div class="dd-name">P3928244</div>
+        <div class="dd-sub">Gilgamesh going into the woods · Ur III · Nippur</div>
+        <span class="dd-confidence">Direct match</span>
+      </div>
+    </div>
+  `,
+  collections: 'noresults',
+  dictionary:  'noresults',
+  scholars:    'noresults',
+};
+
+const QUERIES = { esarhaddon: Q_ESARHADDON, gilgamesh: Q_GILGAMESH, urIII: Q_URIII, pnum: Q_PNUM };
+
+// Scope suggestions per context
+const SCOPE_SUGGESTIONS = {
+  all:         ["battles during Esarhaddon's reign", 'Gilgamesh', 'P3928244', 'Ur III'],
+  tablets:     ['ration list', 'Old Babylonian', 'Nippur letter', 'Drehem'],
+  collections: ['Gilgamesh', 'Ur III admin', 'lexical texts', 'royal inscriptions'],
+  dictionary:  ['ninda', 'lugal', 'danānu', 'verbal chain', 'determinative'],
+  scholars:    ['Oppenheim', 'Jacobsen', 'George', 'Leichty'],
+};
+
+// SCOPE label strings
+const SCOPE_LABELS = { all: 'All', tablets: 'Tablets', collections: 'Collections', dictionary: 'Dictionary', scholars: 'Scholars' };
+const PAGE_SCOPE   = { tablets: 'tablets', collections: 'collections', dictionary: 'dictionary', scholars: 'scholars' };
+
+// FILTERED page counts (per query)
+const FILTERED_COUNTS = {
+  esarhaddon: { tablets: '47 tablets', collections: '3 collections', dictionary: '12 lemmas', scholars: '5 scholars' },
+  gilgamesh:  { tablets: '128 tablets', collections: '12 collections', dictionary: '28 entries', scholars: '7 scholars' },
+  urIII:      { tablets: '41,382 tablets', collections: '24 collections' },
+  pnum:       { tablets: '1 tablet' },
+};
+
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+const NAV_LOAD_MS  = 1500;
+const SRCH_LOAD_MS = 550;
+const DEBOUNCE_MS  = 320;
+
+let currentPage    = 'tablets';
+let previousPage   = 'tablets';
+let searchScope    = 'all';
+let activeQuery    = 'esarhaddon'; // default dev query
+let isOpen         = false;
+let isNavigating   = false;
+let isSearching    = false;
+let debounceTimer  = null;
+let searchTimer    = null;
+let preFocusValue  = ''; // value at the moment the input was focused
+
+// DOM refs
+const surface   = document.getElementById('search-surface');
+const input     = document.getElementById('search-text-input');
+const body      = document.getElementById('search-body');
+const results   = document.getElementById('dd-results-container');
+const blank     = document.getElementById('dd-blank');
+const loadSkel  = document.getElementById('dd-loading');
+const nores     = document.getElementById('dd-noresults');
+const overlay   = document.getElementById('overlay');
+const announcer = document.getElementById('sr-announcer');
+const bar       = document.getElementById('loading-bar');
+const clearBtn  = document.getElementById('search-clear-btn');
+const infixName = document.getElementById('scope-infix-name');
+
+// ════════════════════════════════════════════════════════════════
+// STATE SETTERS
+// ════════════════════════════════════════════════════════════════
+
+function openSurface(contentState) {
+  // contentState: 'blank' | 'loading' | 'results' | 'noresults'
+  isOpen = true;
+  surface.setAttribute('aria-expanded', 'true');
+  overlay.classList.add('active');
+
+  surface.classList.remove('open-blank', 'open-loading', 'open-results', 'open-noresults');
+  surface.classList.add('open', 'open-' + contentState);
+
+  blank.style.display    = contentState === 'blank'    ? 'flex' : 'none';
+  loadSkel.style.display = contentState === 'loading'  ? 'flex' : 'none';
+  results.style.display  = contentState === 'results'  ? 'flex' : 'none';
+  nores.style.display    = contentState === 'noresults'? 'flex' : 'none';
+}
+
+function closeSurface() {
+  isOpen = false;
+  surface.setAttribute('aria-expanded', 'false');
+  surface.classList.remove('open', 'open-blank', 'open-loading', 'open-results', 'open-noresults');
+  overlay.classList.remove('active');
+  blank.style.display = loadSkel.style.display = results.style.display = nores.style.display = 'none';
+}
+
+function setScope(scope, animate) {
+  const prev = searchScope;
+  searchScope = scope;
+  surface.dataset.scope = scope;
+  infixName.textContent = SCOPE_LABELS[scope];
+
+  document.querySelectorAll('.scope-opt').forEach(o => {
+    const active = o.dataset.scope === scope;
+    o.classList.toggle('active', active);
+    o.setAttribute('aria-selected', active ? 'true' : 'false');
+    if (active && animate && scope !== prev) {
+      o.classList.remove('just-changed');
+      void o.offsetWidth;
+      o.classList.add('just-changed');
+      setTimeout(() => o.classList.remove('just-changed'), 400);
+    }
+  });
+
+  // Suggestions
+  const chips = (SCOPE_SUGGESTIONS[scope] || []).map(s =>
+    `<button class="dd-suggestion-chip" tabindex="-1" data-fill="${s}">${s}</button>`
+  ).join('');
+  document.getElementById('dd-suggestions').innerHTML = chips;
+  document.querySelectorAll('.dd-suggestion-chip').forEach(c =>
+    c.addEventListener('click', e => { e.stopPropagation(); fillAndSearch(c.dataset.fill); }));
+
+  // Update input placeholder
+  const phs = { all: "Try: battles during Esarhaddon's reign, P3928244", tablets: "Search tablets…", collections: "Search collections…", dictionary: "Search lemmas and signs…", scholars: "Search scholars…" };
+  input.placeholder = phs[scope];
+
+  if (isOpen && !isSearching) renderResults();
+  announce(`Searching in: ${SCOPE_LABELS[scope]}`);
+}
+
+function setPage(page, opts) {
+  // opts: { fromSearch: true, qKey: string, targetPage: string }
+  previousPage = (currentPage !== 'detail') ? currentPage : previousPage;
+  currentPage  = page;
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+
+  // Browse nav: active item = current page, or previous browse context on detail
+  const navTarget = (page === 'detail') ? previousPage : page;
+  document.querySelectorAll('.browse-nav-item').forEach(el =>
+    el.classList.toggle('active', el.dataset.browse === navTarget));
+
+  document.querySelectorAll('[data-page]').forEach(b =>
+    b.classList.toggle('active', b.dataset.page === page));
+
+  // Scope: only update when navigating to a browse page; inherit scope on detail
+  if (PAGE_SCOPE[page]) setScope(PAGE_SCOPE[page], true);
+
+  // Search input value: show record identifier on detail page; clear on browse
+  if (page === 'detail') {
+    const recordId = 'P334357'; // in a real app this would be the actual record id
+    input.value    = recordId;
+    preFocusValue  = recordId;  // revert target until user commits a new search
+    updateClearBtn();
+  } else {
+    input.value   = '';
+    preFocusValue = '';
+    updateClearBtn();
+  }
+
+  // Apply filter chip if arriving from "View all"
+  if (opts && opts.fromSearch) {
+    applyBrowseFilter(page, opts.qKey);
+  } else {
+    clearAllBrowseFilters();
+  }
+
+  updateUrl();
+}
+
+function updateUrl() {
+  const qText = activeQuery ? (QUERIES[activeQuery] || {}).label : null;
+  let path = '';
+  let qs = '';
+
+  if (currentPage === 'detail') {
+    path = '/tablets/P334357';
+  } else {
+    path = '/' + currentPage;
+    // Show query in URL only if a browse filter is active
+    const filterLabel = document.getElementById(currentPage + '-filter-label');
+    const filterRow   = document.getElementById(currentPage + '-filter-row');
+    if (filterLabel && filterRow && filterRow.style.display !== 'none') {
+      qs = '?q=' + encodeURIComponent(filterLabel.textContent || '').replace(/%20/g, '+').replace(/%27/g, "'");
+    }
+  }
+
+  document.getElementById('url-bar-text').innerHTML =
+    `<span class="url-host">https://glintstone.app</span>` +
+    `<span class="url-path">${path}</span>` +
+    `<span class="url-query">${qs}</span>`;
+}
+
+function applyBrowseFilter(page, qKey) {
+  const q = QUERIES[qKey];
+  if (!q) return;
+  const counts = (FILTERED_COUNTS[qKey] || {})[page] || '';
+  const label  = q.label;
+
+  const labelEl = document.getElementById(page + '-filter-label');
+  const rowEl   = document.getElementById(page + '-filter-row');
+  const countEl = document.getElementById(page + '-count');
+
+  if (labelEl && rowEl) {
+    labelEl.textContent = label;
+    rowEl.style.display = 'flex';
+    if (countEl) countEl.textContent = counts;
+    updateUrl();
+  }
+}
+
+function clearBrowseFilter(page) {
+  const rowEl   = document.getElementById(page + '-filter-row');
+  const countEl = document.getElementById(page + '-count');
+  const defaultCounts = { tablets: '353,283 tablets', collections: '2,847 collections' };
+  if (rowEl) rowEl.style.display = 'none';
+  if (countEl && defaultCounts[page]) countEl.textContent = defaultCounts[page];
+  updateUrl();
+}
+
+function clearAllBrowseFilters() {
+  ['tablets','collections'].forEach(p => clearBrowseFilter(p));
+}
+
+function announce(msg) {
+  announcer.textContent = '';
+  requestAnimationFrame(() => { announcer.textContent = msg; });
+}
+
+// ════════════════════════════════════════════════════════════════
+// RESULT RENDERING
+// ════════════════════════════════════════════════════════════════
+
+function matchQuery(val) {
+  const v = val.toLowerCase().trim();
+  if (!v) return null;
+  if (v.includes('esarhaddon') || v.includes('battles during')) return 'esarhaddon';
+  if (v.includes('gilgamesh'))       return 'gilgamesh';
+  if (v.includes('ur iii') || v.includes('ur3')) return 'urIII';
+  if (/^p\d{4,}/.test(v))           return 'pnum';
+  return 'esarhaddon'; // phrase query is the default demo
+}
+
+function renderResults() {
+  const val = input.value.trim();
+  if (!val) { openSurface('blank'); return; }
+
+  const qKey = activeQuery;
+  const q = QUERIES[qKey];
+  if (!q) { showNoresults(val); return; }
+
+  const fn = q[searchScope];
+  if (fn === 'noresults' || !fn) { showNoresults(val); return; }
+
+  const html = fn();
+  results.innerHTML = html;
+  results.style.display = 'flex';
+  openSurface('results');
+
+  // Wire up result clicks
+  wireResults();
+
+  const count = results.querySelectorAll('.dd-result').length;
+  announce(`${count} results for "${val}" in ${SCOPE_LABELS[searchScope]}`);
+}
+
+function showNoresults(val) {
+  document.getElementById('nr-query').textContent  = val;
+  document.getElementById('nr-scope').textContent  = SCOPE_LABELS[searchScope].toLowerCase();
+  openSurface('noresults');
+  announce(`No ${SCOPE_LABELS[searchScope].toLowerCase()} results for "${val}"`);
+}
+
+function wireResults() {
+  results.querySelectorAll('[data-action="detail"]').forEach(el =>
+    el.addEventListener('click', e => { e.stopPropagation(); navTo('detail'); }));
+  results.querySelectorAll('[data-action="browse"]').forEach(el =>
+    el.addEventListener('click', e => { e.stopPropagation(); navTo(el.dataset.target); }));
+  results.querySelectorAll('[data-action="viewall"]').forEach(el =>
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      navTo(el.dataset.page, { fromSearch: true, qKey: el.dataset.qkey });
+    }));
+}
+
+function fillAndSearch(text) {
+  input.value = text;
+  updateClearBtn();
+  activeQuery = matchQuery(text) || activeQuery;
+  document.querySelectorAll('[data-query]').forEach(b =>
+    b.classList.toggle('active', b.dataset.query === activeQuery));
+  doSearch(text);
+}
+
+function doSearch(val) {
+  clearTimeout(debounceTimer);
+  clearTimeout(searchTimer);
+  if (!val.trim()) { openSurface('blank'); return; }
+  isSearching = true;
+  openSurface('loading');
+  searchTimer = setTimeout(() => {
+    isSearching = false;
+    renderResults();
+  }, SRCH_LOAD_MS);
+}
+
+function updateClearBtn() {
+  clearBtn.classList.toggle('visible', input.value.length > 0);
+}
+
+// ════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════════
+function navTo(page, opts) {
+  if (isNavigating) return;
+  isNavigating = true;
+  preFocusValue = input.value; // commit: revert should be a no-op from here on
+  closeSurface();
+  input.blur();
+
+  bar.classList.remove('active');
+  void bar.offsetWidth;
+  bar.classList.add('active');
+
+  const activePg = document.querySelector('.page.active');
+  if (activePg) activePg.classList.add('page-dimming');
+
+  setTimeout(() => {
+    isNavigating = false;
+    bar.classList.remove('active');
+    if (activePg) activePg.classList.remove('page-dimming');
+    setPage(page, opts);
+  }, NAV_LOAD_MS);
+}
+
+// ════════════════════════════════════════════════════════════════
+// KEYBOARD NAVIGATION IN RESULTS
+// ════════════════════════════════════════════════════════════════
+function getOptions() {
+  return Array.from(document.querySelectorAll(
+    '#dd-results-container .dd-result[tabindex="-1"], #dd-blank .dd-recent-item[tabindex="-1"]'
+  ));
+}
+
+function moveSelection(dir) {
+  const opts = getOptions();
+  if (!opts.length) return;
+  const cur = document.activeElement;
+  const idx = opts.indexOf(cur);
+  const next = dir > 0
+    ? (idx < opts.length - 1 ? opts[idx + 1] : opts[0])
+    : (idx > 0 ? opts[idx - 1] : opts[opts.length - 1]);
+  next.focus();
+}
+
+// ════════════════════════════════════════════════════════════════
+// EVENTS
+// ════════════════════════════════════════════════════════════════
+
+// Input: focus — snapshot value so we can revert if user abandons
+input.addEventListener('focus', () => {
+  preFocusValue = input.value;
+  if (!isOpen) {
+    const val = input.value.trim();
+    if (val) renderResults();
+    else openSurface('blank');
+  }
+});
+
+// Input: text change with debounce
+input.addEventListener('input', () => {
+  updateClearBtn();
+  clearTimeout(debounceTimer);
+  const val = input.value.trim();
+  if (!val) { openSurface('blank'); isSearching = false; return; }
+  openSurface('loading');
+  debounceTimer = setTimeout(() => {
+    activeQuery = matchQuery(val) || activeQuery;
+    document.querySelectorAll('[data-query]').forEach(b =>
+      b.classList.toggle('active', b.dataset.query === activeQuery));
+    doSearch(val);
+  }, DEBOUNCE_MS);
+});
+
+// Revert input to pre-focus value without committing the search
+function revertAndClose() {
+  clearTimeout(debounceTimer);
+  clearTimeout(searchTimer);
+  isSearching = false;
+  input.value = preFocusValue;
+  updateClearBtn();
+  closeSurface();
+}
+
+// Prevent input blur when clicking inside dropdown
+body.addEventListener('mousedown', e => e.preventDefault());
+
+// Input: blur — revert if focus left without a committed action
+input.addEventListener('blur', () => {
+  setTimeout(() => {
+    if (!body.contains(document.activeElement) && document.activeElement !== input) {
+      revertAndClose();
+    }
+  }, 160);
+});
+
+// Clear button
+clearBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  clearTimeout(debounceTimer);
+  clearTimeout(searchTimer);
+  isSearching = false;
+  input.value = '';
+  updateClearBtn();
+  openSurface('blank');
+  input.focus();
+});
+
+// Scope bar
+document.querySelectorAll('.scope-opt').forEach(opt =>
+  opt.addEventListener('click', e => {
+    e.stopPropagation();
+    setScope(opt.dataset.scope, true);
+    if (!isSearching) renderResults();
+    input.focus();
+  })
+);
+
+// Browse nav
+document.querySelectorAll('.browse-nav-item').forEach(el => {
+  el.addEventListener('click', () => { if (el.dataset.browse !== currentPage) navTo(el.dataset.browse); });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
+});
+
+// Back button
+document.getElementById('back-btn').addEventListener('click', () => navTo(previousPage || 'tablets'));
+
+// Filter clear buttons
+['tablets','collections'].forEach(page => {
+  const btn = document.getElementById(page + '-filter-clear');
+  if (btn) btn.addEventListener('click', () => clearBrowseFilter(page));
+});
+
+// Overlay — clicking outside also reverts
+overlay.addEventListener('click', revertAndClose);
+
+// No-results CTA
+document.getElementById('nr-all-btn').addEventListener('click', () => {
+  setScope('all', false);
+  renderResults();
+});
+
+// Recent items
+document.querySelectorAll('.dd-recent-item').forEach(item => {
+  item.addEventListener('click',   () => fillAndSearch(item.dataset.fill));
+  item.addEventListener('keydown', e => { if (e.key === 'Enter') fillAndSearch(item.dataset.fill); });
+});
+
+// Dev panel: query presets
+document.querySelectorAll('[data-query]').forEach(btn =>
+  btn.addEventListener('click', () => {
+    const q = btn.dataset.query;
+    document.querySelectorAll('[data-query]').forEach(b => b.classList.toggle('active', b.dataset.query === q));
+    if (q === 'noresults') {
+      activeQuery = '__none__';
+      input.value = 'kurnupšiltu';
+      updateClearBtn();
+      showNoresults(input.value);
+      return;
+    }
+    activeQuery = q;
+    const label = (QUERIES[q] || {}).label || q;
+    fillAndSearch(label);
+  })
+);
+
+// Dev panel: pages
+document.querySelectorAll('[data-page]').forEach(btn =>
+  btn.addEventListener('click', () => setPage(btn.dataset.page)));
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  // ⌘K (Mac) / Ctrl+K (Windows/Linux) — focus search from anywhere
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    input.focus();
+    if (input.value) input.select();
+    return;
+  }
+
+  if (!isOpen) return;
+  if (e.key === 'Escape')    { e.preventDefault(); revertAndClose(); input.focus(); }
+  if (e.key === 'ArrowDown') { e.preventDefault(); moveSelection(1); }
+  if (e.key === 'ArrowUp')   { e.preventDefault(); moveSelection(-1); }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const ORDER = ['all','tablets','collections','dictionary','scholars'];
+    setScope(ORDER[(ORDER.indexOf(searchScope) + 1) % ORDER.length], true);
+    if (!isSearching) renderResults();
+    input.focus();
+  }
+  if (e.key === 'Enter' && document.activeElement !== input) {
+    const el = document.activeElement;
+    if (el && (el.classList.contains('dd-result') || el.classList.contains('dd-recent-item') || el.classList.contains('dd-view-all'))) el.click();
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+setPage('tablets');
+updateUrl();
+</script>
+</body>
+</html>

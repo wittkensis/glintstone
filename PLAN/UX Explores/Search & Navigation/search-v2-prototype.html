@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Navigation V2 – Glintstone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display&family=Noto+Sans+Cuneiform&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #1a1a1a;
+      --bg-elevated:   #242424;
+      --bg-deepest:    #0f0f0f;
+      --bg-inset:      rgba(10,10,10,0.85);
+      --text:          #e8e6e3;
+      --text-muted:    #a0a0a0;
+      --text-subtle:   #707070;
+      --accent:        #c9a962;
+      --accent-dim:    rgba(201,169,98,0.08);
+      --accent-border: rgba(201,169,98,0.4);
+      --border:        #333;
+      --border-mid:    #404040;
+      --intelligence:  #8ad7c8;
+      --sign:          #a18769;
+      --pipeline-done: #41a230;
+      --pipeline-act:  #bd984e;
+      --pipeline-off:  #404040;
+      --focus-ring:    rgba(201,169,98,0.6);
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; }
+    body { display: flex; flex-direction: column; }
+
+    /* ─── ACCESSIBILITY ──────────────────────────────────────── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    :focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    /* ─── GLOBAL HEADER ─────────────────────────────────────── */
+    #g-header {
+      background: var(--bg-deepest);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 8px; flex-shrink: 0; position: relative; z-index: 10;
+    }
+    .g-header-row {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Playfair Display', serif; font-size: 20px;
+      color: var(--accent); letter-spacing: 0.5px; white-space: nowrap; width: 160px;
+    }
+
+    /* ─── SEARCH ROOT ────────────────────────────────────────── */
+    #search-root {
+      display: flex; flex-direction: column; gap: 4px;
+      align-items: center; width: 500px; position: relative;
+    }
+
+    /* ─── INPUT BAR ──────────────────────────────────────────── */
+    .search-input-wrap {
+      width: 100%; height: 44px;
+      border-radius: 9999px;
+      border: 1px solid var(--border);
+      box-shadow: 0 0 8px 0 black;
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px 6px 40px;
+      position: relative;
+      transition: border-color 0.15s, background 0.15s;
+      cursor: text;
+      background: transparent;
+    }
+    #search-root[aria-expanded="true"] .search-input-wrap,
+    .search-input-wrap:focus-within { border-color: var(--accent); }
+
+    .search-icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px; opacity: 0.45; pointer-events: none;
+      transition: opacity 0.15s; color: var(--text-muted);
+    }
+    #search-root[aria-expanded="true"] .search-icon,
+    .search-input-wrap:focus-within .search-icon { opacity: 0.9; }
+
+    /* Scope rest-state pill (always visible) */
+    .scope-rest-pill {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 10px; color: var(--text-subtle); padding: 2px 6px;
+      border: 1px solid var(--border); border-radius: 4px;
+      pointer-events: none; white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    #search-root[aria-expanded="true"] .scope-rest-pill { opacity: 0; }
+    #search-root[data-scope="all"] .scope-rest-pill { display: none; }
+
+    /* Real text input */
+    #search-text-input {
+      background: transparent; border: none; outline: none;
+      font-family: 'Inter', sans-serif; font-size: 14px;
+      color: var(--text); flex: 1; min-width: 0;
+      caret-color: var(--accent);
+    }
+    #search-text-input::placeholder { color: var(--text-muted); opacity: 0.5; }
+
+    /* Scope pill (inside bar, visible when open) */
+    .scope-pill {
+      display: none; flex-shrink: 0;
+      align-items: center; gap: 3px;
+      padding: 3px 7px; border-radius: 4px;
+      border: 1px solid var(--border-mid);
+      font-size: 11px; color: var(--text-subtle); line-height: 1;
+      background: transparent; cursor: pointer; white-space: nowrap;
+      transition: all 0.12s;
+    }
+    #search-root[aria-expanded="true"] .scope-pill { display: flex; }
+    .scope-pill:hover { border-color: var(--text-subtle); color: var(--text-muted); }
+    #search-root[data-scope]:not([data-scope="all"]) .scope-pill {
+      border-color: var(--accent-border); color: var(--accent); background: var(--accent-dim);
+    }
+    .scope-pill-arrow { font-size: 8px; opacity: 0.55; }
+
+    /* Record chip */
+    .search-chip { display: none; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+    .chip-label {
+      background: var(--accent); color: var(--bg-deepest);
+      font-size: 12px; padding: 4px 6px; border-radius: 4px; white-space: nowrap;
+    }
+    .chip-value { font-size: 14px; color: var(--text); white-space: nowrap; }
+
+    /* Clear button */
+    .search-clear {
+      width: 18px; height: 18px; flex-shrink: 0; display: none;
+      cursor: pointer; color: var(--text-muted); font-size: 16px;
+      line-height: 18px; text-align: center; border-radius: 50%;
+      transition: background 0.1s;
+    }
+    .search-clear:hover { background: var(--border-mid); }
+
+    /* Record state */
+    #search-root.record #search-text-input { display: none; }
+    #search-root.record .search-chip       { display: flex; }
+    #search-root.record .search-clear      { display: block; }
+    #search-root.record .scope-pill        { display: none; }
+    #search-root.record[aria-expanded="true"] .search-input-wrap { border-color: var(--accent); }
+
+    /* ─── BROWSE NAV ─────────────────────────────────────────── */
+    .browse-nav {
+      display: flex; align-items: center; gap: 4px; padding-left: 20px;
+      transition: opacity 0.15s;
+    }
+    body.on-detail .browse-nav { opacity: 0; pointer-events: none; }
+    .browse-label { font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+    .browse-nav-item {
+      font-size: 12px; color: var(--text-muted); padding: 4px 6px; border-radius: 4px;
+      cursor: pointer; white-space: nowrap; transition: color 0.1s, background 0.1s;
+    }
+    .browse-nav-item:hover  { background: var(--bg-elevated); color: var(--text); }
+    .browse-nav-item.active { color: var(--text); }
+
+    /* ─── SEARCH MODE BAR (detail page only) ────────────────── */
+    .search-mode-bar {
+      display: none; align-items: center; gap: 4px; padding-left: 20px;
+    }
+    body.on-detail .search-mode-bar { display: flex; }
+    .search-mode-label { font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+    .search-mode-opt {
+      font-size: 12px; color: var(--text-muted); padding: 4px 8px; border-radius: 4px;
+      border: 1px solid transparent; background: transparent; cursor: pointer;
+      white-space: nowrap; transition: all 0.12s;
+    }
+    .search-mode-opt:hover { background: var(--bg-elevated); color: var(--text); }
+    .search-mode-opt.active {
+      color: var(--accent); border-color: var(--accent-border); background: var(--accent-dim);
+    }
+
+    .header-spacer { width: 160px; }
+
+    /* ─── DROPDOWN ───────────────────────────────────────────── */
+    .search-dropdown {
+      display: none; position: absolute; top: 52px; left: 0; width: 500px;
+      background: var(--bg-inset); backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px); border-radius: 18px; z-index: 100;
+      flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+      overflow: hidden;
+    }
+    #search-root[aria-expanded="true"] .search-dropdown { display: flex; }
+
+    /* ─── SCOPE BAR ──────────────────────────────────────────── */
+    .scope-bar {
+      display: flex; align-items: center; gap: 4px;
+      padding: 10px 16px 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      flex-wrap: wrap; flex-shrink: 0;
+    }
+    .scope-bar-label {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--text-subtle); margin-right: 2px; white-space: nowrap;
+    }
+    .scope-opt {
+      font-size: 11px; color: var(--text-subtle); padding: 3px 8px; border-radius: 4px;
+      border: 1px solid transparent; background: transparent;
+      cursor: pointer; white-space: nowrap; transition: all 0.12s;
+    }
+    .scope-opt:hover  { color: var(--text-muted); border-color: var(--border-mid); background: rgba(255,255,255,0.04); }
+    .scope-opt.active { color: var(--accent); border-color: var(--accent-border); background: var(--accent-dim); }
+    .scope-kb-hint { margin-left: auto; font-size: 10px; color: var(--text-subtle); opacity: 0.55; white-space: nowrap; }
+    .scope-kb-hint kbd {
+      font-family: inherit; font-size: 9px; padding: 1px 4px;
+      border: 1px solid var(--border-mid); border-radius: 3px; color: var(--text-subtle);
+    }
+
+    /* scope change pulse animation */
+    @keyframes scope-pulse {
+      0%   { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+      60%  { background: rgba(201,169,98,0.2); }
+      100% { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+    }
+    .scope-opt.just-changed { animation: scope-pulse 0.5s ease-out; }
+
+    /* ─── DROPDOWN SCROLL CONTAINER ──────────────────────────── */
+    .dropdown-scroll {
+      overflow-y: auto; max-height: 480px;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    .dropdown-scroll::-webkit-scrollbar { width: 4px; }
+    .dropdown-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ─── BLANK STATE ─────────────────────────────────────────── */
+    .dd-blank { display: none; flex-direction: column; padding: 8px 0 4px; }
+    #search-root[aria-expanded="true"].open-blank .dd-blank { display: flex; }
+
+    .dd-recent-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 20px; cursor: pointer; border-radius: 8px; margin: 0 4px;
+      font-size: 13px; color: var(--text-muted); transition: background 0.1s;
+    }
+    .dd-recent-item:hover  { background: rgba(255,255,255,0.05); color: var(--text); }
+    .dd-recent-icon { font-size: 12px; opacity: 0.5; flex-shrink: 0; }
+    .dd-recent-clear { margin-left: auto; font-size: 10px; color: var(--text-subtle); opacity: 0; cursor: pointer; }
+    .dd-recent-item:hover .dd-recent-clear { opacity: 1; }
+
+    .dd-suggestions-row {
+      display: flex; gap: 6px; padding: 4px 20px 12px; flex-wrap: wrap;
+    }
+    .dd-suggestion-chip {
+      font-size: 11px; color: var(--text-subtle); padding: 3px 10px; border-radius: 20px;
+      border: 1px solid var(--border); background: transparent; cursor: pointer;
+      transition: all 0.12s; white-space: nowrap;
+    }
+    .dd-suggestion-chip:hover { border-color: var(--border-mid); color: var(--text-muted); background: rgba(255,255,255,0.04); }
+
+    .dd-kb-row {
+      display: flex; gap: 12px; padding: 8px 20px 10px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      flex-wrap: wrap;
+    }
+    .dd-kb-hint { font-size: 10px; color: var(--text-subtle); opacity: 0.6; white-space: nowrap; }
+    .dd-kb-hint kbd {
+      font-family: inherit; font-size: 9px; padding: 1px 4px;
+      border: 1px solid var(--border-mid); border-radius: 3px;
+    }
+
+    /* ─── SKELETON LOADING ────────────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position:  400px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #252525 25%, #303030 50%, #252525 75%);
+      background-size: 800px 100%; animation: shimmer 1.4s ease-in-out infinite; border-radius: 3px;
+    }
+    .dd-loading { display: none; flex-direction: column; gap: 2px; padding: 8px 0; }
+    #search-root.loading .dd-loading { display: flex; }
+    .dd-skel-row   { display: flex; align-items: center; gap: 10px; padding: 10px 20px; }
+    .dd-skel-thumb { width: 50px; height: 40px; border-radius: 4px; flex-shrink: 0; }
+    .dd-skel-lines { display: flex; flex-direction: column; gap: 7px; flex: 1; }
+    .dd-skel-line  { height: 12px; }
+    .dd-skel-sub   { height: 8px; width: 55%; }
+
+    /* ─── RESULTS ────────────────────────────────────────────── */
+    .dd-results-container { display: flex; flex-direction: column; width: 100%; }
+    .dd-results-focused   { display: none; flex-direction: column; width: 100%; }
+    #search-root.record[aria-expanded="true"] .dd-results-focused { display: flex; }
+
+    .dd-section { margin-bottom: 2px; }
+    .dd-section-header {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 6px 20px 2px;
+    }
+    .dd-section-label {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--text-subtle);
+    }
+    .dd-section-count { font-size: 10px; color: var(--text-subtle); }
+    .dd-result {
+      display: flex; align-items: center; gap: 8px; padding: 9px 20px;
+      cursor: pointer; transition: background 0.1s; border-radius: 8px; margin: 0 4px;
+    }
+    .dd-result:hover, .dd-result:focus, .dd-result[aria-selected="true"] {
+      background: rgba(255,255,255,0.05); outline: none;
+    }
+    .dd-result:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+
+    .dd-thumb {
+      width: 50px; height: 40px; border-radius: 4px; flex-shrink: 0; overflow: hidden;
+    }
+    .dd-thumb-tablet     { background: linear-gradient(135deg, #3a2e1e 0%, #5c4a2a 50%, #3a2e1e 100%); }
+    .dd-thumb-collection { background: linear-gradient(135deg, #2a3a1e 0%, #3a5c2a 50%, #2a3a1e 100%); }
+    .dd-thumb-composite  { display: grid; grid-template-columns: 1fr 1fr; }
+    .dd-thumb-composite > div { background: linear-gradient(135deg, #3a2e1e 0%, #5c4a2a 100%); }
+    .dd-thumb-composite > div:nth-child(-n+2) { border-bottom: 1px solid #000; }
+    .dd-thumb-composite > div:nth-child(odd)  { border-right: 1px solid #000; }
+    .dd-thumb-sign   { background: var(--sign);         display: flex; align-items: center; justify-content: center; }
+    .dd-thumb-lemma  { background: var(--intelligence); display: flex; align-items: center; justify-content: center; }
+    .dd-thumb-scholar { background: linear-gradient(135deg, #1e1e2a, #2e2e48); display: flex; align-items: center; justify-content: center; }
+    .dd-thumb-local  { background: linear-gradient(135deg, #1a1e2a, #222840); display: flex; align-items: center; justify-content: center; }
+    .dd-sign-char        { font-family: 'Noto Sans Cuneiform', sans-serif; font-size: 20px; color: var(--bg-deepest); line-height: 1; }
+    .dd-sign-placeholder { font-family: 'Noto Sans Cuneiform', sans-serif; font-size: 14px; color: rgba(47,26,10,0.25); line-height: 1; }
+    .dd-scholar-initial  { font-size: 16px; font-weight: 700; color: rgba(160,155,210,0.45); }
+    .dd-local-line       { font-size: 10px; color: rgba(130,150,200,0.6); font-family: monospace; }
+    .dd-confidence {
+      display: inline-block; font-size: 9px; font-weight: 500; letter-spacing: 0.5px;
+      text-transform: uppercase; padding: 2px 5px; border-radius: 3px;
+      background: rgba(65,162,48,0.15); color: #6bcf5a; border: 1px solid rgba(65,162,48,0.3);
+      margin-top: 2px;
+    }
+
+    .dd-meta  { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+    .dd-name  { font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dd-sub   { font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1; }
+    .dd-name em { font-style: normal; color: var(--accent); }
+
+    .dd-view-all {
+      display: flex; align-items: center; gap: 4px;
+      margin: 2px 4px 8px; padding: 7px 16px;
+      font-size: 11px; color: var(--text-subtle); cursor: pointer;
+      border-radius: 8px; border: 1px solid var(--border);
+      transition: all 0.12s; background: transparent; text-align: left;
+    }
+    .dd-view-all:hover { color: var(--text-muted); border-color: var(--border-mid); background: rgba(255,255,255,0.03); }
+    .dd-view-all-arrow { margin-left: auto; opacity: 0.5; }
+
+    /* Pipeline mini */
+    .pipeline-mini { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+    .pipeline-dots { display: flex; align-items: center; gap: 3px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pipeline-off); }
+    .dot.done   { background: var(--pipeline-done); opacity: 0.4; }
+    .dot.active { background: var(--pipeline-act);  opacity: 1; }
+    .pipeline-label { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ─── NO RESULTS ────────────────────────────────────────── */
+    .dd-noresults { display: none; flex-direction: column; padding: 24px 20px 20px; gap: 10px; align-items: flex-start; }
+    #search-root.noresults .dd-noresults { display: flex; }
+    .dd-noresults-title { font-size: 14px; color: var(--text-muted); }
+    .dd-noresults-title strong { color: var(--text); }
+    .dd-noresults-sub { font-size: 12px; color: var(--text-subtle); }
+    .dd-noresults-cta {
+      font-size: 12px; color: var(--accent); padding: 6px 12px; border-radius: 6px;
+      border: 1px solid var(--accent-border); background: var(--accent-dim);
+      cursor: pointer; transition: all 0.12s;
+    }
+    .dd-noresults-cta:hover { background: rgba(201,169,98,0.15); }
+
+    /* ─── LOADING BAR ─────────────────────────────────────────── */
+    @keyframes progress-run {
+      0%   { transform: scaleX(0);    opacity: 1; }
+      75%  { transform: scaleX(0.82); opacity: 1; }
+      100% { transform: scaleX(1);    opacity: 0; }
+    }
+    #loading-bar {
+      position: fixed; top: 0; left: 0; height: 2px; width: 100%;
+      background: var(--accent); transform-origin: left; transform: scaleX(0); opacity: 0;
+      z-index: 1000; pointer-events: none; box-shadow: 0 0 6px var(--accent);
+    }
+    #loading-bar.active { animation: progress-run 1.5s cubic-bezier(0.4,0,0.2,1) forwards; }
+
+    /* ─── PAGE DIM ────────────────────────────────────────────── */
+    .page-dimming .page-body,
+    .page-dimming .tablet-header,
+    .page-dimming .detail-body { opacity: 0.2; pointer-events: none; transition: opacity 0.1s; }
+
+    /* ─── OVERLAY ─────────────────────────────────────────────── */
+    .overlay { display: none; position: fixed; inset: 0; z-index: 50; }
+    .overlay.active { display: block; }
+
+    /* ─── PAGES ───────────────────────────────────────────────── */
+    .page { display: none; flex: 1; flex-direction: column; min-height: 0; }
+    .page.active { display: flex; }
+
+    .page-body { flex: 1; display: flex; }
+    .browse-sidebar {
+      width: 300px; background: var(--bg-deepest); border-right: 1px solid var(--border);
+      padding: 24px 16px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto;
+    }
+    .sidebar-section-label {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--text-subtle); padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+    .sidebar-ph { height: 20px; background: var(--border); border-radius: 3px; opacity: 0.4; }
+    .browse-main { flex: 1; padding: 24px 32px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+    .browse-count { font-size: 18px; color: var(--text-muted); }
+    .browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .card-ph { aspect-ratio: 1; border-radius: 6px; border: 1px solid var(--border); }
+    .card-ph.tablet     { background: linear-gradient(135deg, #2a2218 0%, #3a3020 50%, #2a2218 100%); }
+    .card-ph.collection { background: linear-gradient(135deg, #1e2a18 0%, #253820 50%, #1e2a18 100%); aspect-ratio: 3/2; }
+    .browse-list { display: flex; flex-direction: column; gap: 4px; }
+    .card-ph.row        { background: linear-gradient(135deg, #1a1e2a 0%, #222530 100%); aspect-ratio: unset; height: 52px; }
+
+    /* ─── TABLET DETAIL ───────────────────────────────────────── */
+    .tablet-header {
+      border-bottom: 1px solid var(--border); padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-deepest); flex-shrink: 0;
+    }
+    .tablet-back { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .back-chevron { font-size: 18px; color: var(--text-muted); transition: color 0.1s; }
+    .tablet-back:hover .back-chevron { color: var(--text); }
+    .tablet-pnum { font-family: 'Playfair Display', serif; font-size: 40px; color: var(--text); line-height: 1.3; }
+    .composite-nav { display: flex; align-items: center; gap: 2px; }
+    .comp-btn {
+      width: 50px; height: 32px; border-radius: 4px;
+      background: linear-gradient(135deg, #3a2e1e, #5c4a2a);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px; color: var(--text-muted); transition: color 0.1s;
+    }
+    .comp-btn:hover { color: var(--text); }
+    .comp-current {
+      width: 80px; height: 32px; border-radius: 4px;
+      background: linear-gradient(135deg, #3a2e1e, #5c4a2a);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    }
+    .comp-id { font-size: 10px; font-weight: 700; color: #fff; }
+    .comp-pos { font-size: 10px; color: var(--text-muted); opacity: 0.6; }
+    .tablet-actions { display: flex; align-items: center; gap: 8px; }
+    .pipeline-status { display: flex; align-items: center; gap: 6px; }
+    .pipeline-segs { display: flex; align-items: center; gap: 3px; }
+    .seg { width: 8px; height: 8px; border-radius: 4px; }
+    .pipeline-text { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+    .icon-btn {
+      width: 32px; height: 32px; background: #303030; border: 1px solid var(--border-mid);
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px; color: var(--text-muted);
+    }
+    .icon-btn:hover { background: var(--bg-elevated); color: var(--text); }
+    .detail-body {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      opacity: 0.15; font-size: 13px; color: var(--text-muted);
+      letter-spacing: 1px; text-transform: uppercase; font-weight: 500;
+    }
+
+    /* ─── DEV PANEL ───────────────────────────────────────────── */
+    .dev-panel {
+      position: fixed; bottom: 16px; right: 16px; background: var(--bg-elevated);
+      border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+      font-size: 11px; color: var(--text-muted); z-index: 200;
+      display: flex; flex-direction: column; gap: 8px; max-width: 380px;
+    }
+    .dev-row   { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .dev-label { font-size: 10px; color: var(--text-subtle); width: 48px; flex-shrink: 0; }
+    .dev-btn {
+      padding: 3px 8px; border-radius: 3px; cursor: pointer; background: var(--border);
+      color: var(--text-muted); font-size: 10px; border: 1px solid transparent; transition: all 0.1s;
+    }
+    .dev-btn:hover { background: var(--bg-elevated); border-color: var(--border-mid); color: var(--text); }
+    .dev-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+    .dev-divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+  </style>
+</head>
+<body>
+
+<!-- ── Infrastructure ─────────────────────────────────────────── -->
+<div id="loading-bar"></div>
+<div class="overlay" id="overlay" aria-hidden="true"></div>
+<!-- Screen reader live region for search announcements -->
+<div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     SHARED GLOBAL HEADER
+═══════════════════════════════════════════════════════════════ -->
+<header id="g-header">
+  <div class="g-header-row">
+    <div class="logo" role="banner">Glintstone</div>
+
+    <!-- Search root: ARIA combobox pattern -->
+    <div id="search-root"
+         role="combobox"
+         aria-expanded="false"
+         aria-haspopup="listbox"
+         aria-owns="search-dropdown"
+         aria-label="Search Glintstone"
+         data-scope="all"
+         data-mode="global">
+
+      <!-- Input bar -->
+      <div class="search-input-wrap" id="search-input-wrap">
+        <svg class="search-icon" aria-hidden="true" viewBox="0 0 18 18" fill="none">
+          <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M11.5 11.5L16 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+
+        <!-- Scope pill (visible when dropdown open) -->
+        <button class="scope-pill" id="scope-pill" aria-label="Change search scope" tabindex="-1">
+          <span class="scope-pill-text">All</span>
+          <span class="scope-pill-arrow" aria-hidden="true">▾</span>
+        </button>
+
+        <!-- Record chip (shown after a result is selected) -->
+        <div class="search-chip" role="status" aria-live="polite">
+          <div class="chip-label">Tablet</div>
+          <div class="chip-value" id="chip-value">P3928244</div>
+        </div>
+
+        <!-- Real text input -->
+        <input type="text"
+               id="search-text-input"
+               role="textbox"
+               aria-autocomplete="list"
+               aria-controls="search-dropdown"
+               aria-activedescendant=""
+               placeholder="Try: Gilgamesh, ration, Ur III, P3928244"
+               autocomplete="off"
+               spellcheck="false" />
+
+        <!-- Scope rest-state pill (shows scope when input is closed) -->
+        <div class="scope-rest-pill" id="scope-rest-pill" aria-hidden="true">Tablets</div>
+
+        <!-- Clear button -->
+        <button class="search-clear" id="search-clear-btn" aria-label="Clear search" tabindex="-1">✕</button>
+      </div><!-- /search-input-wrap -->
+
+      <!-- Browse nav (hidden on detail page via body.on-detail) -->
+      <nav class="browse-nav" aria-label="Browse section">
+        <span class="browse-label" aria-hidden="true">Browse:</span>
+        <a class="browse-nav-item" data-browse="tablets"     role="link" tabindex="0">Tablets</a>
+        <a class="browse-nav-item" data-browse="collections" role="link" tabindex="0">Collections</a>
+        <a class="browse-nav-item" data-browse="dictionary"  role="link" tabindex="0">Dictionary</a>
+        <a class="browse-nav-item" data-browse="scholars"    role="link" tabindex="0">Scholars</a>
+      </nav>
+
+      <!-- Search mode bar (only visible on detail page) -->
+      <div class="search-mode-bar" id="search-mode-bar" aria-label="Search scope for this page">
+        <span class="search-mode-label" aria-hidden="true">Searching:</span>
+        <button class="search-mode-opt active" data-mode="global" aria-pressed="true">Everywhere</button>
+        <button class="search-mode-opt"        data-mode="local"  aria-pressed="false" id="local-mode-btn">In P334357</button>
+      </div>
+
+      <!-- ── DROPDOWN ──────────────────────────────────────────── -->
+      <div id="search-dropdown"
+           class="search-dropdown"
+           role="listbox"
+           aria-label="Search results"
+           aria-multiselectable="false">
+
+        <!-- Scope bar -->
+        <div class="scope-bar" role="group" aria-label="Narrow search scope">
+          <span class="scope-bar-label" aria-hidden="true">In:</span>
+          <button class="scope-opt active" data-scope="all"         role="option" aria-selected="true"  aria-label="Search all types">All</button>
+          <button class="scope-opt"        data-scope="tablets"     role="option" aria-selected="false" aria-label="Search tablets only">Tablets</button>
+          <button class="scope-opt"        data-scope="collections" role="option" aria-selected="false" aria-label="Search collections only">Collections</button>
+          <button class="scope-opt"        data-scope="dictionary"  role="option" aria-selected="false" aria-label="Search dictionary only">Dictionary</button>
+          <button class="scope-opt"        data-scope="scholars"    role="option" aria-selected="false" aria-label="Search scholars only">Scholars</button>
+          <span class="scope-kb-hint" aria-hidden="true"><kbd>Tab</kbd> to cycle</span>
+        </div>
+
+        <div class="dropdown-scroll">
+
+          <!-- Blank state (shown when input is empty + focused) -->
+          <div class="dd-blank" id="dd-blank" aria-label="Search suggestions">
+            <div class="dd-section-header" style="padding-top:8px">
+              <span class="dd-section-label">Recent</span>
+            </div>
+            <div class="dd-recent-item" role="option" tabindex="-1" data-fill="Gilgamesh">
+              <span class="dd-recent-icon" aria-hidden="true">↩</span>
+              Gilgamesh
+              <span class="dd-recent-clear" aria-label="Remove from recent">✕</span>
+            </div>
+            <div class="dd-recent-item" role="option" tabindex="-1" data-fill="ration distribution">
+              <span class="dd-recent-icon" aria-hidden="true">↩</span>
+              ration distribution
+              <span class="dd-recent-clear" aria-label="Remove from recent">✕</span>
+            </div>
+            <div class="dd-recent-item" role="option" tabindex="-1" data-fill="Ur III">
+              <span class="dd-recent-icon" aria-hidden="true">↩</span>
+              Ur III
+              <span class="dd-recent-clear" aria-label="Remove from recent">✕</span>
+            </div>
+
+            <div class="dd-section-header" style="padding-top:8px">
+              <span class="dd-section-label" id="dd-suggestions-label">Try searching</span>
+            </div>
+            <div class="dd-suggestions-row" id="dd-suggestions" aria-labelledby="dd-suggestions-label"></div>
+
+            <div class="dd-kb-row" role="note" aria-label="Keyboard shortcuts">
+              <span class="dd-kb-hint"><kbd>↑↓</kbd> navigate</span>
+              <span class="dd-kb-hint"><kbd>↵</kbd> select</span>
+              <span class="dd-kb-hint"><kbd>Esc</kbd> close</span>
+              <span class="dd-kb-hint"><kbd>Tab</kbd> cycle scope</span>
+            </div>
+          </div><!-- /dd-blank -->
+
+          <!-- Loading skeleton -->
+          <div class="dd-loading" id="dd-loading" aria-label="Loading results" aria-busy="true">
+            <div class="dd-skel-row"><div class="dd-skel-thumb skeleton"></div><div class="dd-skel-lines"><div class="dd-skel-line skeleton"></div><div class="dd-skel-sub skeleton"></div></div></div>
+            <div class="dd-skel-row"><div class="dd-skel-thumb skeleton"></div><div class="dd-skel-lines"><div class="dd-skel-line skeleton"></div><div class="dd-skel-sub skeleton"></div></div></div>
+            <div class="dd-skel-row"><div class="dd-skel-thumb skeleton"></div><div class="dd-skel-lines"><div class="dd-skel-line skeleton"></div><div class="dd-skel-sub skeleton"></div></div></div>
+          </div>
+
+          <!-- Results container (populated by JS) -->
+          <div id="dd-results-container" class="dd-results-container"></div>
+
+          <!-- No results state -->
+          <div class="dd-noresults" id="dd-noresults" role="status">
+            <div class="dd-noresults-title">
+              No <strong id="noresults-scope-label">results</strong> match
+              "<strong id="noresults-query-label"></strong>"
+            </div>
+            <div class="dd-noresults-sub">Check your spelling, or try a different scope.</div>
+            <button class="dd-noresults-cta" id="noresults-all-btn">Search All types</button>
+          </div>
+
+          <!-- Record-focused results (when chip is active) -->
+          <div class="dd-results-focused" role="group" aria-label="Change selected tablet">
+            <div class="dd-section-header"><span class="dd-section-label">Tablets</span></div>
+            <div class="dd-result" role="option" tabindex="-1" data-action="detail">
+              <div class="dd-thumb dd-thumb-tablet"></div>
+              <div class="dd-meta"><div class="dd-name">P3928244</div><div class="dd-sub">Gilgamesh going into the woods</div></div>
+            </div>
+          </div>
+
+        </div><!-- /dropdown-scroll -->
+      </div><!-- /search-dropdown -->
+
+    </div><!-- /search-root -->
+
+    <div class="header-spacer"></div>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     PAGES
+═══════════════════════════════════════════════════════════════ -->
+<div class="page active" id="page-tablets">
+  <div class="page-body">
+    <aside class="browse-sidebar" aria-label="Filters">
+      <div><div class="sidebar-section-label">Period</div><div style="display:flex;flex-direction:column;gap:8px;padding-top:12px"><div class="sidebar-ph" style="width:80%"></div><div class="sidebar-ph" style="width:65%"></div><div class="sidebar-ph" style="width:72%"></div><div class="sidebar-ph" style="width:55%"></div></div></div>
+      <div><div class="sidebar-section-label">Provenience</div><div style="display:flex;flex-direction:column;gap:8px;padding-top:12px"><div class="sidebar-ph" style="width:70%"></div><div class="sidebar-ph" style="width:85%"></div><div class="sidebar-ph" style="width:50%"></div></div></div>
+      <div><div class="sidebar-section-label">Genre</div><div style="display:flex;flex-direction:column;gap:8px;padding-top:12px"><div class="sidebar-ph" style="width:60%"></div><div class="sidebar-ph" style="width:40%"></div></div></div>
+    </aside>
+    <main class="browse-main"><div class="browse-count">353,283 tablets</div><div class="browse-grid"><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div><div class="card-ph tablet"></div></div></main>
+  </div>
+</div>
+
+<div class="page" id="page-collections">
+  <div class="page-body">
+    <aside class="browse-sidebar" aria-label="Filters"><div><div class="sidebar-section-label">Type</div><div style="display:flex;flex-direction:column;gap:8px;padding-top:12px"><div class="sidebar-ph" style="width:55%"></div><div class="sidebar-ph" style="width:70%"></div></div></div><div><div class="sidebar-section-label">Period</div><div style="display:flex;flex-direction:column;gap:8px;padding-top:12px"><div class="sidebar-ph" style="width:80%"></div><div class="sidebar-ph" style="width:60%"></div></div></div></aside>
+    <main class="browse-main"><div class="browse-count">2,847 collections</div><div class="browse-grid"><div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div><div class="card-ph collection"></div></div></main>
+  </div>
+</div>
+
+<div class="page" id="page-dictionary">
+  <div class="page-body">
+    <aside class="browse-sidebar" aria-label="Filters"><div><div class="sidebar-section-label">Language</div><div style="display:flex;flex-direction:column;gap:8px;padding-top:12px"><div class="sidebar-ph" style="width:55%"></div><div class="sidebar-ph" style="width:45%"></div></div></div><div><div class="sidebar-section-label">Part of speech</div><div style="display:flex;flex-direction:column;gap:8px;padding-top:12px"><div class="sidebar-ph" style="width:40%"></div><div class="sidebar-ph" style="width:60%"></div><div class="sidebar-ph" style="width:35%"></div></div></div></aside>
+    <main class="browse-main"><div class="browse-count">48,291 lemmas</div><div class="browse-list"><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div></div></main>
+  </div>
+</div>
+
+<div class="page" id="page-scholars">
+  <div class="page-body">
+    <aside class="browse-sidebar" aria-label="Filters"><div><div class="sidebar-section-label">Era</div><div style="display:flex;flex-direction:column;gap:8px;padding-top:12px"><div class="sidebar-ph" style="width:65%"></div><div class="sidebar-ph" style="width:50%"></div></div></div></aside>
+    <main class="browse-main"><div class="browse-count">1,203 scholars</div><div class="browse-list"><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div><div class="card-ph row"></div></div></main>
+  </div>
+</div>
+
+<div class="page" id="page-detail">
+  <div class="tablet-header">
+    <button class="tablet-back" id="back-btn" aria-label="Back to browse">
+      <span class="back-chevron" aria-hidden="true">‹</span>
+      <div class="tablet-pnum">P334357</div>
+    </button>
+    <div class="composite-nav" role="navigation" aria-label="Composite tablet navigation">
+      <button class="comp-btn" aria-label="Previous tablet in composite">‹</button>
+      <div class="comp-current" aria-label="Composite Q000343, tablet 3 of 394">
+        <div class="comp-id">Q000343</div><div class="comp-pos">3 / 394</div>
+      </div>
+      <button class="comp-btn" aria-label="Next tablet in composite">›</button>
+    </div>
+    <div class="tablet-actions">
+      <div class="pipeline-status" role="status" aria-label="Pipeline: Complete">
+        <div class="pipeline-segs" aria-hidden="true">
+          <div class="seg" style="background:var(--pipeline-off)"></div>
+          <div class="seg" style="background:var(--pipeline-done)"></div>
+          <div class="seg" style="background:var(--pipeline-off)"></div>
+          <div class="seg" style="background:var(--pipeline-done)"></div>
+        </div>
+        <div class="pipeline-text">Complete</div>
+      </div>
+      <button class="icon-btn" aria-label="More actions">⋮</button>
+    </div>
+  </div>
+  <div class="detail-body" aria-label="Tablet viewer panel">Tablet viewer · ATF panel · Knowledge sidebar</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     DEV PANEL
+═══════════════════════════════════════════════════════════════ -->
+<div class="dev-panel" aria-label="Prototype controls" role="region">
+  <div class="dev-row">
+    <span class="dev-label">Query</span>
+    <button class="dev-btn active" data-query="gilgamesh">Gilgamesh</button>
+    <button class="dev-btn" data-query="urIII">Ur III</button>
+    <button class="dev-btn" data-query="ration">ration</button>
+    <button class="dev-btn" data-query="pnum">P3928244</button>
+    <button class="dev-btn" data-query="empty">empty</button>
+    <button class="dev-btn" data-query="noresults">no results</button>
+  </div>
+  <hr class="dev-divider">
+  <div class="dev-row">
+    <span class="dev-label">Page</span>
+    <button class="dev-btn active" data-page="tablets">Tablets</button>
+    <button class="dev-btn" data-page="collections">Collections</button>
+    <button class="dev-btn" data-page="dictionary">Dictionary</button>
+    <button class="dev-btn" data-page="scholars">Scholars</button>
+    <button class="dev-btn" data-page="detail">Detail</button>
+  </div>
+</div>
+
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// QUERY DATA
+// ════════════════════════════════════════════════════════════════
+
+const T = {
+  tablet:     () => `<div class="dd-thumb dd-thumb-tablet"></div>`,
+  collection: () => `<div class="dd-thumb dd-thumb-collection"></div>`,
+  composite:  () => `<div class="dd-thumb dd-thumb-composite"><div></div><div></div><div></div><div></div></div>`,
+  lemma:     (c) => `<div class="dd-thumb dd-thumb-lemma"><span class="dd-sign-char">${c}</span></div>`,
+  sign:      (c) => `<div class="dd-thumb dd-thumb-sign"><span class="dd-sign-char">${c}</span></div>`,
+  signPh:     () => `<div class="dd-thumb dd-thumb-sign"><span class="dd-sign-placeholder">--</span></div>`,
+  scholar:   (i) => `<div class="dd-thumb dd-thumb-scholar"><span class="dd-scholar-initial">${i}</span></div>`,
+  local:     (n) => `<div class="dd-thumb dd-thumb-local"><span class="dd-local-line">${n}</span></div>`,
+};
+
+function R(thumb, name, sub, extra, action, target) {
+  const at = action === 'detail' ? 'data-action="detail"'
+           : action === 'browse' ? `data-action="browse" data-target="${target}"` : '';
+  return `<div class="dd-result" role="option" tabindex="-1" aria-selected="false" ${at}>
+    ${thumb}
+    <div class="dd-meta">
+      <div class="dd-name">${name}</div>
+      <div class="dd-sub">${sub}</div>
+      ${extra || ''}
+    </div>
+  </div>`;
+}
+
+function S(label, count) {
+  return `<div class="dd-section-header"><span class="dd-section-label">${label}</span>${count ? `<span class="dd-section-count">${count}</span>` : ''}</div>`;
+}
+
+function pipeline(dots, label) {
+  const dotHtml = dots.map(d =>
+    `<div class="dot${d===2?' done':d===1?' active':''}"></div>`
+  ).join('');
+  return `<div class="pipeline-mini"><div class="pipeline-dots">${dotHtml}</div><div class="pipeline-label">${label}</div></div>`;
+}
+
+function viewAll(label, count, action, target) {
+  const at = action === 'browse' ? `data-action="browse" data-target="${target}"` : '';
+  return `<button class="dd-view-all" ${at} aria-label="View all ${count} ${label}">
+    View all ${count} ${label} <span class="dd-view-all-arrow" aria-hidden="true">→</span>
+  </button>`;
+}
+
+// ── QUERY: Gilgamesh ─────────────────────────────────────────────
+const Q_GILGAMESH = {
+  label: 'Gilgamesh',
+  description: 'Proper noun — matches across types',
+  all: () => `
+    ${S('Collections')}
+    ${R(T.collection(), 'Stories of Gilgamesh', 'Canonical &amp; variant versions, all periods', null, 'browse', 'collections')}
+    ${S('Composites')}
+    ${R(T.composite(), 'Q3945294', 'Gilgamesh going into the woods', pipeline([2,2,1,0,0], 'Needs Lemmas'))}
+    ${S('Tablets', '128')}
+    ${R(T.tablet(), 'P3928244', 'Gilgamesh going into the woods · Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P3928245', 'Gilgamesh going into the woods · Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P3928246', 'Gilgamesh epic, tablet XI · Old Babylonian', null, 'detail')}
+    ${viewAll('tablets', 128, 'browse', 'tablets')}
+    ${S('Lemmas', '8')}
+    ${R(T.lemma('DN'), 'Gilgame&#353;', 'Divine name · Sumerian proper noun', null, 'browse', 'dictionary')}
+    ${R(T.lemma('DN'), '&#299;&#353;k&#257;r Gilgame&#353;', 'Text series name · Akkadian', null, 'browse', 'dictionary')}
+    ${S('Signs', '3')}
+    ${R(T.sign('𒈩'), 'MES', 'In BIL.MES.GA compound · 1,243 occurrences')}
+    ${R(T.sign('𒉈'), 'NE', 'Sign reading · 892 occurrences')}
+  `,
+  tablets: () => `
+    ${S('Tablets', '128 matches')}
+    ${R(T.tablet(), 'P3928244', 'Gilgamesh going into the woods · Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P3928245', 'Gilgamesh going into the woods · Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P3928246', 'Gilgamesh epic, tablet XI · Old Babylonian', null, 'detail')}
+    ${R(T.tablet(), 'P3928247', 'Gilgamesh epic, tablet XI · Neo-Babylonian', null, 'detail')}
+    ${R(T.tablet(), 'P3928248', 'The death of Gilgamesh · Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P3928249', 'Gilgamesh and the Bull of Heaven · Old Babylonian', null, 'detail')}
+    ${viewAll('tablets', 128, 'browse', 'tablets')}
+  `,
+  collections: () => `
+    ${S('Collections', '12 matches')}
+    ${R(T.collection(), 'Stories of Gilgamesh', 'Canonical &amp; variant versions, all periods', null, 'browse', 'collections')}
+    ${R(T.collection(), 'The Gilgamesh Epic Manuscripts', 'Nineveh library tablets, Sin-leqi-unninni recension', null, 'browse', 'collections')}
+    ${R(T.collection(), 'Babylonian Hero Myths', 'Incl. Gilgamesh, Etana, Adapa', null, 'browse', 'collections')}
+    ${viewAll('collections', 12, 'browse', 'collections')}
+  `,
+  dictionary: () => `
+    ${S('Lemmas', '8 matches')}
+    ${R(T.lemma('DN'), 'Gilgame&#353;', 'Divine name · Sumerian proper noun', null, 'browse', 'dictionary')}
+    ${R(T.lemma('DN'), '&#299;&#353;k&#257;r Gilgame&#353;', 'Text series name · Akkadian', null, 'browse', 'dictionary')}
+    ${R(T.lemma('DN'), 'Ezembilgames', 'Variant spelling · Hurrian borrowing', null, 'browse', 'dictionary')}
+    ${R(T.lemma('DN'), 'pabilga', 'Sumerian epithet · "fore-father"', null, 'browse', 'dictionary')}
+    ${S('Signs', '3 matches')}
+    ${R(T.sign('𒈩'), 'MES', 'In BIL.MES.GA compound · 1,243 occurrences')}
+    ${R(T.sign('𒉈'), 'NE', 'Sign reading · 892 occurrences')}
+    ${R(T.signPh(), 'BIL<sub>4</sub>.MES.GA', 'Sign compound · 47 occurrences')}
+    ${viewAll('dictionary entries', 28, 'browse', 'dictionary')}
+  `,
+  scholars: () => `
+    ${S('Scholars', '7 matches')}
+    ${R(T.scholar('AG'), 'Andrew George', 'Gilgamesh specialist · SOAS, University of London', null, 'browse', 'scholars')}
+    ${R(T.scholar('MK'), 'Maureen Gallery Kovacs', 'Translator, <em>The Epic of Gilgamesh</em> (1989)', null, 'browse', 'scholars')}
+    ${R(T.scholar('JT'), 'Jeffrey Tigay', 'Evolution of Gilgamesh epic · University of Pennsylvania', null, 'browse', 'scholars')}
+    ${viewAll('scholars', 7, 'browse', 'scholars')}
+  `,
+};
+
+// ── QUERY: Ur III ─────────────────────────────────────────────────
+const Q_URIII = {
+  label: 'Ur III',
+  description: 'Period name — mostly tablets and collections',
+  all: () => `
+    ${S('Collections', '24')}
+    ${R(T.collection(), 'Ur III Administrative Texts', 'Ration lists, labor assignments, temple accounts', null, 'browse', 'collections')}
+    ${R(T.collection(), 'Third Dynasty of Ur', 'Political, legal, literary texts 2112–2004 BCE', null, 'browse', 'collections')}
+    ${S('Tablets', '41,382')}
+    ${R(T.tablet(), 'P100203', 'Ration list · Drehem, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P100204', 'Labor assignment · Umma, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P100205', 'Temple receipt · Nippur, Ur III', null, 'detail')}
+    ${viewAll('tablets', '41,382', 'browse', 'tablets')}
+  `,
+  tablets: () => `
+    ${S('Tablets', '41,382 matches')}
+    ${R(T.tablet(), 'P100203', 'Ration list · Drehem, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P100204', 'Labor assignment · Umma, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P100205', 'Temple receipt · Nippur, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P100206', 'Silver account · Ur, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P100207', 'Animal delivery record · Drehem, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P100208', 'Messenger tablet · Lagash, Ur III', null, 'detail')}
+    ${viewAll('tablets', '41,382', 'browse', 'tablets')}
+  `,
+  collections: () => `
+    ${S('Collections', '24 matches')}
+    ${R(T.collection(), 'Ur III Administrative Texts', 'Ration lists, labor assignments, temple accounts')}
+    ${R(T.collection(), 'Third Dynasty of Ur', 'Political, legal, literary texts 2112–2004 BCE')}
+    ${R(T.collection(), 'Drehem Archive', 'Animal management, Ur III royal court')}
+    ${R(T.collection(), 'Umma Province Texts', 'Agricultural and labor records')}
+    ${viewAll('collections', 24, 'browse', 'collections')}
+  `,
+  dictionary: 'noresults',
+  scholars: () => `
+    ${S('Scholars', '18 matches')}
+    ${R(T.scholar('TP'), 'Tonia Sharlach', 'Ur III provincial administration')}
+    ${R(T.scholar('WS'), 'Walther Sallaberger', 'Ur III calendar and administration')}
+    ${viewAll('scholars', 18, 'browse', 'scholars')}
+  `,
+};
+
+// ── QUERY: ration ────────────────────────────────────────────────
+const Q_RATION = {
+  label: 'ration distribution',
+  description: 'Topical keyword — tablets and lemmas',
+  all: () => `
+    ${S('Tablets', '2,847')}
+    ${R(T.tablet(), 'P101832', 'Ration list for weavers · Lagash, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P101833', 'Monthly ration distribution · Drehem, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P101834', 'Beer ration for temple personnel · Nippur, Old Babylonian', null, 'detail')}
+    ${viewAll('tablets', '2,847', 'browse', 'tablets')}
+    ${S('Lemmas', '12')}
+    ${R(T.lemma('N'), 'ninda', 'Bread/ration · Sumerian noun', null, 'browse', 'dictionary')}
+    ${R(T.lemma('N'), 'še', 'Barley · Sumerian noun (in ration contexts)', null, 'browse', 'dictionary')}
+    ${R(T.lemma('N'), 'zid', 'Flour · Sumerian noun', null, 'browse', 'dictionary')}
+    ${viewAll('lemmas', 12, 'browse', 'dictionary')}
+  `,
+  tablets: () => `
+    ${S('Tablets', '2,847 matches')}
+    ${R(T.tablet(), 'P101832', 'Ration list for weavers · Lagash, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P101833', 'Monthly ration distribution · Drehem, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P101834', 'Beer ration for temple personnel · Nippur, Old Babylonian', null, 'detail')}
+    ${R(T.tablet(), 'P101835', 'Oil ration accounts · Umma, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P101836', 'Ration list for soldiers · Lagash, Ur III', null, 'detail')}
+    ${R(T.tablet(), 'P101837', 'Grain distribution record · Nippur, Neo-Babylonian', null, 'detail')}
+    ${viewAll('tablets', '2,847', 'browse', 'tablets')}
+  `,
+  collections: () => `
+    ${S('Collections', '4 matches')}
+    ${R(T.collection(), 'Ur III Administrative Texts', 'Includes major ration list archives')}
+    ${R(T.collection(), 'Lagash II Texts', 'Gudea and post-Gudea administrative records')}
+    ${viewAll('collections', 4, 'browse', 'collections')}
+  `,
+  dictionary: () => `
+    ${S('Lemmas', '12 matches')}
+    ${R(T.lemma('N'), 'ninda', 'Bread/ration · Sumerian noun', null, 'browse', 'dictionary')}
+    ${R(T.lemma('N'), 'še', 'Barley · Sumerian noun', null, 'browse', 'dictionary')}
+    ${R(T.lemma('N'), 'zid', 'Flour · Sumerian noun', null, 'browse', 'dictionary')}
+    ${R(T.lemma('V'), 'ba', 'To distribute · Sumerian verb', null, 'browse', 'dictionary')}
+    ${viewAll('lemmas', 12, 'browse', 'dictionary')}
+  `,
+  scholars: 'noresults',
+};
+
+// ── QUERY: P-number direct lookup ───────────────────────────────
+const Q_PNUM = {
+  label: 'P3928244',
+  description: 'Direct ID — single confident match',
+  all: () => `
+    ${S('Tablets')}
+    <div class="dd-result" role="option" tabindex="-1" aria-selected="false" data-action="detail">
+      ${T.tablet()}
+      <div class="dd-meta">
+        <div class="dd-name">P3928244</div>
+        <div class="dd-sub">Gilgamesh going into the woods · Ur III · Nippur</div>
+        <span class="dd-confidence">Direct match</span>
+      </div>
+    </div>
+  `,
+  tablets: () => `
+    ${S('Tablets')}
+    <div class="dd-result" role="option" tabindex="-1" aria-selected="false" data-action="detail">
+      ${T.tablet()}
+      <div class="dd-meta">
+        <div class="dd-name">P3928244</div>
+        <div class="dd-sub">Gilgamesh going into the woods · Ur III · Nippur</div>
+        <span class="dd-confidence">Direct match</span>
+      </div>
+    </div>
+  `,
+  collections: 'noresults',
+  dictionary: 'noresults',
+  scholars: 'noresults',
+};
+
+// ── LOCAL SEARCH (detail page, "In P334357" mode) ───────────────
+const Q_LOCAL = {
+  gilgamesh: () => `
+    ${S('Lines in P334357', '3 matches')}
+    ${R(T.local('i.3'), 'Col. i, line 3', '…GIŠ.BIL.GA.MES PN šu ba-an-ti…')}
+    ${R(T.local('ii.7'), 'Col. ii, line 7', '…<sup>d</sup>GIL.GA.MES ki-en-gi-ra…')}
+    ${R(T.local('iv.12'), 'Col. iv, line 12', '…ĝilgameš lugal unug<sup>ki</sup>…')}
+  `,
+  urIII: 'noresults',
+  ration: 'noresults',
+  pnum: 'noresults',
+};
+
+const QUERIES = { gilgamesh: Q_GILGAMESH, urIII: Q_URIII, ration: Q_RATION, pnum: Q_PNUM };
+
+const SCOPE_SUGGESTIONS = {
+  all:         ['Gilgamesh', 'Ur III', 'ration distribution', 'P3928244', 'flood narrative'],
+  tablets:     ['ration list', 'Drehem', 'Old Babylonian', 'Nippur letter', 'Ur III admin'],
+  collections: ['Gilgamesh', 'Ur III', 'lexical texts', 'royal inscriptions'],
+  dictionary:  ['ninda', 'lugal', 'dEN.ZU', 'divine determinative', 'verbal chain'],
+  scholars:    ['Oppenheim', 'Jacobsen', 'George', 'cuneiform philology'],
+};
+
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+const NAV_LOAD_MS  = 1500;
+const SRCH_LOAD_MS = 600;
+const DEBOUNCE_MS  = 350;
+
+let currentPage   = 'tablets';
+let previousPage  = 'tablets';
+let searchScope   = 'all';
+let searchMode    = 'global'; // 'global' | 'local'
+let activeQuery   = 'gilgamesh';
+let isOpen        = false;
+let isNavigating  = false;
+let isSearchLoading = false;
+let searchTimer   = null;
+let isRecordMode  = false;
+
+const PAGE_SCOPE = { tablets: 'tablets', collections: 'collections', dictionary: 'dictionary', scholars: 'scholars' };
+const SCOPE_LABELS = { all: 'All', tablets: 'Tablets', collections: 'Collections', dictionary: 'Dictionary', scholars: 'Scholars' };
+
+// ════════════════════════════════════════════════════════════════
+// DOM REFS
+// ════════════════════════════════════════════════════════════════
+const root        = document.getElementById('search-root');
+const input       = document.getElementById('search-text-input');
+const dropdown    = document.getElementById('search-dropdown');
+const results     = document.getElementById('dd-results-container');
+const blank       = document.getElementById('dd-blank');
+const loading     = document.getElementById('dd-loading');
+const noresults   = document.getElementById('dd-noresults');
+const overlay     = document.getElementById('overlay');
+const announcer   = document.getElementById('sr-announcer');
+const bar         = document.getElementById('loading-bar');
+const restPill    = document.getElementById('scope-rest-pill');
+const suggBox     = document.getElementById('dd-suggestions');
+const nrQueryLbl  = document.getElementById('noresults-query-label');
+const nrScopeLbl  = document.getElementById('noresults-scope-label');
+
+// ════════════════════════════════════════════════════════════════
+// CORE SETTERS
+// ════════════════════════════════════════════════════════════════
+function setDropdownState(state) {
+  // state: 'closed' | 'blank' | 'loading' | 'results' | 'noresults'
+  const open = state !== 'closed';
+
+  isOpen = open;
+  root.setAttribute('aria-expanded', open ? 'true' : 'false');
+  overlay.classList.toggle('active', open);
+
+  root.classList.remove('open-blank', 'loading', 'noresults');
+  loading.style.display = 'none';
+  results.style.display = 'none';
+  noresults.style.display = 'none';
+
+  if (state === 'blank')    { root.classList.add('open-blank'); blank.style.display = 'flex'; }
+  else                      { blank.style.display = 'none'; }
+
+  if (state === 'loading')  { loading.style.display = 'flex'; root.classList.add('loading'); }
+  if (state === 'results')  { results.style.display = 'flex'; }
+  if (state === 'noresults'){ noresults.style.display = 'flex'; root.classList.add('noresults'); }
+}
+
+function setScope(scope, animate) {
+  const prev = searchScope;
+  searchScope = scope;
+  root.dataset.scope = scope;
+
+  document.querySelectorAll('.scope-opt').forEach(o => {
+    const active = o.dataset.scope === scope;
+    o.classList.toggle('active', active);
+    o.setAttribute('aria-selected', active ? 'true' : 'false');
+    if (active && animate && scope !== prev) {
+      o.classList.remove('just-changed');
+      void o.offsetWidth;
+      o.classList.add('just-changed');
+      setTimeout(() => o.classList.remove('just-changed'), 600);
+    }
+  });
+
+  document.querySelector('.scope-pill-text').textContent = SCOPE_LABELS[scope];
+  restPill.textContent = SCOPE_LABELS[scope];
+
+  // Update suggestions
+  const chips = (SCOPE_SUGGESTIONS[scope] || []).map(s =>
+    `<button class="dd-suggestion-chip" data-fill="${s}" aria-label="Search for ${s}">${s}</button>`
+  ).join('');
+  suggBox.innerHTML = chips;
+  suggBox.querySelectorAll('.dd-suggestion-chip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fillAndSearch(chip.dataset.fill);
+    });
+  });
+
+  if (isOpen && !isSearchLoading) renderCurrentResults();
+  announce(`Search scope: ${SCOPE_LABELS[scope]}`);
+}
+
+function setPage(page) {
+  previousPage = (currentPage !== 'detail') ? currentPage : previousPage;
+  currentPage  = page;
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.body.classList.toggle('on-detail', page === 'detail');
+
+  document.querySelectorAll('.browse-nav-item').forEach(el =>
+    el.classList.toggle('active', el.dataset.browse === page));
+  document.querySelectorAll('[data-page]').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.page === page));
+
+  // Auto-scope
+  if (PAGE_SCOPE[page]) setScope(PAGE_SCOPE[page], true);
+  else setScope('all', false); // detail page
+
+  // Detail: default to local search mode
+  if (page === 'detail') {
+    setSearchMode('local');
+    isRecordMode = true;
+    root.classList.add('record');
+    document.getElementById('chip-value').textContent = 'P334357';
+    input.value = '';
+    setDropdownState('closed');
+  } else {
+    isRecordMode = false;
+    root.classList.remove('record');
+    if (isOpen) closeDropdown();
+  }
+}
+
+function setSearchMode(mode) {
+  searchMode = mode;
+  root.dataset.mode = mode;
+  document.querySelectorAll('.search-mode-opt').forEach(btn => {
+    const active = btn.dataset.mode === mode;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  // Update placeholder
+  if (mode === 'local') {
+    input.placeholder = 'Search lines, annotations, glosses in P334357…';
+  } else {
+    input.placeholder = 'Try: Gilgamesh, ration, Ur III, P3928244';
+  }
+}
+
+function announce(msg) {
+  announcer.textContent = '';
+  requestAnimationFrame(() => { announcer.textContent = msg; });
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDERING
+// ════════════════════════════════════════════════════════════════
+function matchQuery(val) {
+  const v = val.toLowerCase().trim();
+  if (!v) return null;
+  if (v.includes('gilgamesh'))      return 'gilgamesh';
+  if (v.includes('ur iii') || v.includes('ur3') || v.includes('ur-iii')) return 'urIII';
+  if (v.includes('ration'))         return 'ration';
+  if (/p\d{5,}/.test(v))            return 'pnum';
+  return 'gilgamesh'; // fallback
+}
+
+function renderCurrentResults() {
+  const val = input.value.trim();
+  if (!val) { setDropdownState('blank'); return; }
+
+  const qKey = activeQuery;
+  const q = QUERIES[qKey];
+  if (!q) { setDropdownState('noresults'); return; }
+
+  let contentFn;
+  if (searchMode === 'local') {
+    contentFn = (Q_LOCAL[qKey] === 'noresults' || !Q_LOCAL[qKey]) ? 'noresults' : Q_LOCAL[qKey];
+  } else {
+    contentFn = q[searchScope] || q.all;
+  }
+
+  if (contentFn === 'noresults') {
+    nrQueryLbl.textContent = val;
+    nrScopeLbl.textContent = SCOPE_LABELS[searchScope].toLowerCase();
+    setDropdownState('noresults');
+    announce(`No ${SCOPE_LABELS[searchScope].toLowerCase()} match "${val}"`);
+    return;
+  }
+
+  const html = contentFn();
+  results.innerHTML = html;
+  setDropdownState('results');
+
+  // Wire up result interactions
+  results.querySelectorAll('[data-action="detail"]').forEach(el =>
+    el.addEventListener('click', (e) => { e.stopPropagation(); navigateTo('detail'); }));
+  results.querySelectorAll('[data-action="browse"]').forEach(el =>
+    el.addEventListener('click', (e) => { e.stopPropagation(); navigateTo(el.dataset.target); }));
+
+  // Count for screen reader
+  const count = results.querySelectorAll('.dd-result').length;
+  announce(`${count} results for "${val}" in ${SCOPE_LABELS[searchScope]}`);
+}
+
+function startSearch(val) {
+  if (!val) { setDropdownState('blank'); return; }
+
+  const qKey = matchQuery(val);
+  activeQuery = qKey;
+  // Update dev panel
+  document.querySelectorAll('[data-query]').forEach(b => b.classList.toggle('active', b.dataset.query === qKey));
+
+  clearTimeout(searchTimer);
+  isSearchLoading = true;
+  setDropdownState('loading');
+
+  searchTimer = setTimeout(() => {
+    isSearchLoading = false;
+    renderCurrentResults();
+  }, SRCH_LOAD_MS);
+}
+
+function fillAndSearch(text) {
+  input.value = text;
+  input.focus();
+  startSearch(text);
+}
+
+// ════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════════
+function navigateTo(page) {
+  if (isNavigating) return;
+  isNavigating = true;
+  closeDropdown();
+
+  bar.classList.remove('active');
+  void bar.offsetWidth;
+  bar.classList.add('active');
+
+  const activePage = document.querySelector('.page.active');
+  if (activePage) activePage.classList.add('page-dimming');
+
+  setTimeout(() => {
+    isNavigating = false;
+    bar.classList.remove('active');
+    if (activePage) activePage.classList.remove('page-dimming');
+    setPage(page);
+  }, NAV_LOAD_MS);
+}
+
+function closeDropdown() {
+  clearTimeout(searchTimer);
+  isSearchLoading = false;
+  setDropdownState('closed');
+}
+
+function openDropdown() {
+  const val = input.value.trim();
+  if (val) renderCurrentResults();
+  else setDropdownState('blank');
+}
+
+// ════════════════════════════════════════════════════════════════
+// KEYBOARD NAVIGATION IN RESULTS
+// ════════════════════════════════════════════════════════════════
+function getOptions() {
+  return Array.from(document.querySelectorAll(
+    '#dd-results-container .dd-result[tabindex="-1"], #dd-blank .dd-recent-item[tabindex="-1"]'
+  ));
+}
+
+function moveSelection(dir) {
+  const opts = getOptions();
+  if (!opts.length) return;
+  const cur = document.activeElement;
+  const idx = opts.indexOf(cur);
+  const next = dir === 1
+    ? (idx < opts.length - 1 ? opts[idx + 1] : opts[0])
+    : (idx > 0 ? opts[idx - 1] : opts[opts.length - 1]);
+  next.focus();
+  root.setAttribute('aria-activedescendant', next.id || '');
+}
+
+// ════════════════════════════════════════════════════════════════
+// EVENTS
+// ════════════════════════════════════════════════════════════════
+
+// Input: focus → open blank or results
+input.addEventListener('focus', () => {
+  if (!isRecordMode) openDropdown();
+});
+
+// Input: text change with debounce
+input.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  const val = input.value.trim();
+  if (!val) { setDropdownState('blank'); return; }
+  // Show loading after debounce
+  setDropdownState('loading');
+  searchTimer = setTimeout(() => startSearch(val), DEBOUNCE_MS);
+});
+
+// Prevent blur when clicking inside dropdown (mousedown fires before blur)
+dropdown.addEventListener('mousedown', (e) => e.preventDefault());
+
+// Input: blur → close (with delay to allow click through)
+input.addEventListener('blur', () => {
+  // Delay check so result clicks fire first
+  setTimeout(() => {
+    if (!dropdown.contains(document.activeElement) && document.activeElement !== input) {
+      closeDropdown();
+    }
+  }, 150);
+});
+
+// Record chip: click to re-open dropdown
+document.querySelector('.search-chip').addEventListener('click', () => {
+  if (isRecordMode) {
+    isRecordMode = false;
+    root.classList.remove('record');
+    input.value = '';
+    input.focus();
+    openDropdown();
+  }
+});
+
+// Clear button
+document.getElementById('search-clear-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  clearTimeout(searchTimer);
+  input.value = '';
+  if (isRecordMode) { isRecordMode = false; root.classList.remove('record'); }
+  setDropdownState('blank');
+  input.focus();
+});
+
+// Scope pill (toggle between all and current page scope)
+document.getElementById('scope-pill').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const ctx = PAGE_SCOPE[currentPage] || 'all';
+  const next = (searchScope === 'all' && ctx !== 'all') ? ctx : 'all';
+  setScope(next, true);
+  input.focus();
+});
+
+// Scope bar options
+document.querySelectorAll('.scope-opt').forEach(opt => {
+  opt.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setScope(opt.dataset.scope, true);
+    input.focus();
+  });
+});
+
+// Browse nav
+document.querySelectorAll('.browse-nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    if (el.dataset.browse !== currentPage) navigateTo(el.dataset.browse);
+  });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+  });
+});
+
+// Search mode (detail page)
+document.querySelectorAll('.search-mode-opt').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setSearchMode(btn.dataset.mode);
+    input.value = '';
+    setDropdownState('blank');
+    input.focus();
+  });
+});
+
+// Back button
+document.getElementById('back-btn').addEventListener('click', () => {
+  navigateTo(previousPage || 'tablets');
+});
+
+// Overlay click
+overlay.addEventListener('click', closeDropdown);
+
+// No-results: "Search All" button
+document.getElementById('noresults-all-btn').addEventListener('click', () => {
+  setScope('all', false);
+  renderCurrentResults();
+});
+
+// Recent item clicks
+document.querySelectorAll('.dd-recent-item').forEach(item => {
+  item.addEventListener('click', () => fillAndSearch(item.dataset.fill));
+  item.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') fillAndSearch(item.dataset.fill);
+  });
+});
+
+// Dev panel: query presets
+document.querySelectorAll('[data-query]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const q = btn.dataset.query;
+    if (q === 'empty') { closeDropdown(); input.value = ''; return; }
+    if (q === 'noresults') {
+      activeQuery = '__noresults__';
+      input.value = 'xyz';
+      // Force no results
+      nrQueryLbl.textContent = 'xyz';
+      nrScopeLbl.textContent = SCOPE_LABELS[searchScope].toLowerCase();
+      setDropdownState('noresults');
+      return;
+    }
+    activeQuery = q;
+    const label = (QUERIES[q] || {}).label || q;
+    fillAndSearch(label);
+    document.querySelectorAll('[data-query]').forEach(b => b.classList.toggle('active', b.dataset.query === q));
+  });
+});
+
+// Dev panel: page
+document.querySelectorAll('[data-page]').forEach(btn => {
+  btn.addEventListener('click', () => setPage(btn.dataset.page));
+});
+
+// Keyboard handling
+document.addEventListener('keydown', (e) => {
+  if (!isOpen) return;
+
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    closeDropdown();
+    input.focus();
+  }
+  else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    moveSelection(1);
+  }
+  else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    moveSelection(-1);
+  }
+  else if (e.key === 'Tab') {
+    e.preventDefault();
+    const ORDER = ['all', 'tablets', 'collections', 'dictionary', 'scholars'];
+    const idx = ORDER.indexOf(searchScope);
+    setScope(ORDER[(idx + 1) % ORDER.length], true);
+    input.focus();
+  }
+  else if (e.key === 'Enter' && document.activeElement !== input) {
+    const focused = document.activeElement;
+    if (focused && focused.classList.contains('dd-result')) focused.click();
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+setPage('tablets');
+</script>
+</body>
+</html>
