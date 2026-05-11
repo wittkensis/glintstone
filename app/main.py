@@ -8,16 +8,19 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.api_client import APIClient
-from app.routes import home, tablets, collections, dictionary
+from app.routes import admin, collections, dictionary, home, tablets
+from core.database import close_pool, init_pool
 
 BASE_DIR = Path(__file__).parent
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_pool()
     app.state.api = APIClient()
     yield
     app.state.api.close()
+    close_pool()
 
 
 app = FastAPI(title="Glintstone Web", docs_url=None, redoc_url=None, lifespan=lifespan)
@@ -29,3 +32,4 @@ app.include_router(home.router)
 app.include_router(tablets.router)
 app.include_router(collections.router)
 app.include_router(dictionary.router)
+app.include_router(admin.router)

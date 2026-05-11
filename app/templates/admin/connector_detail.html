@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}{{ source.display_name }} · Ingestion · Glintstone{% endblock %}
+
+{% block content %}
+<main class="admin">
+  <p><a href="/admin/ingestion">← All connectors</a></p>
+  <h1>{{ source.display_name }}</h1>
+  <p class="muted">{{ source.id }} · {{ source.kind }} · {% if source.license %}license: {{ source.license }}{% endif %}</p>
+  {% if source.description %}<p>{{ source.description }}</p>{% endif %}
+  {% if source.upstream_url %}<p><a href="{{ source.upstream_url }}" target="_blank" rel="noopener">{{ source.upstream_url }}</a></p>{% endif %}
+  {% if source.citation %}
+    <p class="muted"><strong>Cite:</strong> {{ source.citation }}</p>
+  {% endif %}
+
+  <section class="admin-section">
+    <h2>Recent runs</h2>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Run</th>
+          <th>Mode</th>
+          <th>Started</th>
+          <th>Status</th>
+          <th>Inserted</th>
+          <th>Updated</th>
+          <th>Skipped</th>
+          <th>Dead-lettered</th>
+          <th>Duration</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in runs %}
+        <tr>
+          <td>#{{ r.id }}</td>
+          <td>{{ r.run_mode }}</td>
+          <td>{{ r.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td class="status status-{{ r.status }}">{{ r.status }}</td>
+          <td>{{ '{:,}'.format(r.rows_inserted) }}</td>
+          <td>{{ '{:,}'.format(r.rows_updated) }}</td>
+          <td>{{ '{:,}'.format(r.rows_skipped) }}</td>
+          <td>{{ '{:,}'.format(r.rows_dead_lettered) }}</td>
+          <td>{{ (r.duration_ms / 1000) | round(1) if r.duration_ms else '—' }}s</td>
+        </tr>
+        {% if r.status == 'failed' and r.error_summary %}
+        <tr><td colspan="9"><pre class="error">{{ r.error_summary[:1000] }}</pre></td></tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="admin-section" id="dead-letters">
+    <h2>Open dead letters ({{ dead_letters | length }})</h2>
+    {% if not dead_letters %}
+    <p class="muted">No open dead letters for this connector.</p>
+    {% else %}
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Run</th>
+          <th>Category</th>
+          <th>Subcategory</th>
+          <th>Source key</th>
+          <th>Reason</th>
+          <th>Logged</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in dead_letters %}
+        <tr>
+          <td>#{{ d.id }}</td>
+          <td>#{{ d.run_id }}</td>
+          <td>{{ d.category }}</td>
+          <td>{{ d.subcategory or '—' }}</td>
+          <td><code>{{ d.source_key or '' }}</code></td>
+          <td>{{ d.reason }}</td>
+          <td>{{ d.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+</main>
+
+<style>
+  main.admin { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+  .admin-section { margin: 2rem 0; }
+  .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .admin-table th, .admin-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+  .admin-table th { font-weight: 600; background: #f9fafb; }
+  .muted { color: #6b7280; font-size: 13px; }
+  .status { font-weight: 500; }
+  .status-succeeded { color: #16a34a; }
+  .status-failed { color: #dc2626; }
+  .status-running { color: #2563eb; }
+  .status-no_op { color: #6b7280; }
+  pre.error { background: #fef2f2; padding: 0.75rem; font-size: 12px; overflow-x: auto; }
+</style>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Ingestion · Glintstone{% endblock %}
+
+{% block content %}
+<main class="admin">
+  <h1>Ingestion</h1>
+
+  <section class="admin-section">
+    <h2>Connectors</h2>
+    {% if not connectors %}
+      <p class="muted">No connectors registered yet. Add modules under
+        <code>ingestion/connectors/</code> and they will appear here on the
+        next run.</p>
+    {% else %}
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Connector</th>
+          <th>Kind</th>
+          <th>Last run</th>
+          <th>Status</th>
+          <th>Inserted</th>
+          <th>Dead letters (open)</th>
+          <th>Duration</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in connectors %}
+        <tr>
+          <td>
+            <a href="/admin/ingestion/{{ c.connector_id }}">{{ c.display_name }}</a>
+            <div class="muted">{{ c.connector_id }}</div>
+          </td>
+          <td>{{ c.kind }}</td>
+          <td>{{ c.last_run_at.strftime('%Y-%m-%d %H:%M') if c.last_run_at else '—' }}</td>
+          <td class="status status-{{ c.last_run_status or 'none' }}">{{ c.last_run_status or '—' }}</td>
+          <td>{{ '{:,}'.format(c.last_run_inserted) if c.last_run_inserted is not none else '—' }}</td>
+          <td>
+            {% if c.open_dead_letters and c.open_dead_letters > 0 %}
+              <a href="/admin/ingestion/{{ c.connector_id }}#dead-letters" class="badge-dead-letters">{{ c.open_dead_letters }}</a>
+            {% else %}
+              0
+            {% endif %}
+          </td>
+          <td>{{ (c.last_run_duration_ms / 1000) | round(1) if c.last_run_duration_ms else '—' }}s</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+
+  <section class="admin-section">
+    <h2>Dead-letter queue</h2>
+    {% if not dead_letter_summary %}
+      <p class="muted">No open dead letters. Every record loaded cleanly.</p>
+    {% else %}
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Connector</th>
+          <th>Category</th>
+          <th>Subcategory</th>
+          <th>Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in dead_letter_summary %}
+        <tr>
+          <td><a href="/admin/ingestion/{{ r.connector_id }}#dead-letters">{{ r.connector_id }}</a></td>
+          <td>{{ r.category }}</td>
+          <td>{{ r.subcategory or '—' }}</td>
+          <td>{{ '{:,}'.format(r.n) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+
+  <section class="admin-section">
+    <h2>Recent runs</h2>
+    {% if not recent_runs %}
+      <p class="muted">No runs recorded yet. Use <code>glintstone-ingest run &lt;id&gt;</code> to start one.</p>
+    {% else %}
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Run</th>
+          <th>Connector</th>
+          <th>Mode</th>
+          <th>Started</th>
+          <th>Status</th>
+          <th>Inserted</th>
+          <th>Dead-lettered</th>
+          <th>Duration</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in recent_runs %}
+        <tr>
+          <td>#{{ r.id }}</td>
+          <td><a href="/admin/ingestion/{{ r.connector_id }}">{{ r.connector_id }}</a></td>
+          <td>{{ r.run_mode }}</td>
+          <td>{{ r.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td class="status status-{{ r.status }}">{{ r.status }}</td>
+          <td>{{ '{:,}'.format(r.rows_inserted) }}</td>
+          <td>{{ '{:,}'.format(r.rows_dead_lettered) }}</td>
+          <td>{{ (r.duration_ms / 1000) | round(1) if r.duration_ms else '—' }}s</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+</main>
+
+<style>
+  main.admin { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+  .admin-section { margin: 2rem 0; }
+  .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .admin-table th, .admin-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+  .admin-table th { font-weight: 600; background: #f9fafb; }
+  .admin-table .muted { color: #6b7280; font-size: 12px; }
+  .status { font-weight: 500; }
+  .status-succeeded { color: #16a34a; }
+  .status-failed { color: #dc2626; }
+  .status-running { color: #2563eb; }
+  .status-no_op { color: #6b7280; }
+  .status-cancelled { color: #9ca3af; }
+  .status-none { color: #d1d5db; }
+  .badge-dead-letters { display: inline-block; padding: 2px 8px; background: #fef3c7; color: #92400e; border-radius: 999px; text-decoration: none; font-weight: 500; }
+</style>
+{% endblock %}
