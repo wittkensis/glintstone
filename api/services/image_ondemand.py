@@ -58,12 +58,18 @@ class EnsureResult:
     detail: Optional[str] = None
 
 
-def ensure_images_for_artifact(conn, p_number: str) -> EnsureResult:
+def ensure_images_for_artifact(
+    conn, p_number: str, *, respect_crawl_delay: bool = False
+) -> EnsureResult:
     """Idempotently make sure artifact_images has rows for this P-number.
 
     Returns immediately if rows already exist (status='cached'). Otherwise
     holds the per-artifact lock for the duration of the fetch — second
     callers will block until the first finishes, then see 'cached'.
+
+    ``respect_crawl_delay``: pass ``True`` for batch crawlers so the fetch
+    honors CDLI's robots.txt 60s Crawl-delay. On-demand traffic (the API
+    default) uses the shorter 5s courtesy floor.
     """
     lock = _per_artifact_lock(p_number)
     with lock:
@@ -72,7 +78,10 @@ def ensure_images_for_artifact(conn, p_number: str) -> EnsureResult:
             return EnsureResult(status="cached", image_count=existing)
 
         try:
-            result = fetch(f"https://cdli.earth/{p_number}", respect_crawl_delay=False)
+            result = fetch(
+                f"https://cdli.earth/{p_number}",
+                respect_crawl_delay=respect_crawl_delay,
+            )
         except FetchError as e:
             return EnsureResult(status="fetch_error", image_count=0, detail=str(e))
         if result.status_code == 404:
@@ -102,6 +111,7 @@ def ensure_images_for_artifact(conn, p_number: str) -> EnsureResult:
                     ref=ref,
                     display_order=display_order,
                     annotation_run_id=annotation_run_id,
+                    respect_crawl_delay=respect_crawl_delay,
                 )
             except Exception as e:
                 _log_fetch_outcome(
@@ -164,10 +174,11 @@ def _fetch_and_store_one(
     ref,
     display_order: int,
     annotation_run_id: int,
+    respect_crawl_delay: bool = False,
 ) -> int:
     """Fetch one image binary, generate thumb, upload, insert. Returns 1 on insert."""
     try:
-        bin_result = fetch(ref.full_url, respect_crawl_delay=False)
+        bin_result = fetch(ref.full_url, respect_crawl_delay=respect_crawl_delay)
     except FetchError as e:
         _log_fetch_outcome(
             conn,
