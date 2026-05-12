@@ -133,6 +133,12 @@ for d in core api app ingestion data-model marketing ops; do
     [ -d "$PROJECT_DIR/$d" ] || continue
     rsync_to "${EXCLUDES[@]}" "$PROJECT_DIR/$d/" "$REMOTE:$RELEASE_DIR/$d/" >/dev/null
 done
+# Migrations live under source-data/migrations/ — ship only that subtree, not the
+# (gitignored, multi-GB) source-data/sources/.
+if [ -d "$PROJECT_DIR/source-data/migrations" ]; then
+    ssh_run "mkdir -p $RELEASE_DIR/source-data"
+    rsync_to "${EXCLUDES[@]}" "$PROJECT_DIR/source-data/migrations/" "$REMOTE:$RELEASE_DIR/source-data/migrations/" >/dev/null
+fi
 rsync_to "$PROJECT_DIR/requirements.txt" "$REMOTE:$RELEASE_DIR/requirements.txt" >/dev/null
 
 # --- Install dependencies inside the release's venv ---
@@ -142,9 +148,13 @@ ssh_run "cd $RELEASE_DIR && python3 -m venv venv && venv/bin/pip install --quiet
 # --- Symlink shared state (the .env stays out of releases for safety) ---
 ssh_run "ln -sfn $SHARED_DIR/.env $RELEASE_DIR/.env"
 
-# --- Run migrations against the target database (uses the release's venv + .env) ---
+# --- Run migrations against the target database ---
+# Tables are owned by `wittkensis` (per CLAUDE.md); the app connects as `glintstone`
+# which lacks CREATE on `public`. The shared .env must define DATABASE_URL_MIGRATIONS
+# (the owning role); we fall back to DATABASE_URL for environments that don't separate.
 echo "Running migrations..."
-ssh_run "cd $RELEASE_DIR && venv/bin/python data-model/migrate.py up"
+ssh_run "cd $RELEASE_DIR && set -a && . ./.env && set +a && \
+    DATABASE_URL=\"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" venv/bin/python data-model/migrate.py up"
 
 # --- Write version file for cache-busting and build identification ---
 ssh_run "echo '$RELEASE_TAG' > $RELEASE_DIR/version.txt"

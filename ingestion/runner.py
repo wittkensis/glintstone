@@ -227,6 +227,12 @@ def run_connector(
             ctx.error("run.failed", error=str(exc))
         except Exception:
             pass
+        # The failing connector may have left the connection in an aborted
+        # transaction; roll back so _finalize_run's UPDATE can execute.
+        try:
+            db.rollback()
+        except Exception:
+            pass
         _finalize_run(
             db,
             run_id,
