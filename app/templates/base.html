@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Cuneiform&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/main.css?v={{ app_version }}">
     {% block head %}{% endblock %}
 </head>
 <body{% if request.url.path.startswith('/tablets/P') %} class="page-tablet-detail"{% endif %}>
@@ -51,9 +51,11 @@
 
     {% block content %}{% endblock %}
 
-    <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/tabs.js"></script>
+    <footer class="site-footer">
+        <span class="build-id">build {{ app_version }}</span>
+    </footer>
+    <script src="/static/js/app.js?v={{ app_version }}"></script>
+    <script src="/static/js/tabs.js?v={{ app_version }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

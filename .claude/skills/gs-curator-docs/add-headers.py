@@ -47,6 +47,7 @@ SKIP_PATH_PREFIXES = ("source-data/sources/",)
 SKIP_FILES = {
     "PLAN/PRIVATE-TODO.md",
     "README.md",  # GitHub repo landing page — YAML frontmatter renders awkwardly there
+    "CLAUDE.md",  # loaded verbatim by Claude every session; no frontmatter
 }
 
 REQUIRED_FIELDS = [

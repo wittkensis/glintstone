@@ -1,6 +1,8 @@
 """FastAPI application for api.glintstone.org."""
 
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,9 +29,16 @@ async def lifespan(app: FastAPI):
 
 settings = get_settings()
 
+_version_file = Path(__file__).parent.parent / "version.txt"
+_app_version = (
+    _version_file.read_text().strip()
+    if _version_file.exists()
+    else os.getenv("APP_VERSION", "dev")
+)
+
 app = FastAPI(
     title="Glintstone API",
-    version="2.0.0-dev",
+    version=_app_version,
     lifespan=lifespan,
 )
 

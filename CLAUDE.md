@@ -1,17 +1,3 @@
----
-question: "What rules must every Claude session in Glintstone follow, and where do I look first for context?"
-created: 2026-05-11
-modified: 2026-05-11
-context: "Created during the 2026-05-11 knowledge architecture overhaul. The durable per-project instructions every session loads. The detailed routing map lives in gs-orient-project; this file holds non-negotiable rules and the inventory."
-status: active
-audience: [claude, engineers]
-owners: [eric]
-related_issues: []
-related_skills: [gs-orient-project, gs-curator-docs]
-supersedes: null
-superseded_by: null
----
-
 # Glintstone — durable rules
 
 This is a **production academic application** for cuneiform / Assyriology scholars. Their careers depend on the data being accurate and properly attributed.
