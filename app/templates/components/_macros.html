@@ -173,13 +173,19 @@
     </div>
 
     <div class="card-image">
-        <img src="{{ api_url }}/image/{{ tablet.p_number }}?size=200"
+        {# Prefer the R2-cached thumbnail when present (search route attaches
+           thumbnail_url from artifact_images.r2_thumbnail_key). Fallback chain:
+           legacy /image/ endpoint → CDLI photo hotlink → CDLI lineart hotlink →
+           placeholder. #}
+        <img src="{{ tablet.thumbnail_url or (api_url ~ '/image/' ~ tablet.p_number ~ '?size=200') }}"
              alt="{{ tablet.designation or tablet.p_number }}"
              loading="lazy"
+             data-fallback-1="{{ api_url }}/image/{{ tablet.p_number }}?size=200"
              data-cdli-photo="https://cdli.earth/dl/photo/{{ tablet.p_number }}.jpg"
              data-cdli-lineart="https://cdli.earth/dl/lineart/{{ tablet.p_number }}.jpg"
              onerror="
-                if(!this.dataset.tried){this.dataset.tried='photo';this.src=this.dataset.cdliPhoto;}
+                if(!this.dataset.tried){this.dataset.tried='fb1';this.src=this.dataset.fallback1;}
+                else if(this.dataset.tried==='fb1'){this.dataset.tried='photo';this.src=this.dataset.cdliPhoto;}
                 else if(this.dataset.tried==='photo'){this.dataset.tried='lineart';this.src=this.dataset.cdliLineart;}
                 else{this.parentElement.classList.add('no-image');}
              ">

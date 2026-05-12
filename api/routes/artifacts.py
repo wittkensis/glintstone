@@ -42,7 +42,7 @@ def search_artifacts(
     conn=Depends(get_db),
 ):
     repo = ArtifactRepository(conn)
-    return repo.search(
+    result = repo.search(
         search=search,
         pipeline=pipeline,
         period=period or None,
@@ -53,6 +53,13 @@ def search_artifacts(
         page=page,
         per_page=per_page,
     )
+    # The repo LATERAL-joins a primary_thumbnail_key per row; turn it into a
+    # browser-loadable thumbnail_url here so the web layer doesn't need to
+    # know about R2 vs local-fs URL conventions.
+    for item in result.get("items", []):
+        key = item.pop("primary_thumbnail_key", None)
+        item["thumbnail_url"] = public_url_for_key(key) if key else None
+    return result
 
 
 @router.get("/{p_number}")

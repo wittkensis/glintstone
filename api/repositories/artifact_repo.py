@@ -278,6 +278,9 @@ class ArtifactRepository(BaseRepository):
         params["per_page"] = per_page
         params["offset"] = offset
 
+        # LATERAL pick of the primary cached image so cards can show a real
+        # thumbnail when artifact_images has one. ORDER prefers display_order
+        # 0 (the canonical primary), then photo over lineart, then row id.
         items = self.fetch_all(
             f"""
             SELECT a.p_number, a.designation,
@@ -287,9 +290,20 @@ class ArtifactRepository(BaseRepository):
                    a.genre,
                    ps.physical_complete, ps.graphemic_complete,
                    ps.reading_complete, ps.linguistic_complete,
-                   ps.semantic_complete, ps.has_image
+                   ps.semantic_complete, ps.has_image,
+                   primary_img.r2_thumbnail_key AS primary_thumbnail_key,
+                   primary_img.credit_line     AS primary_credit_line
             FROM artifacts a
             LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+            LEFT JOIN LATERAL (
+                SELECT ai.r2_thumbnail_key, ai.credit_line
+                FROM artifact_images ai
+                WHERE ai.p_number = a.p_number
+                ORDER BY ai.display_order,
+                         (ai.image_type = 'photo') DESC,
+                         ai.id
+                LIMIT 1
+            ) primary_img ON true
             {where}
             ORDER BY a.p_number
             LIMIT %(per_page)s OFFSET %(offset)s
