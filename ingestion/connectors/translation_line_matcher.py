@@ -6,10 +6,10 @@ attempted to match each translation to a specific `text_line` by line number.
 ~45,000 rows couldn't match — they were dumped to a JSON file that lived on
 one developer's disk.
 
-The connector does the same matching but writes every unmatchable record
-to `import_dead_letters` with `category='no_match'` plus a subcategory
-("broken", "fragmentary", "missing_artifact", "missing_line"). Triage moves
-from "open the JSON file and squint" to:
+The connector audits translations whose `line_id` FK doesn't resolve to a
+text_line and writes every unmatchable record to `import_dead_letters` with
+`category='no_match'` plus a subcategory ("no_line_ref", "missing_artifact",
+"stale_line_ref"). Triage moves from "open the JSON file and squint" to:
 
     SELECT subcategory, COUNT(*) FROM import_dead_letters
     WHERE connector_id='translation-line-matcher' AND resolution_status='open'
@@ -35,24 +35,23 @@ class TranslationLineMatcher(SourceConnector):
     id = "translation-line-matcher"
     display_name = "Translation → Text Line Matcher"
     description = (
-        "Matches translation rows to specific text_lines by (p_number, line_no). "
-        "Replaces v1's disk JSON of unmatched rows with import_dead_letters."
+        "Routes translations whose line_id FK doesn't resolve to a text_line "
+        "into import_dead_letters. Replaces v1's disk JSON of unmatched rows."
     )
     kind = "derived"
     runs_after = ["cdli-catalog", "atf-parser", "translation-import"]
     license = None  # derived data; inherits license of inputs
 
     def extract(self, ctx: RunContext) -> Iterator[dict]:
-        """Yield every translation row that hasn't been matched yet."""
+        """Yield every translation row whose line_id doesn't resolve."""
         ctx.info("matcher.extract_start")
         with ctx.db.cursor() as cur:
             cur.execute(
                 """
-                SELECT t.id AS translation_id, t.p_number, t.line_no, t.text,
-                       t.is_broken, t.is_fragmentary
+                SELECT t.id AS translation_id, t.p_number, t.line_id,
+                       t.translation, t.language, t.source
                 FROM translations t
-                LEFT JOIN text_lines tl
-                  ON tl.p_number = t.p_number AND tl.line_no = t.line_no
+                LEFT JOIN text_lines tl ON tl.id = t.line_id
                 WHERE tl.id IS NULL
                 """
             )
@@ -61,14 +60,12 @@ class TranslationLineMatcher(SourceConnector):
 
     def transform(self, ctx: RunContext, record: dict) -> Iterator[dict]:
         # Classify the unmatchable reason and route to dead-letters
-        if record.get("is_broken"):
-            subcategory = "broken"
-        elif record.get("is_fragmentary"):
-            subcategory = "fragmentary"
+        if record.get("line_id") is None:
+            subcategory = "no_line_ref"
         elif _has_no_artifact(ctx, record["p_number"]):
             subcategory = "missing_artifact"
         else:
-            subcategory = "missing_line"
+            subcategory = "stale_line_ref"
 
         ctx.dead_letter(
             category=DeadLetterCategory.NO_MATCH.value,
@@ -77,8 +74,10 @@ class TranslationLineMatcher(SourceConnector):
             payload={
                 "translation_id": record["translation_id"],
                 "p_number": record["p_number"],
-                "line_no": record.get("line_no"),
-                "text": record.get("text"),
+                "line_id": record.get("line_id"),
+                "translation": record.get("translation"),
+                "language": record.get("language"),
+                "source": record.get("source"),
             },
             reason=_reason_for(subcategory),
         )
@@ -114,8 +113,7 @@ def _has_no_artifact(ctx: RunContext, p_number: str) -> bool:
 
 def _reason_for(subcategory: str) -> str:
     return {
-        "broken": "translation marked broken — no specific line to attach to",
-        "fragmentary": "fragmentary translation spanning unclear lines",
+        "no_line_ref": "translation.line_id is NULL — never attached to a specific text_line",
         "missing_artifact": "p_number not in artifacts table",
-        "missing_line": "line_no not present in text_lines for this artifact",
+        "stale_line_ref": "translation.line_id points to a non-existent text_line",
     }.get(subcategory, "unknown matching failure")

@@ -41,7 +41,7 @@ After rollback:
 
 1. `systemctl restart glintstone-api glintstone-app`
 2. `nginx -t && nginx -s reload`
-3. Smoke-test `/healthz`
+3. Smoke-test `/health`
 
 ## Blast radius by surface
 
