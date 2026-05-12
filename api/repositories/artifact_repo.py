@@ -401,6 +401,27 @@ class ArtifactRepository(BaseRepository):
             {"p_number": p_number},
         )
 
+    def get_artifact_image_records(self, p_number: str) -> list[dict]:
+        """Rows from the artifact_images table (migration 022).
+
+        Distinct from get_images() above, which reads the legacy surface_images
+        table. The new artifact_images table holds R2-backed image metadata
+        with per-image copyright/attribution. Routes turn each row into a
+        public URL via core.storage.public_url_for_key.
+        """
+        return self.fetch_all(
+            """
+            SELECT id, image_type, cdli_reader_id, r2_key, r2_thumbnail_key,
+                   mime_type, byte_size, width, height,
+                   copyright_holder, license, attribution_raw, credit_line,
+                   display_order, ingested_at
+            FROM artifact_images
+            WHERE p_number = %(p_number)s
+            ORDER BY display_order, image_type, id
+        """,
+            {"p_number": p_number},
+        )
+
     def get_oracc_credits(self, p_number: str) -> list[dict]:
         return self.fetch_all(
             """

@@ -261,3 +261,20 @@ def _sha256(data: bytes) -> str:
     h = hashlib.sha256()
     h.update(data)
     return h.hexdigest()
+
+
+def public_url_for_key(key: str, settings: Optional[Settings] = None) -> str:
+    """Build a public URL for an R2 (or local) key without instantiating a client.
+
+    Useful for the API: a route just wants to hand back URLs and shouldn't pay
+    the cost of constructing a boto3 client on every request.
+    """
+    s = settings or get_settings()
+    if s.storage_backend.lower().strip() == "r2":
+        base = (
+            s.r2_public_base_url.rstrip("/")
+            if s.r2_public_base_url
+            else f"https://pub-{s.r2_bucket}.r2.dev"
+        )
+        return f"{base}/{key}"
+    return f"/static/storage/{key}"

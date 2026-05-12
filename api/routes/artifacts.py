@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.config import get_settings
 from core.database import get_db
+from core.storage import public_url_for_key
 from api.repositories.artifact_repo import ArtifactRepository
 
 router = APIRouter(prefix="/artifacts", tags=["artifacts"])
@@ -91,6 +92,51 @@ def get_artifact_translation(p_number: str, conn=Depends(get_db)):
     """Get translation data for an artifact, grouped by language."""
     repo = ArtifactRepository(conn)
     return repo.get_translation(p_number)
+
+
+@router.get("/{p_number}/images")
+def get_artifact_images(p_number: str, conn=Depends(get_db)):
+    """Image manifest for an artifact: R2 URLs + copyright per image.
+
+    Returns rows from the artifact_images table (migration 022 / 023). The
+    primary image is whichever row has the lowest display_order (typically a
+    photograph at display_order=0). Each entry includes a thumbnail URL when
+    available — UI cards should prefer the thumbnail. credit_line is
+    display-ready and falls back to a 'pending verification' placeholder
+    when attribution hasn't been backfilled yet.
+    """
+    repo = ArtifactRepository(conn)
+    rows = repo.get_artifact_image_records(p_number)
+    return {
+        "p_number": p_number,
+        "count": len(rows),
+        "images": [
+            {
+                "id": r["id"],
+                "image_type": r["image_type"],
+                "cdli_reader_id": r["cdli_reader_id"],
+                "original_url": public_url_for_key(r["r2_key"]),
+                "thumbnail_url": (
+                    public_url_for_key(r["r2_thumbnail_key"])
+                    if r["r2_thumbnail_key"]
+                    else None
+                ),
+                "mime_type": r["mime_type"],
+                "byte_size": r["byte_size"],
+                "width": r["width"],
+                "height": r["height"],
+                "copyright_holder": r["copyright_holder"],
+                "license": r["license"],
+                "attribution_raw": r["attribution_raw"],
+                "credit_line": r["credit_line"],
+                "display_order": r["display_order"],
+                "ingested_at": r["ingested_at"].isoformat()
+                if r.get("ingested_at")
+                else None,
+            }
+            for r in rows
+        ],
+    }
 
 
 @router.get("/{p_number}/normalized")

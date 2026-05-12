@@ -9,7 +9,10 @@ from core.storage import (
     LocalFilesystemStorage,
     _resolve_r2_secret,
     artifact_image_key,
+    public_url_for_key,
 )
+
+from core.config import Settings
 
 
 class TestKeyHelper:
@@ -78,3 +81,44 @@ class TestLocalFilesystemStorage:
         # Nested key — parent must be created on demand
         storage.put("a/b/c/deep.bin", b"y", content_type="application/octet-stream")
         assert (tmp_path / "a" / "b" / "c" / "deep.bin").exists()
+
+
+class TestPublicUrlForKey:
+    def test_r2_backend_uses_public_base_when_set(self) -> None:
+        s = Settings(
+            storage_backend="r2",
+            r2_bucket="glintstone-assets",
+            r2_public_base_url="https://cdn.glintstone.org",
+        )
+        assert (
+            public_url_for_key("tablets/P000001/photo-local.jpg", settings=s)
+            == "https://cdn.glintstone.org/tablets/P000001/photo-local.jpg"
+        )
+
+    def test_r2_backend_falls_back_to_pub_r2_dev(self) -> None:
+        s = Settings(
+            storage_backend="r2",
+            r2_bucket="glintstone-assets",
+            r2_public_base_url=None,
+        )
+        assert (
+            public_url_for_key("foo/bar.webp", settings=s)
+            == "https://pub-glintstone-assets.r2.dev/foo/bar.webp"
+        )
+
+    def test_local_backend_uses_static_storage(self) -> None:
+        s = Settings(storage_backend="local")
+        assert (
+            public_url_for_key("foo/bar.jpg", settings=s)
+            == "/static/storage/foo/bar.jpg"
+        )
+
+    def test_trailing_slash_on_public_base_is_stripped(self) -> None:
+        s = Settings(
+            storage_backend="r2",
+            r2_bucket="x",
+            r2_public_base_url="https://cdn.example.com/",
+        )
+        url = public_url_for_key("foo.txt", settings=s)
+        assert url == "https://cdn.example.com/foo.txt"
+        assert "//" not in url.split("://", 1)[1]

@@ -211,6 +211,60 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /artifacts/{p_number}/images:
+    get:
+      operationId: getArtifactImages
+      summary: Image manifest (R2 URLs + per-image copyright)
+      description: >
+        Returns every artifact_images row for this P-number. Each entry carries
+        the public original_url, thumbnail_url (when available), and a
+        display-ready credit_line. Empty list (count=0) when no images are
+        in the cache yet — UI should fall back to a placeholder. See
+        migration 022 / 023 for the table shape.
+      tags: [Artifacts, Images]
+      parameters:
+        - $ref: '#/components/parameters/PNumber'
+      responses:
+        '200':
+          description: Image manifest (may be empty)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [p_number, count, images]
+                properties:
+                  p_number: { type: string }
+                  count: { type: integer }
+                  images:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, image_type, original_url]
+                      properties:
+                        id: { type: integer }
+                        image_type:
+                          type: string
+                          enum: [photo, lineart, other]
+                        cdli_reader_id: { type: integer, nullable: true }
+                        original_url: { type: string, format: uri }
+                        thumbnail_url:
+                          type: string
+                          format: uri
+                          nullable: true
+                        mime_type: { type: string, nullable: true }
+                        byte_size: { type: integer, nullable: true }
+                        width: { type: integer, nullable: true }
+                        height: { type: integer, nullable: true }
+                        copyright_holder: { type: string, nullable: true }
+                        license: { type: string, nullable: true }
+                        attribution_raw: { type: string, nullable: true }
+                        credit_line: { type: string, nullable: true }
+                        display_order: { type: integer }
+                        ingested_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+
   # ── Signs ──────────────────────────────────────────────
 
   /signs/{sign_id}:

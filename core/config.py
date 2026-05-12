@@ -98,6 +98,7 @@ class Settings(BaseSettings):
         env_file=_select_env_files(),
         env_file_encoding="utf-8",
         extra="ignore",
+        populate_by_name=True,
     )
 
     @model_validator(mode="after")
