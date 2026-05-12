@@ -172,6 +172,22 @@ class RunContext:
         )
         self.stats.dead_lettered += 1
 
+    def dead_letter_many(self, rows: list[dict]) -> int:
+        """Bulk variant of dead_letter(). Returns count inserted.
+
+        Each row dict has keys `category`, `payload`, `reason`. Optional:
+        `subcategory`, `source_key`. Use this when a connector produces many
+        dead letters per batch — the single-row dead_letter() commits per call,
+        which is wasteful at scale.
+        """
+        n = self.dead_letters.write_many(
+            run_id=self.run_id,
+            connector_id=self.connector_id,
+            rows=rows,
+        )
+        self.stats.dead_lettered += n
+        return n
+
     def add_stats(self, other: LoadStats) -> None:
         self.stats = self.stats.merge(other)
 

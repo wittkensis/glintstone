@@ -68,6 +68,54 @@ class DeadLetterSink:
         self.db.commit()
         return result["id"] if isinstance(result, dict) else result[0]
 
+    def write_many(
+        self,
+        *,
+        run_id: int,
+        connector_id: str,
+        rows: list[dict],
+    ) -> int:
+        """Bulk-insert dead-letter rows via executemany.
+
+        Each `rows` dict must have keys `category`, `payload`, `reason`. Optional
+        keys: `subcategory`, `source_key`. Commits at the end and returns the
+        number of rows written. Use this for connectors that produce many
+        dead letters per batch (the per-row write() is fine for one-offs but
+        commits per row).
+        """
+        if not rows:
+            return 0
+        valid = {c.value for c in DeadLetterCategory}
+        params = []
+        for row in rows:
+            cat = row["category"]
+            if cat not in valid:
+                raise ValueError(
+                    f"Invalid dead-letter category: {cat!r}. Valid: {sorted(valid)}"
+                )
+            params.append(
+                (
+                    run_id,
+                    connector_id,
+                    cat,
+                    row.get("subcategory"),
+                    row.get("source_key"),
+                    json.dumps(row["payload"], default=str, ensure_ascii=False),
+                    row.get("reason"),
+                )
+            )
+        with self.db.cursor() as cur:
+            cur.executemany(
+                """
+                INSERT INTO import_dead_letters
+                    (run_id, connector_id, category, subcategory, source_key, payload, reason)
+                VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s)
+                """,
+                params,
+            )
+        self.db.commit()
+        return len(rows)
+
     def count_open(self, connector_id: str) -> int:
         row = self.db.execute(
             """

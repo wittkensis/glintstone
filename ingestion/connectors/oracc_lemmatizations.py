@@ -15,8 +15,11 @@ from pathlib import Path
 from typing import Iterable, Iterator
 
 from ingestion.base import LoadStats, RunContext, SourceConnector
+from ingestion.dead_letters import DeadLetterCategory
 
 ORACC_BASE = Path("source-data/sources/ORACC")
+
+DEAD_LETTER_FLUSH_EVERY = 5000
 
 ORACC_PROJECTS = [
     "dcclt",
@@ -229,7 +232,6 @@ class OraccLemmatizationsConnector(SourceConnector):
                 )
 
         total_lemmas = 0
-        total_no_match = 0
 
         for batch in rows:
             project = batch["project"]
@@ -240,6 +242,14 @@ class OraccLemmatizationsConnector(SourceConnector):
             proj_lemmas = 0
             proj_no_line = 0
             proj_no_token = 0
+            dl_buffer: list[dict] = []
+
+            def flush_dead_letters() -> None:
+                nonlocal dl_buffer
+                if not dl_buffer:
+                    return
+                ctx.dead_letter_many(dl_buffer)
+                dl_buffer = []
 
             for i, cdl_file in enumerate(cdl_files):
                 try:
@@ -260,19 +270,28 @@ class OraccLemmatizationsConnector(SourceConnector):
                 with ctx.db.cursor() as cur:
                     for lemma in lemmas:
                         line_ids = line_cache.get((p_number, lemma["line_number"]))
-                        if not line_ids:
-                            proj_no_line += 1
-                            continue
-                        surface = lemma.get("surface")
-                        line_id = (line_ids.get(surface) if surface else None) or next(
-                            iter(line_ids.values()), None
-                        )
+                        line_id = None
+                        if line_ids:
+                            surface = lemma.get("surface")
+                            line_id = (
+                                line_ids.get(surface) if surface else None
+                            ) or next(iter(line_ids.values()), None)
                         if not line_id:
                             proj_no_line += 1
+                            dl_buffer.append(
+                                _lemma_dead_letter(
+                                    project, p_number, lemma, "no_line_match"
+                                )
+                            )
                             continue
                         token_id = token_cache.get((line_id, lemma["position"]))
                         if token_id is None:
                             proj_no_token += 1
+                            dl_buffer.append(
+                                _lemma_dead_letter(
+                                    project, p_number, lemma, "no_token_match"
+                                )
+                            )
                             continue
                         cur.execute(
                             "INSERT INTO lemmatizations "
@@ -299,10 +318,12 @@ class OraccLemmatizationsConnector(SourceConnector):
 
                 if (i + 1) % 200 == 0:
                     ctx.db.commit()
+                if len(dl_buffer) >= DEAD_LETTER_FLUSH_EVERY:
+                    flush_dead_letters()
 
             ctx.db.commit()
+            flush_dead_letters()
             total_lemmas += proj_lemmas
-            total_no_match += proj_no_line + proj_no_token
             ctx.info(
                 "oracc_lemmatizations.project_done",
                 project=project,
@@ -311,9 +332,55 @@ class OraccLemmatizationsConnector(SourceConnector):
                 no_token_match=proj_no_token,
             )
 
-        return LoadStats(inserted=total_lemmas, dead_lettered=total_no_match)
+        # dead_lettered count is tracked by ctx.dead_letter_many() on
+        # ctx.stats already; the runner merges this LoadStats into ctx.stats,
+        # so we return only `inserted` here to avoid double-counting.
+        return LoadStats(inserted=total_lemmas)
 
     def verify(self, ctx: RunContext) -> None:
         row = ctx.db.execute("SELECT COUNT(*) AS n FROM lemmatizations").fetchone()
         n = row["n"] if isinstance(row, dict) else row[0]
         ctx.info("oracc_lemmatizations.verify", count=n)
+
+
+_DEAD_LETTER_REASON = {
+    "no_line_match": "no matching text_line for (p_number, line_number)",
+    "no_token_match": "text_line found but no token at the given position",
+}
+
+
+def _lemma_dead_letter(
+    project: str, p_number: str, lemma: dict, subcategory: str
+) -> dict:
+    """Build a dead-letter payload for an unmatched ORACC lemma.
+
+    Preserves enough of the source record to triage or replay once the missing
+    text_line / token shows up. source_key is unique within a run so triage
+    queries can group by tablet.
+    """
+    line_number = lemma.get("line_number")
+    position = lemma.get("position")
+    return {
+        "category": DeadLetterCategory.NO_MATCH.value,
+        "subcategory": subcategory,
+        "source_key": f"{project}/{p_number}/{line_number}/{position}",
+        "payload": {
+            "project": project,
+            "p_number": p_number,
+            "line_number": line_number,
+            "surface": lemma.get("surface"),
+            "position": position,
+            "lang": lemma.get("lang"),
+            "form": lemma.get("form"),
+            "cf": lemma.get("cf"),
+            "gw": lemma.get("gw"),
+            "pos": lemma.get("pos"),
+            "epos": lemma.get("epos"),
+            "norm": lemma.get("norm"),
+            "base": lemma.get("base"),
+            "sense": lemma.get("sense"),
+            "morph_raw": lemma.get("morph_raw"),
+            "signature": lemma.get("signature"),
+        },
+        "reason": _DEAD_LETTER_REASON[subcategory],
+    }
