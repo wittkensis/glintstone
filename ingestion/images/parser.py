@@ -4,13 +4,16 @@ We do NOT cache the HTML body. We extract what we need (image refs + per-image
 attribution) and discard. attribution_raw is preserved verbatim so a future
 re-parse can re-derive copyright_holder without re-fetching.
 
-The CDLI artifact page shows, for each visual asset:
-- A thumbnail at /dl/tn_photo/P######.jpg or /dl/tn_lineart/P######_l.jpg
-- A reader URL at /artifacts/<id>/reader/<reader_id>
-- A copyright string like "© Vorderasiatisches Museum, Berlin, Germany"
+The CDLI artifact page renders each visual asset as:
+- A thumbnail ``<img src="/dl/tn_photo/P######.jpg">`` or ``/dl/tn_lineart/P######_l.jpg``
+- A wrapping ``<a href="/artifacts/<id>/reader/<reader_id>">`` link
+- A copyright string nearby like ``© Vorderasiatisches Museum, Berlin, Germany``
+  (encoded in the source as the HTML entity ``&copy;``; HTMLParser with
+  ``convert_charrefs=True`` decodes it before ``handle_data`` runs).
 
-The HTML structure is server-rendered. We use HTMLParser from the stdlib
-to avoid adding a BeautifulSoup dependency for a single-purpose parse.
+The HTML does NOT contain the full ``/dl/photo/<P>.jpg`` URL on the page (the
+og:image meta tag does, but we don't rely on it). We construct the full URL
+deterministically from the P-number and image_type.
 """
 
 from __future__ import annotations
@@ -25,9 +28,9 @@ from typing import Optional
 class ImageRef:
     image_type: str  # 'photo' | 'lineart' | 'other'
     cdli_reader_id: Optional[int]  # numeric ID from /artifacts/<id>/reader/<n>
-    full_url: str  # canonical /dl/photo/<P>.jpg or /dl/lineart/<P>_l.jpg
-    thumbnail_url: Optional[str]  # /dl/tn_photo/... if present on the listing
-    attribution_raw: Optional[str]  # exact copyright string shown alongside this image
+    full_url: str  # constructed /dl/photo/<P>.jpg or /dl/lineart/<P>_l.jpg
+    thumbnail_url: Optional[str]  # /dl/tn_photo or /dl/tn_lineart URL from the page
+    attribution_raw: Optional[str]  # exact copyright string shown alongside
 
 
 @dataclass(frozen=True)
@@ -37,10 +40,7 @@ class ArtifactImageManifest:
     images: list[ImageRef] = field(default_factory=list)
 
 
-# CDLI URL fragments we look for in href attributes
-_PHOTO_FULL_RE = re.compile(r"/dl/photo/(P\d+)\.jpg", re.IGNORECASE)
 _PHOTO_THUMB_RE = re.compile(r"/dl/tn_photo/(P\d+)\.jpg", re.IGNORECASE)
-_LINEART_FULL_RE = re.compile(r"/dl/lineart/(P\d+)_l\.jpg", re.IGNORECASE)
 _LINEART_THUMB_RE = re.compile(r"/dl/tn_lineart/(P\d+)_l\.jpg", re.IGNORECASE)
 _READER_RE = re.compile(r"/artifacts/(\d+)/reader/(\d+)")
 _COPYRIGHT_RE = re.compile(r"©\s*[^<\n]+")
@@ -50,16 +50,16 @@ def parse_artifact_page(html: str, p_number: str) -> ArtifactImageManifest:
     """Extract image manifest from a CDLI artifact page HTML body.
 
     Best-effort: CDLI's HTML structure may evolve. If parsing fails to find any
-    images, the caller should log a dead-letter rather than retrying.
+    images for this P-number, the caller should log a dead-letter rather than
+    retrying.
     """
     parser = _ArtifactPageParser(p_number=p_number)
     parser.feed(html)
     parser.close()
 
-    cdli_artifact_id = _first_reader_artifact_id(html)
     return ArtifactImageManifest(
         p_number=p_number,
-        cdli_artifact_id=cdli_artifact_id,
+        cdli_artifact_id=_first_reader_artifact_id(html),
         images=parser.finalize(),
     )
 
@@ -69,91 +69,76 @@ def _first_reader_artifact_id(html: str) -> Optional[int]:
     return int(m.group(1)) if m else None
 
 
+def _construct_full_url(p_number: str, image_type: str) -> str:
+    """Compose the canonical /dl/ URL for a P-number's primary photo or lineart.
+
+    Lineart files use the ``_l`` suffix per CDLI convention.
+    """
+    if image_type == "lineart":
+        return f"https://cdli.earth/dl/lineart/{p_number}_l.jpg"
+    return f"https://cdli.earth/dl/photo/{p_number}.jpg"
+
+
 class _ArtifactPageParser(HTMLParser):
-    """Walks the HTML once collecting candidate image rows.
+    """Single-pass parser: collect thumbnail URLs, reader IDs, and © strings.
 
-    The CDLI page renders each visual asset in a container that includes
-    (a) a link to /dl/photo or /dl/lineart, (b) optionally a link to a
-    /artifacts/<id>/reader/<n> viewer, and (c) a copyright string nearby.
-
-    Strategy: greedily collect every image URL and every © string in order,
-    then pair them up in finalize() by position.
+    Pairs them positionally in finalize() — CDLI renders Photo then Lineart
+    in a stable order, so the i-th image gets the i-th reader_id and
+    i-th copyright string.
     """
 
     def __init__(self, p_number: str) -> None:
-        super().__init__()
+        # convert_charrefs=True (default since Python 3.5) decodes &copy; → ©
+        # before handle_data sees it, which is what _COPYRIGHT_RE expects.
+        super().__init__(convert_charrefs=True)
         self.p_number = p_number
-        self._found_full: list[ImageRef] = []
+        self._images: list[ImageRef] = []
         self._reader_ids: list[int] = []
         self._copyright_strings: list[str] = []
-        self._pending_thumb_for: dict[str, str] = {}
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
         if tag not in ("a", "img"):
             return
-        attr_map = {k: v for k, v in attrs if v}
-        for url in attr_map.values():
-            self._absorb_url(url)
+        for _key, value in attrs:
+            if value:
+                self._absorb_url(value)
 
     def handle_data(self, data: str) -> None:
-        # Strip any extracted copyright strings from the visible text stream.
         for m in _COPYRIGHT_RE.finditer(data):
-            text = m.group(0).strip()
-            text = re.sub(r"\s+", " ", text)
+            text = re.sub(r"\s+", " ", m.group(0).strip())
             self._copyright_strings.append(text)
 
     def _absorb_url(self, url: str) -> None:
-        if (
-            (m := _READER_RE.search(url))
-            and self.p_number in url
-            or (m := _READER_RE.search(url))
-        ):
+        if m := _READER_RE.search(url):
             reader_id = int(m.group(2))
             if reader_id not in self._reader_ids:
                 self._reader_ids.append(reader_id)
-        if (m := _PHOTO_FULL_RE.search(url)) and m.group(
-            1
-        ).upper() == self.p_number.upper():
-            self._found_full.append(
-                ImageRef(
-                    image_type="photo",
-                    cdli_reader_id=None,
-                    full_url=_canonical(url),
-                    thumbnail_url=self._pending_thumb_for.get("photo"),
-                    attribution_raw=None,
-                )
+
+        if m := _PHOTO_THUMB_RE.search(url):
+            if m.group(1).upper() == self.p_number.upper():
+                self._maybe_add_image("photo", _canonical(url))
+        elif m := _LINEART_THUMB_RE.search(url):
+            if m.group(1).upper() == self.p_number.upper():
+                self._maybe_add_image("lineart", _canonical(url))
+
+    def _maybe_add_image(self, image_type: str, thumb_url: str) -> None:
+        # Idempotent: the same thumbnail can appear multiple times on the page
+        # (gallery + dropdown), but it's still one image.
+        if any(i.thumbnail_url == thumb_url for i in self._images):
+            return
+        self._images.append(
+            ImageRef(
+                image_type=image_type,
+                cdli_reader_id=None,
+                full_url=_construct_full_url(self.p_number, image_type),
+                thumbnail_url=thumb_url,
+                attribution_raw=None,
             )
-        elif (m := _PHOTO_THUMB_RE.search(url)) and m.group(
-            1
-        ).upper() == self.p_number.upper():
-            self._pending_thumb_for["photo"] = _canonical(url)
-        elif (m := _LINEART_FULL_RE.search(url)) and m.group(
-            1
-        ).upper() == self.p_number.upper():
-            self._found_full.append(
-                ImageRef(
-                    image_type="lineart",
-                    cdli_reader_id=None,
-                    full_url=_canonical(url),
-                    thumbnail_url=self._pending_thumb_for.get("lineart"),
-                    attribution_raw=None,
-                )
-            )
-        elif (m := _LINEART_THUMB_RE.search(url)) and m.group(
-            1
-        ).upper() == self.p_number.upper():
-            self._pending_thumb_for["lineart"] = _canonical(url)
+        )
 
     def finalize(self) -> list[ImageRef]:
-        """Pair up reader IDs and copyright strings with their image rows.
-
-        Pairing is positional — the i-th image gets the i-th reader_id and
-        the i-th copyright. CDLI renders these in a stable order (photos
-        first, then line drawings). Where copyright is "© [see publications]"
-        we preserve verbatim so the UI can show "credit pending."
-        """
         out: list[ImageRef] = []
-        for i, ref in enumerate(self._found_full):
+        for i, ref in enumerate(self._images):
             reader_id = self._reader_ids[i] if i < len(self._reader_ids) else None
             attribution = (
                 self._copyright_strings[i] if i < len(self._copyright_strings) else None
