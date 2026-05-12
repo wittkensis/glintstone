@@ -1,11 +1,12 @@
 """Artifact routes — search and detail."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 
 from core.config import get_settings
-from core.database import get_db
+from core.database import connect_one_shot, get_db
 from core.storage import public_url_for_key
 from api.repositories.artifact_repo import ArtifactRepository
+from api.services.image_ondemand import ensure_images_for_artifact
 
 router = APIRouter(prefix="/artifacts", tags=["artifacts"])
 
@@ -99,6 +100,47 @@ def get_artifact_translation(p_number: str, conn=Depends(get_db)):
     """Get translation data for an artifact, grouped by language."""
     repo = ArtifactRepository(conn)
     return repo.get_translation(p_number)
+
+
+@router.post("/{p_number}/images/ensure")
+def ensure_artifact_images(
+    p_number: str,
+    background_tasks: BackgroundTasks,
+    wait: bool = True,
+    conn=Depends(get_db),
+):
+    """Idempotently fetch + cache CDLI images for an artifact.
+
+    Two modes:
+    - ``wait=true`` (default): block until the fetch completes (~5–15s),
+      respond with the same shape as GET /images.
+    - ``wait=false``: schedule the fetch in a BackgroundTasks queue and
+      return ``{"status": "scheduled"}`` immediately. Use this when the UI
+      will poll for the populated row separately.
+
+    Safe to call concurrently: a per-artifact lock prevents duplicate fetches.
+    Returns 'cached' immediately if rows already exist.
+    """
+    if wait:
+        result = ensure_images_for_artifact(conn, p_number)
+        return {
+            "p_number": p_number,
+            "status": result.status,
+            "image_count": result.image_count,
+            "detail": result.detail,
+        }
+
+    def _run_async() -> None:
+        # BackgroundTasks runs after the response is sent; we open our own
+        # short-lived connection rather than reusing the request-scoped one.
+        bg_conn = connect_one_shot()
+        try:
+            ensure_images_for_artifact(bg_conn, p_number)
+        finally:
+            bg_conn.close()
+
+    background_tasks.add_task(_run_async)
+    return {"p_number": p_number, "status": "scheduled"}
 
 
 @router.get("/{p_number}/images")
