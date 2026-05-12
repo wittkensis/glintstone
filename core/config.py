@@ -13,7 +13,7 @@ from functools import lru_cache
 from typing import Optional
 from urllib.parse import urlparse
 
-from pydantic import model_validator
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -55,6 +55,40 @@ class Settings(BaseSettings):
     marketing_url: str = "http://localhost:8003"
 
     image_path: str = "./app-v0.1/database/images"
+
+    storage_backend: str = "local"
+    r2_account_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("R2_ACCOUNT_ID", "CLOUDFLARE_ACCOUNT_ID"),
+    )
+    r2_access_key_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("R2_ACCESS_KEY_ID", "CLOUDFLARE_ACCESS_KEY_ID"),
+    )
+    r2_secret_access_key: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "R2_SECRET_ACCESS_KEY", "CLOUDFLARE_SECRET_ACCESS_KEY"
+        ),
+    )
+    r2_bucket: str = Field(
+        default="glintstone-assets",
+        validation_alias=AliasChoices("R2_BUCKET", "CLOUDFLARE_BUCKET_NAME"),
+    )
+    r2_s3_endpoint: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("R2_S3_ENDPOINT", "CLOUDFLARE_S3_ENDPOINT_URL"),
+    )
+    r2_public_base_url: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "R2_PUBLIC_BASE_URL", "CLOUDFLARE_PUBLIC_BASE_URL"
+        ),
+    )
+
+    cdli_user_agent: str = "Glintstone/0.1 (academic; +https://app.glintstone.org; contact eric.wittke@gmail.com)"
+    cdli_min_request_interval_seconds: float = 5.0
+    cdli_crawl_delay_seconds: float = 60.0
 
     deploy_host: Optional[str] = None
     deploy_user: str = "deploy"

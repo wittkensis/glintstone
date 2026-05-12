@@ -127,7 +127,9 @@ GRANT USAGE, SELECT ON SEQUENCE my_table_id_seq TO glintstone;
 | 016 | `016_artifact_credits.sql` | ORACC per-text credit chain |
 | 017 | `017_artifact_identifiers.sql` | Museum-number cross-references |
 | 018–019 | various | Citation pipeline support |
-| 020 | `020_*.sql` | Latest applied (verify with `migrate.py status`) |
+| 020 | `020_ingestion_staging.sql` | Staging tables for v2 ingestion framework |
+| 021 | `021_source_snapshots.sql` | Tracks raw-source archive locations (B2/VPS) |
+| 022 | `022_artifact_images.sql` | Tablet image metadata + R2 keys + copyright + fetch log |
 
 **Always confirm `migrate.py status` matches this table.** If it doesn't, update one or the other.
 

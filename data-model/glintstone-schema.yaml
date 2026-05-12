@@ -197,6 +197,82 @@ tables:
       decided_at: { type: TIMESTAMP }
       supersedes_id: { type: INTEGER, fk: artifact_identifier_decisions.id, nullable: true }
 
+  artifact_images:
+    # ORIGIN: Scraped from cdli.earth artifact HTML pages (image list + per-image attribution)
+    #         plus binary fetches from /dl/photo/<P>.jpg and /dl/lineart/<P>_l.jpg endpoints.
+    #         Two ingestion paths populate this table identically:
+    #           - On-demand: user views a card with no images yet → async fetch
+    #           - Background: 60s/req crawler respecting CDLI robots.txt Crawl-delay: 60
+    # CONNECTS: FK to artifacts.p_number; r2_key/r2_thumbnail_key point at Cloudflare R2 objects
+    #           served from cdn.glintstone.org (planned) or the R2 public dev URL.
+    # TRADE-OFF: Multiple rows per artifact (one per visible asset). attribution_raw stored
+    #            verbatim alongside parsed copyright_holder so re-parsing is non-destructive.
+    #            Never overwrite a row — create a new one if metadata changes.
+    description: >
+      NEW TABLE (migration 022). Per-image metadata for tablet photographs and
+      line drawings. Binaries live in Cloudflare R2; this table holds pointers,
+      copyright/attribution (structural for scholarly reuse), and provenance.
+      Required for accurate per-image credit on artifact cards and detail pages.
+    columns:
+      id: { type: BIGINT, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number, not_null: true }
+      image_type:
+        type: TEXT
+        not_null: true
+        values: [photo, lineart, other]
+        description: "photo = photograph; lineart = scholar's pencil/ink drawing; other = composite / detail / RTI / 3D render"
+      cdli_reader_id: { type: INTEGER, nullable: true, description: "Numeric ID from /artifacts/<id>/reader/<cdli_reader_id> on cdli.earth" }
+      source_url: { type: TEXT, not_null: true }
+      r2_key: { type: TEXT, not_null: true, description: "Object key in R2 bucket, e.g. tablets/P000001/photo-88909.jpg" }
+      r2_thumbnail_key: { type: TEXT, nullable: true, description: "400px-long-edge WebP q80; null until thumbnail generated" }
+      mime_type: { type: TEXT, nullable: true }
+      byte_size: { type: BIGINT, nullable: true }
+      width: { type: INTEGER, nullable: true }
+      height: { type: INTEGER, nullable: true }
+      sha256: { type: TEXT, nullable: true, description: "Hash of original binary; enables dedup verification across re-fetches" }
+      copyright_holder: { type: TEXT, nullable: true, description: "Parsed institution, e.g. 'Vorderasiatisches Museum, Berlin, Germany'" }
+      license: { type: TEXT, nullable: true, description: "Best-known license; null if unstated" }
+      attribution_raw: { type: TEXT, nullable: true, description: "Unmodified copyright string scraped from CDLI HTML — never overwrite" }
+      credit_line: { type: TEXT, nullable: true, description: "Display-ready credit for UI captions" }
+      captured_date: { type: DATE, nullable: true, description: "Parsed from photo_up metadata when available" }
+      display_order: { type: INTEGER, default: 0, description: "0 = primary; higher = secondary views (edges, details)" }
+      ingested_at: { type: TIMESTAMP, default: "now()" }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id, not_null: true }
+    constraints:
+      - "UNIQUE(p_number, image_type, cdli_reader_id)"
+      - "UNIQUE(r2_key)"
+    indexes:
+      - "artifact_images_p_number_idx ON artifact_images(p_number, display_order)"
+      - "artifact_images_type_idx ON artifact_images(image_type)"
+      - "artifact_images_sha256_idx ON artifact_images(sha256)"
+
+  artifact_image_fetch_log:
+    # ORIGIN: Written by ingestion/connectors/cdli_images.py (background) and the
+    #         on-demand cache endpoint. Records every fetch attempt — success or
+    #         failure — separately from dead_letters (which is for parse-level
+    #         systemic errors, not transient HTTP failures).
+    # CONNECTS: Optional FK to artifact_images.id on successful fetches; null on failures.
+    # TRADE-OFF: Append-only log keeps the artifact_images table clean and lets us
+    #            distinguish "never tried" from "tried and 404'd" without re-querying CDLI.
+    description: >
+      NEW TABLE (migration 022). Append-only log of every fetch attempt against
+      CDLI. Lets us see what failed and when, without spamming CDLI by retrying.
+    columns:
+      id: { type: BIGINT, pk: true, autoincrement: true }
+      p_number: { type: TEXT, not_null: true }
+      source_url: { type: TEXT, not_null: true }
+      attempted_at: { type: TIMESTAMP, default: "now()" }
+      outcome:
+        type: TEXT
+        not_null: true
+        values: [success, http_404, http_5xx, timeout, decode_failed, rate_limited, other_error]
+      http_status: { type: INTEGER, nullable: true }
+      error_message: { type: TEXT, nullable: true }
+      artifact_image_id: { type: BIGINT, fk: artifact_images.id, nullable: true }
+    indexes:
+      - "artifact_image_fetch_log_p_number_idx ON artifact_image_fetch_log(p_number, attempted_at DESC)"
+      - "artifact_image_fetch_log_outcome_idx ON artifact_image_fetch_log(outcome) WHERE outcome <> 'success'"
+
 # ═══════════════════════════════════════════════════════════
 # LAYER 1: PHYSICAL — Where are signs on the artifact?
 # Sources: compvis-annotations, ebl-annotations, ML models
@@ -1855,6 +1931,7 @@ labels:
   composites:          { label: "Reconstructed Texts", description: "Scholarly reconstructions combining multiple tablet copies" }
   artifact_composites: { label: "Tablet-to-Text Links", description: "Which tablets contain copies of which texts" }
   artifact_identifiers: { label: "Object ID Lookup", description: "All known identifiers for an artifact (museum numbers, excavation numbers, etc.)" }
+  artifact_images:     { label: "Tablet Images", description: "Photographs and line drawings of tablets, with per-image copyright and credit" }
 
   # Layer 1: Physical
   surfaces:          { label: "Tablet Surfaces", description: "Front, back, and edges of a tablet" }
