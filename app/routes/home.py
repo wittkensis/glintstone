@@ -22,9 +22,9 @@ def homepage(request: Request):
     from app.main import templates
 
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "kpi": kpi,
             "featured_collections": featured,
             "api_url": request.app.state.api.base_url,

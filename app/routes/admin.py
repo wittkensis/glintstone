@@ -52,9 +52,9 @@ def ingestion_dashboard(request: Request):
     from app.main import templates
 
     return templates.TemplateResponse(
+        request,
         "admin/ingestion.html",
         {
-            "request": request,
             "connectors": [dict(r) for r in rows],
             "recent_runs": [dict(r) for r in recent_runs],
             "dead_letter_summary": [dict(r) for r in dead_letter_summary],
@@ -101,9 +101,9 @@ def connector_detail(request: Request, connector_id: str):
     from app.main import templates
 
     return templates.TemplateResponse(
+        request,
         "admin/connector_detail.html",
         {
-            "request": request,
             "source": dict(source),
             "runs": [dict(r) for r in runs],
             "dead_letters": [dict(r) for r in dead_letters],

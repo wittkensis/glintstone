@@ -22,9 +22,9 @@ def collection_list(request: Request):
     from app.main import templates
 
     return templates.TemplateResponse(
+        request,
         "collections/index.html",
         {
-            "request": request,
             "collections": collections.get("items", []),
             "composites": composites.get("items", []),
             "composites_total": composites.get("total", 0),
@@ -38,8 +38,9 @@ def collection_new(request: Request):
     from app.main import templates
 
     return templates.TemplateResponse(
+        request,
         "collections/form.html",
-        {"request": request, "collection": None, "is_edit": False},
+        {"collection": None, "is_edit": False},
     )
 
 
@@ -69,9 +70,9 @@ def collection_detail(request: Request, collection_id: int, page: int = 1):
     from app.main import templates
 
     return templates.TemplateResponse(
+        request,
         "collections/detail.html",
         {
-            "request": request,
             "collection": collection,
             "tablets": tablets_data.get("items", []),
             "total": tablets_data.get("total", 0),
@@ -93,8 +94,9 @@ def collection_edit(request: Request, collection_id: int):
     from app.main import templates
 
     return templates.TemplateResponse(
+        request,
         "collections/form.html",
-        {"request": request, "collection": collection, "is_edit": True},
+        {"collection": collection, "is_edit": True},
     )
 
 

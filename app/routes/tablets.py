@@ -110,9 +110,9 @@ def tablet_list(
     from app.main import templates
 
     return templates.TemplateResponse(
+        request,
         "tablets/list.html",
         {
-            "request": request,
             "tablets": data.get("items", []),
             "total": data.get("total", 0),
             "page": data.get("page", 1),
@@ -162,9 +162,9 @@ def tablet_detail(request: Request, p_number: str):
     from app.main import templates
 
     return templates.TemplateResponse(
+        request,
         "tablets/detail.html",
         {
-            "request": request,
             "tablet": tablet,
             "api_url": request.app.state.api.base_url,
             "debug_json": debug_json,

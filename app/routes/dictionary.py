@@ -110,9 +110,9 @@ def dictionary_index(
     from app.main import templates
 
     return templates.TemplateResponse(
+        request,
         "dictionary/index.html",
         {
-            "request": request,
             "level": level,
             "items": data.get("items", []),
             "total": data.get("total", 0),
