@@ -60,9 +60,8 @@ superseded_by: null
 |---|---|---|
 | `HOSTINGER_HOST` | deploy.yml | VPS IP / hostname |
 | `HOSTINGER_SSH_KEY` | deploy.yml | Private deploy key (matches `~/.ssh/authorized_keys` for `deploy`) |
-| `DATABASE_URL_STAGING` | test.yml | Pytest integration DB (skipped if unset) |
 
-The production DB lives on the VPS at `127.0.0.1:5432` and is not reachable from CI. `DATABASE_URL` is read from `/var/www/glintstone/shared/.env` at runtime; migrations run on the VPS via the release's venv.
+Both production and staging DBs live on the VPS at `127.0.0.1:5432` and are not reachable from CI. Each environment reads its `DATABASE_URL` from its own `/var/www/glintstone{,-staging}/shared/.env` at runtime; migrations run on the VPS via the release's venv. The old `DATABASE_URL_PROD` / `DATABASE_URL_STAGING` GitHub secrets were retired with the Neon cutover (2026-05-12).
 
 If a secret is missing or rotated, `gh secret set <name>` updates it.
 

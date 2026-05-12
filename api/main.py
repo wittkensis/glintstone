@@ -1,14 +1,13 @@
 """FastAPI application for api.glintstone.org."""
 
-import os
 from contextlib import asynccontextmanager
-from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import get_settings
 from core.database import init_pool, close_pool
+from core.version import release_tag, version_payload
 from api.routes import (
     health,
     image,
@@ -29,18 +28,25 @@ async def lifespan(app: FastAPI):
 
 settings = get_settings()
 
-_version_file = Path(__file__).parent.parent / "version.txt"
-_app_version = (
-    _version_file.read_text().strip()
-    if _version_file.exists()
-    else os.getenv("APP_VERSION", "dev")
-)
-
 app = FastAPI(
     title="Glintstone API",
-    version=_app_version,
+    version=release_tag(),
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def add_release_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Glintstone-Release"] = release_tag()
+    return response
+
+
+@app.get("/version", tags=["meta"])
+def version():
+    """Release tag, environment, applied schema version, and process start time."""
+    return version_payload()
+
 
 app.add_middleware(
     CORSMiddleware,

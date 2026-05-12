@@ -1,26 +1,21 @@
 """FastAPI application for app.glintstone.org (server-rendered pages)."""
 
-import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.api_client import APIClient
 from app.routes import admin, collections, dictionary, home, tablets
 from core.database import close_pool, init_pool
+from core.version import release_tag, version_payload
 
 BASE_DIR = Path(__file__).parent
 
-# Version written by deploy.sh into each release dir; falls back to env or "dev".
-_version_file = BASE_DIR.parent / "version.txt"
-APP_VERSION = (
-    _version_file.read_text().strip()
-    if _version_file.exists()
-    else os.getenv("APP_VERSION", "dev")
-)
+APP_VERSION = release_tag()
 
 
 @asynccontextmanager
@@ -33,6 +28,25 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Glintstone Web", docs_url=None, redoc_url=None, lifespan=lifespan)
+
+
+@app.middleware("http")
+async def add_release_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Glintstone-Release"] = APP_VERSION
+    return response
+
+
+@app.get("/healthz", include_in_schema=False)
+def healthz():
+    """Lightweight liveness probe — process is up, no DB hit."""
+    return JSONResponse({"status": "ok", "release": APP_VERSION})
+
+
+@app.get("/version", include_in_schema=False)
+def version():
+    return JSONResponse(version_payload())
+
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 templates.env.globals["app_version"] = APP_VERSION
