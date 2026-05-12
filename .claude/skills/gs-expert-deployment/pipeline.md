@@ -1,8 +1,8 @@
 ---
 question: "What do test.yml and deploy.yml actually do, and how do I debug a failing run?"
 created: 2026-05-11
-modified: 2026-05-11
-context: "Created during the 2026-05-11 overhaul. Tracks the GitHub Actions → Hostinger flow."
+modified: 2026-05-12
+context: "Created 2026-05-11. Updated 2026-05-12 when production Postgres moved from Neon to the VPS itself — migrations now run on the VPS, not in CI."
 status: active
 audience: [claude, ops]
 owners: [eric]
@@ -26,15 +26,16 @@ superseded_by: null
 
 `.github/workflows/deploy.yml` — runs on push to `main` after `test.yml` passes:
 
-1. Build a tarball of the working tree (excluding `_archive/`, `source-data/sources/`, `venv/`, etc.)
-2. SCP to `/opt/glintstone/releases/<git-sha>/` on the Hostinger VPS
-3. SSH to the VPS and:
-   - `python data-model/migrate.py up` against production Neon
-   - Update symlink `/opt/glintstone/current` → `releases/<git-sha>`
-   - `systemctl restart glintstone-api glintstone-app`
-   - `nginx -t && nginx -s reload`
-4. Smoke-test `https://app.glintstone.org/healthz`
-5. On failure: leave the previous symlink in place; surface the error
+1. Configure the SSH deploy key from `HOSTINGER_SSH_KEY`
+2. Invoke `ops/deploy/deploy.sh`, which:
+   - rsyncs the working tree to `/var/www/glintstone/releases/<release-tag>/` on the VPS
+   - creates a per-release `venv` and `pip install -r requirements.txt`
+   - symlinks `shared/.env` into the release
+   - runs `venv/bin/python data-model/migrate.py up` **on the VPS** (Postgres is on 127.0.0.1, not reachable from CI)
+   - atomically swaps `/var/www/glintstone/current` → `releases/<release-tag>`
+   - `sudo supervisorctl restart glintstone-{api,web}`
+   - reloads nginx if marketing target included
+3. On failure before the symlink swap: the previous release stays live.
 
 ## Where logs live
 
@@ -57,11 +58,11 @@ superseded_by: null
 
 | Secret | Used in | Purpose |
 |---|---|---|
-| `DATABASE_URL` | deploy.yml | Production Neon connection |
-| `TEST_DATABASE_URL` | test.yml | Test-branch Neon connection |
-| `SSH_PRIVATE_KEY` | deploy.yml | SSH to Hostinger |
-| `SSH_HOST` | deploy.yml | VPS hostname |
-| `SSH_USER` | deploy.yml | `glintstone` |
+| `HOSTINGER_HOST` | deploy.yml | VPS IP / hostname |
+| `HOSTINGER_SSH_KEY` | deploy.yml | Private deploy key (matches `~/.ssh/authorized_keys` for `deploy`) |
+| `DATABASE_URL_STAGING` | test.yml | Pytest integration DB (skipped if unset) |
+
+The production DB lives on the VPS at `127.0.0.1:5432` and is not reachable from CI. `DATABASE_URL` is read from `/var/www/glintstone/shared/.env` at runtime; migrations run on the VPS via the release's venv.
 
 If a secret is missing or rotated, `gh secret set <name>` updates it.
 

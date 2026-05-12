@@ -142,6 +142,10 @@ ssh_run "cd $RELEASE_DIR && python3 -m venv venv && venv/bin/pip install --quiet
 # --- Symlink shared state (the .env stays out of releases for safety) ---
 ssh_run "ln -sfn $SHARED_DIR/.env $RELEASE_DIR/.env"
 
+# --- Run migrations against the target database (uses the release's venv + .env) ---
+echo "Running migrations..."
+ssh_run "cd $RELEASE_DIR && venv/bin/python data-model/migrate.py up"
+
 # --- Write version file for cache-busting and build identification ---
 ssh_run "echo '$RELEASE_TAG' > $RELEASE_DIR/version.txt"
 

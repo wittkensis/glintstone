@@ -53,16 +53,6 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Run migrations against target DB
-        env:
-          DATABASE_URL: ${{ secrets[format('DATABASE_URL_{0}', steps.env.outputs.app_env == 'production' && 'PROD' || 'STAGING')] }}
-          APP_ENV: ${{ steps.env.outputs.app_env }}
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          python data-model/migrate.py status
-          python data-model/migrate.py up
-
       - name: Deploy to Hostinger
         env:
           DEPLOY_HOST: ${{ secrets.HOSTINGER_HOST }}
