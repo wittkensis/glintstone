@@ -20,9 +20,9 @@
 #   4. Bump the file header's modified date below
 
 _meta:
-  modified: 2026-05-11
+  modified: 2026-05-12
   question: "Which representative records demonstrate each interesting scenario?"
-  context: "Initial catalog seeded from PLAN/Translation Pipeline UI examples (P227657, P247526, P229672) plus picks from the 5-layer schema. Extend eagerly."
+  context: "Initial catalog seeded from PLAN/Translation Pipeline UI examples (P227657, P247526, P229672) plus picks from the 5-layer schema. Extended 2026-05-12 with artifact_images fixtures after the R2 + migration 022 rollout. Extend eagerly."
 
 artifacts:
   - id: P227657
@@ -57,6 +57,32 @@ artifacts:
 # TODO: add scenarios below this line as discoveries happen. Each section keeps
 # the schema above. Don't delete — mark status:archived if a record becomes
 # uninteresting.
+
+artifact_images:
+  # Seeded 2026-05-12 from the upload_local_images.py + attribution backfill
+  # rollout. Each fixture is a real row in production artifact_images.
+  - id: P000001
+    label: Photo + lineart, both with attribution, both in R2
+    why: >
+      The canonical happy-path image record. Photo has a museum attribution
+      ("© Vorderasiatisches Museum, Berlin, Germany") and a usable
+      cdli_reader_id (88909). Lineart has the "[see publications]" placeholder
+      attribution that the parser flags as credit-pending. Both originals
+      and WebP thumbnails live under tablets/P000001/ in R2.
+    usefulness: [onboarding-demo, regression-test, domain-rich]
+    as_of: 2026-05-12
+    sources: [cdli]
+    notes: First artifact uploaded by upload_local_images.py + first artifact
+           attributed by backfill_image_attribution.py. Good smoke-test target.
+
+  - id: P273201
+    label: Largest original in the seed batch (~2.6 MB)
+    why: Stresses the upload + thumbnail path with a high-resolution photo.
+         Useful for testing image-decoding memory + thumb quality at the
+         high end.
+    usefulness: [edge-case, performance-test]
+    as_of: 2026-05-12
+    sources: [cdli]
 
 scholars:
   # Seed examples — extend via discovery-queries.md

@@ -211,6 +211,48 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /artifacts/{p_number}/images/ensure:
+    post:
+      operationId: ensureArtifactImages
+      summary: Fetch + cache CDLI images for an artifact (on-demand)
+      description: >
+        Idempotently ensures artifact_images has rows for this P-number. If
+        rows already exist, returns immediately (status=cached). Otherwise
+        fetches the CDLI artifact HTML page, parses the image manifest, and
+        downloads each image binary + WebP thumbnail into R2 + DB. A
+        per-artifact threading.Lock serializes concurrent first-view requests.
+
+        Two modes via `wait`:
+        - wait=true (default): blocks ~5-15s, returns the final status.
+        - wait=false: schedules via FastAPI BackgroundTasks; returns
+          {status: scheduled} immediately. Caller should poll GET /images.
+
+        Always uses the 5s courtesy floor (not the 60s robots.txt-strict
+        mode) — on-demand traffic is human-paced. The background crawler
+        uses the 60s mode separately.
+      tags: [Artifacts, Images]
+      parameters:
+        - $ref: '#/components/parameters/PNumber'
+        - name: wait
+          in: query
+          required: false
+          schema: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Cache fill status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [p_number, status]
+                properties:
+                  p_number: { type: string }
+                  status:
+                    type: string
+                    enum: [cached, fetched, not_found_at_cdli, fetch_error, scheduled]
+                  image_count: { type: integer, nullable: true }
+                  detail: { type: string, nullable: true }
+
   /artifacts/{p_number}/images:
     get:
       operationId: getArtifactImages
