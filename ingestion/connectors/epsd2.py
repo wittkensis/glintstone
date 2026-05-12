@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from pathlib import Path
 from typing import Iterable, Iterator
 
@@ -47,10 +48,12 @@ class Epsd2Connector(SourceConnector):
             with open(SIGN_LIST_FILE, encoding="utf-8") as f:
                 data = json.load(f)
             for sign_name, sign_data in data.get("signs", {}).items():
-                values = sign_data.get("values", [])
+                values = [
+                    unicodedata.normalize("NFC", v) for v in sign_data.get("values", [])
+                ]
                 yield {
                     "_target": "lexical_signs",
-                    "sign_name": sign_name,
+                    "sign_name": unicodedata.normalize("NFC", sign_name),
                     "unicode_char": None,
                     "sign_number": None,
                     "shape_category": None,

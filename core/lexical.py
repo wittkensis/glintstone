@@ -9,6 +9,7 @@ Provides functions for:
 - Token integration (form → lexical context)
 """
 
+import unicodedata
 from typing import List, Dict, Optional
 import psycopg
 from psycopg.rows import dict_row
@@ -50,6 +51,8 @@ def lookup_lemmas_by_form(
     Returns:
         List of lemma dicts with sense_count and sign_count
     """
+    # Normalize to NFC so queries match stored values regardless of input encoding
+    form = unicodedata.normalize("NFC", form)
     conn = get_connection()
 
     query = """

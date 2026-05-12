@@ -12,6 +12,7 @@ Depends on: oracc-lexical-glossaries, epsd2 (lexical_lemmas must be populated)
 from __future__ import annotations
 
 import json
+import unicodedata
 from pathlib import Path
 from typing import Iterable, Iterator
 
@@ -103,7 +104,10 @@ class OraccNormsConnector(SourceConnector):
                         if not norm_text:
                             continue
                         forms = [
-                            {"form": fe["n"], "icount": int(fe.get("icount", 0))}
+                            {
+                                "form": unicodedata.normalize("NFC", fe["n"]),
+                                "icount": int(fe.get("icount", 0)),
+                            }
                             for fe in norm_entry.get("forms", [])
                             if fe.get("n")
                         ]
@@ -183,7 +187,7 @@ class OraccNormsConnector(SourceConnector):
                         "INSERT INTO lexical_norm_forms "
                         "(norm_id, written_form, attestation_count, source) "
                         "VALUES (%(norm_id)s, %(written_form)s, %(attestation_count)s, %(source)s) "
-                        "ON CONFLICT (norm_id, written_form, source) DO NOTHING",
+                        "ON CONFLICT (norm_id, written_form) DO NOTHING",
                         forms_to_insert,
                     )
                 ctx.db.commit()

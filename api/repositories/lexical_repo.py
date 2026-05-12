@@ -532,18 +532,27 @@ class LexicalRepository(BaseRepository):
 
         rows = self.fetch_all(
             f"""
-            SELECT ln.id AS norm_id, ln.norm, ln.attestation_count AS norm_attestations,
-                   ln.attestation_pct,
-                   ll.id AS lemma_id, ll.citation_form, ll.guide_word, ll.pos,
-                   ll.language_code, ll.attestation_count AS lemma_attestations,
-                   ll.source,
-                   lnf.attestation_count AS form_attestations
-            FROM lexical_norm_forms lnf
-            JOIN lexical_norms ln ON lnf.norm_id = ln.id
-            JOIN lexical_lemmas ll ON ln.lemma_id = ll.id
-            WHERE lnf.written_form = %(form)s
-            {lang_filter}
-            ORDER BY ln.attestation_count DESC
+            SELECT norm_id, norm, norm_attestations, attestation_pct,
+                   lemma_id, citation_form, guide_word, pos,
+                   language_code, lemma_attestations, source, form_attestations
+            FROM (
+                SELECT DISTINCT ON (ll.id, ln.id)
+                       ln.id AS norm_id, ln.norm,
+                       ln.attestation_count AS norm_attestations,
+                       ln.attestation_pct,
+                       ll.id AS lemma_id, ll.citation_form, ll.guide_word, ll.pos,
+                       ll.language_code,
+                       ll.attestation_count AS lemma_attestations,
+                       ll.source,
+                       lnf.attestation_count AS form_attestations
+                FROM lexical_norm_forms lnf
+                JOIN lexical_norms ln ON lnf.norm_id = ln.id
+                JOIN lexical_lemmas ll ON ln.lemma_id = ll.id
+                WHERE lnf.written_form = %(form)s
+                {lang_filter}
+                ORDER BY ll.id, ln.id, lnf.attestation_count DESC
+            ) deduped
+            ORDER BY norm_attestations DESC
             """,
             params,
         )
