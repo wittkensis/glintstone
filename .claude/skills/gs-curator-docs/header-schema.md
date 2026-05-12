@@ -120,9 +120,10 @@ One sentence. Claude reads this from the skill listing to decide whether to load
 
 ## Special cases
 
-- **README.md inside vendored source-data**: skip. These are upstream-owned (e.g. `source-data/sources/eBL/metadata/ebl-api/README.md`).
+- **Repo-root `README.md`**: skip. GitHub renders YAML frontmatter awkwardly on the landing page.
+- **Repo-root `CLAUDE.md`**: skip. Loaded verbatim by Claude every session — the header would be conversational noise.
+- **README.md inside vendored source-data**: skip. Upstream-owned (e.g. `source-data/sources/eBL/metadata/ebl-api/README.md`).
 - **PRIVATE-TODO.md**: user-owned, skip.
-- **`_archive/` content**: skip — it's about to be deleted anyway.
 - **Generated files**: skip if the file says it's auto-generated.
 
 ## Migration story
