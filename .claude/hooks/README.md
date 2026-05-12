@@ -1,328 +1,77 @@
-# Claude Code Hooks for Glintstone
-
-Agentic automation hooks that protect critical data, ensure pipeline integrity, and load ANE research context automatically.
-
-## Overview
-
-Claude Code hooks run at specific lifecycle events during Claude sessions. These hooks provide:
-- **Data protection** - Prevent accidental deletion of schema/migration files
-- **Pipeline integrity** - Validate import scripts before ending sessions
-- **Context loading** - Auto-load ANE research context at session start
-- **Migration reminders** - Prompt to apply schema changes
-- **Import context** - Inject pipeline info when discussing data imports
-
-## Installed Hooks
-
-### PreToolUse - Protect Critical Data (Tier 1)
-
-**Type:** Prompt-based (LLM-driven)
-**When:** Before any tool executes
-**Purpose:** Block dangerous operations on production data
-
-**Protects:**
-- Schema files: `*.sql`, `*.yaml` in `data-model/`
-- Migration files: `data-model/migrations/`
-- Source data: `source-data/sources/` (read-only)
-
-**Actions:**
-- Asks for confirmation before:
-  - Deleting schema/migration files
-  - Running DROP TABLE, TRUNCATE, destructive SQL
-  - Writing to `source-data/sources/`
-
-**Example:**
-```
-User: "Delete data-model/migrations/001_initial.sql"
-Hook: "⚠️ Confirm: This operation modifies critical data files.
-       Deleting migration file: 001_initial.sql"
-```
-
+---
+question: "Which Claude Code hooks does Glintstone install, and what does each do?"
+created: 2026-02-21
+modified: 2026-05-11
+context: "Rewritten during the 2026-05-11 knowledge architecture overhaul. The previous version referenced retired v1 paths (data-model/migrations, 00-15 numbered scripts) and SessionStart context that's now handled by the gs-orient-project skill auto-loading. This version is intentionally minimal — most context-loading is delegated to skills."
+status: active
+audience: [claude, engineers]
+owners: [eric]
+related_issues: []
+related_skills: [gs-orient-project, gs-curator-docs, gs-expert-deployment]
+supersedes: null
+superseded_by: null
 ---
 
-### Stop - Verify Data Pipeline Integrity (Tier 1)
+# Claude Code hooks — Glintstone
 
-**Type:** Command (Bash script)
-**When:** Before Claude session ends
-**Purpose:** Ensure import pipeline didn't break
+Two hooks. Most context-loading and routing has moved out of hooks into the `gs-*` skills (which load on triggers rather than indiscriminately at SessionStart).
 
-**Checks:**
-- All 15 import scripts parse as valid Python
-- Schema YAML validates
-- No uncommitted changes in `source-data/import-tools/`
+## Installed hooks
 
-**Script:** `ops/hooks/verify-import-pipeline.sh`
+### `PreToolUse` — safety validator
 
-**Example:**
-```
-→ Validating Python syntax for all import scripts...
-✓ All 15 import scripts have valid Python syntax
-✓ Schema YAML is valid
-✓ Import pipeline integrity verified!
-```
+Type: prompt-based (LLM-driven).
 
----
+Catches risky modifications to:
 
-### SessionStart - Load ANE Research Context (Tier 2)
+- `data-model/*.yaml` (schema files)
+- `source-data/migrations/*.sql` (migrations)
+- `source-data/sources/` (vendored upstream data — read-only)
+- `ops/deploy/`, `.github/workflows/deploy.yml` (production deploy machinery)
+- Force-push to `main`
 
-**Type:** Prompt-based (LLM-driven)
-**When:** Session begins
-**Purpose:** Preload project-specific context
+If the tool use matches, the hook asks for confirmation via `systemMessage`. The `gs-expert-deployment` skill's safe-default rules layer on top of this.
 
-**Loads:**
-- Data model schema overview (`glintstone-v2-schema.yaml`)
-- Import script sequence (00-15)
-- Recent migrations
-- Assyriology skill availability
+### `Stop` — pipeline integrity
 
-**Output:** 3-4 sentence summary preserved in context
+Type: shell command — runs `ops/hooks/verify-import-pipeline.sh`.
 
-**Example:**
-```
-Glintstone v2 schema loaded with 42 tables.
-15 import scripts available (00_setup_database through 15_final_enrichment).
-No pending migrations.
-Use the 'assyriology' skill for ANE linguistics work.
-```
+Validates that the ingestion framework is still healthy: discovers connectors, parses the registry, sanity-checks imports.
 
----
+## What's gone (and where it went)
 
-### PreCompact - Preserve Schema Context (Tier 3)
+- **`SessionStart` context prompt** — used to read the schema YAML and list import scripts. Replaced by the `gs-orient-project` skill, which auto-loads on Glintstone triggers and carries a current-as-of row-count snapshot.
+- **`PreCompact` schema preserver** — same logic, same replacement. The `gs-orient-project` summary survives compaction.
+- **`hookify.auto-migrate.local.md`** — referenced `data-model/migrations` (wrong path) and assumed v1 numbered scripts. Removed; the `gs-curator-docs` freshness contract covers the same ground.
+- **`hookify.import-context.local.md`** — referenced the 15 numbered scripts. Removed; `gs-expert-integrations` is loaded on import-related keywords instead.
 
-**Type:** Prompt-based (LLM-driven)
-**When:** Before context compaction
-**Purpose:** Ensure data model context survives compaction
+## How the freshness mechanism works
 
-**Preserves:**
-- Current schema version (v2)
-- Active migration files
-- Import pipeline state
-- Key architectural decisions
+`gs-curator-docs` defines a contract: when staged changes touch certain paths, specific docs / skills must also be touched (warn-only). The freshness check runs on push via `ops/hooks/check-docs-freshness.sh`.
 
-**Output:** Compact 3-5 sentence summary
+See [`gs-curator-docs/SKILL.md`](../skills/gs-curator-docs/SKILL.md) for the path-to-doc contract.
 
----
+## Testing the hooks
 
-## Hookify Rules (PostToolUse)
-
-Hookify provides simple markdown-based hooks without JSON editing.
-
-### Auto-Migration Reminder
-
-**File:** `.claude/hookify.auto-migrate.local.md`
-**Event:** PostToolUse
-**Pattern:** `data-model/migrations/.*\.sql`
-
-**Action:** After editing migration files, reminds to run:
 ```bash
-python ops/migrate.py --apply
+# PreToolUse — attempt a risky operation, verify the prompt fires
+echo "test" > data-model/test.yaml  # should ask for confirmation
+
+# Stop — manually run the verifier
+bash ops/hooks/verify-import-pipeline.sh
 ```
 
----
+## Disabling
 
-### Import Pipeline Context Injection
-
-**File:** `.claude/hookify.import-context.local.md`
-**Event:** UserPromptSubmit
-**Patterns:** `\b(import|ETL|pipeline|source data)\b`
-
-**Action:** Injects context about:
-- Import script sequence (00-15)
-- Data sources (CDLI, ORACC, eBL, ePSD2)
-- Pipeline location
-
----
-
-## Hook Lifecycle
-
-```
-Session Starts
-    ↓
-[SessionStart] → Load ANE context
-    ↓
-User works...
-    ↓
-[UserPromptSubmit] → Inject import context if relevant
-    ↓
-[PreToolUse] → Check if tool modifies critical data
-    ↓
-Tool executes
-    ↓
-[PostToolUse] → Remind about migrations if needed
-    ↓
-Context approaching limit?
-    ↓
-[PreCompact] → Preserve schema state
-    ↓
-Session ending...
-    ↓
-[Stop] → Verify pipeline integrity
-    ↓
-Session Ends
-```
-
-## Configuration
-
-### Main Config: `hooks.json`
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [...],
-    "Stop": [...],
-    "SessionStart": [...],
-    "PreCompact": [...]
-  }
-}
-```
-
-### Hookify Rules
-
-Located in project root:
-- `.claude/hookify.auto-migrate.local.md`
-- `.claude/hookify.import-context.local.md`
-
-## Testing
-
-### Test PreToolUse Protection
-
-Try to delete a schema file (will ask for confirmation):
-```
-"Delete data-model/glintstone-v2-schema.yaml"
-```
-
-### Test Stop Hook
-
-Modify an import script with syntax error:
-```
-echo "def broken(" >> source-data/import-tools/00_setup_database.py
-```
-Then try to end session - hook will catch the error.
-
-### Test SessionStart
-
-Start a new Claude session - should see ANE context summary loaded automatically.
-
-### Test Migration Reminder
-
-Edit a migration file:
-```
-echo "-- test" >> data-model/migrations/001_initial.sql
-```
-Hook will remind to run migration.
-
-## Troubleshooting
-
-### Hooks not running
-
-**Issue:** Hooks don't seem to execute
-**Fix:** Hooks load at session start. Restart Claude session to activate changes.
-
-### Hook fails with timeout
-
-**Issue:** `Hook exceeded timeout`
-**Fix:** Increase timeout in hooks.json (default: 15-30s)
-
-### Permission denied on script
-
-**Issue:** `verify-import-pipeline.sh: Permission denied`
-**Fix:** `chmod +x ops/hooks/verify-import-pipeline.sh`
-
-### JSON syntax error
-
-**Issue:** `Failed to parse hooks.json`
-**Fix:** Validate JSON:
-```bash
-python3 -c "import json; json.load(open('.claude/hooks/hooks.json'))"
-```
-
-### Hook blocks legitimate operation
-
-**Issue:** PreToolUse asks confirmation for safe operations
-**Fix:** Refine prompt in hooks.json to better distinguish safe/unsafe operations
-
-## Disabling Hooks
-
-### Temporarily disable all hooks
-
-Rename hooks.json:
+Temporarily disable all hooks:
 ```bash
 mv .claude/hooks/hooks.json .claude/hooks/hooks.json.disabled
 ```
-
-Restart session.
-
-### Disable specific hook
-
-Edit `.claude/hooks/hooks.json` and remove the hook entry, or comment out (JSON doesn't support comments, so remove entirely).
-
-### Disable hookify rule
-
-Rename the hookify file:
-```bash
-mv .claude/hookify.auto-migrate.local.md .claude/hookify.auto-migrate.local.md.disabled
-```
+Restart the Claude session to take effect.
 
 ## Performance
 
-- **PreToolUse:** ~1-2 seconds (LLM evaluation)
-- **Stop:** ~3-5 seconds (validates 15 Python files + YAML)
-- **SessionStart:** ~2-4 seconds (reads schema + lists files)
-- **PreCompact:** ~1-2 seconds (summarizes state)
+- `PreToolUse`: ~1–2 s LLM evaluation per risky tool call
+- `Stop`: ~3–5 s for the verifier
 
-Total overhead: <10 seconds per session (SessionStart + Stop).
-
-## Advanced: Writing Custom Hooks
-
-See Claude Code documentation for hook development:
-- [Hook Development Guide](https://docs.anthropic.com/claude-code/hooks)
-- [Hook Reference](https://docs.anthropic.com/claude-code/hooks/reference)
-
-### Example: Custom PostToolUse Hook
-
-```json
-{
-  "PostToolUse": [
-    {
-      "type": "command",
-      "command": "bash ops/hooks/custom-hook.sh",
-      "timeout": 10
-    }
-  ]
-}
-```
-
-## Security Considerations
-
-**Hooks have access to:**
-- Session transcript
-- File paths
-- Tool inputs/outputs
-- Current working directory
-
-**Best practices:**
-- Quote all bash variables in command hooks
-- Validate all inputs in scripts
-- Use short timeouts (10-30s)
-- Test hooks before deploying to production
-
-## Next Steps
-
-- Monitor hook effectiveness over next few sessions
-- Refine PreToolUse patterns based on false positives
-- Add more hookify rules as workflows stabilize
-- Consider adding pre-commit hook for testing (Phase 3)
-
-## Files Reference
-
-```
-.claude/hooks/
-  ├── hooks.json                              # Main hook configuration
-  └── README.md                               # This file
-
-ops/hooks/
-  └── verify-import-pipeline.sh               # Stop hook script
-
-.claude/
-  ├── hookify.auto-migrate.local.md           # Migration reminder
-  └── hookify.import-context.local.md         # Import context injection
-```
+Total overhead: well under 10 s per session.

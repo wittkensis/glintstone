@@ -1,3 +1,17 @@
+---
+question: "TODO: one sentence — what question does README.md answer?"
+created: 2026-05-11
+modified: 2026-05-11
+context: "TODO: why was this file created?"
+status: draft
+audience: [engineers]
+owners: [eric]
+related_issues: []
+related_skills: []
+supersedes: null
+superseded_by: null
+---
+
 # ML Service for Cuneiform Sign Detection
 
 Local FastAPI service for running EBL_OCR (Deformable DETR) model on tablet images.

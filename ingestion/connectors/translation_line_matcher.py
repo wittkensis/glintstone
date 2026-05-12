@@ -6,7 +6,7 @@ attempted to match each translation to a specific `text_line` by line number.
 ~45,000 rows couldn't match — they were dumped to a JSON file that lived on
 one developer's disk.
 
-The v2 connector does the same matching but writes every unmatchable record
+The connector does the same matching but writes every unmatchable record
 to `import_dead_letters` with `category='no_match'` plus a subcategory
 ("broken", "fragmentary", "missing_artifact", "missing_line"). Triage moves
 from "open the JSON file and squint" to:

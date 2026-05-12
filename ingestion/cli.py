@@ -1,4 +1,4 @@
-"""glintstone-ingest CLI — one entry point for the v2 framework.
+"""glintstone-ingest CLI — one entry point for the framework.
 
 Commands:
     glintstone-ingest list                    # show all registered connectors

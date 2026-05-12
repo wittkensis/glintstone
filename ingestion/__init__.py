@@ -1,4 +1,4 @@
-"""Glintstone v2 ingestion framework.
+"""Glintstone ingestion framework.
 
 Every data source — external dataset, ML model, derived computation — is a
 subclass of `SourceConnector`. The framework supplies:

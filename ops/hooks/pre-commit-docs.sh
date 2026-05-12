@@ -1,62 +1,67 @@
 #!/bin/bash
-# Pre-commit hook: Documentation validation
-# Ensures documentation is updated when code changes
+# Pre-commit documentation-freshness check.
+# Mirrors the contract documented in .claude/skills/gs-curator-docs/SKILL.md.
+# Warn-only — never blocks the commit.
+#
+# Rewritten 2026-05-11 for v2 paths.
 
-set -e
+WARN=0
+STAGED=$(git diff --cached --name-only)
 
-EXIT_CODE=0
+if [ -z "$STAGED" ]; then
+    exit 0
+fi
 
-echo "Checking documentation consistency..."
+note() { echo "⚠ $*"; WARN=1; }
 
-# Check if schema changed without docs
-if git diff --cached --name-only | grep -q 'data-model/.*\.yaml'; then
-    if ! git diff --cached --name-only | grep -qE '(README.md|data-model/.*\.md)'; then
-        echo "❌ Schema changed but no documentation updated"
-        echo "   Files modified: $(git diff --cached --name-only | grep 'data-model/.*\.yaml' | tr '\n' ' ')"
-        echo "   → Update README.md or add docs in data-model/"
-        EXIT_CODE=1
+# Schema YAML or migration changed → expect a doc touch
+if echo "$STAGED" | grep -qE 'source-data/migrations/.*\.sql$'; then
+    if ! echo "$STAGED" | grep -qE '(gs-expert-data-model/migrations\.md|data-model/v2/glintstone-v2-schema\.yaml)'; then
+        note "source-data/migrations/ touched — review .claude/skills/gs-expert-data-model/migrations.md and data-model/v2/glintstone-v2-schema.yaml"
     fi
 fi
 
-# Check if new import script added without docs
-NEW_IMPORTS=$(git diff --cached --name-only --diff-filter=A | grep 'source-data/import-tools/.*\.py' || true)
-if [ -n "$NEW_IMPORTS" ]; then
-    if ! git diff --cached --name-only | grep -q 'source-data/import-tools/README.md'; then
-        echo "❌ New import script added but README not updated"
-        echo "   New scripts: $NEW_IMPORTS"
-        echo "   → Document in source-data/import-tools/README.md"
-        EXIT_CODE=1
+# Connector framework changed → expect skill doc touch
+if echo "$STAGED" | grep -qE 'ingestion/(base|registry|runner|loader|dead_letters|cli)\.py$'; then
+    if ! echo "$STAGED" | grep -q '.claude/skills/gs-expert-integrations/'; then
+        note "ingestion/ framework touched — review .claude/skills/gs-expert-integrations/{SKILL.md,framework.md}"
     fi
 fi
 
-# Check if API routes changed without README update
-if git diff --cached --name-only | grep -q 'api/routes/.*\.py'; then
-    if ! git diff --cached --name-only | grep -q 'README.md'; then
-        echo "⚠️  Warning: API routes changed but README not updated"
-        echo "   Consider documenting API changes in README.md"
+# New connector → expect port-table touch
+if echo "$STAGED" | grep -qE '^A\s+ingestion/connectors/.*\.py$' || \
+   git diff --cached --name-status --diff-filter=A | grep -qE 'ingestion/connectors/.*\.py$'; then
+    if ! echo "$STAGED" | grep -q 'gs-expert-integrations/framework.md'; then
+        note "New connector file — update the port table in .claude/skills/gs-expert-integrations/framework.md"
     fi
 fi
 
-# Check for functions without docstrings in staged files
-STAGED_PY_FILES=$(git diff --cached --name-only --diff-filter=AM | grep '\.py$' || true)
-if [ -n "$STAGED_PY_FILES" ]; then
-    for file in $STAGED_PY_FILES; do
-        # Check if file exists (handles renames/deletes)
-        if [ -f "$file" ]; then
-            # Use simpler pattern: look for function definitions not followed by docstrings
-            # This is a basic check - won't catch all cases but avoids complex regex
-            if grep -Pzo 'def [a-zA-Z_][a-zA-Z0-9_]*\([^)]*\):\n\s*[^"\s#]' "$file" > /dev/null 2>&1; then
-                echo "⚠️  Warning: $file may have functions without docstrings"
-            fi
+# CSS tokens changed → expect tokens doc touch
+if echo "$STAGED" | grep -q 'app/static/css/core/tokens.css'; then
+    if ! echo "$STAGED" | grep -q 'gs-expert-ui/css-tokens.md'; then
+        note "tokens.css touched — review .claude/skills/gs-expert-ui/css-tokens.md"
+    fi
+fi
+
+# Deploy workflow / scripts changed
+if echo "$STAGED" | grep -qE '(\.github/workflows/.*\.yml|ops/deploy/.*\.sh)'; then
+    if ! echo "$STAGED" | grep -q 'gs-expert-deployment/'; then
+        note "Deployment surface touched — review .claude/skills/gs-expert-deployment/"
+    fi
+fi
+
+# New tables in a migration → fixture catalog reminder
+if echo "$STAGED" | grep -qE 'source-data/migrations/.*\.sql$'; then
+    if git diff --cached source-data/migrations/ 2>/dev/null | grep -qE '^\+CREATE TABLE'; then
+        if ! echo "$STAGED" | grep -q 'gs-curator-artifacts/catalog.yaml'; then
+            note "New table in migration — consider adding a fixture scenario to .claude/skills/gs-curator-artifacts/catalog.yaml"
         fi
-    done
+    fi
 fi
 
-if [ $EXIT_CODE -eq 0 ]; then
-    echo "✓ Documentation checks passed!"
-else
+if [ "$WARN" -ne 0 ]; then
     echo ""
-    echo "Fix documentation issues above before committing."
+    echo "(Warnings only — commit proceeds. Run again after updating docs.)"
 fi
 
-exit $EXIT_CODE
+exit 0

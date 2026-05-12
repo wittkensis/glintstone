@@ -1,4 +1,4 @@
-"""BabyLemmatizer v2 connector — proves ModelConnector extensibility.
+"""BabyLemmatizer connector — proves ModelConnector extensibility.
 
 Runs the BabyLemmatizer (HuggingFace) over uninferred tokens and writes
 lemmatizations with a model_registry FK. This connector is the reference

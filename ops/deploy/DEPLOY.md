@@ -1,4 +1,18 @@
-# Glintstone v2 — Deploy
+---
+question: "TODO: one sentence — what question does DEPLOY.md answer?"
+created: 2026-05-11
+modified: 2026-05-11
+context: "TODO: why was this file created?"
+status: draft
+audience: [engineers]
+owners: [eric]
+related_issues: []
+related_skills: []
+supersedes: null
+superseded_by: null
+---
+
+# Glintstone — Deploy
 
 Two deploy paths, same end state: a versioned release directory on the
 Hostinger VPS with a `current` symlink that gets swapped atomically.

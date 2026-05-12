@@ -1,3 +1,17 @@
+---
+question: "TODO: one sentence — what question does README.md answer?"
+created: 2026-05-11
+modified: 2026-05-11
+context: "TODO: why was this file created?"
+status: draft
+audience: [engineers]
+owners: [eric]
+related_issues: []
+related_skills: []
+supersedes: null
+superseded_by: null
+---
+
 # Git Hooks for Glintstone
 
 Automated quality gates and validation checks for the Glintstone project.
@@ -38,7 +52,7 @@ This directory contains custom git hooks that enforce code quality, documentatio
 #### 4. **Database Schema Validation** (`pre-push.sh`)
 - **What it does:** Validates schema YAML and checks for uncommitted migrations
 - **Prevents:** Pushing invalid schema changes or forgetting migration files
-- **Fix:** Ensure `data-model/glintstone-v2-schema.yaml` is valid YAML and commit all migrations
+- **Fix:** Ensure `data-model/glintstone-schema.yaml` is valid YAML and commit all migrations
 
 ### Post-Merge Hooks (Run After Merge)
 
@@ -135,7 +149,7 @@ result: dict[str, Any] = get_data()
 
 **Fix:** Validate YAML syntax:
 ```bash
-python3 -c "import yaml; yaml.safe_load(open('data-model/glintstone-v2-schema.yaml'))"
+python3 -c "import yaml; yaml.safe_load(open('data-model/glintstone-schema.yaml'))"
 ```
 
 ## Configuration

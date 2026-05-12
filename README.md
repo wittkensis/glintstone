@@ -36,7 +36,7 @@ Each artifact also surfaces academic and historical context -- era, genre, place
 
 ### Data Model
 
-The [v2 schema](data-model/v2/glintstone-v2-schema.yaml) is organized into five layers:
+The [schema](data-model/glintstone-schema.yaml) is organized into five layers:
 
 - **Physical** -- Surfaces, bounding boxes, damage states. Sources: CompVis, eBL OCR, ML models.
 - **Graphemic** -- Sign inventory with cross-system concordance (OGSL, MZL, ABZ via Unicode).
@@ -100,7 +100,7 @@ ORACC projects: DCCLT, RINAP, SAAo, RIAo, RIBo, RIME, ETCSRI, ETCSL, BLMS, CAMS,
 | **CDLI** | Scholar name registry, ATF editor and author attribution | CC BY-SA |
 | **Wikipedia / Wikidata** | Assyriologist name resolution, Wikidata QIDs for disambiguation | CC BY-SA 4.0 / CC0 |
 
-For detailed field mappings, update frequencies, and access methods per source, see [data-sources.md](data-model/v2/data-sources.md).
+For detailed field mappings, update frequencies, and access methods per source, see [data-sources.md](docs/data-model/data-sources.md).
 
 ---
 
@@ -110,7 +110,7 @@ For detailed field mappings, update frequencies, and access methods per source, 
 - **Database**: PostgreSQL 17 (hosted at [Neon](https://neon.tech))
 - **Web**: FastAPI + Jinja2 (server-rendered)
 - **Proxy**: nginx (local dev: `*.glintstone.test` domains; prod: Hostinger VPS)
-- **Ingestion (v2)**: `ingestion/` connector framework with DB-backed run tracking
+- **Ingestion**: `ingestion/` connector framework with DB-backed run tracking
 - **CI/CD**: GitHub Actions → Hostinger VPS with versioned releases + symlink rollback
 - **Marketing site**: Static HTML + Tailwind
 
@@ -122,7 +122,7 @@ For detailed field mappings, update frequencies, and access methods per source, 
 api/                    FastAPI app (api.glintstone.org)
 app/                    Server-rendered web app (app.glintstone.org)
 core/                   Shared Python package (config, database, repository)
-ingestion/              v2 ingestion framework
+ingestion/              ingestion framework
   base.py                SourceConnector + ModelConnector contract
   registry.py            Auto-discovery + topo-sort by runs_after
   runner.py              Full run lifecycle with DB-backed progress
@@ -131,9 +131,19 @@ ingestion/              v2 ingestion framework
   cli.py                 `python -m ingestion.cli` entry point
   connectors/            Concrete connectors (one file per source)
 data-model/
-  migrate.py             Generic SQL migration runner
-  v2/                    v2 schema, docs, mappings
-  seeds/                 Seed data
+  glintstone-schema.yaml      Full schema (70+ tables)
+  glintstone-schema-api.yaml  API-surface view
+  import-pipeline.yaml        Full ETL specification
+  source-mapping.yaml         Per-source field mappings
+  source-schemas/             Reference schemas (CDLI, ORACC, eBL, ePSD2, OGSL)
+  migrate.py                  SQL migration runner
+docs/data-model/              Narrative docs about the schema + pipeline
+  data-sources.md             Per-source licenses + access
+  data-quality.md             Trust architecture + provenance
+  ml-integration.md           BabyLemmatizer, DETR, Akkademia
+  data-issues.md              Known data-quality issues
+  citation-pipeline-summary.md
+  import-pipeline-guide.md    ETL overview
 source-data/
   migrations/            NNN_*.sql files applied by data-model/migrate.py
   import-tools/          [LEGACY] v1 numbered import scripts, retiring as v2
@@ -177,7 +187,7 @@ python data-model/migrate.py up
 
 Opens at http://app.glintstone.test (web) and http://api.glintstone.test (API). See [ops/deploy/DEPLOY.md](ops/deploy/DEPLOY.md) for the automated GitHub Actions deploy to production.
 
-### Ingestion (v2)
+### Ingestion
 
 ```bash
 python -m ingestion.cli list                # show registered connectors
@@ -223,7 +233,7 @@ The legacy discrete `DB_HOST`/`DB_PORT`/etc. vars still work as fallback.
 - GDL normalization into queryable tables
 - ORACC data versioning across releases
 
-See [data-issues.md](data-model/v2/data-issues.md) for the full list.
+See [data-issues.md](docs/data-model/data-issues.md) for the full list.
 
 ---
 
@@ -237,15 +247,15 @@ The core infrastructure is language-agnostic. Trust tracking, provenance chains,
 
 | Document | Purpose |
 |----------|---------|
-| [v2 Schema](data-model/v2/glintstone-v2-schema.yaml) | Full schema specification (70+ tables) |
-| [Data Sources](data-model/v2/data-sources.md) | Per-source field mappings, licenses, access methods |
-| [Data Quality](data-model/v2/data-quality.md) | Trust architecture, competing interpretations, evidence chains |
-| [ML Integration](data-model/v2/ml-integration.md) | BabyLemmatizer, DETR, Akkademia model integration |
-| [Import Pipeline](data-model/v2/import-pipeline-guide.md) | 19-step ETL overview |
-| [Data Issues](data-model/v2/data-issues.md) | Critical issues from pressure testing |
-| [Citation Pipeline](data-model/v2/citation-pipeline-summary.md) | Citation sourcing from 9 external sources |
-| [Source Mappings](data-model/v2/source-to-v2-mapping.yaml) | Field-level source-to-schema mappings |
-| [Import Pipeline Spec](data-model/v2/import-pipeline.yaml) | Full technical ETL specification |
+| [Schema](data-model/glintstone-schema.yaml) | Full schema specification (70+ tables) |
+| [Data Sources](docs/data-model/data-sources.md) | Per-source field mappings, licenses, access methods |
+| [Data Quality](docs/data-model/data-quality.md) | Trust architecture, competing interpretations, evidence chains |
+| [ML Integration](docs/data-model/ml-integration.md) | BabyLemmatizer, DETR, Akkademia model integration |
+| [Import Pipeline](docs/data-model/import-pipeline-guide.md) | 19-step ETL overview |
+| [Data Issues](docs/data-model/data-issues.md) | Critical issues from pressure testing |
+| [Citation Pipeline](docs/data-model/citation-pipeline-summary.md) | Citation sourcing from 9 external sources |
+| [Source Mappings](data-model/source-mapping.yaml) | Field-level source-to-schema mappings |
+| [Import Pipeline Spec](data-model/import-pipeline.yaml) | Full technical ETL specification |
 | [Deployment](ops/deploy/DEPLOY.md) | VPS provisioning and deployment |
 
 ---

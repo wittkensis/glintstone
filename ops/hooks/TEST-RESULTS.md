@@ -1,3 +1,17 @@
+---
+question: "TODO: one sentence — what question does TEST-RESULTS.md answer?"
+created: 2026-05-11
+modified: 2026-05-11
+context: "TODO: why was this file created?"
+status: draft
+audience: [engineers]
+owners: [eric]
+related_issues: []
+related_skills: []
+supersedes: null
+superseded_by: null
+---
+
 # Hooks Test Results
 
 **Date:** 2026-02-21
@@ -54,7 +68,7 @@ invalid-syntax: Expected `)`, found `(`
 **Objective:** Ensure documentation hook prevents undocumented schema changes
 
 **Test:**
-- Modified `data-model/glintstone-v2-schema.yaml`
+- Modified `data-model/glintstone-schema.yaml`
 - Did NOT modify README or other docs
 - Attempted to commit
 
@@ -64,7 +78,7 @@ invalid-syntax: Expected `)`, found `(`
 ```
 Documentation Validation.................................................Failed
 ❌ Schema changed but no documentation updated
-   Files modified: data-model/glintstone-v2-schema.yaml
+   Files modified: data-model/glintstone-schema.yaml
    → Update README.md or add docs in data-model/
 ```
 

@@ -1,3 +1,17 @@
+---
+question: "TODO: one sentence — what question does README.md answer?"
+created: 2026-05-11
+modified: 2026-05-11
+context: "TODO: why was this file created?"
+status: draft
+audience: [engineers]
+owners: [eric]
+related_issues: []
+related_skills: []
+supersedes: null
+superseded_by: null
+---
+
 # Source Snapshots
 
 Raw source files are large and should not live in git. This directory contains

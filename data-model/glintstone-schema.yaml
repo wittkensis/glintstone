@@ -1,0 +1,1974 @@
+# Glintstone Schema
+# STATUS: PLACEHOLDER — Design phase, not yet implemented
+#
+# Synthesizes:
+#   - 11 source schemas (data-model/source-schemas/)
+#   - v1 current schema (data-model/v1/)
+#   - Linguistics research (RESEARCH/Linguistics Schema/v2/ Phase 1 + Phase 2)
+#
+# Design principles:
+#   1. Layered: Physical → Graphemic → Reading → Linguistic → Semantic
+#   2. Multi-source: Every annotation carries provenance (who said it, when, confidence)
+#   3. Competing interpretations: Multiple readings/lemmatizations per token
+#   4. Language-polymorphic: Morphology slots adapt to Sumerian/Akkadian/Hittite/Elamite
+#   5. Concordance-first: Sign systems (OGSL/MZL/ABZ/Unicode) unified at schema level
+#
+# Related documentation:
+#   - data-sources.md: Per-source field mappings, licenses, access methods
+#   - data-quality.md: Trust architecture, competing interpretations, evidence chains
+#   - ml-integration.md: BabyLemmatizer/DETR/Akkademia integration details
+#   - data-issues.md: 12 critical issues found in pressure testing, with fixes
+#   - import-pipeline.yaml: 19-step ETL spec with validation per step
+#   - source-mapping.yaml: Field-level source→target mappings with null rates
+#   - citation-pipeline-summary.md: Citation sourcing pipeline (9 sources, already built)
+
+meta:
+  engine: PostgreSQL
+  status: design
+  feeds_from:
+    - cdli-catalog (identity)
+    - cdli-atf (reading)
+    - oracc-catalogue (identity enrichment)
+    - oracc-corpus (reading + linguistic)
+    - oracc-glossary (dictionary)
+    - ogsl-signlist (graphemic)
+    - oracc-geojson (geographic)
+    - compvis-annotations (physical)
+    - ebl-annotations (physical)
+    - epsd2-reference (reference)
+    - BabyLemmatizer output (linguistic, future)
+    - ML OCR models (physical, future)
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 0: IDENTITY — What is this artifact?
+# Sources: cdli-catalog, cdli-api, oracc-catalogue, oracc-geojson
+# QUESTION: How do we update this to use IIIF properly?
+# ═══════════════════════════════════════════════════════════
+
+tables:
+
+  artifacts:
+    # ORIGIN: Primary: cdli_cat.csv (353k rows). Secondary: oracc-catalogue (subgenre, supergenre),
+    #         oracc-geojson (Pleiades coords). See source-mapping.yaml for field-level detail.
+    # CONNECTS: Universal join key (p_number) for all downstream tables. FK target for inscriptions,
+    #           translations, lemmatizations (via tokens→text_lines), sign_annotations (via surfaces),
+    #           artifact_identifiers, artifact_editions, artifact_composites, pipeline_status.
+    # TRADE-OFF: CDLI authoritative for identity fields. ORACC enrichment stored in separate columns
+    #            (subgenre, supergenre, pleiades_id) rather than overwriting CDLI values. Preserves
+    #            both raw and normalized period/provenience/genre for auditability (data-issues.md #1,#3,#6).
+    description: >
+      Physical artifacts. Superset of v1 — expands from 16 to ~40 columns.
+      Merges CDLI catalog + ORACC catalogue + geojson enrichment.
+    columns:
+      p_number: { type: TEXT, pk: true }
+      designation: { type: TEXT }
+      # Physical description
+      museum_no: { type: TEXT }
+      excavation_no: { type: TEXT }
+      material: { type: TEXT }
+      object_type: { type: TEXT }
+      width: { type: REAL }
+      height: { type: REAL }
+      thickness: { type: REAL }
+      seal_id: { type: TEXT, new: true, source: "cdli_cat.csv → seal_id" }
+      object_preservation: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → object_preservation" }
+      # Classification
+      period: { type: TEXT }
+      period_normalized: { type: TEXT, new: true, description: "Canonical period without date ranges" }
+      provenience: { type: TEXT }
+      provenience_normalized: { type: TEXT, new: true, description: "Ancient name only, no 'mod. X'" }
+      genre: { type: TEXT }
+      subgenre: { type: TEXT, new: true, source: "oracc-catalogue (primary), cdli_cat.csv → subgenre (fallback when ORACC absent)" }
+      supergenre: { type: TEXT, new: true, source: oracc-catalogue }
+      language: { type: TEXT }
+      languages: { type: TEXT, new: true, description: "All languages in text (ORACC langs field)" }
+      # Geographic
+      pleiades_id: { type: TEXT, new: true, source: oracc-geojson }
+      latitude: { type: REAL, new: true, source: oracc-geojson }
+      longitude: { type: REAL, new: true, source: oracc-geojson }
+      # Publication
+      primary_publication: { type: TEXT, new: true, source: cdli-catalog }
+      collection: { type: TEXT, new: true, source: cdli-catalog }
+      dates_referenced: { type: TEXT, new: true, source: "cdli_cat.csv → dates_referenced" }
+      date_of_origin: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → date_of_origin" }
+      findspot_square: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → findspot_square" }
+      accounting_period: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → accounting_period", description: "Accounting period for Ur III administrative texts" }
+      acquisition_history: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → acquisition_history" }
+      # Provenance tracking
+      cdli_updated_at: { type: TIMESTAMP, new: true }
+      oracc_projects: { type: TEXT, new: true, description: "Which ORACC projects include this text" }
+    decision_needed: >
+      How to handle conflicting metadata between CDLI and ORACC?
+      Option A: CDLI is authoritative, ORACC overrides specific fields.
+      Option B: Store both with source attribution.
+
+  composites:
+    description: Composite/ideal texts assembled from exemplars
+    columns:
+      q_number: { type: TEXT, pk: true }
+      designation: { type: TEXT }
+      language: { type: TEXT }
+      period: { type: TEXT }
+      genre: { type: TEXT }
+      exemplar_count: { type: INTEGER }
+
+  artifact_composites:
+    description: Join table linking artifacts to composites
+    columns:
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      q_number: { type: TEXT, fk: composites.q_number }
+      line_ref: { type: TEXT }
+    constraints: [PRIMARY KEY(p_number, q_number)]
+
+  # --- Citation Resolution: Identity Concordance ---
+
+  artifact_identifiers:
+    # ORIGIN: Seeded from artifacts.museum_no, .excavation_no, .primary_publication, .seal_id.
+    #         Enriched by CDLI API, ORACC catalogue cross-refs, eBL fragment identifiers.
+    # CONNECTS: FK to artifacts.p_number. Referenced by artifact_identifier_evidence/decisions.
+    #           Fast identifier→P-number lookup via idx_ai_normalized index.
+    # TRADE-OFF: Dual resolution path — identifiers appear here (fast lookup) AND in
+    #            artifact_editions (rich metadata). Denormalization accepted for query performance.
+    description: >
+      NEW TABLE. N:1 alias concordance for artifacts. Every identifier
+      resolving to a P-number: museum numbers, excavation numbers,
+      publication designations, project-specific IDs, ARK identifiers.
+      Replaces flat museum_no/excavation_no on artifacts for resolution
+      queries; those columns remain for display convenience but this
+      table is authoritative for identifier lookup. Dual resolution
+      path: publication references appear here (fast lookup) AND in
+      artifact_editions (rich metadata).
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number, not_null: true }
+      identifier_type:
+        type: TEXT
+        not_null: true
+        values: [museum_no, excavation_no, accession_no, publication, cdli_designation, oracc_project, ark, collection_no, seal_id]
+      identifier_value: { type: TEXT, not_null: true, description: "Raw identifier: 'BM 055488', 'RIME 4.3.6.1'" }
+      identifier_normalized: { type: TEXT, not_null: true, description: "Lowered, whitespace-collapsed, diacritics stripped. Indexed for lookup" }
+      authority: { type: TEXT, nullable: true, description: "Issuing body: 'british_museum', 'rime', 'oracc/obmc', 'cdli'" }
+      is_current: { type: INTEGER, default: 1, description: "0 if superseded (museum transfer, renumbering)" }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      confidence: { type: REAL, default: 1.0 }
+      note: { type: TEXT, nullable: true }
+    constraints:
+      - "UNIQUE(p_number, identifier_type, identifier_value)"
+    indexes:
+      - "idx_ai_normalized ON artifact_identifiers(identifier_normalized)"
+      - "idx_ai_type_value ON artifact_identifiers(identifier_type, identifier_value)"
+      - "idx_ai_p_number ON artifact_identifiers(p_number)"
+      - "idx_ai_authority ON artifact_identifiers(authority)"
+    seed_data: >
+      Populated from artifacts.museum_no (~353k, type=museum_no),
+      artifacts.excavation_no (where non-NULL, type=excavation_no),
+      artifacts.primary_publication (type=publication),
+      artifacts.seal_id (type=seal_id),
+      cdli_cat.csv → ark_number (type=ark, format: ark:/21198/...),
+      cdli_cat.csv → accession_no (type=accession_no),
+      cdli_cat.csv → external_id (type=external),
+      ORACC catalogue cross-refs.
+
+  artifact_identifier_evidence:
+    description: >
+      NEW TABLE. Evidence supporting identifier assignments.
+      Standard evidence pattern. Critical for disputed identifications
+      (catalog errors, museum transfers, duplicate P-numbers).
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      artifact_identifier_id: { type: INTEGER, fk: artifact_identifiers.id, not_null: true }
+      evidence_type: { type: TEXT, values: [catalog_entry, museum_record, publication, photograph, autopsy, database_export, personal_communication] }
+      evidence_ref: { type: TEXT, description: "URL, DOI, catalog page, or freetext citation" }
+      added_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      added_at: { type: TIMESTAMP }
+      note: { type: TEXT, nullable: true }
+
+  artifact_identifier_decisions:
+    description: >
+      NEW TABLE. Audit trail for contested identifier assignments.
+      Standard decision pattern. When two scholars disagree on
+      whether BM 055488 = P363653, the decision chain records resolution.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      artifact_identifier_id: { type: INTEGER, fk: artifact_identifiers.id, not_null: true }
+      decided_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      decision_method: { type: TEXT, values: [editorial, vote, algorithm, museum_verification, import_default] }
+      rationale: { type: TEXT, nullable: true }
+      decided_at: { type: TIMESTAMP }
+      supersedes_id: { type: INTEGER, fk: artifact_identifier_decisions.id, nullable: true }
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 1: PHYSICAL — Where are signs on the artifact?
+# Sources: compvis-annotations, ebl-annotations, ML models
+# ═══════════════════════════════════════════════════════════
+
+  surfaces:
+    # ORIGIN: cdli-atf @surface markers (primary), compvis-annotations view_desc, oracc-corpus surface refs.
+    #         Normalized via surface_canon lookup (data-issues.md #6 pattern). ~300k rows estimated.
+    # CONNECTS: FK to artifacts.p_number. Referenced by sign_annotations.surface_id, text_lines.surface_id.
+    #           Bridges physical layer (sign locations on surfaces) to reading layer (text lines on surfaces).
+    # TRADE-OFF: Columns not modeled as separate table (some tablets have multiple columns per surface).
+    #            Flagged as open question — may add columns table if ORACC CDL column data is imported.
+    description: >
+      NEW TABLE. Decompose tablets into surfaces (obverse, reverse, edges).
+      Currently implicit in v1 (surface is a text field on sign_annotations).
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      surface_type: { type: TEXT, values: [obverse, reverse, left_edge, right_edge, top_edge, bottom_edge, seal] }
+      # Condition (from CDLI CSV)
+      surface_preservation: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → surface_preservation" }
+      condition_description: { type: TEXT, nullable: true, new: true, source: "cdli_cat.csv → condition_description" }
+    constraints: [UNIQUE(p_number, surface_type)]
+    decision_needed: >
+      Should columns be their own table? CDLI ATF has @column markers.
+      Some tablets have multiple columns per surface.
+
+  surface_images:
+    # ORIGIN: CDLI image downloads (multiple images per surface possible — different lighting,
+    #         cameras, museum vs field photos). Line drawings from CDLI lineart archives.
+    # CONNECTS: FK to surfaces.id. Referenced by sign_annotations.surface_image_id.
+    #           Bridges physical layer (images) to annotation layer (bounding boxes).
+    # TRADE-OFF: Separate table vs column on surfaces because CDLI provides multiple
+    #            images per surface (different lighting angles, different cameras).
+    description: >
+      NEW TABLE. Images of tablet surfaces. One surface may have multiple
+      images (different lighting, different cameras, line drawings, 3D renders).
+      Sign annotation bounding boxes reference specific images, not surfaces.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      surface_id: { type: INTEGER, fk: surfaces.id, not_null: true }
+      image_path: { type: TEXT, not_null: true }
+      image_width: { type: INTEGER, description: "Pixels, from PIL/Pillow at import" }
+      image_height: { type: INTEGER, description: "Pixels, from PIL/Pillow at import" }
+      image_type: { type: TEXT, values: [photo, line_drawing, 3d_render], default: photo }
+      lighting: { type: TEXT, nullable: true, values: [direct, raking, ambient, infrared], description: "Lighting condition if known" }
+      source_url: { type: TEXT, nullable: true, description: "Original download URL" }
+      is_primary: { type: INTEGER, default: 0, description: "Which image to show by default" }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+    constraints:
+      - "UNIQUE(surface_id, image_path)"
+    indexes:
+      - "idx_si_surface ON surface_images(surface_id)"
+      - "idx_si_primary ON surface_images(surface_id, is_primary) WHERE is_primary = 1"
+
+  sign_annotations:
+    # ORIGIN: compvis-annotations (11,070 rows, MZL labels), ebl-annotations (future), ML inference (future).
+    #         MZL→OGSL concordance required for sign_id resolution (data-issues.md #5). ~3% unresolvable.
+    # CONNECTS: FK to surfaces.id and signs.sign_id. Referenced by sign_annotation_evidence.
+    #           Links physical layer (where a sign is on the image) to graphemic layer (what sign it is).
+    # TRADE-OFF: Coordinates as percentages (0-100%) rather than pixels for resolution independence.
+    #            Requires image dimensions at import time. See source-mapping.yaml for transform.
+    description: >
+      Bounding box annotations with unified coordinate system.
+      Adds annotation provenance vs v1.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      surface_image_id: { type: INTEGER, fk: surface_images.id, new: true, description: "Annotations are tied to a specific photo" }
+      sign_id: { type: TEXT, fk: signs.sign_id, new: true, description: "Resolved OGSL name" }
+      # Coordinates as percentages (resolution-independent)
+      bbox_x: { type: REAL, description: "0-100%" }
+      bbox_y: { type: REAL, description: "0-100%" }
+      bbox_w: { type: REAL, description: "0-100%" }
+      bbox_h: { type: REAL, description: "0-100%" }
+      # Reading order
+      line_number: { type: INTEGER }
+      position_in_line: { type: INTEGER }
+      # Damage
+      damage_status: { type: TEXT, values: [intact, damaged, missing, illegible], new: true }
+      # Provenance
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id, new: true }
+      confidence: { type: REAL }
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 2: GRAPHEMIC — What signs are present?
+# Sources: ogsl-signlist, epsd2-reference, ebl-annotations
+# QUESTION: Should these tables be called grapheme instead of sign?
+# ═══════════════════════════════════════════════════════════
+
+  signs:
+    # ORIGIN: ogsl-signlist (3,367 signs). Concordance from ebl-annotations (ABZ), manual curation (MZL).
+    #         Unicode codepoints serve as bridge for auto-matching MZL↔OGSL↔ABZ (data-issues.md #5).
+    # CONNECTS: PK sign_id referenced by sign_annotations.sign_id, sign_values.sign_id,
+    #           sign_variants.base_sign, sign_word_usage.sign_id, token_readings (via form→sign lookup).
+    # TRADE-OFF: GDL stored as JSON (gdl_definition) not normalized tables. Simpler import, but
+    #            compound sign queries (e.g., "all tokens containing AN") require JSON parsing.
+    #            Concordance gap: ~200-400 MZL numbers unresolvable to OGSL after auto-matching.
+    description: >
+      Cuneiform sign inventory. Adds concordance columns vs v1.
+    columns:
+      sign_id: { type: TEXT, pk: true, description: "OGSL canonical name" }
+      utf8: { type: TEXT }
+      unicode_hex: { type: TEXT }
+      unicode_decimal: { type: INTEGER }
+      uname: { type: TEXT }
+      uphase: { type: TEXT }
+      sign_type: { type: TEXT, values: [simple, compound, modified] }
+      # Concordance numbers (NEW)
+      mzl_number: { type: INTEGER, new: true, description: "Borger MZL number (for CompVis)" }
+      abz_number: { type: TEXT, new: true, description: "Borger ABZ number (for eBL)" }
+      lak_number: { type: INTEGER, new: true, description: "Deimel LAK number" }
+      # GDL structure (NEW — stored as JSON, not just sign_type string)
+      gdl_definition: { type: TEXT, new: true, description: "JSON GDL tree from OGSL" }
+      # Computed
+      most_common_value: { type: TEXT }
+      total_corpus_frequency: { type: INTEGER, new: true }
+
+  sign_values:
+    description: >
+      Sign reading values. Adds context fields vs v1.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      sign_id: { type: TEXT, fk: signs.sign_id }
+      value: { type: TEXT }
+      sub_index: { type: INTEGER }
+      value_type: { type: TEXT, values: [logographic, syllabic, determinative, numeric] }
+      # Context for when this reading applies (NEW)
+      language_context: { type: TEXT, new: true, description: "sux, akk, or null (any)" }
+      period_context: { type: TEXT, new: true, description: "Period range where this reading is attested" }
+      frequency: { type: INTEGER, description: "Computed from corpus attestations" }
+    decision_needed: >
+      How granular should context be? Per-language? Per-period? Per-genre?
+      Risk of combinatorial explosion vs usefulness.
+
+  sign_variants:
+    description: Sign variant forms (gunu, tenu, etc.)
+    columns:
+      variant_id: { type: TEXT, pk: true }
+      base_sign: { type: TEXT, fk: signs.sign_id }
+      modifier_type: { type: TEXT, values: [gunu, tenu, sheshig, nutillu, rotated] }
+      modifier_code: { type: TEXT, description: "@g, @t, @s, @n, @180" }
+
+  sign_concordance:
+    # DESIGN NOTE: This table complements the mzl_number/abz_number/lak_number columns on the signs table.
+    #   - Columns on signs: fast 1:1 lookup for the canonical, unambiguous mapping (~90% of signs).
+    #   - This table: handles N:M ambiguous mappings with confidence scores (~200-400 cases where
+    #     MZL allographs/variants don't map cleanly to OGSL). Essential for CompVis import (Step 15)
+    #     where MZL labels must resolve to OGSL sign_ids.
+    #   - Future: additional numbering systems can be added as new 'system' values without schema changes.
+    description: >
+      NEW TABLE. N:M concordance mapping between sign numbering systems
+      (MZL, ABZ, LAK) and OGSL canonical sign_ids. Supports confidence
+      scores and match methods for ambiguous mappings.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      ogsl_id: { type: TEXT, fk: signs.sign_id, not_null: true, description: "OGSL canonical sign name" }
+      system: { type: TEXT, not_null: true, values: [mzl, abz, lak], description: "Numbering system" }
+      number: { type: INTEGER, not_null: true, description: "Number in that system (e.g., MZL 839)" }
+      confidence: { type: REAL, default: 1.0, description: "Match confidence: 1.0=manual verified, 0.95=auto-unicode, 0.7=reading-overlap" }
+      match_method: { type: TEXT, values: [auto_unicode, manual, reading_overlap], description: "How the mapping was established" }
+      note: { type: TEXT, nullable: true, description: "Rationale for ambiguous mappings" }
+    constraints:
+      - "UNIQUE(ogsl_id, system, number)"
+    indexes:
+      - "idx_sc_system_number ON sign_concordance(system, number)"
+      - "idx_sc_ogsl ON sign_concordance(ogsl_id)"
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 3: READING — How are signs read in context?
+# Sources: cdli-atf, oracc-corpus (GDL + reading layer)
+# ═══════════════════════════════════════════════════════════
+
+  text_lines:
+    # ORIGIN: cdli-atf (primary, ~2M lines from 135k texts), oracc-corpus CDL (2,215 orphan texts
+    #         with ORACC data but no CDLI ATF — built from CDL line structure, data-issues.md #8).
+    # CONNECTS: FK to artifacts.p_number and surfaces.id. Parent of tokens (tokens.line_id).
+    #           Referenced by translations.line_id for line-level translations.
+    # TRADE-OFF: Major v2 redesign — v1 stored ATF as monolithic text blobs on inscriptions table.
+    #            Per-line decomposition enables line-level queries, translation alignment, and
+    #            token-level drill-down. Requires ATF parser at import time.
+    description: >
+      NEW TABLE. Decompose ATF from text blobs into per-line records.
+      Each line belongs to a surface and has an ordered sequence of tokens.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      surface_id: { type: INTEGER, fk: surfaces.id }
+      line_number: { type: INTEGER }
+      raw_atf: { type: TEXT, description: "Original ATF line text" }
+      is_ruling: { type: INTEGER, default: 0, description: "Ruling line (separator)" }
+      is_blank: { type: INTEGER, default: 0 }
+      source: { type: TEXT, values: [cdli, oracc] }
+    constraints: [UNIQUE(p_number, surface_id, line_number, source)]
+
+  tokens:
+    # ORIGIN: oracc-corpus CDL nodes (primary, ~5M tokens). For CDLI-only texts, tokenized
+    #         from ATF lines. BabyLemmatizer output also targets this table (ml-integration.md).
+    # CONNECTS: FK to text_lines.id. Parent of token_readings and lemmatizations (both via token_id).
+    #           Central positional anchor — all reading and linguistic data hangs off token positions.
+    # TRADE-OFF: Token is purely positional. All reading data (form, reading, damage, confidence)
+    #            moved to token_readings table. Cost: one extra JOIN for every display. Benefit:
+    #            competing readings from different scholars/models coexist cleanly. See data-quality.md.
+    description: >
+      NEW TABLE. Positional anchor linking all layers. Each token is one word
+      or sign-group in a line. Reading data (form, reading, damage) lives in
+      token_readings — always join to get reading data. This separation
+      enables competing readings of the same position by different scholars.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      line_id: { type: INTEGER, fk: text_lines.id }
+      position: { type: INTEGER, description: "Position within line (1-indexed)" }
+      # Sign-level decomposition (from ORACC GDL)
+      gdl_json: { type: TEXT, new: true, description: "GDL sign tree for this token (JSON)" }
+      # Language at token level
+      lang: { type: TEXT, description: "ISO language code (sux, akk, akk-x-stdbab, etc.)" }
+    notes: >
+      Design decision: Token is purely positional. form, reading,
+      sign_function, damage, and reading_confidence moved to token_readings
+      table to support competing readings per position. Single source of
+      truth — no cached copies on token. Query cost is one JOIN.
+    decision_needed: >
+      Should GDL be stored as JSON on the token, or normalized into a
+      sign_instances join table? JSON is simpler; normalized enables queries
+      like "find all tokens containing sign AN".
+
+  token_readings:
+    # ORIGIN: oracc-corpus (GDL reading data), cdli-atf (initial reading), Akkademia model (future),
+    #         scholarly collation/hand_copy. Each source creates its own annotation_run.
+    # CONNECTS: FK to tokens.id. Referenced by token_reading_evidence, token_reading_decisions,
+    #           token_reading_discussion_threads. Links reading layer to trust infrastructure.
+    # TRADE-OFF: Multiple rows per token_id by design. is_consensus flag marks the best reading
+    #            (at most one per token). Extra storage and JOIN cost vs. clean competing interpretations.
+    #            See data-quality.md for consensus mechanism and decision audit trails.
+    description: >
+      NEW TABLE. Competing transliterations of the same token position.
+      Parallels lemmatizations (multiple linguistic analyses per token) but
+      at the reading layer (multiple sign identifications/readings).
+      Every reading traces to an annotation_run for full provenance.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      token_id: { type: INTEGER, fk: tokens.id }
+      form: { type: TEXT, description: "Transliterated form as written" }
+      reading: { type: TEXT, description: "Phonetic/logographic reading" }
+      sign_function: { type: TEXT, values: [logographic, syllabographic, determinative, numeric, mixed] }
+      damage: { type: TEXT, values: [intact, damaged, missing, illegible] }
+      # Provenance
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      confidence: { type: REAL }
+      is_consensus: { type: INTEGER, default: 0, description: "Chosen as best reading" }
+      # Scholarly note
+      note: { type: TEXT, nullable: true, description: "Why this reading differs from others" }
+    notes: >
+      Multiple rows per token_id when competing readings exist.
+      is_consensus flags the editorially chosen or highest-confidence one.
+      Consensus decisions documented in token_reading_decisions table.
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 4: LINGUISTIC — What do the words mean?
+# Sources: oracc-corpus (lemma nodes), oracc-glossary, BabyLemmatizer
+# ═══════════════════════════════════════════════════════════
+
+  lemmatizations:
+    # ORIGIN: oracc-corpus (primary, ~86k with real identifications — data-issues.md #4 filters out
+    #         221k damaged/unread X-tokens). BabyLemmatizer output (future, via CoNLL-U import —
+    #         see ml-integration.md). Maps CoNLL-U LEMMA→citation_form, UPOS→pos, XPOS→epos.
+    # CONNECTS: FK to tokens.id and glossary_entries.entry_id. Referenced by lemmatization_evidence,
+    #           lemmatization_decisions, lemmatization_discussion_threads, morphology.lemmatization_id.
+    # TRADE-OFF: Multiple rows per token_id. ORACC human annotations default to is_consensus=1.
+    #            BabyLemmatizer output stored as competing analysis (is_consensus=0) unless no human
+    #            annotation exists. Full ORACC signature preserved for lossless round-trip.
+    description: >
+      REPLACES v1 lemmas table. Supports MULTIPLE lemmatizations per token
+      with provenance. v1 stored one flat record; v2 stores competing analyses.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      token_id: { type: INTEGER, fk: tokens.id }
+      # Lemma identification
+      citation_form: { type: TEXT, description: "cf — dictionary headword form" }
+      guide_word: { type: TEXT, description: "gw — English gloss" }
+      sense: { type: TEXT, new: true, description: "Disambiguated sense from ORACC" }
+      pos: { type: TEXT, description: "UPOS part of speech" }
+      epos: { type: TEXT, description: "Effective POS (for logograms)" }
+      # Normalization
+      norm: { type: TEXT, new: true, description: "norm0 — normalized Akkadian form" }
+      base: { type: TEXT, new: true, description: "Sign base underlying the reading" }
+      # Full ORACC signature
+      signature: { type: TEXT, new: true, description: "Full @project%lang:form=cf[gw//sense]POS'ePOS$norm/base#morph" }
+      # Morphology (opaque string from ORACC; structured decomposition in morphology table)
+      morph_raw: { type: TEXT, new: true, description: "Raw ORACC morph string" }
+      # Provenance
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      confidence: { type: REAL }
+      is_consensus: { type: INTEGER, default: 0, new: true, description: "Chosen as best analysis" }
+      # Link to dictionary
+      entry_id: { type: TEXT, fk: glossary_entries.entry_id, new: true }
+    notes: >
+      Multiple rows per token_id when competing analyses exist.
+      is_consensus flags the editorially chosen or highest-confidence one.
+
+  morphology:
+    # ORIGIN: oracc-corpus morph strings (parsed into structured slots), BabyLemmatizer FEATS
+    #         output (CoNLL-U Key=Value pairs — see ml-integration.md). ~50k rows estimated.
+    # CONNECTS: FK to lemmatizations.id. One morphology row per lemmatization.
+    # TRADE-OFF: Single polymorphic table with language_family discriminator rather than separate
+    #            tables per language. Akkadian uses root/stem/tense columns; Sumerian uses
+    #            conjugation_prefix/dimensional_prefixes slots. Many NULLs per row, but avoids
+    #            JOIN complexity for cross-language morphological queries. Sumerian framework
+    #            is contested (Jagersma vs Zolyomi vs Edzard) — multiple analyses supported
+    #            via same competing-annotation pattern as lemmatizations.
+    description: >
+      NEW TABLE. Structured morphological decomposition.
+      Language-polymorphic: different columns used per language family.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      lemmatization_id: { type: INTEGER, fk: lemmatizations.id }
+      language_family: { type: TEXT, values: [sumerian, akkadian, hittite, elamite, other] }
+      # Akkadian (Semitic templatic morphology)
+      root: { type: TEXT, description: "Triconsonantal root (e.g. š-p-r)" }
+      stem: { type: TEXT, description: "G/D/Š/N verbal stem" }
+      tense: { type: TEXT }
+      person: { type: TEXT }
+      number: { type: TEXT }
+      gender: { type: TEXT }
+      # Sumerian (agglutinative slot-based)
+      conjugation_prefix: { type: TEXT, description: "mu-, i-, ba-, bi-, etc." }
+      dimensional_prefixes: { type: TEXT, description: "-na-, -da-, -ni-, etc." }
+      stem_form: { type: TEXT }
+      pronominal_suffix: { type: TEXT }
+      aspect: { type: TEXT }
+      transitivity: { type: TEXT }
+      # Shared
+      case: { type: TEXT }
+      state: { type: TEXT, description: "Akkadian: construct/absolute/bound" }
+    decision_needed: >
+      Sumerian verbal morphology framework is contested (Jagersma vs Zólyomi
+      vs Edzard). Which slot model do we encode? May need to support multiple
+      frameworks as competing annotations — same provenance model as lemmatizations.
+
+  translations:
+    description: >
+      Expanded from v1. Adds line-level translations alongside whole-text.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+      line_id: { type: INTEGER, fk: text_lines.id, nullable: true, new: true }
+      translation: { type: TEXT }
+      language: { type: TEXT, default: "en" }
+      source: { type: TEXT }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id, new: true }
+
+# ═══════════════════════════════════════════════════════════
+# LAYER 5: SEMANTIC — Higher-level meaning
+# Sources: oracc-glossary (senses), editorial/ML (future)
+# ═══════════════════════════════════════════════════════════
+
+  glossary_entries:
+    # ORIGIN: ORACC glossary JSON from all projects (~21k entries, ~40k variant forms).
+    #         ePSD2 (1.8 GB Sumerian dictionary). Future: CAD digitized entries.
+    # CONNECTS: Referenced by glossary_forms.entry_id, glossary_senses.entry_id,
+    #           lemmatizations.entry_id, named_entities.glossary_entry_id, sign_word_usage.entry_id.
+    # TRADE-OFF: Cross-project dedup uses UNIQUE(headword, language, project) — keeps all entries
+    #            with source attribution rather than merging (data-issues.md #12). 1,726 duplicate pairs
+    #            identified; all preserved with correct project names (not import-method labels).
+    description: Dictionary headwords (expanded to ingest all ORACC projects)
+    columns:
+      entry_id: { type: TEXT, pk: true }
+      headword: { type: TEXT }
+      citation_form: { type: TEXT }
+      guide_word: { type: TEXT }
+      language: { type: TEXT }
+      pos: { type: TEXT }
+      icount: { type: INTEGER }
+      project: { type: TEXT }
+      normalized_headword: { type: TEXT }
+      # New fields from ORACC glossary
+      periods: { type: TEXT, new: true, description: "JSON array of attested periods" }
+      norms: { type: TEXT, new: true, description: "JSON array of normalized forms" }
+
+  glossary_forms:
+    description: Attested spelling forms for glossary entries
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      form: { type: TEXT }
+      count: { type: INTEGER }
+      norm: { type: TEXT, new: true }
+      lang: { type: TEXT, new: true }
+
+  glossary_senses:
+    # ORIGIN: ORACC glossary JSON senses[] arrays (data-issues.md #9 — 0 rows in v1, data exists
+    #         in source). 5,271 Sumerian entries have senses. Each sense has mng, icount, pos, forms[].
+    # CONNECTS: FK to glossary_entries.entry_id. Referenced by lemmatizations (via sense matching).
+    description: Sense hierarchy per entry (carry forward from v1)
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      sense_number: { type: INTEGER }
+      guide_word: { type: TEXT }
+      definition: { type: TEXT }
+      pos: { type: TEXT, new: true, description: "POS can differ per sense" }
+      signatures: { type: TEXT, new: true, description: "JSON array of ORACC sigs attesting this sense" }
+
+  glossary_relationships:
+    description: Cross-references between entries (carry forward from v1)
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      from_entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      to_entry_id: { type: TEXT, fk: glossary_entries.entry_id }
+      relationship_type: { type: TEXT }
+      notes: { type: TEXT }
+      confidence: { type: TEXT }
+
+  semantic_fields:
+    description: Hierarchical semantic taxonomy (carry forward from v1)
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      name: { type: TEXT, unique: true }
+      description: { type: TEXT }
+      parent_field_id: { type: INTEGER, fk: semantic_fields.id }
+
+  intertextuality_links:
+    description: >
+      NEW TABLE. Cross-text relationships: parallel passages,
+      quotations, formulaic expressions.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      source_token_start: { type: INTEGER, fk: tokens.id }
+      source_token_end: { type: INTEGER, fk: tokens.id }
+      target_token_start: { type: INTEGER, fk: tokens.id }
+      target_token_end: { type: INTEGER, fk: tokens.id }
+      link_type: { type: TEXT, values: [parallel, quotation, formula, duplicate, commentary] }
+      confidence: { type: REAL }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+    decision_needed: >
+      Should this link tokens (fine-grained) or lines (simpler)?
+      ORACC scores operate at line level. Token-level is more powerful but
+      harder to create.
+
+# ═══════════════════════════════════════════════════════════
+# PROVENANCE — Who said what, when, and how confident?
+# ═══════════════════════════════════════════════════════════
+
+  scholars:
+    # ORIGIN: ORACC project metadata (editors/contributors), CDLI publication author parsing,
+    #         OpenAlex ORCID backfill, Who's Who in Cuneiform Studies (~500-1000), Wikipedia (~200).
+    #         See citation-pipeline-summary.md for sourcing pipeline. Estimated 2,000-5,000 records.
+    # CONNECTS: Referenced by annotation_runs.scholar_id, publication_authors.scholar_id,
+    #           evidence tables (added_by), decision tables (decided_by), discussion_posts.scholar_id.
+    # TRADE-OFF: Name dedup is hard (diacritics, particles, initials). Cascading match:
+    #            ORCID exact > surname+initials normalized > full name fuzzy. ORCID is authoritative
+    #            when available (~10-20% coverage via OpenAlex). See data-quality.md.
+    description: >
+      NEW TABLE. Individual scholarly contributors to the corpus.
+      Enables trust queries: who made this reading, what's their expertise,
+      and how do we cite them?
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      name: { type: TEXT, not_null: true }
+      orcid: { type: TEXT, unique: true, nullable: true, description: "ORCID persistent identifier" }
+      institution: { type: TEXT, nullable: true }
+      expertise_periods: { type: TEXT, nullable: true, description: "JSON array of period specializations" }
+      expertise_languages: { type: TEXT, nullable: true, description: "JSON array of language codes (sux, akk, etc.)" }
+      active_since: { type: TEXT, nullable: true, description: "Year of first publication" }
+
+  annotation_runs:
+    # ORIGIN: Created by every import step and every annotation action. Retroactive records
+    #         created for all v1 data (13 records for existing CDLI/ORACC/CompVis imports).
+    #         See import-pipeline.yaml shared.annotation_run for field specifications.
+    # CONNECTS: annotation_run_id FK on nearly every table in the schema. This is the provenance
+    #           backbone — a single JOIN answers "who produced this data, when, and how?"
+    #           FK to scholars.id (NULL for ML/import), publications.id (NULL until matched).
+    # TRADE-OFF: One provenance system for everything (human, ML, import). Simpler than parallel
+    #            tracking. publication_ref TEXT fallback for unresolved citations alongside
+    #            structured publication_id FK (incremental migration). See data-quality.md.
+    description: >
+      NEW TABLE. Every annotation (sign detection, lemmatization, translation)
+      is linked to a run that records its source. Enables competing
+      interpretations and model comparison.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      source_type: { type: TEXT, values: [human, model, hybrid, import] }
+      source_name: { type: TEXT, description: "e.g. 'ORACC/dcclt', 'BabyLemmatizer v2.2', 'CompVis DETR'" }
+      model_version: { type: TEXT, nullable: true }
+      created_at: { type: TIMESTAMP }
+      corpus_scope: { type: TEXT, description: "Which texts were processed" }
+      notes: { type: TEXT }
+      # Trust primitives (NEW)
+      scholar_id: { type: INTEGER, fk: scholars.id, nullable: true, new: true, description: "NULL for ML/import runs" }
+      method: { type: TEXT, new: true, values: [hand_copy, photograph, collation, autopsy, RTI, 3D_scan, ML_model, import, api_fetch, web_scrape, manual, model], description: "How the data was produced. Values include both scholarly methods (hand_copy, collation) and import methods (api_fetch, import, web_scrape)." }
+      publication_ref: { type: TEXT, new: true, nullable: true, description: "DOI, citation key, or 'field_notes' — freetext fallback" }
+      publication_id: { type: INTEGER, fk: publications.id, new: true, nullable: true, description: "Structured FK to publications table. NULL until matched; publication_ref stays as fallback for unresolved citations. Incremental migration." }
+    notes: >
+      This is what v1 completely lacks. Every annotation in v2 traces back
+      to who/what created it. scholar_id + method + publication_ref/publication_id
+      enable full provenance: who read this, how, and where was it published.
+      publication_id provides structured bibliographic link; publication_ref
+      stays as freetext fallback for citations not yet in publications table.
+
+# ═══════════════════════════════════════════════════════════
+# CITATION RESOLUTION — Publication registry, edition chains,
+# and artifact-publication bridge for identifier resolution
+# ═══════════════════════════════════════════════════════════
+
+  # --- Publications Registry ---
+
+  publications:
+    # ORIGIN: CDLI API (16,725 pubs), eBL API (CSL-JSON), ORACC projects (12 digital editions),
+    #         OpenAlex (5-20k), KeiBi (~90k). See citation-pipeline-summary.md for full pipeline.
+    # CONNECTS: Referenced by artifact_editions.publication_id, publication_authors.publication_id,
+    #           annotation_runs.publication_id, publication_citations (citing/cited). Self-referential
+    #           supersedes_id for publication-level supersession chains.
+    # TRADE-OFF: bibtex_key prefixed by authority (cdli:, oracc:, ebl:, openalex:, keibi:) to avoid
+    #            cross-source collisions. Dedup cascade: DOI(1.0) > bibtex_key(0.95) > title+year(0.8).
+    #            Below 0.7 → _dedup_candidates staging table for manual review. See data-quality.md.
+    description: >
+      NEW TABLE. Structured bibliographic records for Assyriology
+      publications. Monograph series (RIME, SAA, RINAP, VAB), journal
+      articles, digital editions (Oracc projects), museum catalogs.
+      supersedes_id chain tracks publication-level supersession
+      (e.g., RIME 4 supersedes VAB 6 for OB royal inscriptions).
+      Per-artifact supersession tracked in artifact_editions.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      # Identification
+      bibtex_key: { type: TEXT, unique: true, nullable: true, description: "BibTeX citation key: 'Frayne1990RIME4'" }
+      doi: { type: TEXT, unique: true, nullable: true }
+      # Bibliographic core
+      title: { type: TEXT, not_null: true }
+      short_title: { type: TEXT, nullable: true, description: "Abbreviated: 'RIME 4', 'SAA 1', 'ATU 3'" }
+      publication_type:
+        type: TEXT
+        not_null: true
+        values: [monograph, edited_volume, journal_article, series_volume, digital_edition, museum_catalog, dissertation, conference_paper, hand_copy_publication, chapter, proceedings, thesis, report, unpublished, other]
+        description: "Expanded to cover all BibTeX entry types. 'thesis' covers both PhD and masters. 'chapter' = in-book/in-collection contribution."
+      year: { type: INTEGER, nullable: true }
+      # Series membership
+      series_key: { type: TEXT, nullable: true, description: "Series abbreviation: 'RIME', 'SAA', 'RINAP', 'VAB', 'PBS', 'ATU'" }
+      volume_in_series: { type: TEXT, nullable: true, description: "'4', '08/2', '1'" }
+      # Authorship (fallback — structured via publication_authors)
+      authors: { type: TEXT, not_null: true, description: "Semicolon-separated: 'Frayne, Douglas R.'" }
+      editors: { type: TEXT, nullable: true }
+      # Publisher
+      publisher: { type: TEXT, nullable: true }
+      place: { type: TEXT, nullable: true }
+      # Digital editions
+      url: { type: TEXT, nullable: true, description: "Canonical URL for digital editions" }
+      oracc_project: { type: TEXT, nullable: true, description: "ORACC project abbreviation if this is an Oracc edition" }
+      # Edition chain
+      supersedes_id: { type: INTEGER, fk: publications.id, nullable: true, description: "Publication-level supersession: RIME 4 supersedes VAB 6" }
+      superseded_scope: { type: TEXT, nullable: true, description: "'full' or 'partial — only Hammurabi inscriptions'" }
+      # Coverage
+      period_coverage: { type: TEXT, nullable: true, description: "JSON array: ['Old Babylonian', 'Isin-Larsa']" }
+      genre_coverage: { type: TEXT, nullable: true, description: "JSON array: ['Royal Inscription', 'Building']" }
+      # Provenance
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      created_at: { type: TIMESTAMP }
+    indexes:
+      - "idx_pub_bibtex ON publications(bibtex_key)"
+      - "idx_pub_short_title ON publications(short_title)"
+      - "idx_pub_series ON publications(series_key, volume_in_series)"
+      - "idx_pub_oracc ON publications(oracc_project)"
+      - "idx_pub_supersedes ON publications(supersedes_id)"
+    seed_data: >
+      CDLI API publications[] array (structured bibtex data), ORACC
+      projects (one digital_edition record each), manual curation for
+      major series (RIME, SAA, RINAP, VAB, PBS, ATU).
+
+  publication_authors:
+    description: >
+      NEW TABLE. Structured authorship linking publications to scholars
+      table. Enables "find all publications by Frayne" without string
+      parsing. Optional — authors TEXT on publications is the fallback
+      for scholars not yet in the scholars table.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      publication_id: { type: INTEGER, fk: publications.id, not_null: true }
+      scholar_id: { type: INTEGER, fk: scholars.id, not_null: true }
+      role: { type: TEXT, values: [author, editor, translator, contributor], default: author }
+      position: { type: INTEGER, description: "Author order: 1, 2, 3..." }
+    constraints:
+      - "UNIQUE(publication_id, scholar_id, role)"
+
+  # --- Artifact-Publication Bridge (Edition Tracking) ---
+
+  artifact_editions:
+    description: >
+      NEW TABLE. Links artifacts to publications with specific reference
+      data. Each row asserts "this publication contains an edition/
+      discussion of this artifact at this location." is_current_edition
+      marks the most recent authoritative treatment. supersedes_id chain
+      tracks per-artifact edition history (more granular than
+      publication-level — one pub may supersede another for some texts
+      but not all). Dual resolution path: publication references also
+      appear in artifact_identifiers (fast lookup); this table provides
+      rich metadata (edition_type, page numbers, currency).
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      p_number: { type: TEXT, fk: artifacts.p_number, not_null: true }
+      publication_id: { type: INTEGER, fk: publications.id, not_null: true }
+      # Reference within publication
+      reference_string: { type: TEXT, not_null: true, description: "Exact reference: 'RIME 4.3.6.1', 'pl. 11, W 6435,a', 'no. 154'" }
+      reference_normalized: { type: TEXT, not_null: true, description: "Lowered, stripped for lookup" }
+      page_start: { type: INTEGER, nullable: true }
+      page_end: { type: INTEGER, nullable: true }
+      plate_no: { type: TEXT, nullable: true }
+      item_no: { type: TEXT, nullable: true, description: "Catalog/edition number within publication" }
+      # Edition metadata
+      edition_type:
+        type: TEXT
+        not_null: true
+        values: [full_edition, hand_copy, photograph_only, catalog_entry, brief_mention, collation, translation_only, commentary]
+      is_current_edition: { type: INTEGER, default: 0, description: "Consensus flag: latest authoritative edition of this text" }
+      supersedes_id: { type: INTEGER, fk: artifact_editions.id, nullable: true, description: "Per-artifact supersession chain" }
+      # Provenance
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      confidence: { type: REAL, default: 1.0 }
+      note: { type: TEXT, nullable: true }
+    constraints:
+      - "UNIQUE(p_number, publication_id, reference_string)"
+    indexes:
+      - "idx_ae_p_number ON artifact_editions(p_number)"
+      - "idx_ae_publication ON artifact_editions(publication_id)"
+      - "idx_ae_reference ON artifact_editions(reference_normalized)"
+      - "idx_ae_current ON artifact_editions(p_number, is_current_edition) WHERE is_current_edition = 1"
+      - "idx_ae_supersedes ON artifact_editions(supersedes_id)"
+    seed_data: >
+      CDLI API publications[] with exact_reference and publication_type.
+      CDLI CSV publication_history (freetext — partial regex parsing,
+      raw string preserved, unparsed entries flagged for manual curation;
+      NO data loss). primary_publication maps to earliest/defining edition.
+      ORACC project membership -> digital_edition links for all project texts.
+
+  artifact_edition_evidence:
+    description: >
+      NEW TABLE. Evidence supporting artifact-publication links.
+      Standard evidence pattern. Important when a publication
+      reference is ambiguous or disputed.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      artifact_edition_id: { type: INTEGER, fk: artifact_editions.id, not_null: true }
+      evidence_type: { type: TEXT, values: [catalog_entry, publication_page, museum_record, cdli_reference, personal_communication, database_export] }
+      evidence_ref: { type: TEXT }
+      added_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      added_at: { type: TIMESTAMP }
+      note: { type: TEXT, nullable: true }
+
+  artifact_edition_decisions:
+    description: >
+      NEW TABLE. Audit trail for is_current_edition designation. When
+      a new edition is published and a scholar marks it as current,
+      the decision chain records who decided and why. Same pattern
+      as other decision tables.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      artifact_edition_id: { type: INTEGER, fk: artifact_editions.id, not_null: true }
+      decided_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      decision_method: { type: TEXT, values: [editorial, vote, algorithm, import_default] }
+      rationale: { type: TEXT, nullable: true }
+      decided_at: { type: TIMESTAMP }
+      supersedes_id: { type: INTEGER, fk: artifact_edition_decisions.id, nullable: true }
+
+# ═══════════════════════════════════════════════════════════
+# TRUST — Evidence links and editorial decisions
+# Separate tables per entity type for real FK enforcement.
+# ═══════════════════════════════════════════════════════════
+
+  # --- Evidence tables (4) ---
+
+  token_reading_evidence:
+    description: >
+      NEW TABLE. Links token readings to supporting evidence
+      (photographs, publications, collation notes, etc.).
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      token_reading_id: { type: INTEGER, fk: token_readings.id, not_null: true }
+      evidence_type: { type: TEXT, values: [photograph, hand_copy, collation_note, publication, 3d_scan, RTI_image, ML_output] }
+      evidence_ref: { type: TEXT, description: "DOI, file path, URL, or freetext citation" }
+      added_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      added_at: { type: TIMESTAMP }
+      note: { type: TEXT, nullable: true }
+
+  lemmatization_evidence:
+    description: >
+      NEW TABLE. Links lemmatizations to supporting evidence.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      lemmatization_id: { type: INTEGER, fk: lemmatizations.id, not_null: true }
+      evidence_type: { type: TEXT, values: [photograph, hand_copy, collation_note, publication, 3d_scan, RTI_image, ML_output] }
+      evidence_ref: { type: TEXT, description: "DOI, file path, URL, or freetext citation" }
+      added_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      added_at: { type: TIMESTAMP }
+      note: { type: TEXT, nullable: true }
+
+  sign_annotation_evidence:
+    description: >
+      NEW TABLE. Links sign bounding box annotations to supporting evidence.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      sign_annotation_id: { type: INTEGER, fk: sign_annotations.id, not_null: true }
+      evidence_type: { type: TEXT, values: [photograph, hand_copy, collation_note, publication, 3d_scan, RTI_image, ML_output] }
+      evidence_ref: { type: TEXT, description: "DOI, file path, URL, or freetext citation" }
+      added_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      added_at: { type: TIMESTAMP }
+      note: { type: TEXT, nullable: true }
+
+  translation_evidence:
+    description: >
+      NEW TABLE. Links translations to supporting evidence.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      translation_id: { type: INTEGER, fk: translations.id, not_null: true }
+      evidence_type: { type: TEXT, values: [photograph, hand_copy, collation_note, publication, 3d_scan, RTI_image, ML_output] }
+      evidence_ref: { type: TEXT, description: "DOI, file path, URL, or freetext citation" }
+      added_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      added_at: { type: TIMESTAMP }
+      note: { type: TEXT, nullable: true }
+
+  # --- Decision tables (3) ---
+
+  token_reading_decisions:
+    description: >
+      NEW TABLE. Audit trail for consensus choices on token readings.
+      When is_consensus is set on a token_reading, a decision record
+      documents why and by whom. Supersedes chain enables rollback.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      token_reading_id: { type: INTEGER, fk: token_readings.id, not_null: true }
+      decided_by: { type: INTEGER, fk: scholars.id, nullable: true, description: "NULL for algorithmic decisions" }
+      decision_method: { type: TEXT, values: [editorial, vote, algorithm, import_default] }
+      rationale: { type: TEXT, nullable: true, description: "Why this reading was chosen" }
+      decided_at: { type: TIMESTAMP }
+      supersedes_id: { type: INTEGER, fk: token_reading_decisions.id, nullable: true, description: "Previous decision this overrides" }
+
+  lemmatization_decisions:
+    description: >
+      NEW TABLE. Audit trail for consensus choices on lemmatizations.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      lemmatization_id: { type: INTEGER, fk: lemmatizations.id, not_null: true }
+      decided_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      decision_method: { type: TEXT, values: [editorial, vote, algorithm, import_default] }
+      rationale: { type: TEXT, nullable: true }
+      decided_at: { type: TIMESTAMP }
+      supersedes_id: { type: INTEGER, fk: lemmatization_decisions.id, nullable: true }
+
+  translation_decisions:
+    description: >
+      NEW TABLE. Audit trail for consensus choices on translations.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      translation_id: { type: INTEGER, fk: translations.id, not_null: true }
+      decided_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      decision_method: { type: TEXT, values: [editorial, vote, algorithm, import_default] }
+      rationale: { type: TEXT, nullable: true }
+      decided_at: { type: TIMESTAMP }
+      supersedes_id: { type: INTEGER, fk: translation_decisions.id, nullable: true }
+
+# ═══════════════════════════════════════════════════════════
+# ANNOTATION ECOSYSTEM — Fragment joins, scholarly commentary,
+# and discussion threads for distributed expertise
+# ═══════════════════════════════════════════════════════════
+
+  # --- Solution 2: Fragment Joins ---
+
+  join_groups:
+    description: >
+      NEW TABLE. Groups pairwise fragment_joins into reconstructed tablets.
+      Many tablets are reconstructed from 3+ fragments; the group makes
+      this explicit rather than requiring transitive closure queries.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      designation: { type: TEXT, nullable: true, description: "Composite designation, e.g. 'BM 055488 (+) BM 055489 (+) BM 055490'" }
+      fragment_count: { type: INTEGER, default: 2 }
+      status: { type: TEXT, values: [partial, complete, disputed], default: partial }
+      # partial = not all pairwise links verified
+      # complete = all fragments accounted for
+      # disputed = at least one link contested
+      created_at: { type: TIMESTAMP }
+      notes: { type: TEXT, nullable: true }
+
+  fragment_joins:
+    # ORIGIN: CDLI CSV join_information field (7,367 rows). eBL fragment joins (future).
+    #         See citation-pipeline-summary.md for import details.
+    # CONNECTS: FK to artifacts (fragment_a, fragment_b), join_groups.id. Referenced by
+    #           fragment_join_evidence, fragment_join_decisions, fragment_join_discussion_threads.
+    # TRADE-OFF: Pairwise links rather than transitive closure. For 3-fragment tablet (A+B+C),
+    #            up to 3 rows (A-B, B-C, A-C). join_groups aggregates pairwise links into
+    #            reconstructed tablets. Full trust pipeline because false joins contaminate
+    #            all downstream layers (readings, lemmatizations, translations).
+    description: >
+      NEW TABLE. Physical connections between artifacts. Each row asserts
+      two P-numbers are fragments of the same original tablet. Pairwise
+      links grouped by join_group_id. Requires full trust infrastructure
+      because false joins contaminate all downstream layers.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      fragment_a: { type: TEXT, fk: artifacts.p_number, not_null: true }
+      fragment_b: { type: TEXT, fk: artifacts.p_number, not_null: true }
+      join_group_id: { type: INTEGER, fk: join_groups.id, nullable: true, description: "NULL = raw pairwise CDLI import. Non-NULL = curated multi-fragment reconstruction group. Grouping deferred to derivation step." }
+      join_type: { type: TEXT, values: [direct, indirect, uncertain] }
+      # direct = fragments physically touch
+      # indirect = fragments from same tablet but don't touch
+      # uncertain = proposed but unverified
+      spatial_description: { type: TEXT, nullable: true, description: "Where fragments connect: 'obv. left edge to rev. right edge'" }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      confidence: { type: REAL }
+      is_accepted: { type: INTEGER, default: 0, description: "Community-accepted join" }
+      status: { type: TEXT, values: [proposed, verified, accepted, rejected], default: proposed }
+      proposed_at: { type: TIMESTAMP }
+    constraints: [UNIQUE(fragment_a, fragment_b)]
+    indexes: [fragment_a, fragment_b, status, join_group_id]
+    notes: >
+      For a 2-fragment join, the group has 1 row. For a 3-fragment tablet
+      (A+B+C), the group has up to 3 rows (A-B, B-C, A-C) — only
+      direct/indirect pairs need entries. This avoids transitive closure
+      queries while keeping pairwise evidence.
+
+  fragment_join_evidence:
+    description: >
+      NEW TABLE. Evidence supporting or refuting a proposed join.
+      Follows same pattern as other evidence tables.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      join_id: { type: INTEGER, fk: fragment_joins.id, not_null: true }
+      evidence_type: { type: TEXT, values: [photograph, hand_copy, collation_note, publication, 3d_scan, RTI_image, physical_inspection, textual_continuity] }
+      evidence_ref: { type: TEXT }
+      supports_join: { type: INTEGER, default: 1, description: "1 = supports, 0 = refutes" }
+      added_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      added_at: { type: TIMESTAMP }
+      note: { type: TEXT, nullable: true }
+
+  fragment_join_decisions:
+    description: >
+      NEW TABLE. Audit trail for join acceptance/rejection.
+      Same pattern as other decision tables.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      join_id: { type: INTEGER, fk: fragment_joins.id, not_null: true }
+      decided_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      decision_method: { type: TEXT, values: [editorial, vote, algorithm, museum_verification] }
+      decision: { type: TEXT, values: [accept, reject, defer] }
+      rationale: { type: TEXT, nullable: true }
+      decided_at: { type: TIMESTAMP }
+      supersedes_id: { type: INTEGER, fk: fragment_join_decisions.id, nullable: true }
+
+  # --- Solution 3: Scholarly Annotations (Cross-Layer Commentary) ---
+
+  scholarly_annotations:
+    description: >
+      NEW TABLE. General-purpose scholarly commentary on any entity in
+      the corpus. Strict FK targeting via nullable columns — exactly one
+      target FK is non-NULL per row. W3C Web Annotation export via
+      scholarly_annotations_w3c SQL view.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      # Strict FK targets — exactly one non-NULL per row
+      artifact_id: { type: TEXT, fk: artifacts.p_number, nullable: true }
+      surface_id: { type: INTEGER, fk: surfaces.id, nullable: true }
+      line_id: { type: INTEGER, fk: text_lines.id, nullable: true }
+      token_id: { type: INTEGER, fk: tokens.id, nullable: true }
+      sign_id: { type: TEXT, fk: signs.sign_id, nullable: true }
+      composite_id: { type: TEXT, fk: composites.q_number, nullable: true }
+      # Range targeting (for multi-token/multi-line spans)
+      token_end_id: { type: INTEGER, fk: tokens.id, nullable: true, description: "End of token range" }
+      line_end_id: { type: INTEGER, fk: text_lines.id, nullable: true, description: "End of line range" }
+      # Annotation content
+      annotation_type: { type: TEXT, not_null: true, values: [textual_criticism, parallel_passage, historical_context, cultural_note, linguistic_note, paleographic_note, prosopographic_note, bibliography, conservation_note, museum_note, pedagogy, methodology, editorial_note] }
+      content: { type: TEXT, not_null: true }
+      references: { type: TEXT, nullable: true, description: "JSON array of DOIs, P-numbers, citations" }
+      tags: { type: TEXT, nullable: true, description: "JSON array of domain-specific tags" }
+      # Provenance
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      confidence: { type: REAL, nullable: true }
+      # Versioning
+      supersedes_id: { type: INTEGER, fk: scholarly_annotations.id, nullable: true }
+      version: { type: INTEGER, default: 1 }
+      # Visibility
+      visibility: { type: TEXT, values: [public, project, private], default: public }
+      # Timestamps
+      created_at: { type: TIMESTAMP }
+      updated_at: { type: TIMESTAMP, nullable: true }
+    constraints:
+      - "CHECK((artifact_id IS NOT NULL) + (surface_id IS NOT NULL) + (line_id IS NOT NULL) + (token_id IS NOT NULL) + (sign_id IS NOT NULL) + (composite_id IS NOT NULL) = 1)"
+    indexes: [artifact_id, line_id, token_id, annotation_type, annotation_run_id]
+
+  scholarly_annotation_evidence:
+    description: >
+      NEW TABLE. Evidence supporting a scholarly annotation.
+      Same pattern as other evidence tables.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      annotation_id: { type: INTEGER, fk: scholarly_annotations.id, not_null: true }
+      evidence_type: { type: TEXT, values: [photograph, hand_copy, collation_note, publication, 3d_scan, RTI_image, ML_output, personal_communication] }
+      evidence_ref: { type: TEXT }
+      added_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      added_at: { type: TIMESTAMP }
+      note: { type: TEXT, nullable: true }
+
+  # --- Solution 1: Discussion Threads (per-entity strict FKs) ---
+
+  token_reading_discussion_threads:
+    description: >
+      NEW TABLE. Scholarly discourse on token reading interpretations.
+      Strict FK to token_readings; resolution links to token_reading_decisions.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      token_reading_id: { type: INTEGER, fk: token_readings.id, not_null: true }
+      title: { type: TEXT, nullable: true }
+      status: { type: TEXT, values: [open, resolved, archived], default: open }
+      created_at: { type: TIMESTAMP }
+      resolved_at: { type: TIMESTAMP, nullable: true }
+      resolution_decision_id: { type: INTEGER, fk: token_reading_decisions.id, nullable: true }
+      resolution_note: { type: TEXT, nullable: true }
+
+  lemmatization_discussion_threads:
+    description: >
+      NEW TABLE. Scholarly discourse on lemmatization choices.
+      Strict FK to lemmatizations; resolution links to lemmatization_decisions.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      lemmatization_id: { type: INTEGER, fk: lemmatizations.id, not_null: true }
+      title: { type: TEXT, nullable: true }
+      status: { type: TEXT, values: [open, resolved, archived], default: open }
+      created_at: { type: TIMESTAMP }
+      resolved_at: { type: TIMESTAMP, nullable: true }
+      resolution_decision_id: { type: INTEGER, fk: lemmatization_decisions.id, nullable: true }
+      resolution_note: { type: TEXT, nullable: true }
+
+  translation_discussion_threads:
+    description: >
+      NEW TABLE. Scholarly discourse on translation choices.
+      Strict FK to translations; resolution links to translation_decisions.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      translation_id: { type: INTEGER, fk: translations.id, not_null: true }
+      title: { type: TEXT, nullable: true }
+      status: { type: TEXT, values: [open, resolved, archived], default: open }
+      created_at: { type: TIMESTAMP }
+      resolved_at: { type: TIMESTAMP, nullable: true }
+      resolution_decision_id: { type: INTEGER, fk: translation_decisions.id, nullable: true }
+      resolution_note: { type: TEXT, nullable: true }
+
+  fragment_join_discussion_threads:
+    description: >
+      NEW TABLE. Scholarly discourse on proposed fragment joins.
+      Strict FK to fragment_joins; resolution links to fragment_join_decisions.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      join_id: { type: INTEGER, fk: fragment_joins.id, not_null: true }
+      title: { type: TEXT, nullable: true }
+      status: { type: TEXT, values: [open, resolved, archived], default: open }
+      created_at: { type: TIMESTAMP }
+      resolved_at: { type: TIMESTAMP, nullable: true }
+      resolution_decision_id: { type: INTEGER, fk: fragment_join_decisions.id, nullable: true }
+      resolution_note: { type: TEXT, nullable: true }
+
+  scholarly_annotation_discussion_threads:
+    description: >
+      NEW TABLE. Scholarly discourse on annotations/commentary.
+      Strict FK to scholarly_annotations.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      annotation_id: { type: INTEGER, fk: scholarly_annotations.id, not_null: true }
+      title: { type: TEXT, nullable: true }
+      status: { type: TEXT, values: [open, resolved, archived], default: open }
+      created_at: { type: TIMESTAMP }
+      resolved_at: { type: TIMESTAMP, nullable: true }
+      resolution_note: { type: TEXT, nullable: true }
+
+  discussion_posts:
+    description: >
+      NEW TABLE. Individual contributions to scholarly discussions.
+      Shared across all thread types. thread_type discriminator enables
+      querying across thread types; thread_id FK enforced at app layer
+      (trade-off: strict FK on thread tables, polymorphic on posts).
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      thread_type: { type: TEXT, not_null: true, values: [token_reading, lemmatization, translation, fragment_join, scholarly_annotation] }
+      thread_id: { type: INTEGER, not_null: true, description: "FK to relevant *_discussion_threads table" }
+      scholar_id: { type: INTEGER, fk: scholars.id, not_null: true }
+      reply_to_id: { type: INTEGER, fk: discussion_posts.id, nullable: true }
+      content: { type: TEXT, not_null: true }
+      post_type: { type: TEXT, values: [observation, counterargument, evidence, question, synthesis, endorsement] }
+      evidence_ref: { type: TEXT, nullable: true, description: "DOI, photo path, or citation" }
+      created_at: { type: TIMESTAMP }
+      edited_at: { type: TIMESTAMP, nullable: true }
+
+# ═══════════════════════════════════════════════════════════
+# KNOWLEDGE GRAPH — Named entities, relationships, and
+# authority reconciliation for cross-silo queries
+# ═══════════════════════════════════════════════════════════
+
+  # --- Solution 1: Named Entity Registry ---
+
+  named_entities:
+    # ORIGIN: Derived from glossary_entries WHERE pos IN (PN, DN, GN, TN, RN, WN, MN, EN, SN, FN).
+    #         Current corpus yields ~1,836 unique entities. DN (divine names) dominates: 1,401 unique.
+    # CONNECTS: Referenced by entity_mentions.entity_id, entity_relationships (subject/object),
+    #           entity_aliases, authority_links.entity_id. FK to glossary_entries.entry_id for dedup.
+    # TRADE-OFF: ORACC OID (glossary_entry_id) as primary dedup key. Cross-project dedup relies on
+    #            matching headword+language when OIDs differ. entity_aliases table handles post-hoc merges.
+    description: >
+      NEW TABLE. Graph nodes — persons, deities, places, institutions,
+      and other named entities extracted from lemmatizations. Primary
+      dedup key is glossary_entry_id (ORACC OID). Bridges Layer 4
+      (Linguistic) to Layer 5 (Semantic) — the identification step
+      that says "this sarru[king] IS Hammurabi of Babylon."
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entity_type: { type: TEXT, not_null: true, values: [person, deity, place, institution, work, watercourse, month, ethnonym, festival], description: "Maps from ORACC POS: PN->person, DN->deity, GN/SN->place, TN->institution, RN->person, WN->watercourse, MN->month, EN->ethnonym, FN->festival" }
+      canonical_name: { type: TEXT, not_null: true, description: "Citation form (cf) from glossary: Hammurabi, Utu, Sippar" }
+      guide_word: { type: TEXT, nullable: true, description: "Guide word (gw) from glossary: 1, Sun, city" }
+      alternate_names: { type: TEXT, nullable: true, description: "JSON array of variant spellings: [Hammurapi, Hammu-rabi]" }
+      language_names: { type: TEXT, nullable: true, description: "JSON object of cross-linguistic forms: {sux: Utu, akk: Samas}" }
+      primary_language: { type: TEXT, description: "qpn (proper names), sux, akk, etc." }
+      glossary_entry_id: { type: TEXT, fk: glossary_entries.entry_id, nullable: true, description: "ORACC OID — primary deduplication key across projects" }
+      description: { type: TEXT, nullable: true }
+    indexes: [entity_type, canonical_name, glossary_entry_id]
+    notes: >
+      Populated from glossary_entries WHERE pos IN (PN, DN, GN, TN, RN,
+      WN, MN, EN, SN, FN). Current corpus yields ~1,836 unique entities
+      across 15 POS types. DN (divine names) dominates: 1,401 unique,
+      3,606 attestations. Enlil, Utu, Inanna most frequent.
+
+  entity_aliases:
+    description: >
+      NEW TABLE. Merge/alias records when two named_entity records are
+      later identified as the same entity. Preserves merge provenance.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      canonical_entity_id: { type: INTEGER, fk: named_entities.id, not_null: true, description: "The surviving entity record" }
+      alias_entity_id: { type: INTEGER, fk: named_entities.id, not_null: true, description: "The entity being merged into canonical" }
+      merged_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      rationale: { type: TEXT, nullable: true }
+      merged_at: { type: TIMESTAMP }
+    constraints: [UNIQUE(canonical_entity_id, alias_entity_id)]
+
+  entity_mentions:
+    description: >
+      NEW TABLE. Links tokens (or lines) to named entities with full
+      provenance. Each row asserts "this token refers to this entity."
+      Anchors to token_id when tokenization exists; falls back to
+      line_id for the 94.5% of texts with ATF but no ORACC lemmatization.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entity_id: { type: INTEGER, fk: named_entities.id, not_null: true }
+      token_id: { type: INTEGER, fk: tokens.id, nullable: true, description: "Primary target — set when token exists" }
+      token_end_id: { type: INTEGER, fk: tokens.id, nullable: true, description: "End of multi-token names" }
+      line_id: { type: INTEGER, fk: text_lines.id, nullable: true, description: "Fallback when tokens unavailable" }
+      mention_type: { type: TEXT, values: [explicit, epithet, implicit, restored] }
+      role: { type: TEXT, nullable: true, description: "Contextual role: agent, recipient, patron, dedicatee" }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      confidence: { type: REAL }
+      is_consensus: { type: INTEGER, default: 0 }
+      note: { type: TEXT, nullable: true }
+    constraints:
+      - "CHECK((token_id IS NOT NULL) OR (line_id IS NOT NULL))"
+    indexes: [entity_id, token_id, line_id, annotation_run_id]
+    notes: >
+      If token_id is set, line_id is derived via tokens -> text_lines FK.
+      line_id is only set directly for texts without tokenization.
+      Current corpus yields ~4,995 entity mentions across 409 texts.
+
+  entity_mention_evidence:
+    description: >
+      NEW TABLE. Evidence supporting entity identification.
+      Same pattern as other evidence tables.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entity_mention_id: { type: INTEGER, fk: entity_mentions.id, not_null: true }
+      evidence_type: { type: TEXT, values: [photograph, hand_copy, collation_note, publication, 3d_scan, RTI_image, ML_output, prosopographic_database] }
+      evidence_ref: { type: TEXT, description: "DOI, file path, URL, or freetext citation" }
+      added_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      added_at: { type: TIMESTAMP }
+      note: { type: TEXT, nullable: true }
+
+  entity_mention_decisions:
+    description: >
+      NEW TABLE. Audit trail for entity identification consensus.
+      Same pattern as other decision tables.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entity_mention_id: { type: INTEGER, fk: entity_mentions.id, not_null: true }
+      decided_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      decision_method: { type: TEXT, values: [editorial, vote, algorithm, import_default] }
+      rationale: { type: TEXT, nullable: true }
+      decided_at: { type: TIMESTAMP }
+      supersedes_id: { type: INTEGER, fk: entity_mention_decisions.id, nullable: true }
+
+  # --- Solution 2: Entity Relationships ---
+
+  relationship_predicates:
+    description: >
+      NEW TABLE. Controlled vocabulary for Tier 1 (stable) relationship
+      types. Tier 2-3 volatile predicates use freetext on entity_relationships.
+      ~21 seed predicates across familial, religious, geographic, lexical,
+      textual, and identity categories.
+    columns:
+      predicate: { type: TEXT, pk: true, description: "e.g. father_of, patron_deity_of, located_in" }
+      category: { type: TEXT, values: [familial, political, religious, geographic, institutional, textual, lexical, identity] }
+      is_symmetric: { type: INTEGER, default: 0, description: "1 = bidirectional (contemporary_of), 0 = directed (father_of)" }
+      description: { type: TEXT }
+    seed_data:
+      # Familial (stable, confidence 0.85+)
+      - { predicate: father_of, category: familial, is_symmetric: 0, description: "Biological parent" }
+      - { predicate: successor_of, category: familial, is_symmetric: 0, description: "Dynastic succession" }
+      - { predicate: contemporary_of, category: familial, is_symmetric: 1, description: "Reign overlap" }
+      - { predicate: spouse_of, category: familial, is_symmetric: 1, description: "Marriage" }
+      # Religious
+      - { predicate: patron_deity_of, category: religious, is_symmetric: 0, description: "Primary divine protector of a place or institution" }
+      - { predicate: dedicated_to, category: religious, is_symmetric: 0, description: "Temple/offering dedication" }
+      - { predicate: cult_center_of, category: religious, is_symmetric: 0, description: "Primary worship location" }
+      # Geographic
+      - { predicate: located_in, category: geographic, is_symmetric: 0, description: "Spatial containment" }
+      # Lexical
+      - { predicate: sumerian_equivalent, category: lexical, is_symmetric: 1, description: "Cross-linguistic equivalence" }
+      - { predicate: synonym, category: lexical, is_symmetric: 1, description: "Same-language semantic equivalence" }
+      - { predicate: hypernym, category: lexical, is_symmetric: 0, description: "Broader category" }
+      # Textual
+      - { predicate: manuscript_of, category: textual, is_symmetric: 0, description: "Artifact is witness to literary work" }
+      # Identity
+      - { predicate: same_as, category: identity, is_symmetric: 1, description: "Cross-system identity assertion" }
+
+  entity_relationships:
+    # ORIGIN: Manual scholarly assertions (primary), Semantic Scholar citation graphs (partial),
+    #         future prosopographic database imports. Mostly empty at import time — grows with use.
+    # CONNECTS: FK to named_entities (subject_id, object_id), relationship_predicates (predicate_enum),
+    #           entity_mentions (source_mention_id). Full evidence/decision infrastructure.
+    # TRADE-OFF: Hybrid predicate governance balances schema control with scholarly flexibility.
+    #            Tier 1 (13 stable predicates) uses FK constraint. Tier 2-3 (volatile) uses freetext
+    #            with category:predicate pattern. CHECK constraint ensures exactly one is set.
+    #            Temporal scope uses period names (all artifacts have one) with optional BCE dates (~5%).
+    description: >
+      NEW TABLE. Knowledge graph edges between named entities.
+      Hybrid predicate governance: Tier 1 stable predicates use
+      predicate_enum (FK to relationship_predicates); Tier 2-3
+      volatile predicates use predicate_custom (freetext, pattern
+      category:predicate). Exactly one must be set.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      subject_id: { type: INTEGER, fk: named_entities.id, not_null: true }
+      predicate_enum: { type: TEXT, fk: relationship_predicates.predicate, nullable: true, description: "Tier 1 stable predicates" }
+      predicate_custom: { type: TEXT, nullable: true, description: "Tier 2-3 volatile predicates, pattern: category:predicate" }
+      object_id: { type: INTEGER, fk: named_entities.id, not_null: true }
+      # Temporal scope
+      period_start: { type: TEXT, description: "Canonical period name (from period_normalized): Old Babylonian, Ur III, Neo-Assyrian" }
+      period_end: { type: TEXT, nullable: true, description: "NULL if same period as start; set if relationship spans periods" }
+      date_bce: { type: INTEGER, nullable: true, description: "Absolute BCE year if known (rare, ~5% of texts)" }
+      # Evidence link
+      source_mention_id: { type: INTEGER, fk: entity_mentions.id, nullable: true, description: "Textual attestation this claim derives from" }
+      # Provenance
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      confidence: { type: REAL }
+      is_consensus: { type: INTEGER, default: 0 }
+      note: { type: TEXT, nullable: true }
+    constraints:
+      - "CHECK((predicate_enum IS NOT NULL) != (predicate_custom IS NOT NULL))"
+    indexes: [subject_id, object_id, predicate_enum, predicate_custom, period_start]
+    notes: >
+      Temporal: period names are primary anchor (all artifacts have one,
+      ~50 distinct values). BCE dates are secondary (~5% of texts have
+      regnal dating). Examples:
+        Hammurabi father_of Samsuiluna — period_start=OB, date_bce=1792
+        Shamash patron_deity_of Sippar — period_start=ED IIIb, period_end=LB
+        Hammurabi defeated Rim-Sin — predicate_custom=political:defeated, confidence=0.65
+
+  entity_relationship_evidence:
+    description: >
+      NEW TABLE. Evidence supporting entity relationships.
+      Same pattern as other evidence tables.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      relationship_id: { type: INTEGER, fk: entity_relationships.id, not_null: true }
+      evidence_type: { type: TEXT, values: [photograph, hand_copy, collation_note, publication, 3d_scan, RTI_image, ML_output, prosopographic_database, royal_inscription, administrative_text] }
+      evidence_ref: { type: TEXT, description: "DOI, file path, URL, or freetext citation" }
+      added_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      added_at: { type: TIMESTAMP }
+      note: { type: TEXT, nullable: true }
+
+  entity_relationship_decisions:
+    description: >
+      NEW TABLE. Audit trail for entity relationship consensus.
+      Same pattern as other decision tables.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      relationship_id: { type: INTEGER, fk: entity_relationships.id, not_null: true }
+      decided_by: { type: INTEGER, fk: scholars.id, nullable: true }
+      decision_method: { type: TEXT, values: [editorial, vote, algorithm, import_default] }
+      rationale: { type: TEXT, nullable: true }
+      decided_at: { type: TIMESTAMP }
+      supersedes_id: { type: INTEGER, fk: entity_relationship_decisions.id, nullable: true }
+
+  # --- Solution 3: Authority Reconciliation ---
+
+  authority_links:
+    # ORIGIN: Seeded from artifacts.pleiades_id and excavation_sites.pleiades_id (existing data).
+    #         Future: Wikidata, VIAF, GeoNames reconciliation from Wikipedia scrape and manual curation.
+    # CONNECTS: FK to named_entities.id. Referenced by authority_reconciliation_disputes.
+    #           Enables federated queries across Glintstone, Wikidata, Pleiades, etc.
+    # TRADE-OFF: Reconciliation is a scholarly act — wrong links pollute downstream queries.
+    #            match_type captures certainty (exact/broad/narrow/related/uncertain).
+    #            is_accepted flag requires community verification before links are trusted.
+    description: >
+      NEW TABLE. Maps named entities to external authority identifiers
+      (Wikidata, VIAF, Pleiades, GeoNames, PeriodO). Reconciliation is
+      itself a scholarly act — wrong links pollute federated queries.
+      Seed data: pleiades_id on artifacts/excavation_sites migrates here.
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      entity_id: { type: INTEGER, fk: named_entities.id, not_null: true }
+      authority: { type: TEXT, not_null: true, description: "wikidata, viaf, pleiades, geonames, periodo" }
+      external_id: { type: TEXT, not_null: true, description: "Q36359, 893986, etc." }
+      match_type: { type: TEXT, values: [exact, broad, narrow, related, uncertain] }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id }
+      confidence: { type: REAL }
+      is_accepted: { type: INTEGER, default: 0, description: "Community-accepted link" }
+      note: { type: TEXT, nullable: true }
+    constraints: [UNIQUE(entity_id, authority, external_id)]
+    indexes: [entity_id, authority, external_id]
+    notes: >
+      Real examples:
+        Sippar -> pleiades:893986 (exact, confidence 0.99)
+        Agade -> pleiades:??? (uncertain, multiple candidates)
+        Inanna -> wikidata:Q181773 (broad — Inanna/Ishtar boundary debated)
+        Hammurabi -> wikidata:Q36359 (exact, confidence 0.99)
+
+  authority_reconciliation_disputes:
+    description: >
+      NEW TABLE. Records when scholars disagree on an authority link.
+      Lighter than full evidence/decision tables — reconciliation disputes
+      are simpler (one proposed ID vs another).
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      authority_link_id: { type: INTEGER, fk: authority_links.id, not_null: true }
+      alternative_external_id: { type: TEXT, not_null: true, description: "The competing external ID" }
+      scholar_id: { type: INTEGER, fk: scholars.id, not_null: true }
+      rationale: { type: TEXT }
+      created_at: { type: TIMESTAMP }
+      resolved: { type: INTEGER, default: 0 }
+
+# ═══════════════════════════════════════════════════════════
+# VIEWS — Derived/export views
+# ═══════════════════════════════════════════════════════════
+
+views:
+
+  scholarly_annotations_w3c:
+    description: >
+      W3C Web Annotation Data Model export view. Maps internal
+      scholarly_annotations to W3C JSON-LD format for federation
+      and interoperability with external annotation ecosystems.
+    sql: |
+      CREATE VIEW scholarly_annotations_w3c AS
+      SELECT
+        'https://glintstone.app/anno/' || sa.id AS id,
+        'Annotation' AS type,
+        json_object(
+          'id', 'https://orcid.org/' || s.orcid,
+          'name', s.name,
+          'affiliation', s.institution
+        ) AS creator,
+        sa.created_at AS created,
+        sa.updated_at AS modified,
+        sa.annotation_type AS motivation,
+        json_object(
+          'source', COALESCE(
+            'cuneiform:' || sa.artifact_id,
+            'cuneiform:surface:' || sa.surface_id,
+            'cuneiform:line:' || sa.line_id,
+            'cuneiform:token:' || sa.token_id,
+            'cuneiform:sign:' || sa.sign_id,
+            'cuneiform:composite:' || sa.composite_id
+          )
+        ) AS target,
+        json_object(
+          'type', 'TextualBody',
+          'value', sa.content,
+          'format', 'text/plain'
+        ) AS body,
+        sa.confidence,
+        sa.visibility
+      FROM scholarly_annotations sa
+      LEFT JOIN annotation_runs ar ON sa.annotation_run_id = ar.id
+      LEFT JOIN scholars s ON ar.scholar_id = s.id
+      WHERE sa.visibility = 'public';
+
+# ═══════════════════════════════════════════════════════════
+# REFERENCE / LOOKUP (carried forward + expanded)
+# ═══════════════════════════════════════════════════════════
+
+  museums:
+    description: Museum code lookup (carry forward)
+    columns: { code: TEXT pk, name: TEXT, city: TEXT, country: TEXT, latitude: REAL new, longitude: REAL new }
+
+  excavation_sites:
+    description: Archaeological sites (enriched with coordinates)
+    columns:
+      code: { type: TEXT, pk: true }
+      name: { type: TEXT }
+      ancient_name: { type: TEXT }
+      modern_country: { type: TEXT }
+      pleiades_id: { type: TEXT, new: true }
+      latitude: { type: REAL, new: true }
+      longitude: { type: REAL, new: true }
+
+  cad_entries:
+    description: CAD digitized entries (carry forward from v1, tables exist but empty)
+    status: future — depends on CAD digitization pipeline
+    columns: "(same as v1)"
+
+  pipeline_status:
+    # ORIGIN: Computed/derived from all other tables. Refreshed as materialized view (step 19
+    #         of import-pipeline.yaml). Expanded from v1 boolean flags to continuous 0.0-1.0 scores.
+    # CONNECTS: FK to artifacts.p_number. Core of the pipeline-first visibility principle —
+    #           every UI view foregrounds pipeline status so researchers see gaps at a glance.
+    # TRADE-OFF: Denormalized for query performance. Legacy boolean flags kept for backward
+    #            compatibility with v1 UI. New per-layer REAL scores enable finer-grained tracking.
+    description: >
+      Per-tablet completeness. Expanded to track per-layer status.
+    columns:
+      p_number: { type: TEXT, pk: true, fk: artifacts.p_number }
+      # Per-layer tracking (NEW)
+      physical_complete: { type: REAL, new: true, description: "0.0-1.0 completion of physical layer" }
+      graphemic_complete: { type: REAL, new: true }
+      reading_complete: { type: REAL, new: true }
+      linguistic_complete: { type: REAL, new: true }
+      semantic_complete: { type: REAL, new: true }
+      # Legacy boolean flags
+      has_image: { type: INTEGER, default: 0 }
+      has_atf: { type: INTEGER, default: 0 }
+      has_lemmas: { type: INTEGER, default: 0 }
+      has_translation: { type: INTEGER, default: 0 }
+      has_sign_annotations: { type: INTEGER, default: 0 }
+      quality_score: { type: REAL }
+      last_updated: { type: TIMESTAMP }
+
+  import_log:
+    description: Data import history (carry forward, expanded)
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      source: { type: TEXT }
+      file_path: { type: TEXT }
+      records_imported: { type: INTEGER }
+      annotation_run_id: { type: INTEGER, fk: annotation_runs.id, new: true }
+      imported_at: { type: TIMESTAMP }
+
+# ═══════════════════════════════════════════════════════════
+# USER FEATURES (carried forward)
+# ═══════════════════════════════════════════════════════════
+
+  collections:
+    description: User-created artifact groupings (carry forward)
+    columns:
+      collection_id: { type: INTEGER, pk: true }
+      name: { type: TEXT }
+      description: { type: TEXT }
+      image_path: { type: TEXT }
+      created_at: { type: TIMESTAMP }
+      updated_at: { type: TIMESTAMP }
+
+  collection_members:
+    columns:
+      collection_id: { type: INTEGER, fk: collections.collection_id }
+      p_number: { type: TEXT, fk: artifacts.p_number }
+    constraints: [PRIMARY KEY(collection_id, p_number)]
+
+# ═══════════════════════════════════════════════════════════
+# MIGRATION PATH: v1 → v2
+# ═══════════════════════════════════════════════════════════
+
+migration_notes:
+  overview: >
+    v2 is a complete rebuild from source data — no v1 data is migrated.
+    All data re-imported from CDLI, ORACC, CompVis, and other sources
+    using the import pipeline. PostgreSQL replaces SQLite.
+
+  steps:
+    - name: Add concordance columns to signs
+      tables: [signs]
+      risk: low
+      description: Add mzl_number, abz_number, lak_number. Populate from ebl.txt + manual curation.
+
+    - name: Create surfaces table
+      tables: [surfaces]
+      risk: low
+      description: Parse existing surface data from inscriptions ATF and sign_annotations.surface.
+
+    - name: Decompose ATF into text_lines
+      tables: [text_lines]
+      risk: medium
+      description: >
+        Parse inscriptions.atf into per-line records. Requires ATF parser.
+        Keep inscriptions table for backward compatibility initially.
+
+    - name: Create tokens from CDL data
+      tables: [tokens]
+      risk: medium
+      description: >
+        Parse ORACC corpusjson CDL nodes into token records. For CDLI-only
+        texts (no ORACC), tokenize ATF lines.
+
+    - name: Migrate lemmas to lemmatizations
+      tables: [lemmatizations]
+      risk: low
+      description: >
+        Copy v1 lemmas into lemmatizations with annotation_run pointing to
+        "ORACC/dcclt import". Add signature, morph, base, norm, sense fields.
+
+    - name: Create annotation_runs
+      tables: [annotation_runs]
+      risk: low
+      description: >
+        Create retroactive annotation_run records for existing data
+        (CDLI import, ORACC/dcclt import, CompVis import).
+
+    - name: Import remaining ORACC projects
+      tables: [lemmatizations, tokens, text_lines, glossary_entries]
+      risk: low
+      description: >
+        Load etcsri, blms, hbtin, rinap, saao, ribo, riao, epsd2 data.
+        Each gets its own annotation_run.
+
+    - name: Build sign concordance
+      tables: [signs]
+      risk: high (requires manual curation)
+      description: >
+        Populate mzl_number and abz_number on signs table.
+        Enables eBL annotation import and CompVis label resolution.
+
+    - name: Create morphology table
+      tables: [morphology]
+      risk: medium
+      description: >
+        Parse ORACC morph strings into structured slots. Language-specific
+        parsing rules needed for Sumerian vs Akkadian.
+
+    - name: Create scholars table
+      tables: [scholars]
+      risk: low
+      description: >
+        Create scholars table. Populate with known contributors from
+        ORACC project metadata and publication records.
+
+    - name: Add trust columns to annotation_runs
+      tables: [annotation_runs]
+      risk: low
+      description: >
+        Add scholar_id, method, publication_ref columns. Backfill
+        method='import' for existing annotation_runs.
+
+    - name: Populate token_readings from tokens
+      tables: [token_readings]
+      risk: medium
+      description: >
+        For each token, create initial token_reading row from the
+        original form/reading/damage data. Set is_consensus=1 and
+        link to the same annotation_run as the token's source.
+
+    - name: Create evidence and decision tables
+      tables: [token_reading_evidence, lemmatization_evidence, sign_annotation_evidence, translation_evidence, token_reading_decisions, lemmatization_decisions, translation_decisions]
+      risk: low
+      description: >
+        Create empty trust tables. These accumulate data as scholars
+        contribute evidence and editorial decisions over time.
+
+    # Knowledge Graph migration steps
+
+    - name: Create named entity registry
+      tables: [named_entities, entity_aliases]
+      risk: low
+      description: >
+        Create named_entities from glossary_entries WHERE pos IN
+        (PN, DN, GN, TN, RN, WN, MN, EN, SN, FN). Use glossary
+        entry_id (ORACC OID) as dedup key. ~1,836 entities from
+        current corpus. entity_aliases table starts empty.
+
+    - name: Populate entity mentions
+      tables: [entity_mentions]
+      risk: medium
+      description: >
+        For each lemma with entity POS, create entity_mention linking
+        to the corresponding named_entity and token. Requires resolving
+        p_number + line_no + word_no to token_id. Falls back to line_id
+        for texts without tokenization. ~4,995 mentions from current data.
+
+    - name: Create entity mention trust tables
+      tables: [entity_mention_evidence, entity_mention_decisions]
+      risk: low
+      description: >
+        Create empty evidence/decision tables for entity identification.
+        Same pattern as token_reading_evidence/decisions.
+
+    - name: Create relationship predicates
+      tables: [relationship_predicates]
+      risk: low
+      description: >
+        Create relationship_predicates with ~13 Tier 1 seed predicates
+        (father_of, patron_deity_of, located_in, etc.). These are
+        stable, high-confidence predicates backed by FK constraint.
+
+    - name: Create entity relationships infrastructure
+      tables: [entity_relationships, entity_relationship_evidence, entity_relationship_decisions]
+      risk: low
+      description: >
+        Create empty relationship tables. entity_relationships uses
+        hybrid predicate governance: predicate_enum FK for Tier 1,
+        predicate_custom TEXT for Tier 2-3. Populated manually by
+        scholars or via future prosopographic imports.
+
+    - name: Create authority reconciliation registry
+      tables: [authority_links, authority_reconciliation_disputes]
+      risk: low
+      description: >
+        Create authority_links table. Seed with pleiades_id data
+        already on artifacts and excavation_sites tables. Migrate
+        existing pleiades_id values into authority_links rows with
+        authority='pleiades', match_type='exact'.
+
+    # Citation Resolution migration steps
+
+    - name: Create publications registry
+      tables: [publications, publication_authors]
+      risk: low
+      description: >
+        Create publications table. Seed from CDLI API publications[]
+        (structured bibtex data) and ORACC project metadata (one
+        digital_edition record per project). Manual curation for
+        major series (RIME, SAA, RINAP, VAB). publication_authors
+        links to scholars table where ORACC project editors are known.
+
+    - name: Create artifact identifier concordance
+      tables: [artifact_identifiers, artifact_identifier_evidence, artifact_identifier_decisions]
+      risk: low
+      description: >
+        Create artifact_identifiers table. Populate from
+        artifacts.museum_no (~353k, type=museum_no),
+        artifacts.excavation_no (type=excavation_no),
+        artifacts.primary_publication (type=publication), CDLI
+        accession_no/external_id. Each gets annotation_run for
+        import provenance. Evidence/decision tables start empty.
+        Original columns remain on artifacts for display.
+
+    - name: Create artifact editions bridge
+      tables: [artifact_editions, artifact_edition_evidence, artifact_edition_decisions]
+      risk: medium
+      description: >
+        Create artifact_editions table. Parse CDLI API publications[]
+        with exact_reference into edition links. Parse CDLI CSV
+        publication_history via regex — partial coverage accepted,
+        raw string preserved, unparsed flagged for manual curation.
+        NO data loss. Set is_current_edition=1 for most recent
+        full_edition per artifact. Build supersedes_id chains for
+        known series relationships.
+
+    - name: Add publication_id FK to annotation_runs
+      tables: [annotation_runs]
+      risk: low
+      description: >
+        Add nullable publication_id FK to annotation_runs alongside
+        existing publication_ref TEXT. Incrementally match existing
+        publication_ref values to publications records. NULL until
+        matched; freetext stays as fallback.
+
+# ═══════════════════════════════════════════════════════════
+# NORMALIZATION LOOKUP TABLES (NEW — from pressure testing)
+# Fixes Issues 1, 2, 3, 6 from data quality review
+# ═══════════════════════════════════════════════════════════
+
+  period_canon:
+    label: "Period Name Lookup"
+    description: "Maps 46+ raw period formats to canonical names (Issue 1)"
+    columns:
+      raw_period:     { type: TEXT, pk: true, description: "Exact string from CDLI CSV" }
+      canonical:      { type: TEXT, not_null: true, description: "Stripped of '(ca. ...)' and '?'" }
+      date_start_bce: { type: INTEGER, nullable: true }
+      date_end_bce:   { type: INTEGER, nullable: true }
+      sort_order:     { type: INTEGER, description: "Chronological sorting" }
+
+  language_map:
+    label: "Language Code Lookup"
+    description: "Maps CDLI English names to ORACC ISO codes (Issue 2)"
+    columns:
+      cdli_name:  { type: TEXT, pk: true, description: "CDLI value: 'Sumerian', 'Akkadian'" }
+      oracc_code: { type: TEXT, not_null: true, description: "ORACC value: 'sux', 'akk'" }
+      full_name:  { type: TEXT }
+      family:     { type: TEXT, values: [sumerian, semitic, elamite, hurrian, hittite, other] }
+
+  genre_canon:
+    label: "Genre Name Lookup"
+    description: "Normalizes genre case inconsistency (Issue 3)"
+    columns:
+      raw_genre:  { type: TEXT, pk: true }
+      canonical:  { type: TEXT, not_null: true, description: "Title-case form" }
+      supergenre: { type: TEXT, nullable: true }
+
+  provenience_canon:
+    label: "Site Name Lookup"
+    description: "Separates ancient/modern site names (Issue 6)"
+    columns:
+      raw_provenience: { type: TEXT, pk: true }
+      ancient_name:    { type: TEXT, not_null: true }
+      modern_name:     { type: TEXT, nullable: true }
+      pleiades_id:     { type: TEXT, nullable: true }
+
+  surface_canon:
+    label: "Surface Name Lookup"
+    description: "Unifies surface naming across ATF, CompVis, ORACC"
+    columns:
+      raw_surface: { type: TEXT, pk: true }
+      canonical:   { type: TEXT, not_null: true, values: [obverse, reverse, left_edge, right_edge, top_edge, bottom_edge, seal, unknown] }
+
+# ═══════════════════════════════════════════════════════════
+# BIBLIOMETRIC TABLE (NEW — from citation pipeline review)
+# ═══════════════════════════════════════════════════════════
+
+  publication_citations:
+    label: "Citation Graph"
+    description: "Publication-to-publication citation links from Semantic Scholar"
+    columns:
+      id: { type: INTEGER, pk: true, autoincrement: true }
+      citing_id: { type: INTEGER, fk: publications.id, not_null: true }
+      cited_id:  { type: INTEGER, fk: publications.id, not_null: true }
+    constraints:
+      - "UNIQUE(citing_id, cited_id)"
+    note: "Populated by 08_enrich_semantic_scholar.py. Separate from entity_relationships which is for domain entities."
+
+# ═══════════════════════════════════════════════════════════
+# CHECK CONSTRAINTS (NEW — from pipeline review)
+# ═══════════════════════════════════════════════════════════
+
+check_constraints:
+  annotation_runs_method:
+    table: annotation_runs
+    column: method
+    constraint: "CHECK(method IN ('api_fetch', 'import', 'web_scrape', 'manual', 'model', 'hand_copy', 'photograph', 'collation', 'autopsy', 'RTI', '3D_scan', 'ML_model'))"
+
+  publications_type:
+    table: publications
+    column: publication_type
+    constraint: "CHECK(publication_type IN ('monograph', 'journal_article', 'chapter', 'digital_edition', 'conference_paper', 'thesis', 'proceedings', 'report', 'unpublished', 'other', 'edited_volume', 'series_volume', 'museum_catalog', 'dissertation', 'hand_copy_publication'))"
+    note: "Pipeline uses subset: monograph, journal_article, chapter, digital_edition, conference_paper, thesis, proceedings, report, unpublished, other"
+
+  artifact_editions_type:
+    table: artifact_editions
+    column: edition_type
+    constraint: "CHECK(edition_type IN ('full_edition', 'hand_copy', 'photograph_only', 'catalog_entry', 'brief_mention', 'collation', 'translation_only', 'commentary'))"
+
+# ═══════════════════════════════════════════════════════════
+# PLAIN-LANGUAGE LABELS
+# For every table, a label and description accessible to non-specialists.
+# ═══════════════════════════════════════════════════════════
+
+labels:
+  # Layer 0: Identity
+  artifacts:           { label: "Tablets & Objects", description: "Physical artifacts — clay tablets, cylinders, prisms, etc." }
+  composites:          { label: "Reconstructed Texts", description: "Scholarly reconstructions combining multiple tablet copies" }
+  artifact_composites: { label: "Tablet-to-Text Links", description: "Which tablets contain copies of which texts" }
+  artifact_identifiers: { label: "Object ID Lookup", description: "All known identifiers for an artifact (museum numbers, excavation numbers, etc.)" }
+
+  # Layer 1: Physical
+  surfaces:          { label: "Tablet Surfaces", description: "Front, back, and edges of a tablet" }
+  sign_annotations:  { label: "Sign Locations on Images", description: "Bounding boxes marking where signs appear on tablet photographs" }
+
+  # Layer 2: Graphemic
+  signs:         { label: "Cuneiform Sign List", description: "Master list of all cuneiform signs with cross-system concordance" }
+  sign_values:   { label: "Sign Readings", description: "How each sign can be read (a single sign may have many readings)" }
+  sign_variants: { label: "Sign Variants", description: "Visual modifications of signs (added strokes, rotations, etc.)" }
+  sign_concordance: { label: "Sign Number Cross-Reference", description: "Maps between different sign numbering systems (MZL, ABZ, LAK) and the canonical OGSL sign list" }
+
+  # Layer 3: Reading
+  text_lines:     { label: "Text Lines", description: "Individual lines of text on a tablet surface" }
+  tokens:         { label: "Words & Signs", description: "Individual words or sign-groups within a text line" }
+  token_readings: { label: "Sign Readings (Competing)", description: "How scholars read a specific sign — may have multiple competing interpretations" }
+
+  # Layer 4: Linguistic
+  lemmatizations: { label: "Word-by-Word Analysis", description: "Identifying what each word means — dictionary form, meaning, grammar" }
+  morphology:     { label: "Grammar Breakdown", description: "Detailed grammatical analysis — roots, prefixes, suffixes, tense, person" }
+  translations:   { label: "Translations", description: "English (or other language) translations of tablet texts" }
+
+  # Layer 5: Semantic
+  glossary_entries:       { label: "Dictionary Entries", description: "Sumerian and Akkadian dictionary headwords" }
+  glossary_forms:         { label: "Spelling Variants", description: "Different ways a word was written across time and place" }
+  glossary_senses:        { label: "Word Meanings", description: "Individual meanings of a word (like 'bank' = river bank vs. financial bank)" }
+  named_entities:         { label: "People, Gods & Places", description: "Named individuals, deities, cities, and temples mentioned in texts" }
+  entity_mentions:        { label: "Where Names Appear", description: "Every occurrence of a named entity across the corpus" }
+  entity_relationships:   { label: "Who Knows Whom", description: "Relationships between entities — rulers and cities, gods and temples" }
+  intertextuality_links:  { label: "Cross-Text Connections", description: "Parallel passages, quotations, and shared formulas across texts" }
+
+  # Provenance
+  scholars:       { label: "Scholars", description: "Researchers who have contributed readings, analyses, or publications" }
+  annotation_runs: { label: "Data Source Tracking", description: "Records where each piece of data came from and when it was imported" }
+
+  # Citation Resolution
+  publications:        { label: "Bibliography", description: "Published books, articles, and digital editions in Assyriology" }
+  publication_authors: { label: "Who Wrote What", description: "Links scholars to their publications" }
+  artifact_editions:   { label: "Publication History", description: "Which publications contain editions of which tablets" }
+  scholarly_annotations: { label: "Scholarly Notes", description: "Expert commentary and bibliography citations on artifacts" }
+  fragment_joins:      { label: "Fragment Connections", description: "Physical joins between tablet fragments (pieces of the same original tablet)" }
+
+  # Lookup tables
+  period_canon:      { label: "Period Names", description: "Standardized names for historical periods (e.g., 'Old Babylonian' = ca. 1900-1600 BC)" }
+  language_map:      { label: "Language Codes", description: "Maps between CDLI language names and ORACC language codes" }
+  genre_canon:       { label: "Text Categories", description: "Standardized genre names for tablet classification" }
+  provenience_canon: { label: "Site Names", description: "Maps ancient city names to modern site names" }
+  surface_canon:     { label: "Surface Names", description: "Standardized names for tablet surfaces" }
+
+# ═══════════════════════════════════════════════════════════
+# SCHEMA MODIFICATIONS FROM CITATION PIPELINE REVIEW
+# ═══════════════════════════════════════════════════════════
+
+pipeline_review_modifications:
+  - table: publications
+    change: "Add cited_by_count INTEGER column"
+    reason: "Semantic Scholar citation count storage (pipeline phase 08)"
+
+  - table: artifacts
+    change: "Add annotation_run_id INTEGER FK to annotation_runs.id"
+    reason: "Unified provenance via annotation_runs instead of data_source column"
+
+  - table: glossary_entries
+    change: "Add annotation_run_id INTEGER FK to annotation_runs.id"
+    reason: "Unified provenance via annotation_runs instead of data_source column"
+
+  - table: artifact_editions
+    change: "Confidence floor for is_current_edition: only auto-set for editions with confidence >= 0.7"
+    reason: "Low-confidence CSV-parsed editions (0.3) should not be auto-promoted to current"
+
+  - table: annotation_runs
+    change: "Withdrawn: data_source column pattern. Use annotation_runs.source_name exclusively."
+    reason: "Citation pipeline proves one provenance system is sufficient. No parallel tracking."
+
+# ═══════════════════════════════════════════════════════════
+# OPEN QUESTIONS
+# ═══════════════════════════════════════════════════════════
+
+open_questions:
+  - question: "JSON columns vs normalized tables for GDL?"
+    context: >
+      GDL sign trees on tokens could be JSON blobs (simple, flexible) or
+      normalized into a sign_instances table (queryable, more complex).
+    leaning: JSON for now, normalize later if query patterns demand it.
+
+  - question: "Which Sumerian morphology framework?"
+    context: >
+      Jagersma, Zólyomi, and Edzard disagree on verbal chain slot structure.
+      The schema must either pick one or support multiple via competing annotations.
+    leaning: Support multiple via annotation_runs provenance model.
+
+  - question: "How to handle texts with CDLI ATF but no ORACC lemmatization?"
+    context: >
+      127,700 texts have ATF but no lemmas (94.5%). Tokens exist but
+      lemmatization table is empty for them. Is that acceptable?
+    leaning: Yes — tokens are still useful for reading-layer queries and future ML.
+
+  - question: "Separate tables per language morphology vs one polymorphic table?"
+    context: >
+      Sumerian needs slot columns (conjugation_prefix, dimensional_prefixes).
+      Akkadian needs root/pattern columns. Using one table means many NULLs.
+    leaning: >
+      One polymorphic table with language_family discriminator. NULLs are
+      acceptable in PostgreSQL. Avoids join complexity for cross-language queries.
+
+  - question: "Should translations link to lines or tokens?"
+    context: >
+      Current data has line-level translations. recent research proposes token-level.
+      No source currently provides token-level alignment.
+    leaning: Line-level for now (line_id FK). Token-level is future ML work.
+
+  - question: "How to version ORACC data across releases?"
+    context: >
+      ORACC projects update periodically. A text's lemmatization may change.
+      annotation_runs tracks when data was imported, but not diff tracking.
+    leaning: New annotation_run per import. Old data kept, is_consensus updated.
+
+  - question: "How might we ensure imported data is included in relevant tables?"

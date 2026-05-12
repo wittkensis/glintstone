@@ -1,0 +1,185 @@
+# Glintstone curated records catalog.
+#
+# This file is the single source of truth for "give me a representative record" requests.
+# Mirrored into tests/fixtures/fixtures.py for the test suite to reference by name.
+#
+# Schema:
+#   <entity_type>:
+#     - id: <natural key — P-number, entry_id, sign_id, …>
+#       label: short human description
+#       why: one sentence on why this one matters
+#       usefulness: [onboarding-demo | regression-test | edge-case | performance-test | ux-stress | domain-rich]
+#       as_of: YYYY-MM-DD
+#       sources: [list of data sources that contributed]
+#       notes: optional extra context
+#
+# When adding a new entry:
+#   1. Run gs-curator-artifacts/discovery-queries.md to find good candidates
+#   2. Add here with today's as_of
+#   3. Add a constant to tests/fixtures/fixtures.py
+#   4. Bump the file header's modified date below
+
+_meta:
+  modified: 2026-05-11
+  question: "Which representative records demonstrate each interesting scenario?"
+  context: "Initial catalog seeded from PLAN/Translation Pipeline UI examples (P227657, P247526, P229672) plus picks from the 5-layer schema. Extend eagerly."
+
+artifacts:
+  - id: P227657
+    label: KTT 188 — Sumerian lexical text
+    why: Simple Old Babylonian word list. 265 lines, 259 translations, perfect 1:1 alignment. The "onboarding tablet".
+    usefulness: [onboarding-demo, ux-stress]
+    as_of: 2026-05-11
+    sources: [cdli]
+
+  - id: P247526
+    label: BM 103142 — Ur III Sumerian lexical
+    why: Compound terms, broken lines, simpler-than-it-looks edge cases. 169 lines, 151 translations.
+    usefulness: [edge-case, regression-test]
+    as_of: 2026-05-11
+    sources: [cdli]
+
+  - id: P229672
+    label: K 03254 + K 03779 — Neo-Assyrian joined fragments
+    why: Composite linkage, joined fragments parsed from `+` in designation, structural ATF markers, complex surface data.
+    usefulness: [edge-case, ux-stress, domain-rich]
+    as_of: 2026-05-11
+    sources: [cdli, oracc]
+
+  - id: P001282
+    label: Bilingual tablet with ORACC lemmatization
+    why: Demonstrates per-word language column post migration 011. Sumerian-Akkadian bilingual.
+    usefulness: [regression-test, domain-rich]
+    as_of: 2026-05-11
+    sources: [cdli, oracc]
+    notes: Add after verifying — referenced in PLAN/PRIVATE-TODO.md but verify against Neon.
+
+# TODO: add scenarios below this line as discoveries happen. Each section keeps
+# the schema above. Don't delete — mark status:archived if a record becomes
+# uninteresting.
+
+scholars:
+  # Seed examples — extend via discovery-queries.md
+  - id: TBD
+    label: Scholar with merge history (cascades through scholar_merge_log)
+    why: Tests the scholar_merge_log cascade pattern (kept_scholar_id refs).
+    usefulness: [regression-test]
+    as_of: 2026-05-11
+    sources: [cdli, oracc]
+    notes: Pick via SELECT FROM scholar_merge_log; first scholar with > 3 merges.
+
+lemmas:
+  - id: "epsd2/lugal"
+    label: Sumerian "king" — high polysemy + high attestation
+    why: 20+ senses, 2000+ attestations, written with one sign (LUGAL). Classic.
+    usefulness: [onboarding-demo, domain-rich]
+    as_of: 2026-05-11
+    sources: [epsd2]
+
+  - id: "oracc/saao/šarru"
+    label: Akkadian "king" — Sumerogram-backed
+    why: Demonstrates Sumerogram pattern (Akkadian word written with Sumerian sign LUGAL).
+    usefulness: [domain-rich, edge-case]
+    as_of: 2026-05-11
+    sources: [oracc]
+
+  - id: "epsd2/ninda"
+    label: Sumerian "bread, food" — top attestation
+    why: 109,427 attestations. The most-frequent lemma. Tests the critical-cache hot path.
+    usefulness: [performance-test, onboarding-demo]
+    as_of: 2026-05-11
+    sources: [epsd2]
+
+signs:
+  - id: KA
+    label: KA sign — high polyvalency
+    why: Reads as ka, gu, dug, inim, zu. Used as Sumerogram for Akkadian pû "mouth". The polyvalency teaching example.
+    usefulness: [onboarding-demo, domain-rich]
+    as_of: 2026-05-11
+    sources: [ogsl]
+
+  - id: TBD
+    label: Sign with no Unicode mapping
+    why: Tests the ~200-400 signs that need manual MZL/OGSL curation. Exposes UI fallback for missing codepoints.
+    usefulness: [edge-case]
+    as_of: 2026-05-11
+    notes: Pick via SELECT FROM signs WHERE unicode IS NULL ORDER BY attestation_count DESC LIMIT 1.
+
+periods:
+  - id: "Ur III"
+    label: Third Dynasty of Ur (~2112-2004 BCE)
+    why: One of the best-attested periods. Lots of administrative texts. Good for filter testing.
+    usefulness: [onboarding-demo]
+    as_of: 2026-05-11
+
+  - id: "Neo-Assyrian"
+    label: Neo-Assyrian (~911-612 BCE)
+    why: Royal inscriptions, RINAP corpus. Different genre balance from Ur III. Good for cross-filter testing.
+    usefulness: [regression-test]
+    as_of: 2026-05-11
+
+proveniences:
+  - id: "Nippur"
+    label: Nippur (mod. Nuffar)
+    why: Major site, well-represented in CDLI catalog. Tests provenience canonicalization.
+    usefulness: [onboarding-demo]
+    as_of: 2026-05-11
+
+  - id: "Tello"
+    label: Tello (anc. Girsu)
+    why: Tests the canonicalization rule "Tello (anc. Girsu)" → "Girsu" (or vice versa, depending on canon).
+    usefulness: [regression-test]
+    as_of: 2026-05-11
+
+genres:
+  - id: "Lexical"
+    label: Lexical lists
+    why: Sumerian-style word lists. Simpler structure; good for ATF-viewer testing.
+    usefulness: [onboarding-demo]
+    as_of: 2026-05-11
+
+  - id: "Royal inscription"
+    label: Royal inscriptions
+    why: Rich content, multilingual, RINAP-heavy. Stresses translation pipeline.
+    usefulness: [ux-stress]
+    as_of: 2026-05-11
+
+search_terms:
+  - term: lugal
+    label: 'lugal — Sumerian for king'
+    why: Single token, multiple lemmas (Sumerian + as Sumerogram in Akkadian). Tests cross-language search.
+    usefulness: [onboarding-demo, regression-test]
+    as_of: 2026-05-11
+
+  - term: ninda kasz
+    label: 'bigram — bread, beer'
+    why: Frequent co-occurrence in lexical lists. Tests phrase / multi-token search.
+    usefulness: [edge-case]
+    as_of: 2026-05-11
+
+  - term: "𒈗"
+    label: Cuneiform LUGAL (U+12157)
+    why: Unicode input. Tests the input box accepting actual cuneiform glyphs.
+    usefulness: [ux-stress]
+    as_of: 2026-05-11
+
+composites:
+  - id: TBD
+    label: Composite text with many exemplars
+    why: Tests the P → Q linkage UI and the exemplar comparison view.
+    usefulness: [onboarding-demo, ux-stress]
+    as_of: 2026-05-11
+    notes: Pick from artifact_composites — top Q-number by exemplar count.
+
+annotation_runs:
+  - id: babylemmatizer-v2.1
+    label: BabyLemmatizer v2.1 run
+    why: Demonstrates ML-vs-human competing-interpretations pattern. Lower confidence than ORACC.
+    usefulness: [domain-rich, regression-test]
+    as_of: 2026-05-11
+
+  - id: oracc/rinap
+    label: ORACC RINAP project import
+    why: Demonstrates project-scoped annotation runs from ORACC.
+    usefulness: [onboarding-demo]
+    as_of: 2026-05-11

@@ -1,3 +1,17 @@
+---
+question: "TODO: one sentence — what question does SETUP.md answer?"
+created: 2026-05-11
+modified: 2026-05-11
+context: "TODO: why was this file created?"
+status: draft
+audience: [engineers]
+owners: [eric]
+related_issues: []
+related_skills: []
+supersedes: null
+superseded_by: null
+---
+
 # eBL OCR -- DETR Sign Detection
 
 Cuneiform sign detection using Deformable DETR with a ResNet-50 backbone. Trained for 1,000 epochs on eBL annotations covering 173 cuneiform sign classes. Achieves mAP@50 = 43.1%.
