@@ -29,10 +29,10 @@ jobs:
           pip install pytest pytest-asyncio
 
       - name: Run pytest
-        env:
-          # When DATABASE_URL is provided as a secret, integration tests run
-          # against it. When absent, integration tests are skipped (see
-          # tests/conftest.py::has_database_url).
-          DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING }}
+        # Integration tests (those depending on `has_database_url`) are skipped
+        # in CI: production Postgres is now on the VPS and not reachable from
+        # GitHub Actions. Unit tests still run. To run integration tests in CI,
+        # provision a Postgres service in this job or expose the VPS DB via a
+        # tunnel.
         run: |
           python -m pytest tests/ -v --tb=short
