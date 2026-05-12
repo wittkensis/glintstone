@@ -130,6 +130,7 @@ GRANT USAGE, SELECT ON SEQUENCE my_table_id_seq TO glintstone;
 | 020 | `020_ingestion_staging.sql` | Staging tables for v2 ingestion framework |
 | 021 | `021_source_snapshots.sql` | Tracks raw-source archive locations (B2/VPS) |
 | 022 | `022_artifact_images.sql` | Tablet image metadata + R2 keys + copyright + fetch log |
+| 023 | `023_artifact_images_null_dedup.sql` | Partial unique index closing the cdli_reader_id IS NULL gap in 022 |
 
 **Always confirm `migrate.py status` matches this table.** If it doesn't, update one or the other.
 

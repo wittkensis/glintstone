@@ -23,11 +23,18 @@ import argparse
 import json
 import mimetypes
 import os
+import re
 import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
+# A real CDLI P-number is exactly P + 6 digits. We've seen P000054_200.jpg
+# (a pre-generated thumbnail leftover from v1) try to sneak through; the
+# validation here keeps us from wasting R2 ops on rows we'd then have to
+# delete via DB FK violation.
+_P_NUMBER_RE = re.compile(r"^P\d{6}$")
 
 # Make repo root importable when invoked as a script.
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -91,26 +98,22 @@ def discover_candidates(source_dirs: list[Path]) -> dict[str, Candidate]:
         for entry in sorted(directory.iterdir()):
             if not entry.is_file():
                 continue
-            if not entry.name.startswith("P") or entry.suffix.lower() not in (
-                ".jpg",
-                ".jpeg",
-            ):
+            if entry.suffix.lower() not in (".jpg", ".jpeg"):
                 continue
-            p_number = entry.stem  # P000001
+            p_number = entry.stem
+            if not _P_NUMBER_RE.match(p_number):
+                # Silently skip — common cases are .DS_Store, thumbnails
+                # named P######_200.jpg, etc.
+                continue
             size = entry.stat().st_size
             existing = by_p.get(p_number)
             if existing is None or size > existing.size:
-                if existing is not None:
+                if existing is not None and size > existing.size:
                     print(
-                        f"  [dedup] {p_number}: preferring {entry} ({size}B) "
-                        f"over {existing.path} ({existing.size}B)"
+                        f"  [dedup] {p_number}: replacing {existing.path} "
+                        f"({existing.size}B) with larger {entry} ({size}B)"
                     )
                 by_p[p_number] = Candidate(p_number=p_number, path=entry, size=size)
-            else:
-                print(
-                    f"  [dedup] {p_number}: keeping {existing.path} ({existing.size}B); "
-                    f"skipping smaller copy at {entry} ({size}B)"
-                )
     return by_p
 
 

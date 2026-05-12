@@ -245,6 +245,11 @@ tables:
       - "artifact_images_p_number_idx ON artifact_images(p_number, display_order)"
       - "artifact_images_type_idx ON artifact_images(image_type)"
       - "artifact_images_sha256_idx ON artifact_images(sha256)"
+      # Migration 023 — closes the NULL-distinct gap in the unique constraint
+      # above. Postgres treats NULL as distinct from NULL by default; without
+      # this partial unique index, two rows for the same (p_number, image_type)
+      # with cdli_reader_id IS NULL would both be allowed.
+      - "artifact_images_unique_null_reader_idx ON artifact_images(p_number, image_type) WHERE cdli_reader_id IS NULL  -- UNIQUE"
 
   artifact_image_fetch_log:
     # ORIGIN: Written by ingestion/connectors/cdli_images.py (background) and the

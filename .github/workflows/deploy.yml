@@ -48,10 +48,22 @@ jobs:
           SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
           SSH_HOST: ${{ secrets.HOSTINGER_HOST }}
         run: |
+          set -euo pipefail
+          if [ -z "${SSH_HOST:-}" ]; then
+            echo "::error::HOSTINGER_HOST secret is empty"; exit 1
+          fi
+          if [ -z "${SSH_KEY:-}" ]; then
+            echo "::error::HOSTINGER_SSH_KEY secret is empty"; exit 1
+          fi
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          # No 2>/dev/null — if VPS is unreachable we want the exact error,
+          # not a silent exit-1 like the deploy on 2026-05-12 at 14:52 UTC.
+          if ! ssh-keyscan -T 8 -H "$SSH_HOST" >> ~/.ssh/known_hosts; then
+            echo "::error::ssh-keyscan failed against $SSH_HOST — VPS may be unreachable from GitHub Actions"
+            exit 1
+          fi
 
       - name: Deploy to Hostinger
         env:

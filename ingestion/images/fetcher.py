@@ -39,20 +39,27 @@ class FetchError(Exception):
 
 
 _lock = threading.Lock()
-_last_request_at: float = 0.0
+_next_allowed_at: float = 0.0
 
 
 def _throttle(
     min_interval_s: float, crawl_delay_s: float, respect_crawl_delay: bool
 ) -> None:
-    """Block until enough time has passed since the last CDLI request."""
-    global _last_request_at
+    """Block until the per-session 'next allowed' timestamp.
+
+    Stores an absolute next-allowed monotonic timestamp rather than a
+    "last request" timestamp. A strict 60s caller that runs after a polite
+    5s caller still imposes a 60s floor for whatever comes next; a fast
+    caller can never shrink a slow caller's already-promised wait.
+    """
+    global _next_allowed_at
     required = crawl_delay_s if respect_crawl_delay else min_interval_s
     with _lock:
-        elapsed = time.monotonic() - _last_request_at
-        if elapsed < required:
-            time.sleep(required - elapsed)
-        _last_request_at = time.monotonic()
+        now = time.monotonic()
+        if now < _next_allowed_at:
+            time.sleep(_next_allowed_at - now)
+            now = time.monotonic()
+        _next_allowed_at = now + required
 
 
 def fetch(
