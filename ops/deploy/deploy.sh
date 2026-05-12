@@ -148,6 +148,26 @@ ssh_run "cd $RELEASE_DIR && python3 -m venv venv && venv/bin/pip install --quiet
 # --- Symlink shared state (the .env stays out of releases for safety) ---
 ssh_run "ln -sfn $SHARED_DIR/.env $RELEASE_DIR/.env"
 
+# --- Verify the new venv actually imports the app code ---
+# Catches dependency drift, syntax errors, and missing-module bugs BEFORE migrations
+# run and BEFORE the symlink swap. If this fails the previous release stays live.
+echo "Verifying release imports..."
+ssh_run "cd $RELEASE_DIR && set -a && . ./.env && set +a && \
+    venv/bin/python -c 'import api.main; import app.main; import core.version; print(\"imports ok:\", core.version.release_tag())'"
+
+# --- Pre-deploy DB snapshot (production only — staging restores from prod nightly) ---
+# A failed pg_dump aborts the deploy: deploying without a backup right before a
+# migration is the risk profile we're trying to eliminate.
+if [ "$APP_ENV" = "production" ]; then
+    SNAPSHOT_NAME="pre-deploy-$RELEASE_TAG.dump.gz"
+    echo "Snapshotting production DB → $SNAPSHOT_NAME..."
+    ssh_run "set -a && . $SHARED_DIR/.env && set +a && \
+        mkdir -p $SHARED_DIR/backups && \
+        pg_dump -Fc \"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" | gzip > $SHARED_DIR/backups/$SNAPSHOT_NAME"
+    # Keep the most recent 3 pre-deploy snapshots; daily-cron backups are retained separately.
+    ssh_run "cd $SHARED_DIR/backups && ls -1t pre-deploy-*.dump.gz 2>/dev/null | tail -n +4 | xargs -r rm -f"
+fi
+
 # --- Run migrations against the target database ---
 # Tables are owned by `wittkensis` (per CLAUDE.md); the app connects as `glintstone`
 # which lacks CREATE on `public`. The shared .env must define DATABASE_URL_MIGRATIONS
@@ -159,6 +179,10 @@ ssh_run "cd $RELEASE_DIR && set -a && . ./.env && set +a && \
 # --- Write version file for cache-busting and build identification ---
 ssh_run "echo '$RELEASE_TAG' > $RELEASE_DIR/version.txt"
 
+# --- Capture the previous release so we can roll back on smoke-test failure ---
+PREV_RELEASE="$(ssh_run "readlink $CURRENT_LINK 2>/dev/null || echo none")"
+echo "Previous release: $PREV_RELEASE"
+
 # --- Swap the `current` symlink atomically ---
 echo "Swapping current → $RELEASE_TAG..."
 ssh_run "ln -sfn $RELEASE_DIR $CURRENT_LINK.new && mv -Tf $CURRENT_LINK.new $CURRENT_LINK"
@@ -167,9 +191,13 @@ ssh_run "ln -sfn $RELEASE_DIR $CURRENT_LINK.new && mv -Tf $CURRENT_LINK.new $CUR
 if [ "$APP_ENV" = "staging" ]; then
     API_SVC="glintstone-staging-api"
     WEB_SVC="glintstone-staging-web"
+    API_PORT=8003
+    WEB_PORT=8004
 else
     API_SVC="glintstone-api"
     WEB_SVC="glintstone-web"
+    API_PORT=8001
+    WEB_PORT=8002
 fi
 
 if $deploy_api; then
@@ -185,10 +213,50 @@ if $deploy_marketing; then
     echo "  marketing/nginx reloaded"
 fi
 
+# --- Post-deploy smoke test ---
+# Poll local ports for healthy responses. Auto-roll-back to PREV_RELEASE on failure.
+# IMPORTANT: rollback only swaps the *code* symlink — migrations are not reversed.
+# This is safe for additive migrations only; if a migration is destructive, the
+# pre-deploy DB snapshot (above) is the recovery path.
+smoke_failed=false
+if $deploy_api || $deploy_app; then
+    echo "Smoke-testing release..."
+    SMOKE_CMD=""
+    if $deploy_api; then
+        SMOKE_CMD="$SMOKE_CMD curl -fsS --max-time 5 http://127.0.0.1:$API_PORT/health >/dev/null &&"
+    fi
+    if $deploy_app; then
+        SMOKE_CMD="$SMOKE_CMD curl -fsS --max-time 5 http://127.0.0.1:$WEB_PORT/healthz >/dev/null &&"
+    fi
+    SMOKE_CMD="${SMOKE_CMD% &&} && echo SMOKE_OK"
+    # Up to 20 attempts × 1.5s = 30s budget.
+    if ! ssh_run "for i in \$(seq 1 20); do
+            if $SMOKE_CMD 2>/dev/null; then exit 0; fi
+            sleep 1.5
+        done
+        exit 1"; then
+        smoke_failed=true
+    fi
+fi
+
+if $smoke_failed; then
+    echo "::error::Smoke test failed — rolling back to $PREV_RELEASE"
+    if [ "$PREV_RELEASE" != "none" ] && [ -n "$PREV_RELEASE" ]; then
+        ssh_run "ln -sfn $PREV_RELEASE $CURRENT_LINK.new && mv -Tf $CURRENT_LINK.new $CURRENT_LINK"
+        $deploy_api && ssh_run "sudo supervisorctl restart $API_SVC" || true
+        $deploy_app && ssh_run "sudo supervisorctl restart $WEB_SVC" || true
+        echo "Rolled back. Current is now: $PREV_RELEASE"
+    else
+        echo "::warning::No previous release recorded; cannot auto-roll-back"
+    fi
+    exit 1
+fi
+
 # --- Trim old releases ---
 ssh_run "cd $RELEASES_DIR && ls -1t | tail -n +$((KEEP_RELEASES + 1)) | xargs -r rm -rf"
 
 echo
 echo "=== Deploy complete ==="
 echo "  Release:  $RELEASE_TAG"
-echo "  Rollback: ops/deploy/rollback.sh <previous-tag>"
+echo "  Previous: $PREV_RELEASE"
+echo "  Rollback: ops/deploy/rollback.sh $PREV_RELEASE"

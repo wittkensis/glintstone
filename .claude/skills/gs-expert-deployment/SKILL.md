@@ -24,11 +24,11 @@ The infra surface is wide and the operator is non-technical. This skill is **pro
 
 | Surface | What it is | MCP / tool |
 |---|---|---|
-| **Hostinger VPS** | Production app server (nginx + uvicorn + static marketing) | Hostinger MCP (when available); `ssh` fallback |
+| **Hostinger VPS** | Production + staging app server (nginx + uvicorn + static marketing + Postgres 17) | Hostinger MCP (when available); `ssh` fallback |
 | **GitHub Actions** | CI (test.yml) + deploy (deploy.yml) → Hostinger | `gh` CLI |
-| **Neon** | Production + staging Postgres branches | Neon MCP |
-| **Cloudflare R2** | Image hosting (planned, see [storage.md](storage.md)) | Cloudflare MCP (when added) |
-| **`.env`** | DATABASE_URL + secrets for each env | local file + GitHub secrets |
+| **Cloudflare R2** | Image hosting (`glintstone-assets`, live since 2026-05-12) | Cloudflare MCP (when added) |
+| **`.env`** | DATABASE_URL + secrets per env, stored under each env's `shared/` on the VPS | server-side files; no DB secrets in GitHub |
+| ~~Neon~~ | Decommissioned 2026-05-12 — production moved to VPS-local Postgres | (no longer used) |
 
 ## When to load which file
 
