@@ -6,7 +6,7 @@ Targets, in priority order:
   1. translations.text             → entity_type='artifact_translation'  (~44k rows)
   2. artifact lemma_bag synthesized → entity_type='artifact_lemma_bag'   (~353k rows)
   3. artifact designations         → entity_type='artifact_designation'  (~353k rows)
-  4. lexical_senses.gloss          → entity_type='lemma_gloss'           (~155k rows)
+  4. lexical_senses.definition_parts → entity_type='lemma_gloss'         (~155k rows)
   5. named_entities.canonical_name → entity_type='named_entity'          (~1.8k rows)
   6. scholars blob                 → entity_type='scholar_blob'          (~20k rows)
 
@@ -189,16 +189,20 @@ def _iter_designations(conn: psycopg.Connection) -> Iterable[tuple[str, str]]:
 
 
 def _iter_glosses(conn: psycopg.Connection) -> Iterable[tuple[str, str]]:
+    """lexical_senses stores glosses as definition_parts (text[]).
+    Join with ' ; ' for embedding input."""
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, gloss
+            SELECT id,
+                   array_to_string(definition_parts, ' ; ') AS blob
             FROM lexical_senses
-            WHERE gloss IS NOT NULL AND gloss <> ''
+            WHERE definition_parts IS NOT NULL
+              AND array_length(definition_parts, 1) > 0
             """
         )
         for row in cur:
-            yield str(row["id"]), row["gloss"]
+            yield str(row["id"]), row["blob"]
 
 
 def _iter_named_entities(conn: psycopg.Connection) -> Iterable[tuple[str, str]]:
@@ -215,17 +219,18 @@ def _iter_named_entities(conn: psycopg.Connection) -> Iterable[tuple[str, str]]:
 
 
 def _iter_scholars(conn: psycopg.Connection) -> Iterable[tuple[str, str]]:
+    """scholars has only `name` — no affiliation column. Embed name + their
+    publications as the semantic signal."""
     with conn.cursor() as cur:
         cur.execute(
             """
             SELECT s.id,
                    s.name
-                   || COALESCE(' ' || s.affiliation, '')
                    || COALESCE(' ' || string_agg(p.title, ' '), '') AS blob
             FROM scholars s
             LEFT JOIN publication_authors pa ON pa.scholar_id = s.id
             LEFT JOIN publications p ON p.id = pa.publication_id
-            GROUP BY s.id, s.name, s.affiliation
+            GROUP BY s.id, s.name
             """
         )
         for row in cur:

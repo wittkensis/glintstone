@@ -50,17 +50,15 @@ SELECT
     ll.citation_form                                 AS primary_label,
     COALESCE(ll.guide_word, '')
         || CASE WHEN ll.pos IS NOT NULL THEN ' • ' || ll.pos ELSE '' END
-        || CASE WHEN ll.language IS NOT NULL THEN ' • ' || ll.language ELSE '' END
                                                      AS secondary_label,
     COALESCE(ll.citation_form, '') || ' '
         || COALESCE(ll.guide_word, '') || ' '
-        || COALESCE(ll.pos, '') || ' '
-        || COALESCE(ll.language, '')                 AS search_blob,
+        || COALESCE(ll.pos, '')                      AS search_blob,
     to_tsvector('simple',
         COALESCE(ll.citation_form, '') || ' '
         || COALESCE(ll.guide_word, '')
     )                                                AS tsv,
-    ARRAY[COALESCE(ll.primary_source, 'lexical')]::text[]  AS sources,
+    ARRAY['lexical']::text[]                         AS sources,
     NULL::text                                       AS p_number_ref,
     ll.id                                            AS int_ref,
     NULL::timestamptz                                AS updated_at
@@ -89,9 +87,9 @@ SELECT
     'scholars'::text                                 AS entity_type,
     s.id::text                                       AS entity_id,
     s.name                                           AS primary_label,
-    COALESCE(s.affiliation, '')                      AS secondary_label,
-    s.name || ' ' || COALESCE(s.affiliation, '')     AS search_blob,
-    to_tsvector('simple', s.name || ' ' || COALESCE(s.affiliation, ''))  AS tsv,
+    NULL::text                                       AS secondary_label,
+    s.name                                           AS search_blob,
+    to_tsvector('simple', s.name)                    AS tsv,
     ARRAY['scholars_registry']::text[]               AS sources,
     NULL::text                                       AS p_number_ref,
     s.id                                             AS int_ref,

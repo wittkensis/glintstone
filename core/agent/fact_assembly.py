@@ -381,7 +381,7 @@ def assemble_token_facts(
         cur.execute(
             """
             SELECT lz.id AS lemmatization_id, ll.id AS lemma_id,
-                   ll.citation_form, ll.guide_word, ll.pos, ll.language,
+                   ll.citation_form, ll.guide_word, ll.pos,
                    lz.annotation_run_id
             FROM lemmatizations lz
             JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
@@ -397,7 +397,7 @@ def assemble_token_facts(
         _add_fact(
             bundle.facts,
             f"lemma: {lem['citation_form']} (\"{lem.get('guide_word') or '—'}\", "
-            f"{lem.get('pos') or 'unknown POS'}, {lem.get('language') or 'unknown lang'})",
+            f"{lem.get('pos') or 'unknown POS'})",
             "lexical_lemma",
             lem["lemma_id"],
             f"lemma:{lem['lemma_id']}",

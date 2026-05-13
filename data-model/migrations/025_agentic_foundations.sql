@@ -37,8 +37,10 @@ CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_cf_trgm
 CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_gw_trgm
     ON lexical_lemmas USING GIN (guide_word gin_trgm_ops);
 
-CREATE INDEX IF NOT EXISTS idx_lexical_senses_gloss_trgm
-    ON lexical_senses USING GIN (gloss gin_trgm_ops);
+-- lexical_senses stores glosses as definition_parts (text[]), not a single column.
+-- Index the joined text so trigram search across senses works.
+CREATE INDEX IF NOT EXISTS idx_lexical_senses_definition_parts_trgm
+    ON lexical_senses USING GIN (array_to_string(definition_parts, ' ') gin_trgm_ops);
 
 CREATE INDEX IF NOT EXISTS idx_scholars_name_trgm
     ON scholars USING GIN (name gin_trgm_ops);
