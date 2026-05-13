@@ -42,8 +42,13 @@ Wait until `dig +short staging.glintstone.org` returns the IP before continuing.
 SSH in as root and run the bootstrap script. Idempotent — safe to re-run.
 
 ```bash
-ssh root@76.13.208.149 'bash -s' < ops/deploy/provision-staging.sh
+ssh root@76.13.208.149 'apk add --no-cache bash && bash -s' < ops/deploy/provision-staging.sh
 ```
+
+> Hostinger's VPS is Alpine Linux, which doesn't ship `bash` by default; the
+> `apk add` prefix installs it idempotently before piping the script in. If
+> you already provisioned once, `bash` is already present and `apk add` is a
+> no-op.
 
 The script:
 

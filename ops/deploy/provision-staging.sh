@@ -185,18 +185,37 @@ if ! flock -n 9; then
     exit 0
 fi
 
-LATEST=\$(ls -1t $PROD_BACKUPS/glintstone-*.dump.gz 2>/dev/null | head -1)
+# Prefer pre-deploy snapshots — they're always fresher than the daily glintstone-*.dump.gz
+# because every prod deploy snapshots before applying migrations.
+LATEST=\$(ls -1t $PROD_BACKUPS/pre-deploy-prod-*.dump.gz $PROD_BACKUPS/glintstone-*.dump.gz 2>/dev/null | head -1)
 if [ -z "\$LATEST" ]; then
     echo "no prod backup found; aborting"
     exit 1
 fi
 echo "restoring from \$LATEST"
 
+# pg_restore --jobs=N requires a file path (not stdin) for parallel restore;
+# stage the dump to /tmp first.
+TMP=/tmp/gs-staging-restore-\$\$.dump
+trap "rm -f \$TMP" EXIT
+gunzip -c "\$LATEST" > "\$TMP"
+
 su - postgres -c "psql -c 'DROP DATABASE IF EXISTS $STAGING_DB WITH (FORCE);'"
 su - postgres -c "psql -c 'CREATE DATABASE $STAGING_DB OWNER wittkensis;'"
-gunzip -c "\$LATEST" | su - postgres -c "pg_restore --jobs=2 --no-owner --role=wittkensis -d $STAGING_DB"
+su - postgres -c "pg_restore --jobs=2 --no-owner --role=wittkensis -d $STAGING_DB \$TMP"
 su - postgres -c "psql -d $STAGING_DB -c \"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO glintstone;\""
 su - postgres -c "psql -d $STAGING_DB -c \"GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO glintstone;\""
+
+# Apply any post-snapshot migrations against staging (snapshots can lag prod by hours).
+DEPLOY_VENV=$APP_DIR/current/venv/bin/python
+if [ -x "\$DEPLOY_VENV" ]; then
+    set -a; . $APP_DIR/shared/.env; set +a
+    su - $DEPLOY_USER -c "cd $APP_DIR/current && DATABASE_URL=\$DATABASE_URL_MIGRATIONS \$DEPLOY_VENV data-model/migrate.py up" || echo "migrate up failed (continuing)"
+fi
+
+# Materialized views aren't auto-refreshed by pg_restore even when WITH DATA dumped them.
+su - postgres -c "psql -d $STAGING_DB -c \"REFRESH MATERIALIZED VIEW search_entities;\"" || true
+
 echo "restore done"
 
 # Bounce staging services so they pick up the refreshed DB cleanly.
