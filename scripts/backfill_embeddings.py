@@ -267,18 +267,26 @@ def main() -> int:
     targets = list(_TARGETS) if args.target == "all" else [args.target]
     voyage = VoyageClient() if not args.dry_run else None
 
-    with get_connection() as conn:
-        for t in targets:
-            entity_type, iter_fn = _TARGETS[t]
-            logger.info("==> backfilling %s (entity_type=%s)", t, entity_type)
-            embedded, skipped = _run_chunked(
-                conn=conn,
-                voyage=voyage,  # type: ignore[arg-type]
-                entity_type=entity_type,
-                iter_rows=iter_fn(conn),
-                dry_run=args.dry_run,
-            )
-            logger.info("    done: embedded=%d skipped=%d", embedded, skipped)
+    # core.database.get_connection() expects the pool to be initialized; the
+    # api/web services do this at startup. As a standalone CLI we init it here.
+    from core.database import close_pool, init_pool
+
+    init_pool(min_size=0, max_size=2, timeout=30.0)
+    try:
+        with get_connection() as conn:
+            for t in targets:
+                entity_type, iter_fn = _TARGETS[t]
+                logger.info("==> backfilling %s (entity_type=%s)", t, entity_type)
+                embedded, skipped = _run_chunked(
+                    conn=conn,
+                    voyage=voyage,  # type: ignore[arg-type]
+                    entity_type=entity_type,
+                    iter_rows=iter_fn(conn),
+                    dry_run=args.dry_run,
+                )
+                logger.info("    done: embedded=%d skipped=%d", embedded, skipped)
+    finally:
+        close_pool()
 
     return 0
 
