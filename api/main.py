@@ -16,6 +16,7 @@ from api.routes import (
     collections,
     composites,
     dictionary,
+    scholars,
     search,
     agent,
 )
@@ -72,6 +73,7 @@ app.include_router(artifacts.router)
 app.include_router(collections.router)
 app.include_router(composites.router)
 app.include_router(dictionary.router)
+app.include_router(scholars.router)
 app.include_router(search.router)
 app.include_router(agent.router)
 app.include_router(agent.corrections_router)

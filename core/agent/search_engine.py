@@ -45,6 +45,13 @@ class SearchHit:
     p_number_ref: str | None = None
     int_ref: int | None = None
     rank_components: dict[str, float] = field(default_factory=dict)
+    # Display extras hydrated after fusion for tablet hits only (drawer rows
+    # show a thumbnail + a 5-dot pipeline mini-badge per artifact).
+    thumbnail_url: str | None = None
+    pipeline_completeness: int | None = None
+    pipeline_stages: list[int] | None = (
+        None  # 5-element 0/1 list: atf, tokens, lemma, translation, entities
+    )
 
 
 @dataclass
@@ -143,7 +150,78 @@ class SearchEngine:
         for t in types:
             totals[t] = max(totals[t], accurate_totals.get(t, 0))
 
+        # Hydrate tablet hits with thumbnail + pipeline-completeness for the
+        # global-search drawer rows (cheap single-pass joins keyed by p_number).
+        self._hydrate_tablet_extras(conn, groups.get("tablets", []))
+
         return SearchResults(groups=groups, totals=totals, cursor_data=None)
+
+    def _hydrate_tablet_extras(
+        self,
+        conn: psycopg.Connection,
+        hits: list[SearchHit],
+    ) -> None:
+        """Attach r2_thumbnail_key and pipeline stage flags to tablet hits.
+
+        Joins artifact_images (display_order=0) and pipeline_completeness on
+        p_number in a single query. Updates `hits` in place. Stays silent on
+        failure so the search still returns results if a join misses.
+        """
+        if not hits:
+            return
+        p_numbers = [h.entity_id for h in hits if h.entity_id]
+        if not p_numbers:
+            return
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT
+                        a.p_number,
+                        img.r2_thumbnail_key,
+                        pc.has_atf,
+                        pc.has_tokens,
+                        pc.has_lemmatization,
+                        pc.has_translation,
+                        pc.has_entities,
+                        pc.completeness_score
+                    FROM artifacts a
+                    LEFT JOIN LATERAL (
+                        SELECT r2_thumbnail_key
+                        FROM artifact_images
+                        WHERE p_number = a.p_number
+                          AND r2_thumbnail_key IS NOT NULL
+                        ORDER BY display_order ASC, id ASC
+                        LIMIT 1
+                    ) img ON TRUE
+                    LEFT JOIN pipeline_completeness pc ON pc.p_number = a.p_number
+                    WHERE a.p_number = ANY(%s)
+                    """,
+                    (p_numbers,),
+                )
+                by_p: dict[str, dict] = {r["p_number"]: r for r in cur.fetchall()}
+        except Exception as exc:
+            logger.warning("tablet extras hydrate failed: %s", exc)
+            return
+
+        # Late import keeps core.agent free of an api dependency cycle.
+        from core.storage import public_url_for_key
+
+        for hit in hits:
+            row = by_p.get(hit.entity_id)
+            if not row:
+                continue
+            key = row.get("r2_thumbnail_key")
+            hit.thumbnail_url = public_url_for_key(key) if key else None
+            hit.pipeline_stages = [
+                int(row.get("has_atf") or 0),
+                int(row.get("has_tokens") or 0),
+                int(row.get("has_lemmatization") or 0),
+                int(row.get("has_translation") or 0),
+                int(row.get("has_entities") or 0),
+            ]
+            score = row.get("completeness_score")
+            hit.pipeline_completeness = int(score) if score is not None else None
 
     # ── Implementation ───────────────────────────────────────────────────────
 

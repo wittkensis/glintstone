@@ -9,7 +9,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.api_client import APIClient
-from app.routes import admin, collections, debug, dictionary, home, tablets
+from app.routes import (
+    admin,
+    collections,
+    debug,
+    dictionary,
+    home,
+    scholars,
+    search,
+    tablets,
+)
 from core.database import close_pool, init_pool
 from core.version import release_tag, version_payload
 
@@ -56,5 +65,7 @@ app.include_router(home.router)
 app.include_router(tablets.router)
 app.include_router(collections.router)
 app.include_router(dictionary.router)
+app.include_router(scholars.router)
+app.include_router(search.router)
 app.include_router(admin.router)
 app.include_router(debug.router)
