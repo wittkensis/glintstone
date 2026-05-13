@@ -1,0 +1,115 @@
+sections:
+  - id: overview
+    title: What Glintstone Is
+    pages:
+      - id: open-record
+        title: The Open Record
+        file: overview/open-record.md
+      - id: whats-missing
+        title: What's Missing
+        file: overview/whats-missing.md
+      - id: attribution
+        title: Attribution
+        file: overview/attribution.md
+      - id: report-error
+        title: Report an Error
+        file: overview/report-error.md
+
+  - id: getting-started
+    title: Getting Started
+    pages:
+      - id: app
+        title: The App
+        file: getting-started/app.md
+      - id: api
+        title: The API
+        file: getting-started/api.md
+      - id: mcp
+        title: With Claude (MCP)
+        file: getting-started/mcp.md
+
+  - id: reference
+    title: Reference
+    groups:
+      - id: data-sources
+        title: Data Sources
+        template: data-integration
+      - id: data-model
+        title: Data Model
+        pages:
+          - id: overview
+            title: Overview
+            file: reference/data-model/overview.md
+          - id: artifacts-layer
+            title: Artifacts
+            file: reference/data-model/artifacts.md
+          - id: texts-layer
+            title: Texts
+            file: reference/data-model/texts.md
+          - id: linguistic
+            title: Linguistic Analysis
+            file: reference/data-model/linguistic.md
+          - id: lexical
+            title: Lexical Resources
+            file: reference/data-model/lexical.md
+          - id: scholarly
+            title: Scholarly Context
+            file: reference/data-model/scholarly.md
+      - id: api
+        title: API Reference
+        pages:
+          - id: index
+            title: Overview
+            file: reference/api/index.md
+          - id: artifacts
+            title: Artifacts
+            file: reference/api/artifacts.md
+          - id: search-agentic
+            title: Search & Agentic
+            file: reference/api/search-agentic.md
+          - id: dictionary
+            title: Dictionary
+            file: reference/api/dictionary.md
+          - id: collections
+            title: Collections
+            file: reference/api/collections.md
+          - id: composites
+            title: Composites
+            file: reference/api/composites.md
+          - id: stats
+            title: Stats & Meta
+            file: reference/api/stats.md
+      - id: mcp
+        title: MCP Reference
+        pages:
+          - id: index
+            title: Overview
+            file: reference/mcp/index.md
+          - id: semantic-search
+            title: semantic_search
+            file: reference/mcp/semantic-search.md
+          - id: summarize-artifact
+            title: summarize_artifact
+            file: reference/mcp/summarize-artifact.md
+          - id: interpret-token
+            title: interpret_token
+            file: reference/mcp/interpret-token.md
+          - id: submit-correction
+            title: submit_correction
+            file: reference/mcp/submit-correction.md
+
+  - id: project
+    title: Project
+    pages:
+      - id: roadmap
+        title: Roadmap
+        file: project/roadmap.md
+      - id: open-questions
+        title: Open Questions
+        file: project/open-questions.md
+      - id: contributing
+        title: Contributing
+        file: project/contributing.md
+      - id: team
+        title: Team
+        file: project/team.md

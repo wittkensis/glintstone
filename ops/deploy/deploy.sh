@@ -116,7 +116,7 @@ EXCLUDES=(
     --exclude='PRDs'
     --exclude='data-model/v1'
     --exclude='data-model/source-schemas'
-    --exclude='source-data/sources'
+    --exclude='source-data'
     --exclude='ml'
     --exclude='.DS_Store'
     --exclude='.claude'
@@ -133,12 +133,7 @@ for d in core api app ingestion data-model marketing ops; do
     [ -d "$PROJECT_DIR/$d" ] || continue
     rsync_to "${EXCLUDES[@]}" "$PROJECT_DIR/$d/" "$REMOTE:$RELEASE_DIR/$d/" >/dev/null
 done
-# Migrations live under source-data/migrations/ — ship only that subtree, not the
-# (gitignored, multi-GB) source-data/sources/.
-if [ -d "$PROJECT_DIR/source-data/migrations" ]; then
-    ssh_run "mkdir -p $RELEASE_DIR/source-data"
-    rsync_to "${EXCLUDES[@]}" "$PROJECT_DIR/source-data/migrations/" "$REMOTE:$RELEASE_DIR/source-data/migrations/" >/dev/null
-fi
+# Migrations ship as part of data-model/ (already synced above).
 rsync_to "$PROJECT_DIR/requirements.txt" "$REMOTE:$RELEASE_DIR/requirements.txt" >/dev/null
 
 # --- Install dependencies inside the release's venv ---
@@ -209,6 +204,9 @@ if $deploy_app; then
     echo "  $WEB_SVC restarted"
 fi
 if $deploy_marketing; then
+    # Build docs site before syncing marketing to the server
+    echo "Building docs site..."
+    python "$PROJECT_DIR/ops/build_docs.py"
     ssh_run "sudo rc-service nginx reload" 2>/dev/null || true
     echo "  marketing/nginx reloaded"
 fi
