@@ -202,7 +202,7 @@
                 const ctrl = new AbortController();
                 inflight = ctrl;
                 const url = `/_search/suggest?q=${encodeURIComponent(trimmed)}&scope=${encodeURIComponent(currentScope)}&limit=8`;
-                fetch(url, { signal: ctrl.signal, credentials: 'same-origin' })
+                fetch(url, { signal: ctrl.signal, credentials: 'same-origin', cache: 'no-store' })
                     .then(r => {
                         if (r.status === 204) return '';
                         if (!r.ok) throw new Error('http ' + r.status);

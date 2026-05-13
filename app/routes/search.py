@@ -28,6 +28,14 @@ SCOPE_TO_LABEL: dict[str, str] = {
 }
 
 
+NO_STORE_HEADERS = {
+    # The drawer fragment can shift between empty/populated as ingestion runs;
+    # we never want a browser (or intermediate cache) to keep an old answer.
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+}
+
+
 @router.get("/suggest", response_class=HTMLResponse)
 def suggest(
     request: Request,
@@ -39,7 +47,7 @@ def suggest(
     q = q.strip()
     if not q:
         # Empty query — JS falls back to localStorage recent searches.
-        return Response(status_code=204)
+        return Response(status_code=204, headers=NO_STORE_HEADERS)
 
     types = SCOPE_TO_TYPES.get(scope, SCOPE_TO_TYPES["all"])
     api = request.app.state.api
@@ -57,7 +65,7 @@ def suggest(
     # context so the template stays free of per-type if-ladders.
     from app.main import templates
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request,
         "partials/global_search_results.html",
         {
@@ -68,3 +76,6 @@ def suggest(
             "api_url": request.app.state.api.base_url,
         },
     )
+    for k, v in NO_STORE_HEADERS.items():
+        response.headers[k] = v
+    return response
