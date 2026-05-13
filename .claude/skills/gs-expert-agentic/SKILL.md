@@ -1,6 +1,6 @@
 ---
 name: gs-expert-agentic
-description: Glintstone's agentic surface — MCP + REST in unison, grounded synthesis with citations, lazy-persist agent outputs, and the learning loop. Use for any work on mcp/, core/schemas/envelope.py, core/schemas/citation.py, core/agent/, agent_interactions/agent_outputs migrations, or the debug UI.
+description: Glintstone's agentic surface — MCP + REST in unison, grounded synthesis with citations, lazy-persist agent outputs, and the learning loop. Use for any work on gs_mcp/, core/schemas/envelope.py, core/schemas/citation.py, core/agent/, agent_interactions/agent_outputs migrations, or the debug UI.
 metadata:
   question: "How is the agentic surface (MCP + REST) wired, how do grounded summaries cite sources, and how does the system learn from every interaction?"
   created: 2026-05-12

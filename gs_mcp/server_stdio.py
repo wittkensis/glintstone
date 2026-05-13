@@ -1,7 +1,7 @@
 """MCP stdio server with the three hero tools.
 
 Run directly:
-    python -m mcp.server_stdio
+    python -m gs_mcp.server_stdio
 
 In Claude Desktop config (~/Library/Application Support/Claude/claude_desktop_config.json):
 
@@ -9,7 +9,7 @@ In Claude Desktop config (~/Library/Application Support/Claude/claude_desktop_co
       "mcpServers": {
         "glintstone": {
           "command": "python",
-          "args": ["-m", "mcp.server_stdio"],
+          "args": ["-m", "gs_mcp.server_stdio"],
           "cwd": "/Volumes/Portable Storage/Glintstone",
           "env": {
             "GS_API_URL": "http://api.glintstone.test/api/v2",
@@ -30,7 +30,7 @@ import logging
 import os
 import sys
 
-from mcp.client import GlintstoneAPIClient
+from gs_mcp.client import GlintstoneAPIClient
 
 logger = logging.getLogger("glintstone.mcp")
 
