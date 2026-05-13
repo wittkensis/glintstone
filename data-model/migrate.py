@@ -104,6 +104,12 @@ def apply_migration(
     started = datetime.now(timezone.utc)
     if not mark_only:
         sql = path.read_text()
+        # Reset session state before each migration. pg_dump output (used as
+        # migration 000) sets search_path to empty so its fully-qualified
+        # `public.foo` references work; that setting persists into the next
+        # migration on the same connection and breaks anything that uses
+        # unqualified table names.
+        conn.execute("SET search_path = public, pg_catalog")
         conn.execute(sql)
     duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
     conn.execute(
