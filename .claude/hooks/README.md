@@ -25,8 +25,7 @@ Type: prompt-based (LLM-driven).
 Catches risky modifications to:
 
 - `data-model/*.yaml` (schema files)
-- `source-data/migrations/*.sql` (migrations)
-- `source-data/sources/` (vendored upstream data — read-only)
+- `data-model/migrations/*.sql` (migrations)
 - `ops/deploy/`, `.github/workflows/deploy.yml` (production deploy machinery)
 - Force-push to `main`
 

@@ -7,7 +7,7 @@ set -e
 EXIT_CODE=0
 
 # Schema YAML validity (BLOCKING)
-SCHEMA_FILE="data-model/v2/glintstone-v2-schema.yaml"
+SCHEMA_FILE="data-model/glintstone-schema.yaml"
 if [ -f "$SCHEMA_FILE" ]; then
     if ! python3 -c "import yaml; yaml.safe_load(open('$SCHEMA_FILE'))" 2>/dev/null; then
         echo "❌ Schema YAML is invalid: $SCHEMA_FILE"
@@ -16,7 +16,7 @@ if [ -f "$SCHEMA_FILE" ]; then
 fi
 
 # Uncommitted migration files (BLOCKING)
-UNCOMMITTED_MIGRATIONS=$(git status --porcelain source-data/migrations/ 2>/dev/null | grep -v '^??' || true)
+UNCOMMITTED_MIGRATIONS=$(git status --porcelain data-model/migrations/ 2>/dev/null | grep -v '^??' || true)
 if [ -n "$UNCOMMITTED_MIGRATIONS" ]; then
     echo "❌ Uncommitted migration files:"
     echo "$UNCOMMITTED_MIGRATIONS"

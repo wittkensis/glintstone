@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generic SQL migration runner for Glintstone.
 
-Discovers `source-data/migrations/NNN_*.sql` files, applies them in order,
+Discovers `data-model/migrations/NNN_*.sql` files, applies them in order,
 records each application in a `public._migrations` tracking table. Idempotent: only
 applies migrations whose filename hash hasn't been seen before.
 
@@ -28,7 +28,7 @@ import psycopg  # noqa: E402
 
 from core.config import get_settings  # noqa: E402
 
-MIGRATIONS_DIR = ROOT / "source-data" / "migrations"
+MIGRATIONS_DIR = ROOT / "data-model" / "migrations"
 MIGRATION_PATTERN = re.compile(r"^(\d{3}[a-z]?)_(.+)\.sql$")
 
 TRACKING_TABLE_DDL = """

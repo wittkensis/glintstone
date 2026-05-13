@@ -15,9 +15,9 @@ fi
 note() { echo "⚠ $*"; WARN=1; }
 
 # Schema YAML or migration changed → expect a doc touch
-if echo "$STAGED" | grep -qE 'source-data/migrations/.*\.sql$'; then
+if echo "$STAGED" | grep -qE 'data-model/migrations/.*\.sql$'; then
     if ! echo "$STAGED" | grep -qE '(gs-expert-data-model/migrations\.md|data-model/v2/glintstone-v2-schema\.yaml)'; then
-        note "source-data/migrations/ touched — review .claude/skills/gs-expert-data-model/migrations.md and data-model/v2/glintstone-v2-schema.yaml"
+        note "data-model/migrations/ touched — review .claude/skills/gs-expert-data-model/migrations.md and data-model/v2/glintstone-v2-schema.yaml"
     fi
 fi
 
@@ -51,8 +51,8 @@ if echo "$STAGED" | grep -qE '(\.github/workflows/.*\.yml|ops/deploy/.*\.sh)'; t
 fi
 
 # New tables in a migration → fixture catalog reminder
-if echo "$STAGED" | grep -qE 'source-data/migrations/.*\.sql$'; then
-    if git diff --cached source-data/migrations/ 2>/dev/null | grep -qE '^\+CREATE TABLE'; then
+if echo "$STAGED" | grep -qE 'data-model/migrations/.*\.sql$'; then
+    if git diff --cached data-model/migrations/ 2>/dev/null | grep -qE '^\+CREATE TABLE'; then
         if ! echo "$STAGED" | grep -q 'gs-curator-artifacts/catalog.yaml'; then
             note "New table in migration — consider adding a fixture scenario to .claude/skills/gs-curator-artifacts/catalog.yaml"
         fi

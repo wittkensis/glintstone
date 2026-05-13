@@ -12,7 +12,7 @@ EXIT_CODE=0
 echo "Verifying v2 ingestion framework integrity..."
 
 # Schema YAML
-SCHEMA_FILE="data-model/v2/glintstone-v2-schema.yaml"
+SCHEMA_FILE="data-model/glintstone-schema.yaml"
 if [ -f "$SCHEMA_FILE" ]; then
     echo "→ Validating $SCHEMA_FILE..."
     if ! python3 -c "import yaml; yaml.safe_load(open('$SCHEMA_FILE'))" 2>/dev/null; then
@@ -57,7 +57,7 @@ if [ -d "$INGESTION_DIR" ]; then
 fi
 
 # Uncommitted changes in ingestion or migrations
-for path in "$INGESTION_DIR" "source-data/migrations"; do
+for path in "$INGESTION_DIR" "data-model/migrations"; do
     if [ -d "$path" ]; then
         UNCOMMITTED=$(git status --porcelain "$path" 2>/dev/null | grep -v '^??' || true)
         if [ -n "$UNCOMMITTED" ]; then

@@ -23,7 +23,7 @@ if [ -z "$TOUCHED" ]; then
 fi
 
 # Contract checks
-if echo "$TOUCHED" | grep -qE 'source-data/migrations/.*\.sql$'; then
+if echo "$TOUCHED" | grep -qE 'data-model/migrations/.*\.sql$'; then
     if ! echo "$TOUCHED" | grep -q 'gs-expert-data-model/migrations.md'; then
         note "Migrations touched but gs-expert-data-model/migrations.md not updated"
     fi

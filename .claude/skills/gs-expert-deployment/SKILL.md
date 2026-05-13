@@ -13,7 +13,7 @@ metadata:
   related_skills: [gs-curator-docs]
   supersedes: null
   superseded_by: null
-  triggers: [deploy, deployment, staging, production, rollback, vps, hostinger, "github actions", "GitHub Actions", neon, "Neon branch", cloudflare, "Cloudflare R2", R2, env, secret, dns, nginx, "image hosting", "CI failed", "build broke", ssh, release, ship]
+  triggers: [deploy, deployment, staging, production, rollback, vps, hostinger, "github actions", "GitHub Actions", neon, "Neon branch", cloudflare, "Cloudflare R2", R2, env, secret, dns, nginx, "image hosting", "CI failed", "build broke", ssh, release, ship, hooks, "pre-commit", "git hooks", "hooks.json", "pre-push", "post-merge"]
 ---
 
 # Glintstone deployment & staging
@@ -39,6 +39,7 @@ The infra surface is wide and the operator is non-technical. This skill is **pro
 | Production is broken, how do I roll back? | [rollback.md](rollback.md) |
 | Asset hosting today vs. the R2 migration plan | [storage.md](storage.md) |
 | Which MCP tool should I reach for? | [mcp-cheat-sheet.md](mcp-cheat-sheet.md) |
+| Hook scripts, hooks.json, .pre-commit-config.yaml — what does each do, how to keep them in sync? | [hooks.md](hooks.md) |
 
 ## Safe-default rules (these BLOCK — they don't just warn)
 
