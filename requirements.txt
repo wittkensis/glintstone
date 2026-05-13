@@ -9,3 +9,8 @@ httpx>=0.27
 Pillow>=10.0
 python-multipart>=0.0.9
 boto3>=1.34
+
+# Agentic surface (see .claude/skills/gs-expert-agentic/)
+anthropic>=0.75
+voyageai>=0.3
+mcp>=1.27
