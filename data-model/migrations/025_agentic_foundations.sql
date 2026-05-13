@@ -37,10 +37,15 @@ CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_cf_trgm
 CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_gw_trgm
     ON lexical_lemmas USING GIN (guide_word gin_trgm_ops);
 
--- lexical_senses stores glosses as definition_parts (text[]), not a single column.
--- Index the joined text so trigram search across senses works.
-CREATE INDEX IF NOT EXISTS idx_lexical_senses_definition_parts_trgm
-    ON lexical_senses USING GIN (array_to_string(definition_parts, ' ') gin_trgm_ops);
+-- Note: lexical_senses stores glosses as definition_parts (text[]).
+-- A GIN trigram index on `array_to_string(definition_parts, ' ')` would be
+-- ideal but Postgres rejects it because array_to_string isn't IMMUTABLE
+-- (depends on collation). Two future paths to add this back:
+--   1. Add a STORED generated column and index that
+--   2. Define an IMMUTABLE wrapper function and use it in both index + queries
+-- Trigram-on-gloss is a "nice to have" — semantic search on the lemma_gloss
+-- embeddings (entity_embeddings, entity_type='lemma_gloss') covers the same
+-- need with better quality.
 
 CREATE INDEX IF NOT EXISTS idx_scholars_name_trgm
     ON scholars USING GIN (name gin_trgm_ops);
