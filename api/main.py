@@ -16,6 +16,8 @@ from api.routes import (
     collections,
     composites,
     dictionary,
+    search,
+    agent,
 )
 
 
@@ -32,6 +34,9 @@ app = FastAPI(
     title="Glintstone API",
     version=release_tag(),
     lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
 
 
@@ -67,3 +72,6 @@ app.include_router(artifacts.router)
 app.include_router(collections.router)
 app.include_router(composites.router)
 app.include_router(dictionary.router)
+app.include_router(search.router)
+app.include_router(agent.router)
+app.include_router(agent.corrections_router)

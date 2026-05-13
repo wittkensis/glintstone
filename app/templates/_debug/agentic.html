@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Debug — Agentic Surface{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/pages/debug.css?v={{ app_version }}">
+{% endblock %}
+
+{% block content %}
+<main class="debug-shell">
+  <header class="debug-header">
+    <h1 class="debug-title">Agentic Surface — Debug</h1>
+    <p class="debug-subtitle">
+      Internal tool. Not surfaced to users.
+      <a href="https://github.com/wittkensis/glintstone/blob/main/.claude/skills/gs-expert-agentic/SKILL.md"
+         target="_blank">gs-expert-agentic skill</a>
+    </p>
+  </header>
+
+  <nav class="debug-tabs" aria-label="Debug tabs">
+    <a class="debug-tab {% if tab == 'search' %}active{% endif %}" href="/_debug/agentic/search">Search</a>
+    <a class="debug-tab {% if tab == 'summary' %}active{% endif %}" href="/_debug/agentic/summary">Summary</a>
+    <a class="debug-tab {% if tab == 'interpret' %}active{% endif %}" href="/_debug/agentic/interpret">Interpret</a>
+    <a class="debug-tab {% if tab == 'interactions' %}active{% endif %}" href="/_debug/agentic/interactions">Interactions</a>
+  </nav>
+
+  {% if error %}
+  <div class="debug-error" role="alert">{{ error }}</div>
+  {% endif %}
+
+  {# ── Search tab ───────────────────────────────────────────────────────── #}
+  {% if tab == 'search' %}
+  <section class="debug-panel">
+    <form method="GET" action="/_debug/agentic/search" class="debug-form">
+      <label class="debug-label">
+        Query
+        <input type="text" name="q" value="{{ q }}" placeholder="harvest reports from Nippur mentioning silver" autofocus>
+      </label>
+      <label class="debug-label">
+        Mode
+        <select name="mode">
+          <option value="hybrid" {% if mode == 'hybrid' %}selected{% endif %}>hybrid</option>
+          <option value="lexical" {% if mode == 'lexical' %}selected{% endif %}>lexical</option>
+          <option value="semantic" {% if mode == 'semantic' %}selected{% endif %}>semantic</option>
+        </select>
+      </label>
+      <button type="submit" class="debug-submit">Search</button>
+    </form>
+
+    {% if response %}
+    <div class="debug-grid">
+      <section class="debug-card">
+        <h2 class="debug-card-title">Summary</h2>
+        <p class="debug-text">{{ response.summary }}</p>
+        <p class="debug-meta">
+          <strong>interaction_id:</strong> {{ response.interaction_id }} •
+          <strong>sources:</strong> {{ response.sources|length }} •
+          <strong>render_hint:</strong> {{ response.render_hint }}
+        </p>
+      </section>
+
+      <section class="debug-card">
+        <h2 class="debug-card-title">Groups</h2>
+        {% for group in response.data.groups %}
+          {% if group.items %}
+          <div class="debug-group">
+            <h3 class="debug-group-title">
+              {{ group.group_type }}
+              <span class="debug-group-total">{{ group.total }} total</span>
+            </h3>
+            <ul class="debug-result-list">
+              {% for item in group.items %}
+              <li class="debug-result">
+                <strong>{{ item.primary_label or item.entity_id }}</strong>
+                {% if item.secondary_label %}<span class="debug-result-sub">{{ item.secondary_label }}</span>{% endif %}
+                <span class="debug-result-score">{{ "%.4f"|format(item.score or 0) }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% if group.view_all %}
+            <a class="debug-link" href="/_debug/agentic/search?q={{ q|urlencode }}&types={{ group.group_type }}">
+              {{ group.view_all.label }} →
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </section>
+
+      <section class="debug-card debug-card-follow">
+        <h2 class="debug-card-title">Follow-ups</h2>
+        {% if response.follow_ups %}
+        <ul class="debug-follow-list">
+          {% for f in response.follow_ups %}
+          <li>
+            <code class="debug-code">{{ f.tool }}</code>
+            <span class="debug-follow-label">{{ f.label }}</span>
+            {% if f.rationale %}<em class="debug-follow-rationale">{{ f.rationale }}</em>{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="debug-empty">No follow-ups suggested.</p>
+        {% endif %}
+      </section>
+
+      <section class="debug-card debug-card-raw">
+        <h2 class="debug-card-title">Raw ToolResponse</h2>
+        <pre class="debug-pre">{{ response_json }}</pre>
+      </section>
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {# ── Summary tab ──────────────────────────────────────────────────────── #}
+  {% if tab == 'summary' %}
+  <section class="debug-panel">
+    <form method="GET" action="/_debug/agentic/summary" class="debug-form">
+      <label class="debug-label">
+        P-number
+        <input type="text" name="p_number" value="{{ p_number }}" placeholder="P227657" autofocus>
+      </label>
+      <label class="debug-label">
+        Focus
+        <select name="focus">
+          <option value="general" {% if focus == 'general' %}selected{% endif %}>general</option>
+          <option value="research" {% if focus == 'research' %}selected{% endif %}>research</option>
+          <option value="translation_status" {% if focus == 'translation_status' %}selected{% endif %}>translation_status</option>
+        </select>
+      </label>
+      <button type="submit" class="debug-submit">Summarize</button>
+    </form>
+
+    {% if response %}
+    <div class="debug-grid">
+      <section class="debug-card">
+        <h2 class="debug-card-title">Plain summary</h2>
+        <p class="debug-text">{{ response.summary }}</p>
+        <p class="debug-meta">
+          <strong>interaction_id:</strong> {{ response.interaction_id }} •
+          <strong>sources:</strong> {{ response.sources|length }}
+        </p>
+      </section>
+
+      <section class="debug-card">
+        <h2 class="debug-card-title">Card — {{ response.data.title }}</h2>
+        {% if response.data.synthesis %}
+        <div class="debug-synthesis">
+          <h3 class="debug-card-title-sub">Grounded synthesis</h3>
+          <p class="debug-synthesis-text">{{ response.data.synthesis }}</p>
+          {% if response.data.synthesis_citations %}
+          <details class="debug-details">
+            <summary>Citation chain ({{ response.data.synthesis_citations|length }})</summary>
+            <table class="debug-table">
+              <thead><tr><th>n</th><th>kind</th><th>source</th><th>retrieval_field</th></tr></thead>
+              <tbody>
+                {% for c in response.data.synthesis_citations %}
+                <tr>
+                  <td>[{{ c.n }}]</td>
+                  <td>{{ c.source_kind }}</td>
+                  <td>{{ c.publication_short or c.source_id }}</td>
+                  <td><code>{{ c.retrieval_field }}</code></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </details>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% if response.data.best_guess %}
+        <div class="debug-best-guess">
+          <h3 class="debug-card-title-sub">Best guess
+            <span class="debug-badge debug-badge-{{ response.data.best_guess.confidence_band }}">
+              {{ response.data.best_guess.confidence_band }}
+            </span>
+          </h3>
+          <p class="debug-synthesis-text">{{ response.data.best_guess.hypothesis }}</p>
+          {% if response.data.best_guess.evidence_chain %}
+          <ul class="debug-evidence">
+            {% for e in response.data.best_guess.evidence_chain %}<li>{{ e }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+          {% if response.data.best_guess.similar_tablets %}
+          <p class="debug-meta">
+            <strong>Similar tablets:</strong>
+            {% for p in response.data.best_guess.similar_tablets %}
+            <a href="/_debug/agentic/summary?p_number={{ p }}">{{ p }}</a>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+          </p>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% if response.data.badges %}
+        <p class="debug-badges">
+          {% for b in response.data.badges %}
+          <span class="debug-badge">{{ b.label }}</span>
+          {% endfor %}
+        </p>
+        {% endif %}
+
+        <h3 class="debug-card-title-sub">Fields</h3>
+        <table class="debug-table">
+          <thead><tr><th>label</th><th>value</th><th>sources</th></tr></thead>
+          <tbody>
+            {% for f in response.data.fields %}
+            <tr>
+              <td>{{ f.label }}</td>
+              <td>{{ f.value }}</td>
+              <td>{% for s in f.sources %}<code class="debug-code">{{ s.kind }}</code>{% if not loop.last %} {% endif %}{% endfor %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="debug-card debug-card-correct">
+        <h2 class="debug-card-title">Submit a correction</h2>
+        <p class="debug-meta">Becomes a new annotation_run with method=agent-hypothesis-correction. Old summary becomes superseded.</p>
+        <form id="correction-form" class="debug-form-stacked">
+          <input type="hidden" name="interaction_id" value="{{ response.interaction_id }}">
+          <label class="debug-label">Claim being corrected
+            <input type="text" name="claim" placeholder="The synthesis says..." required>
+          </label>
+          <label class="debug-label">Correction
+            <input type="text" name="correction" placeholder="Should be..." required>
+          </label>
+          <label class="debug-label">Evidence (citation)
+            <input type="text" name="evidence" placeholder="CAD Š/2 p. 318">
+          </label>
+          <button type="submit" class="debug-submit">Submit correction</button>
+          <div id="correction-result" class="debug-correction-result"></div>
+        </form>
+      </section>
+
+      <section class="debug-card debug-card-raw">
+        <h2 class="debug-card-title">Raw ToolResponse</h2>
+        <pre class="debug-pre">{{ response_json }}</pre>
+      </section>
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {# ── Interpret tab ────────────────────────────────────────────────────── #}
+  {% if tab == 'interpret' %}
+  <section class="debug-panel">
+    <form method="GET" action="/_debug/agentic/interpret" class="debug-form">
+      <label class="debug-label">
+        P-number
+        <input type="text" name="p_number" value="{{ p_number }}" placeholder="P227657">
+      </label>
+      <label class="debug-label">
+        Token ID
+        <input type="number" name="token_id" value="{{ token_id }}" placeholder="42">
+      </label>
+      <button type="submit" class="debug-submit">Interpret</button>
+    </form>
+
+    {% if token_candidates %}
+    <section class="debug-card">
+      <h2 class="debug-card-title">Tokens on {{ p_number }}</h2>
+      <table class="debug-table">
+        <thead><tr><th>line</th><th>pos</th><th>raw_form</th><th>lemmatized</th><th></th></tr></thead>
+        <tbody>
+          {% for t in token_candidates %}
+          <tr>
+            <td>{{ t.line_number }}</td>
+            <td>{{ t.position }}</td>
+            <td><code>{{ t.raw_form }}</code></td>
+            <td>{{ "✓" if t.lemmatized else "—" }}</td>
+            <td><a class="debug-link" href="/_debug/agentic/interpret?p_number={{ p_number }}&token_id={{ t.token_id }}">interpret</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    {% endif %}
+
+    {% if response %}
+    <div class="debug-grid">
+      <section class="debug-card">
+        <h2 class="debug-card-title">Summary</h2>
+        <p class="debug-text">{{ response.summary }}</p>
+      </section>
+
+      <section class="debug-card">
+        <h2 class="debug-card-title">Chain</h2>
+        <table class="debug-table">
+          <thead><tr><th>label</th><th>value</th><th>sources</th></tr></thead>
+          <tbody>
+            {% for s in response.data.steps %}
+            <tr>
+              <td>{{ s.label }}</td>
+              <td>{{ s.value }}</td>
+              <td>{% for src in s.sources %}<code class="debug-code">{{ src.kind }}</code>{% endfor %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        {% if response.data.hypotheses %}
+        <h3 class="debug-card-title-sub">Hypotheses ({{ response.data.hypotheses|length }})</h3>
+        {% for h in response.data.hypotheses %}
+        <div class="debug-hypothesis">
+          <p>
+            <strong>{{ h.reading }}</strong>
+            <span class="debug-badge debug-badge-{{ h.confidence_band }}">{{ h.confidence_band }}</span>
+          </p>
+          <ul class="debug-evidence">
+            {% for e in h.evidence_chain %}<li>{{ e }}</li>{% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+        {% endif %}
+      </section>
+
+      <section class="debug-card debug-card-raw">
+        <h2 class="debug-card-title">Raw ToolResponse</h2>
+        <pre class="debug-pre">{{ response_json }}</pre>
+      </section>
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {# ── Interactions tab ─────────────────────────────────────────────────── #}
+  {% if tab == 'interactions' %}
+  <section class="debug-panel">
+    <div class="debug-grid">
+      <section class="debug-card">
+        <h2 class="debug-card-title">Recent agent_interactions ({{ interactions|length }})</h2>
+        <table class="debug-table">
+          <thead>
+            <tr><th>id</th><th>surface</th><th>tool</th><th>latency</th><th>error</th><th>client</th><th>created</th></tr>
+          </thead>
+          <tbody>
+            {% for i in interactions %}
+            <tr>
+              <td>{{ i.id }}</td>
+              <td>{{ i.surface }}</td>
+              <td>{{ i.tool_name or i.route_path or "—" }}</td>
+              <td>{{ i.latency_ms }} ms</td>
+              <td>{{ i.error_code or "" }}</td>
+              <td>{{ i.client_label or "anon" }}</td>
+              <td>{{ i.created_at }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="debug-card">
+        <h2 class="debug-card-title">Persisted agent_outputs ({{ outputs|length }})</h2>
+        <table class="debug-table">
+          <thead>
+            <tr><th>id</th><th>type</th><th>target</th><th>focus</th><th>prompt</th><th>best-guess</th><th>state</th><th>generated</th></tr>
+          </thead>
+          <tbody>
+            {% for o in outputs %}
+            <tr>
+              <td>{{ o.id }}</td>
+              <td>{{ o.output_type }}</td>
+              <td>{{ o.target_id }}</td>
+              <td>{{ o.focus or "—" }}</td>
+              <td><code class="debug-code">{{ o.prompt_version }}</code></td>
+              <td>{{ "✓" if o.best_guess_flag else "—" }}</td>
+              <td>{{ "superseded" if o.superseded_at else "fresh" }}</td>
+              <td>{{ o.generated_at }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </section>
+  {% endif %}
+</main>
+
+{% if tab == 'summary' and response %}
+<script>
+(function() {
+  const form = document.getElementById('correction-form');
+  if (!form) return;
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(form);
+    const result = document.getElementById('correction-result');
+    result.textContent = 'Submitting...';
+    try {
+      const resp = await fetch('/_debug/agentic/correct', {method: 'POST', body: fd});
+      const data = await resp.json();
+      result.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+      result.textContent = 'Error: ' + e.message;
+    }
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}
