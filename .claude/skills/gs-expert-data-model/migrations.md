@@ -131,6 +131,9 @@ GRANT USAGE, SELECT ON SEQUENCE my_table_id_seq TO glintstone;
 | 021 | `021_source_snapshots.sql` | Tracks raw-source archive locations (B2/VPS) |
 | 022 | `022_artifact_images.sql` | Tablet image metadata + R2 keys + copyright + fetch log |
 | 023 | `023_artifact_images_null_dedup.sql` | Partial unique index closing the cdli_reader_id IS NULL gap in 022 |
+| 024 | `024_connector_unique_constraints.sql` | Unique constraints + lexical_norm_forms cleanup for v2 ingestion connectors |
+| 025 | `025_agentic_foundations.sql` | `pg_trgm` + pgvector extensions, trigram indexes, `entity_embeddings`, `agent_interactions`, `interaction_feedback`, `agent_outputs` |
+| 026 | `026_search_entities.sql` | Matview `search_entities` (unified lexical surface) + view `pipeline_completeness` (0-5 score per artifact) |
 
 **Always confirm `migrate.py status` matches this table.** If it doesn't, update one or the other.
 

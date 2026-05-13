@@ -1,0 +1,111 @@
+categories:
+  - name: "Metadata, Translations & Dictionaries"
+    sources:
+      - abbr: CDLI
+        name: Cuneiform Digital Library Initiative
+        status: fully_integrated
+      - abbr: "ORACC: DCCLT"
+        name: Digital Corpus of Cuneiform Lexical Texts
+        status: fully_integrated
+      - abbr: "ORACC: BLMS"
+        name: Babylonian Literary & Mythological Sources
+        status: fully_integrated
+      - abbr: "ORACC: ETCSRI"
+        name: Electronic Text Corpus of Sumerian Royal Inscriptions
+        status: fully_integrated
+      - abbr: "ORACC: RINAP"
+        name: Royal Inscriptions of the Neo-Assyrian Period
+        status: fully_integrated
+      - abbr: "ORACC: RIAO"
+        name: Royal Inscriptions of Assyria Online
+        status: fully_integrated
+      - abbr: "ORACC: SAAO"
+        name: State Archives of Assyria Online
+        status: fully_integrated
+      - abbr: "ORACC: ePSD2"
+        name: Electronic Pennsylvania Sumerian Dictionary
+        status: fully_integrated
+      - abbr: "ORACC: OGSL"
+        name: ORACC Global Sign List
+        status: fully_integrated
+      - abbr: "ORACC: CCPO"
+        name: Cuneiform Commentaries Project
+        status: partially_integrated
+      - abbr: "ORACC: CAMS"
+        name: Corpus of Ancient Mesopotamian Scholarship
+        status: partially_integrated
+      - abbr: "ORACC: ETCSL"
+        name: Electronic Text Corpus of Sumerian Literature
+        status: partially_integrated
+      - abbr: "ORACC: RIME"
+        name: Royal Inscriptions of Mesopotamia Online, Early Periods
+        status: partially_integrated
+      - abbr: "ORACC: RIBO"
+        name: Royal Inscriptions of Babylonia Online
+        status: partially_integrated
+      - abbr: "ORACC: CTIJ"
+        name: Cuneiform Texts Mentioning Israelites, Judeans
+        status: partially_integrated
+      - abbr: "ORACC: AMGG"
+        name: Ancient Mesopotamian Gods and Goddesses
+        status: partially_integrated
+      - abbr: "ORACC: HBTIN"
+        name: "Hellenistic Babylonia: Texts, Iconography, Names"
+        status: partially_integrated
+      - abbr: "ORACC: DCCMT"
+        name: Digital Corpus of Cuneiform Mathematical Texts
+        status: partially_integrated
+      - abbr: eBL
+        name: electronic Babylonian Library
+        status: partially_integrated
+      - abbr: CAD
+        name: Chicago Assyrian Dictionary
+        status: not_integrated
+
+  - name: "Citations & Context"
+    sources:
+      - abbr: OpenAlex
+        name: ""
+        status: fully_integrated
+      - abbr: Semantic Scholar
+        name: ""
+        status: partially_integrated
+      - abbr: Pleiades
+        name: ""
+        status: partially_integrated
+      - abbr: Wikidata
+        name: ""
+        status: partially_integrated
+
+  - name: "Integrated Intelligence"
+    sources:
+      - abbr: DeepScribe
+        name: Cuneiform Sign Detection (ML)
+        status: partially_integrated
+      - abbr: BabyLemmatizer
+        name: Automated Sumerian Lemmatization
+        status: partially_integrated
+      - abbr: CompVis
+        name: Cuneiform Sign Detection Dataset
+        status: partially_integrated
+
+  - name: "Related Efforts"
+    sources:
+      - abbr: LLOD
+        name: Linguistic Linked Open Data
+        status: not_integrated
+      - abbr: ARMEP
+        name: Ancient Records of the Middle East and the Persians
+        status: not_integrated
+      - abbr: ARCHIBAB
+        name: Archives Babyloniennes
+        status: not_integrated
+      - abbr: BDTNS
+        name: Database of Neo-Sumerian Texts
+        status: not_integrated
+      - abbr: "Ebla Digital Archives"
+        name: ""
+        status: not_integrated
+      - abbr: "AfO Register"
+        name: "Archiv für Orientforschung: Register Assyriologie"
+        status: not_integrated

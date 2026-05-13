@@ -1,0 +1,489 @@
+"""Assemble structured fact lists for grounded synthesis.
+
+This is the data-collection step that runs before the Claude call. Every Fact
+carries (n, text, citation) so the synthesis call can reference it by number
+and the validator can confirm round-trip integrity.
+
+Two assemblers:
+  assemble_artifact_facts(p_number, focus)  → for summarize_artifact
+  assemble_token_facts(p_number, token_id)  → for interpret_token
+
+Both query the DB via the existing repository layer where possible to stay
+inside the project's idiom. They return dataclasses, not SQL rows — the
+synthesis layer renders them to numbered prompt text.
+"""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass, field
+from typing import Literal
+
+import psycopg
+
+from core.schemas.citation import Citation
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Fact:
+    n: int
+    text: str
+    citation: Citation
+
+
+@dataclass
+class SimilarTablet:
+    n: int  # citation slot
+    p_number: str
+    designation: str | None
+    period: str | None
+    provenience: str | None
+    cosine: float
+
+
+@dataclass
+class ArtifactFactBundle:
+    p_number: str
+    facts: list[Fact] = field(default_factory=list)
+    similar_tablets: list[SimilarTablet] = field(default_factory=list)
+    completeness_score: int = 0
+    best_guess_allowed: bool = False
+
+
+@dataclass
+class TokenFactBundle:
+    p_number: str
+    token_id: int
+    facts: list[Fact] = field(default_factory=list)
+    is_fully_lemmatized: bool = False
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+
+def _next_n(facts: list[Fact]) -> int:
+    return (facts[-1].n + 1) if facts else 1
+
+
+def _add_fact(
+    facts: list[Fact],
+    text: str,
+    source_kind: str,
+    source_id: int | str,
+    retrieval_field: str,
+    annotation_run_id: int | None = None,
+    scholar_id: int | None = None,
+    scholar_name: str | None = None,
+    publication_short: str | None = None,
+) -> Fact:
+    n = _next_n(facts)
+    citation = Citation(
+        n=n,
+        source_kind=source_kind,
+        source_id=source_id,
+        annotation_run_id=annotation_run_id,
+        scholar_id=scholar_id,
+        scholar_name=scholar_name,
+        publication_short=publication_short,
+        retrieval_field=retrieval_field,
+    )
+    fact = Fact(n=n, text=text, citation=citation)
+    facts.append(fact)
+    return fact
+
+
+# ── Artifact facts ────────────────────────────────────────────────────────────
+
+
+def assemble_artifact_facts(
+    conn: psycopg.Connection,
+    p_number: str,
+    focus: Literal["general", "research", "translation_status"] = "general",
+    similar_tablet_min_cosine: float = 0.72,
+    similar_tablet_count: int = 5,
+) -> ArtifactFactBundle | None:
+    """Pull every fact about the artifact that the synthesizer can ground on."""
+    bundle = ArtifactFactBundle(p_number=p_number)
+
+    # Catalog facts (period, provenience, genre, language, museum, dimensions)
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT a.p_number, a.designation,
+                   a.period_normalized, a.provenience_normalized,
+                   a.museum_no, a.dimensions
+            FROM artifacts a
+            WHERE a.p_number = %s
+            """,
+            (p_number,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+
+    if row.get("period_normalized"):
+        _add_fact(
+            bundle.facts,
+            f"period: {row['period_normalized']}",
+            "annotation_run",
+            "cdli_catalog",
+            "period",
+        )
+    if row.get("provenience_normalized"):
+        _add_fact(
+            bundle.facts,
+            f"provenience: {row['provenience_normalized']}",
+            "annotation_run",
+            "cdli_catalog",
+            "provenience",
+        )
+    if row.get("museum_no"):
+        _add_fact(
+            bundle.facts,
+            f"museum: {row['museum_no']}",
+            "annotation_run",
+            "cdli_catalog",
+            "museum",
+        )
+    if row.get("designation"):
+        _add_fact(
+            bundle.facts,
+            f"designation: {row['designation']}",
+            "annotation_run",
+            "cdli_catalog",
+            "designation",
+        )
+
+    # Pipeline completeness
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT completeness_score, has_atf, has_tokens, has_lemmatization,
+                   has_translation, has_entities, has_image, token_count, lemma_ratio
+            FROM pipeline_completeness
+            WHERE p_number = %s
+            """,
+            (p_number,),
+        )
+        pc = cur.fetchone() or {}
+
+    completeness = int(pc.get("completeness_score", 0))
+    bundle.completeness_score = completeness
+    stages_done = []
+    if pc.get("has_atf"):
+        stages_done.append("ATF")
+    if pc.get("has_tokens"):
+        stages_done.append("tokens")
+    if pc.get("has_lemmatization"):
+        stages_done.append("lemmatization")
+    if pc.get("has_translation"):
+        stages_done.append("translation")
+    if pc.get("has_entities"):
+        stages_done.append("named entities")
+
+    _add_fact(
+        bundle.facts,
+        f"pipeline completeness: {completeness}/5 ({', '.join(stages_done) or 'none of the stages completed'})",
+        "computed",
+        "pipeline_completeness",
+        "completeness",
+    )
+
+    # Top lemmas (when lemmatized) — emit up to 5
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT ll.id, ll.citation_form, ll.guide_word, COUNT(*) AS attestations
+            FROM tokens t
+            JOIN text_lines tl ON t.line_id = tl.id
+            JOIN surfaces s ON tl.surface_id = s.id
+            JOIN lemmatizations lz ON lz.token_id = t.id
+            JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
+            WHERE s.p_number = %s
+            GROUP BY ll.id, ll.citation_form, ll.guide_word
+            ORDER BY attestations DESC
+            LIMIT 5
+            """,
+            (p_number,),
+        )
+        for r in cur.fetchall():
+            _add_fact(
+                bundle.facts,
+                f"mentions lemma \"{r.get('guide_word') or r.get('citation_form')}\" "
+                f"({r.get('attestations')} attestations)",
+                "lexical_lemma",
+                r["id"],
+                f"lemma:{r['id']}",
+            )
+
+    # Named entities (when populated) — up to 5
+    with conn.cursor() as cur:
+        try:
+            cur.execute(
+                """
+                SELECT DISTINCT ne.id, ne.canonical_name, ne.entity_type
+                FROM entity_mentions em
+                JOIN named_entities ne ON em.named_entity_id = ne.id
+                LEFT JOIN tokens t ON em.token_id = t.id
+                LEFT JOIN text_lines tl_t ON t.line_id = tl_t.id
+                LEFT JOIN text_lines tl_l ON em.line_id = tl_l.id
+                JOIN surfaces s ON s.id = COALESCE(tl_t.surface_id, tl_l.surface_id)
+                WHERE s.p_number = %s
+                LIMIT 5
+                """,
+                (p_number,),
+            )
+            for r in cur.fetchall():
+                _add_fact(
+                    bundle.facts,
+                    f"mentions named entity \"{r['canonical_name']}\" ({r.get('entity_type') or 'unknown'})",
+                    "named_entity",
+                    r["id"],
+                    f"entity:{r['id']}",
+                )
+        except psycopg.errors.UndefinedTable:
+            # named_entities not yet populated; skip
+            conn.rollback()
+
+    # Citation count (research-importance signal)
+    with conn.cursor() as cur:
+        try:
+            cur.execute(
+                """
+                SELECT COUNT(*) AS n
+                FROM publication_citations pc
+                WHERE pc.p_number = %s
+                """,
+                (p_number,),
+            )
+            row = cur.fetchone()
+            if row and row.get("n", 0) > 0:
+                _add_fact(
+                    bundle.facts,
+                    f"cited in {row['n']} publications",
+                    "computed",
+                    "publication_citations",
+                    "citation_count",
+                )
+        except psycopg.errors.UndefinedTable:
+            conn.rollback()
+
+    # Similar tablets via embedding (lemma_bag for now; falls back gracefully)
+    with conn.cursor() as cur:
+        try:
+            cur.execute(
+                """
+                WITH this_vec AS (
+                    SELECT vec
+                    FROM entity_embeddings
+                    WHERE entity_type = 'artifact_lemma_bag'
+                      AND entity_id = %s
+                      AND model = 'voyage-3-large'
+                    LIMIT 1
+                )
+                SELECT ee.entity_id AS p_number,
+                       a.designation, a.period_normalized, a.provenience_normalized,
+                       1 - (ee.vec <=> tv.vec) AS cosine
+                FROM entity_embeddings ee, this_vec tv
+                JOIN artifacts a ON a.p_number = ee.entity_id
+                WHERE ee.entity_type = 'artifact_lemma_bag'
+                  AND ee.model = 'voyage-3-large'
+                  AND ee.entity_id <> %s
+                ORDER BY ee.vec <=> tv.vec
+                LIMIT %s
+                """,
+                (p_number, p_number, similar_tablet_count),
+            )
+            for r in cur.fetchall():
+                if (r.get("cosine") or 0) < similar_tablet_min_cosine:
+                    continue
+                n = _next_n(bundle.facts)
+                citation = Citation(
+                    n=n,
+                    source_kind="computed",
+                    source_id=f"similar:{r['p_number']}",
+                    retrieval_field=f"similar_tablet:{r['p_number']}",
+                )
+                fact = Fact(
+                    n=n,
+                    text=(
+                        f"{r['p_number']} — "
+                        f"{r.get('period_normalized') or 'unknown period'}, "
+                        f"{r.get('provenience_normalized') or 'unknown provenience'}; "
+                        f"cosine {r['cosine']:.2f}"
+                    ),
+                    citation=citation,
+                )
+                bundle.facts.append(fact)
+                bundle.similar_tablets.append(
+                    SimilarTablet(
+                        n=n,
+                        p_number=r["p_number"],
+                        designation=r.get("designation"),
+                        period=r.get("period_normalized"),
+                        provenience=r.get("provenience_normalized"),
+                        cosine=r["cosine"],
+                    )
+                )
+        except (psycopg.errors.UndefinedTable, psycopg.errors.UndefinedFunction):
+            # entity_embeddings empty or pgvector ops not available
+            conn.rollback()
+
+    # Best-guess gate (see decisions.md): completeness ≤ 2 AND ≥3 similar tablets
+    bundle.best_guess_allowed = completeness <= 2 and len(bundle.similar_tablets) >= 3
+
+    return bundle
+
+
+# ── Token facts ───────────────────────────────────────────────────────────────
+
+
+def assemble_token_facts(
+    conn: psycopg.Connection,
+    p_number: str,
+    token_id: int,
+) -> TokenFactBundle | None:
+    """Pull token + neighbor + sign-candidate + genre-prior facts."""
+    bundle = TokenFactBundle(p_number=p_number, token_id=token_id)
+
+    # Token itself
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT t.id, t.raw_form, t.position, t.line_id,
+                   tl.line_number,
+                   a.period_normalized AS period,
+                   a.provenience_normalized AS provenience
+            FROM tokens t
+            JOIN text_lines tl ON t.line_id = tl.id
+            JOIN surfaces s ON tl.surface_id = s.id
+            JOIN artifacts a ON s.p_number = a.p_number
+            WHERE t.id = %s AND s.p_number = %s
+            """,
+            (token_id, p_number),
+        )
+        token = cur.fetchone()
+        if not token:
+            return None
+
+    _add_fact(
+        bundle.facts,
+        f"raw form: {token['raw_form']}",
+        "annotation_run",
+        "atf_parser",
+        "raw_form",
+    )
+
+    # Existing lemmatization (if any) — if present, this is a complete chain walk
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT lz.id AS lemmatization_id, ll.id AS lemma_id,
+                   ll.citation_form, ll.guide_word, ll.pos, ll.language,
+                   lz.annotation_run_id
+            FROM lemmatizations lz
+            JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
+            WHERE lz.token_id = %s
+            LIMIT 1
+            """,
+            (token_id,),
+        )
+        lem = cur.fetchone()
+
+    if lem:
+        bundle.is_fully_lemmatized = True
+        _add_fact(
+            bundle.facts,
+            f"lemma: {lem['citation_form']} (\"{lem.get('guide_word') or '—'}\", "
+            f"{lem.get('pos') or 'unknown POS'}, {lem.get('language') or 'unknown lang'})",
+            "lexical_lemma",
+            lem["lemma_id"],
+            f"lemma:{lem['lemma_id']}",
+            annotation_run_id=lem.get("annotation_run_id"),
+        )
+
+    # Neighbor context — 3 tokens before/after
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT t.id, t.raw_form, t.position,
+                   ll.citation_form, ll.guide_word
+            FROM tokens t
+            LEFT JOIN lemmatizations lz ON lz.token_id = t.id
+            LEFT JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
+            WHERE t.line_id = %s
+              AND t.id <> %s
+              AND ABS(t.position - %s) <= 3
+            ORDER BY t.position
+            """,
+            (token["line_id"], token_id, token["position"]),
+        )
+        neighbors = cur.fetchall()
+
+    for n_row in neighbors:
+        offset = n_row["position"] - token["position"]
+        lemma_label = (
+            f" → lemma \"{n_row.get('guide_word') or n_row['citation_form']}\""
+            if n_row.get("citation_form")
+            else ""
+        )
+        _add_fact(
+            bundle.facts,
+            f"neighbor (position {offset:+d}): \"{n_row['raw_form']}\"{lemma_label}",
+            "annotation_run",
+            "atf_parser",
+            f"neighbor:{offset:+d}",
+        )
+
+    # Artifact context (period, provenience, genre)
+    _add_fact(
+        bundle.facts,
+        f"artifact period: {token.get('period') or 'unknown'}",
+        "annotation_run",
+        "cdli_catalog",
+        "period",
+    )
+    _add_fact(
+        bundle.facts,
+        f"artifact provenience: {token.get('provenience') or 'unknown'}",
+        "annotation_run",
+        "cdli_catalog",
+        "provenience",
+    )
+
+    # Sign candidate readings (if no lemmatization)
+    if not bundle.is_fully_lemmatized:
+        with conn.cursor() as cur:
+            try:
+                cur.execute(
+                    """
+                    SELECT ls.id AS sign_id, ls.sign_name, ll.id AS lemma_id,
+                           ll.citation_form, ll.guide_word,
+                           lsla.attestation_count
+                    FROM lexical_sign_lemma_assoc lsla
+                    JOIN lexical_signs ls ON ls.id = lsla.sign_id
+                    JOIN lexical_lemmas ll ON ll.id = lsla.lemma_id
+                    WHERE ls.sign_name = ANY(
+                        SELECT regexp_split_to_table(%s, '[-.]')
+                    )
+                    ORDER BY lsla.attestation_count DESC NULLS LAST
+                    LIMIT 5
+                    """,
+                    (token["raw_form"],),
+                )
+                for r in cur.fetchall():
+                    _add_fact(
+                        bundle.facts,
+                        f"candidate sign reading: \"{r['sign_name']}\" → "
+                        f"lemma \"{r.get('guide_word') or r['citation_form']}\" "
+                        f"({r.get('attestation_count') or 0} attestations)",
+                        "lexical_lemma",
+                        r["lemma_id"],
+                        f"sign_candidate:{r['sign_id']}",
+                    )
+            except (psycopg.errors.UndefinedTable, psycopg.errors.UndefinedColumn):
+                conn.rollback()
+
+    return bundle

@@ -12,6 +12,12 @@ This is a **production academic application** for cuneiform / Assyriology schola
 - **macOS SSL workaround.** Python `urllib`/`requests` can fail on some HTTPS endpoints. Shell out to `curl` via `subprocess.run(...)`.
 - **Deployment is routed through `gs-expert-deployment`.** Never push to `main` with red CI, never modify the production Neon branch directly, never use `--no-verify`.
 
+## How to talk to Eric
+
+- **Explain things in plain English.** Avoid jargon, acronyms, and code-level shorthand when explaining what something is, why it matters, or what to do about it. If a technical term is unavoidable, define it inline the first time. Save the precise terminology for the code itself.
+- **When you've made an assumption, say what you assumed and what could go wrong.** Don't bury caveats inside short bracketed asides — spell out the situation, why it might bite, and what to do if it does.
+- **Recommend a path, don't just list options.** When several approaches work, name the one Eric should try first and why. Other options come after.
+
 ## Where to look first
 
 Open `gs-orient-project/SKILL.md` for the routing map. That skill auto-loads at session start. Other skills are triggered by keywords:
@@ -41,9 +47,8 @@ Open `gs-orient-project/SKILL.md` for the routing map. That skill auto-loads at 
 README.md                       Public-facing project intro
 CLAUDE.md                       This file
 docs/                           Reference docs (onboarding, research, opportunities, personas, ideas, prototypes)
-data-model/                     Schema YAMLs + migrate.py + source-schemas/
+data-model/                     Schema YAMLs + migrate.py + migrations/ (NNN_*.sql)
 docs/data-model/                Narrative docs about the schema + pipeline
-source-data/migrations/         SQL migrations (NNN_*.sql)
 ingestion/                      ETL framework
 ops/                            Deployment, local dev, hooks
 .claude/skills/gs-*/            Project-local knowledge skills
