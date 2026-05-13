@@ -43,6 +43,17 @@ jobs:
             echo "release_tag=staging-$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
 
+      # deploy.sh runs `python ops/build_docs.py` on the GHA runner (the docs
+      # site is built here, then rsynced to the server). That script needs
+      # markdown + PyYAML — install them before the deploy step.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install build deps
+        run: pip install --quiet markdown PyYAML
+
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
