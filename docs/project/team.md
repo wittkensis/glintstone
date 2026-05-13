@@ -2,8 +2,6 @@
 
 **Eric Wittke** built Glintstone and maintains the data model, ingestion pipeline, API, and web platform. He is responsible for decisions about schema design, source prioritization, and the trust infrastructure. [Get in touch](mailto:eric.wittke@gmail.com).
 
-**Edward Williams**, author of [DeepScribe](https://deepscribe.io), contributed early thinking on ML sign detection integration. His work on computer vision for cuneiform sign recognition shapes how Glintstone represents machine-annotated sign data.
-
 ## The scholarship behind the data
 
 Glintstone is a federation layer. The underlying scholarship — the transliterations, lemmatizations, sign catalogs, dictionaries — was produced by hundreds of Assyriologists over decades. Each source is credited structurally in every imported record via `annotation_run_id`.
