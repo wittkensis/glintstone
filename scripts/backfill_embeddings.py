@@ -141,11 +141,12 @@ def _iter_translations(conn: psycopg.Connection) -> Iterable[tuple[str, str]]:
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT s.p_number, string_agg(t.text, ' ' ORDER BY tl.line_number) AS blob
+            SELECT t.p_number,
+                   string_agg(t.translation, ' ' ORDER BY tl.line_number NULLS LAST) AS blob
             FROM translations t
-            JOIN text_lines tl ON t.line_id = tl.id
-            JOIN surfaces s ON tl.surface_id = s.id
-            GROUP BY s.p_number
+            LEFT JOIN text_lines tl ON t.line_id = tl.id
+            WHERE t.translation IS NOT NULL AND t.translation <> ''
+            GROUP BY t.p_number
             """
         )
         for row in cur:
