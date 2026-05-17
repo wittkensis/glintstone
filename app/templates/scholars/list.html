@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Scholars - Glintstone{% endblock %}
+
+{% block content %}
+<main class="scholars-page page-wide">
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <h1>Scholars</h1>
+                <p class="page-header-meta">
+                    {{ total }} {{ 'scholar' if total == 1 else 'scholars' }}
+                    {%- if search %} matching "<em>{{ search }}</em>"{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {% if scholars %}
+    <ul class="scholar-list">
+        {% for s in scholars %}
+        <li class="scholar-list__row">
+            <div class="scholar-list__avatar">
+                <span class="scholar-list__initials">
+                    {{ (s.normalized_name or s.name)[:2]|upper }}
+                </span>
+            </div>
+            <div class="scholar-list__body">
+                <div class="scholar-list__name">{{ s.name }}</div>
+                {% if s.institution %}
+                <div class="scholar-list__institution">{{ s.institution }}</div>
+                {% endif %}
+                <div class="scholar-list__meta">
+                    {% if s.author_type %}<span class="badge badge--neutral">{{ s.author_type }}</span>{% endif %}
+                    {% if s.expertise_periods %}<span class="scholar-list__expertise">{{ s.expertise_periods }}</span>{% endif %}
+                    {% if s.expertise_languages %}<span class="scholar-list__expertise">{{ s.expertise_languages }}</span>{% endif %}
+                </div>
+            </div>
+            {% if s.orcid %}
+            <a class="scholar-list__orcid" href="https://orcid.org/{{ s.orcid }}" target="_blank" rel="noopener">ORCID</a>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+
+    {% if total_pages > 1 %}
+    <nav class="pagination" aria-label="Pagination">
+        {% if page > 1 %}
+        <a class="pagination__link" href="?search={{ search|urlencode }}&page={{ page - 1 }}">Previous</a>
+        {% endif %}
+        <span class="pagination__current">Page {{ page }} of {{ total_pages }}</span>
+        {% if page < total_pages %}
+        <a class="pagination__link" href="?search={{ search|urlencode }}&page={{ page + 1 }}">Next</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+    {% else %}
+    <p class="empty-state">
+        {% if search %}No scholars matched "<em>{{ search }}</em>".{% else %}No scholars yet.{% endif %}
+    </p>
+    {% endif %}
+</main>
+{% endblock %}

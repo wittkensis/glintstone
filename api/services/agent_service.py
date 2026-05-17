@@ -146,8 +146,9 @@ def do_search(
     for entity_type in types_requested:
         hits = results.groups.get(entity_type, [])
         total = results.totals.get(entity_type, 0)
-        items = [
-            {
+        items = []
+        for h in hits:
+            item: dict = {
                 "entity_id": h.entity_id,
                 "primary_label": h.primary_label,
                 "secondary_label": h.secondary_label,
@@ -155,8 +156,12 @@ def do_search(
                 "p_number": h.p_number_ref,
                 "sources": h.sources,
             }
-            for h in hits
-        ]
+            # Tablet-only display extras for the global-search drawer.
+            if entity_type == "tablets":
+                item["thumbnail_url"] = h.thumbnail_url
+                item["pipeline_completeness"] = h.pipeline_completeness
+                item["pipeline_stages"] = h.pipeline_stages
+            items.append(item)
 
         view_all = None
         if total > len(items):

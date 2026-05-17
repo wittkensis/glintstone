@@ -1,0 +1,112 @@
+{# Drawer body fragment — returned by /_search/suggest.
+   The drawer scaffold (input, Search-in chips, keyboard hints) lives in
+   global_search.html and stays in the DOM; only this body swaps.
+
+   NOTE: groups carry a key literally named "items" which collides with the
+   Python dict.items() method when accessed via Jinja dot notation. We use
+   `group['items']` throughout to bypass attribute resolution. #}
+
+{% macro entity_href(group_type, item) -%}
+    {%- if group_type == 'tablets' -%}/tablets/{{ item.p_number or item.entity_id }}
+    {%- elif group_type == 'composites' -%}/api/v2/composites/{{ item.entity_id }}
+    {%- elif group_type == 'collections' -%}/collections/{{ item.entity_id }}
+    {%- elif group_type == 'lemmas' -%}/dictionary?lemma={{ item.entity_id }}
+    {%- elif group_type == 'signs' -%}/dictionary?sign={{ item.entity_id }}
+    {%- elif group_type == 'glosses' -%}/dictionary?gloss={{ item.entity_id }}
+    {%- elif group_type == 'scholars' -%}/scholars/{{ item.entity_id }}
+    {%- else -%}#{{ group_type }}/{{ item.entity_id }}
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro section_title(group_type) -%}
+    {%- if group_type == 'tablets' -%}Artifacts
+    {%- elif group_type == 'composites' -%}Composites
+    {%- elif group_type == 'collections' -%}Collections
+    {%- elif group_type == 'lemmas' -%}Lemmas
+    {%- elif group_type == 'signs' -%}Signs
+    {%- elif group_type == 'glosses' -%}Glosses
+    {%- elif group_type == 'scholars' -%}Scholars
+    {%- else -%}{{ group_type|title }}
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro see_all_href(group_type, q) -%}
+    {%- if group_type == 'tablets' -%}/tablets?search={{ q|urlencode }}
+    {%- elif group_type == 'collections' -%}/collections?search={{ q|urlencode }}
+    {%- elif group_type in ('lemmas', 'signs', 'glosses') -%}/dictionary?search={{ q|urlencode }}
+    {%- elif group_type == 'scholars' -%}/scholars?search={{ q|urlencode }}
+    {%- else -%}/tablets?search={{ q|urlencode }}
+    {%- endif -%}
+{%- endmacro %}
+
+{% set has_any = groups|selectattr('total', 'gt', 0)|list|length > 0 %}
+
+<div class="search-drawer__body" data-q="{{ q }}" data-scope="{{ scope }}">
+
+  {% if not has_any %}
+    <div class="search-section">
+      <div class="search-section__header">
+        <span class="search-section__label">{{ scope_label }}</span>
+      </div>
+      <div class="search-empty">No results for "<span class="search-empty__q">{{ q }}</span>"</div>
+    </div>
+  {% endif %}
+
+  {% for group in groups %}
+    {% set rows = group['items'] %}
+    {% set total = group['total'] %}
+    {% set gtype = group['group_type'] %}
+    <section class="search-section" data-group-type="{{ gtype }}">
+      <header class="search-section__header">
+        <span class="search-section__label">{{ section_title(gtype) }}</span>
+        {% if total and total > rows|length %}
+          <a class="search-section__see-all"
+             href="{{ see_all_href(gtype, q) }}">See all {{ total }} {{ section_title(gtype)|lower }}</a>
+        {% endif %}
+      </header>
+
+      {% if rows %}
+        {% for item in rows %}
+          <a class="search-row search-row--{{ gtype }}"
+             href="{{ entity_href(gtype, item) }}"
+             role="option"
+             tabindex="-1"
+             data-result-index="{{ loop.index0 }}">
+            <span class="search-row__thumb search-row__thumb--{{ gtype }}">
+              {% if gtype == 'tablets' and item.thumbnail_url %}
+                <img src="{{ item.thumbnail_url }}" alt="" loading="lazy">
+              {% else %}
+                <span class="search-row__letter">{{ (item.primary_label[:2] if item.primary_label else '?')|upper }}</span>
+              {% endif %}
+            </span>
+            <span class="search-row__text">
+              <span class="search-row__primary">{{ item.primary_label }}</span>
+              {% if item.secondary_label %}
+                <span class="search-row__secondary">{{ item.secondary_label }}</span>
+              {% endif %}
+            </span>
+            {% if gtype == 'tablets' and item.pipeline_stages %}
+              {# First not-yet-complete stage is the "active" (in-progress) gold dot. #}
+              {% set ns = namespace(active_marked=False) %}
+              <span class="pipeline-mini" aria-label="Pipeline completeness {{ item.pipeline_completeness or 0 }} of 5">
+                {% for stage in item.pipeline_stages %}
+                  {% if stage == 1 %}
+                    <span class="pipeline-mini__dot pipeline-mini__dot--complete"></span>
+                  {% elif not ns.active_marked %}
+                    <span class="pipeline-mini__dot pipeline-mini__dot--active"></span>
+                    {% set ns.active_marked = True %}
+                  {% else %}
+                    <span class="pipeline-mini__dot pipeline-mini__dot--idle"></span>
+                  {% endif %}
+                {% endfor %}
+              </span>
+            {% endif %}
+          </a>
+        {% endfor %}
+      {% else %}
+        <div class="search-empty">No results</div>
+      {% endif %}
+    </section>
+  {% endfor %}
+
+</div>

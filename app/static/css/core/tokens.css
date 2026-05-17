@@ -18,6 +18,7 @@
 
     /* Background colors - Dark theme base */
     --color-bg: #1a1a1a;                /* Main background */
+    --color-bg-rgb: 26, 26, 26;
     --color-bg-inset: #0a0a0a;          /* Inputs, high contrast surfaces */
       --color-bg-inset-rgb: 10, 10, 10;
     --color-bg-deep: #141414;           /* Sidebars in immersive views */
