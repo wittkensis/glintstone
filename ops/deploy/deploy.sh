@@ -127,6 +127,12 @@ EXCLUDES=(
     --exclude='ops/local'
 )
 
+# --- Build marketing docs locally before rsync so fresh HTML ships with the release ---
+if $deploy_marketing; then
+    echo "Building docs site..."
+    python "$PROJECT_DIR/ops/build_docs.py"
+fi
+
 # --- Always sync shared core + dependencies into the release ---
 echo "Syncing core/, requirements.txt, data-model/, ingestion/..."
 for d in core api app ingestion data-model marketing ops scripts mcp; do
@@ -204,11 +210,9 @@ if $deploy_app; then
     echo "  $WEB_SVC restarted"
 fi
 if $deploy_marketing; then
-    # Build docs into marketing/ on the runner, then sync the whole tree to nginx's root.
-    echo "Building docs site..."
-    python "$PROJECT_DIR/ops/build_docs.py"
-    echo "Syncing marketing/ → /var/www/glintstone/marketing/..."
-    rsync_to --exclude='.DS_Store' "$PROJECT_DIR/marketing/" "$REMOTE:/var/www/glintstone/marketing/"
+    # Nginx serves glintstone.org from shared/marketing/ (persists across releases).
+    echo "Syncing marketing/ → shared/marketing/..."
+    rsync_to --exclude='.DS_Store' "$PROJECT_DIR/marketing/" "$REMOTE:$SHARED_DIR/marketing/"
     ssh_run "sudo rc-service nginx reload" 2>/dev/null || ssh_run "sudo nginx -s reload" 2>/dev/null || true
     echo "  marketing/nginx reloaded"
 fi
