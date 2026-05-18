@@ -13,14 +13,14 @@ repos:
         entry: ops/hooks/pre-commit-docs.sh
         language: script
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]
 
       - id: schema-validation
         name: Database Schema Validation
         entry: ops/hooks/pre-push.sh
         language: script
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
 
       - id: dependency-warnings
         name: Dependency Sync Warnings
@@ -35,25 +35,25 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-        stages: [commit]
+        stages: [pre-commit]
       - id: ruff-format
-        stages: [commit]
+        stages: [pre-commit]
 
   # Standard hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        stages: [commit]
+        stages: [pre-commit]
       - id: end-of-file-fixer
-        stages: [commit]
+        stages: [pre-commit]
       - id: check-yaml
         args: ['--unsafe']
-        stages: [commit]
+        stages: [pre-commit]
       - id: check-added-large-files
         args: ['--maxkb=1000']
-        stages: [commit]
+        stages: [pre-commit]
       - id: check-merge-conflict
-        stages: [commit]
+        stages: [pre-commit]
       - id: mixed-line-ending
-        stages: [commit]
+        stages: [pre-commit]
