@@ -48,19 +48,18 @@ Open `gs-orient-project/SKILL.md` for the routing map. That skill auto-loads at 
 ```
 README.md                       Public-facing project intro
 CLAUDE.md                       This file
-docs/                           Reference docs (onboarding, research, opportunities, personas, ideas, prototypes)
 data-model/                     Schema YAMLs + migrate.py + migrations/ (NNN_*.sql)
-docs/data-model/                Narrative docs about the schema + pipeline
 ingestion/                      ETL framework
 ops/                            Deployment, local dev, hooks
 .claude/skills/gs-*/            Project-local knowledge skills
+docs/                           Persona HTML pages, interactive prototypes, navigation YAML
 ```
 
-Time-bound exploration goes in `docs/ideas.md` (not GitHub issues until actionable).
+Long-form narrative documentation (onboarding, data-model docs, API/MCP reference, research, opportunities, project) lives in the [GitHub Wiki](https://github.com/wittkensis/glintstone/wiki). Time-bound exploration lives on the [Ideas wiki page](https://github.com/wittkensis/glintstone/wiki/Ideas).
 
 ## YAML header on every doc
 
-Every Markdown file under the repo carries the schema defined in `gs-curator-docs/header-schema.md`. `gs-curator-docs/add-headers.py --check` validates the contract.
+Every Markdown file **in the working tree** carries the schema defined in `gs-curator-docs/header-schema.md`. `gs-curator-docs/add-headers.py --check` validates the contract. Wiki pages do NOT carry frontmatter — GitHub Wiki renders YAML as raw text.
 
 ## A note about `_archive/`
 
@@ -75,4 +74,4 @@ Don't recreate `_archive/` in the working tree.
 
 ## Deeper onboarding
 
-[`docs/engineer-onboarding.md`](docs/engineer-onboarding.md) is the Day 1–5 ramp-up. [`docs/assyriology-101.md`](docs/assyriology-101.md) is the 5-minute domain primer.
+[Engineer Onboarding](https://github.com/wittkensis/glintstone/wiki/Engineer-Onboarding) (wiki) is the Day 1–5 ramp-up. [Assyriology 101](https://github.com/wittkensis/glintstone/wiki/Assyriology-101) (wiki) is the 5-minute domain primer.

@@ -1,8 +1,8 @@
 ---
 question: "How do Sumerian, Akkadian, Hittite, and Elamite compare typologically — and what does that mean for the schema and the parser?"
 created: 2026-05-11
-modified: 2026-05-11
-context: "Synthesized from PLAN/Linguistics Schema/v2/Phase 1/Linguistics Schema Research (Claude/Gemini/Grok).md during the 2026-05-11 overhaul. The three reports answered the same comparative-typology question from different angles; this file extracts the core takeaways most directly useful for schema and parser decisions. Long-form synthesis with citations lives in docs/research/cuneiform-linguistics-synthesis.md."
+modified: 2026-05-18
+context: "Synthesized from PLAN/Linguistics Schema/v2/Phase 1/Linguistics Schema Research (Claude/Gemini/Grok).md during the 2026-05-11 overhaul. The three reports answered the same comparative-typology question from different angles; this file extracts the core takeaways most directly useful for schema and parser decisions. Long-form synthesis with citations lives on the Research-Cuneiform-Linguistics-Synthesis wiki page (https://github.com/wittkensis/glintstone/wiki/Research-Cuneiform-Linguistics-Synthesis)."
 status: active
 audience: [claude, engineers, scholars]
 owners: [eric]
@@ -150,5 +150,5 @@ This history matters for the schema: bilingual / trilingual texts are not edge c
 
 ## Where to read more
 
-- Long-form synthesis with citations: [docs/research/cuneiform-linguistics-synthesis.md](../../../docs/research/cuneiform-linguistics-synthesis.md)
+- Long-form synthesis with citations: [Cuneiform Linguistics Synthesis (wiki)](https://github.com/wittkensis/glintstone/wiki/Research-Cuneiform-Linguistics-Synthesis)
 - The disagreement-tolerant schema design that flows from all of this: [`gs-expert-data-model/SKILL.md`](../gs-expert-data-model/SKILL.md)

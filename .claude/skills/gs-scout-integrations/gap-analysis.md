@@ -1,8 +1,8 @@
 ---
 question: "Where does Glintstone have its biggest data gaps today — and which gaps would a new integration close?"
 created: 2026-05-11
-modified: 2026-05-11
-context: "Created during the 2026-05-11 overhaul. The gaps come from docs/data-model/data-issues.md and from the row counts in gs-orient-project. Update when significant ingestion lands."
+modified: 2026-05-18
+context: "Created during the 2026-05-11 overhaul. The gaps come from the Data-Model-Data-Issues wiki page (https://github.com/wittkensis/glintstone/wiki/Data-Model-Data-Issues) and from the row counts in gs-orient-project. Update when significant ingestion lands."
 status: active
 audience: [claude, engineers]
 owners: [eric]
@@ -14,7 +14,7 @@ superseded_by: null
 
 # Coverage gaps (highest-impact integration targets)
 
-Ranked by how much pain a fix would relieve. Verify against `docs/data-model/data-issues.md` for the canonical list.
+Ranked by how much pain a fix would relieve. Verify against the [Data Issues wiki page](https://github.com/wittkensis/glintstone/wiki/Data-Model-Data-Issues) for the canonical list.
 
 ## Tier 1 — most impactful
 

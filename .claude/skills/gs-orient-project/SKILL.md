@@ -4,13 +4,13 @@ description: Always-on orientation. Loads at session start to ground Claude in G
 metadata:
   question: "What is Glintstone, where does its code live, and which skill should I use for X?"
   created: 2026-05-11
-  modified: 2026-05-11
+  modified: 2026-05-18
   context: "Created during the knowledge architecture overhaul as the always-on orientation skill. Replaces the stale SessionStart hook that referenced retired v1 paths."
   status: active
   audience: [claude, engineers]
   owners: [eric]
   related_issues: ["#60"]
-  related_skills: [gs-expert-integrations, gs-expert-data-model, gs-expert-ui, gs-expert-deployment, gs-expert-assyriology, gs-scout-integrations, gs-curator-artifacts, gs-curator-docs]
+  related_skills: [gs-expert-integrations, gs-expert-data-model, gs-expert-ui, gs-expert-deployment, gs-expert-assyriology, gs-scout-integrations, gs-curator-artifacts, gs-curator-docs, gs-audit-hardening]
   supersedes: null
   superseded_by: null
   triggers: [glintstone, cuneiform, tablet, p-number, P-number, ATF, scholar, "what is", "where is", "where does", "how does", project overview]
@@ -48,7 +48,6 @@ ingestion/            ETL framework — SEE gs-expert-integrations
   cli.py              `python -m ingestion.cli list|run|status|dead-letters`
   connectors/         One file per source (cdli_catalog.py, oracc_lemmatizations.py, …)
 data-model/           Schema YAMLs + migrate.py + source-schemas/
-docs/data-model/      Narrative docs about the schema + pipeline
 source-data/
   migrations/         NNN_*.sql — SEE gs-expert-data-model
   sources/            Raw data (gitignored, ~16 GB)
@@ -58,9 +57,10 @@ ops/
   deploy/             deploy.sh + rollback.sh — SEE gs-expert-deployment
   hooks/              git hooks (warn-only freshness checks)
 tests/                pytest suite
-docs/                 Long-form reference (onboarding, research, opportunities, personas)
 .claude/skills/gs-*/  This knowledge base
 ```
+
+Long-form narrative documentation (onboarding, data-model docs, research, opportunities, personas) lives in the [GitHub Wiki](https://github.com/wittkensis/glintstone/wiki).
 
 ## Current scale (as-of 2026-05-11)
 
@@ -89,6 +89,8 @@ Coverage gap: only ~2% of artifacts are lemmatized, ~35% have ATF, ~12% have tra
 | HuggingFace URL, new model, new dataset, "should we integrate X" | **gs-scout-integrations** |
 | "find a tablet with…", "give me a test scholar / lemma / sign", "scenario for…", "interesting Q-number" | **gs-curator-artifacts** |
 | commit, push, ship, PR, release | **gs-curator-docs** |
+| audit, harden, "security review", "deployment review", "performance audit", "run the audit" | **gs-audit-hardening** |
+| "frontend audit", "design audit", "css audit", "design system", "frontend entropy", "clean up the css" | **gs-audit-frontend** |
 
 ## Non-negotiables
 
@@ -101,8 +103,9 @@ Coverage gap: only ~2% of artifacts are lemmatized, ~35% have ATF, ~12% have tra
 
 ## Deeper reading
 
-- [docs/engineer-onboarding.md](../../../docs/engineer-onboarding.md) — Day 1–5 ramp-up
-- [docs/assyriology-101.md](../../../docs/assyriology-101.md) — 5-minute domain primer
+- [Engineer Onboarding (wiki)](https://github.com/wittkensis/glintstone/wiki/Engineer-Onboarding) — Day 1–5 ramp-up
+- [Assyriology 101 (wiki)](https://github.com/wittkensis/glintstone/wiki/Assyriology-101) — 5-minute domain primer
+- [Wiki home](https://github.com/wittkensis/glintstone/wiki) — full long-form documentation tree
 - [data-model/](../../../data-model/) — canonical schema + per-source docs
 - [`README.md`](../../../README.md) — public-facing project intro
 - [`CLAUDE.md`](../../../CLAUDE.md) — durable rules every Claude session loads

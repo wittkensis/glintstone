@@ -100,7 +100,7 @@ ORACC projects: DCCLT, RINAP, SAAo, RIAo, RIBo, RIME, ETCSRI, ETCSL, BLMS, CAMS,
 | **CDLI** | Scholar name registry, ATF editor and author attribution | CC BY-SA |
 | **Wikipedia / Wikidata** | Assyriologist name resolution, Wikidata QIDs for disambiguation | CC BY-SA 4.0 / CC0 |
 
-For detailed field mappings, update frequencies, and access methods per source, see [data-sources.md](docs/data-model/data-sources.md).
+For detailed field mappings, update frequencies, and access methods per source, see [Data Sources (wiki)](https://github.com/wittkensis/glintstone/wiki/Data-Model-Data-Sources).
 
 ---
 
@@ -137,13 +137,6 @@ data-model/
   source-mapping.yaml         Per-source field mappings
   source-schemas/             Reference schemas (CDLI, ORACC, eBL, ePSD2, OGSL)
   migrate.py                  SQL migration runner
-docs/data-model/              Narrative docs about the schema + pipeline
-  data-sources.md             Per-source licenses + access
-  data-quality.md             Trust architecture + provenance
-  ml-integration.md           BabyLemmatizer, DETR, Akkademia
-  data-issues.md              Known data-quality issues
-  citation-pipeline-summary.md
-  import-pipeline-guide.md    ETL overview
 source-data/
   migrations/            NNN_*.sql files applied by data-model/migrate.py
   import-tools/          [LEGACY] v1 numbered import scripts, retiring as v2
@@ -233,7 +226,7 @@ The legacy discrete `DB_HOST`/`DB_PORT`/etc. vars still work as fallback.
 - GDL normalization into queryable tables
 - ORACC data versioning across releases
 
-See [data-issues.md](docs/data-model/data-issues.md) for the full list.
+See [Data Issues (wiki)](https://github.com/wittkensis/glintstone/wiki/Data-Model-Data-Issues) for the full list.
 
 ---
 
@@ -247,13 +240,14 @@ The core infrastructure is language-agnostic. Trust tracking, provenance chains,
 
 | Document | Purpose |
 |----------|---------|
+| [Wiki home](https://github.com/wittkensis/glintstone/wiki) | All long-form narrative documentation |
 | [Schema](data-model/glintstone-schema.yaml) | Full schema specification (70+ tables) |
-| [Data Sources](docs/data-model/data-sources.md) | Per-source field mappings, licenses, access methods |
-| [Data Quality](docs/data-model/data-quality.md) | Trust architecture, competing interpretations, evidence chains |
-| [ML Integration](docs/data-model/ml-integration.md) | BabyLemmatizer, DETR, Akkademia model integration |
-| [Import Pipeline](docs/data-model/import-pipeline-guide.md) | 19-step ETL overview |
-| [Data Issues](docs/data-model/data-issues.md) | Critical issues from pressure testing |
-| [Citation Pipeline](docs/data-model/citation-pipeline-summary.md) | Citation sourcing from 9 external sources |
+| [Data Sources (wiki)](https://github.com/wittkensis/glintstone/wiki/Data-Model-Data-Sources) | Per-source field mappings, licenses, access methods |
+| [Data Quality (wiki)](https://github.com/wittkensis/glintstone/wiki/Data-Model-Data-Quality) | Trust architecture, competing interpretations, evidence chains |
+| [ML Integration (wiki)](https://github.com/wittkensis/glintstone/wiki/Data-Model-ML-Integration) | BabyLemmatizer, DETR, Akkademia model integration |
+| [Import Pipeline (wiki)](https://github.com/wittkensis/glintstone/wiki/Data-Model-Import-Pipeline-Guide) | 19-step ETL overview |
+| [Data Issues (wiki)](https://github.com/wittkensis/glintstone/wiki/Data-Model-Data-Issues) | Critical issues from pressure testing |
+| [Citation Pipeline (wiki)](https://github.com/wittkensis/glintstone/wiki/Data-Model-Citation-Pipeline-Summary) | Citation sourcing from 9 external sources |
 | [Source Mappings](data-model/source-mapping.yaml) | Field-level source-to-schema mappings |
 | [Import Pipeline Spec](data-model/import-pipeline.yaml) | Full technical ETL specification |
 | [Deployment](ops/deploy/DEPLOY.md) | VPS provisioning and deployment |

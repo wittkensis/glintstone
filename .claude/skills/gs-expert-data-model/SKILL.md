@@ -4,7 +4,7 @@ description: Glintstone schema expert — 5-layer model, migration workflow + fr
 metadata:
   question: "What does Glintstone's schema look like, what tables matter, and what skill file should I open for migrations / queries / lexical API?"
   created: 2026-05-11
-  modified: 2026-05-11
+  modified: 2026-05-18
   context: "Created during the 2026-05-11 knowledge architecture overhaul. Owns migration freshness: every commit touching source-data/migrations/ must also touch this skill's migrations.md and data-model/glintstone-schema.yaml. The lexical-api content migrated here from PLAN/lexical-api.md."
   status: active
   audience: [claude, engineers]
@@ -95,7 +95,7 @@ Seeded by `ingestion/connectors/lookup_tables.py`.
 - `data-model/glintstone-schema-api.yaml` — API surface
 - `data-model/source-mapping.yaml` — field mappings per source
 - `data-model/import-pipeline.yaml` — ETL specification
-- `docs/data-model/data-issues.md` — known gaps
+- [Data Issues (wiki)](https://github.com/wittkensis/glintstone/wiki/Data-Model-Data-Issues) — known gaps
 
 ## Freshness contract
 

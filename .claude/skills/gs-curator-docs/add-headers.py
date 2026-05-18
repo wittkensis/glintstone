@@ -6,7 +6,7 @@ Owned by gs-curator-docs. Schema lives in header-schema.md.
 
 Usage:
     python add-headers.py --check          # exit 1 if any file is missing/invalid
-    python add-headers.py --check --paths data-model docs   # check subset
+    python add-headers.py --check --paths data-model .claude/skills   # check subset
     python add-headers.py                  # write stub headers to files missing one
     python add-headers.py --dry-run        # show what would change
 

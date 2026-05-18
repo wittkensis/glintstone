@@ -4,7 +4,7 @@ description: Glintstone's agentic surface — MCP + REST in unison, grounded syn
 metadata:
   question: "How is the agentic surface (MCP + REST) wired, how do grounded summaries cite sources, and how does the system learn from every interaction?"
   created: 2026-05-12
-  modified: 2026-05-12
+  modified: 2026-05-18
   context: "Created during the agentic-architecture planning thread (2026-05-12). Owns the Pydantic-first contract that keeps MCP and REST aligned, the ToolResponse envelope, the own-rolled citation contract, the three hero scenarios, and the agent learning loop."
   status: active
   audience: [claude, engineers]
@@ -89,6 +89,6 @@ Enforced by `gs-curator-docs`. Any commit touching the above must touch the matc
 
 ## Deeper reading
 
-- [docs/agent-surface.md](../../../docs/agent-surface.md) — generated from this skill + Pydantic schemas; the public-facing version
+- [MCP Reference (wiki)](https://github.com/wittkensis/glintstone/wiki/Reference-MCP) — public-facing tool documentation generated from this skill + Pydantic schemas
 - Issue [#25](https://github.com/wittkensis/glintstone/issues/25) — Global Semantic Search PRD (closes naturally as scenario 1 stabilizes)
 - Issue [#55](https://github.com/wittkensis/glintstone/issues/55) / [#56](https://github.com/wittkensis/glintstone/issues/56) — Knowledge Bar PRDs that consume `summarize_artifact` and `interpret_token`

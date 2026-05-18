@@ -4,7 +4,7 @@ description: Ancient Near East linguistics domain expert — ATF format, languag
 metadata:
   question: "When am I working on a cuneiform / ANE-linguistics question, and what topic file should I open first?"
   created: 2026-05-11
-  modified: 2026-05-11
+  modified: 2026-05-18
   context: "Re-homed from .claude/skills-disabled/assyriology/SKILL.md and split into topic files during the 2026-05-11 knowledge architecture overhaul. The previous 300-line monoskill mixed ATF, morphology, sources, and lexical schema — split here for progressive disclosure."
   status: active
   audience: [claude, engineers, scholars]
@@ -47,8 +47,8 @@ Domain expertise for cuneiform writing and the languages it records: Akkadian, S
 
 ## Outbound references
 
-- 5-minute primer: [docs/assyriology-101.md](../../../docs/assyriology-101.md)
-- Long-form research: [docs/research/](../../../docs/research/) — ecosystem, translation history, curriculum structures, academic workflows
+- 5-minute primer: [Assyriology 101 (wiki)](https://github.com/wittkensis/glintstone/wiki/Assyriology-101)
+- Long-form research (wiki): [Cuneiform Linguistics Synthesis](https://github.com/wittkensis/glintstone/wiki/Research-Cuneiform-Linguistics-Synthesis), [Ecosystem Report](https://github.com/wittkensis/glintstone/wiki/Research-Ecosystem-Report), [Academic Workflows](https://github.com/wittkensis/glintstone/wiki/Research-Academic-Workflows), [Curriculum Structures](https://github.com/wittkensis/glintstone/wiki/Research-Curriculum-Structures), [Translation History — Gemini](https://github.com/wittkensis/glintstone/wiki/Research-Translation-History-Gemini), [Translation History — Grok](https://github.com/wittkensis/glintstone/wiki/Research-Translation-History-Grok)
 - Lexicography terminology source: pulled into [lexical-model.md](lexical-model.md) from `PLAN/Dictionary Taxonomies/Lexicography Terminology.md` (deprecated path)
 
 ## When to bring in another skill

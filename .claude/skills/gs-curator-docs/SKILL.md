@@ -4,7 +4,7 @@ description: Owns Glintstone's YAML doc-header schema and the freshness contract
 metadata:
   question: "How do I keep Glintstone's documentation honest and in sync with the code?"
   created: 2026-05-11
-  modified: 2026-05-11
+  modified: 2026-05-18
   context: "Created during the knowledge architecture overhaul to define the YAML header schema and the doc-freshness contract that every other skill and doc relies on."
   status: active
   audience: [claude, engineers]
@@ -27,7 +27,9 @@ It runs whenever Claude is about to commit or push, and whenever staged changes 
 
 ## YAML header (canonical schema)
 
-Every Markdown file under the repo (skills, `docs/`, `data-model/`, `ops/`, READMEs, `CLAUDE.md`) starts with this block. Full schema in [header-schema.md](header-schema.md).
+Every Markdown file **in the working tree** (skills, `data-model/`, `ops/`, READMEs, `CLAUDE.md`) starts with this block. Full schema in [header-schema.md](header-schema.md).
+
+> **Wiki pages do NOT carry frontmatter.** Long-form documentation moved to the [GitHub Wiki](https://github.com/wittkensis/glintstone/wiki) on 2026-05-18; GitHub Wiki renders YAML frontmatter as raw text, so it must not be present. See "Editing the wiki" below.
 
 ```yaml
 ---
@@ -64,6 +66,45 @@ When staged changes include any of these paths, the matching doc must also be to
 
 The hook is **warn-only**. It never blocks a push. Deployment-safety checks (e.g. red CI) DO block, but those live in `gs-expert-deployment`.
 
+### Wiki freshness (narrative docs)
+
+The long-form narrative docs live in the [GitHub Wiki](https://github.com/wittkensis/glintstone/wiki) and are NOT enforced by the in-tree pre-push hook (wiki is a separate git repo). Instead:
+
+- When a commit touches a code surface documented on the wiki, **add a one-line note in the commit body** naming the wiki page that may need an update. Example: `Wiki follow-up: Reference-API-Artifacts may need refresh.`
+- Code surface → wiki page map:
+  | Code path | Wiki page |
+  |---|---|
+  | `api/routes/artifacts*.py`, `api/schemas/artifact*.py` | [Reference-API-Artifacts](https://github.com/wittkensis/glintstone/wiki/Reference-API-Artifacts) |
+  | `api/routes/search*.py`, `gs_mcp/`, `core/agent/` | [Reference-API-Search-Agentic](https://github.com/wittkensis/glintstone/wiki/Reference-API-Search-Agentic), [Reference-MCP](https://github.com/wittkensis/glintstone/wiki/Reference-MCP) |
+  | `api/routes/dictionary*.py`, `core/lexical.py` | [Reference-API-Dictionary](https://github.com/wittkensis/glintstone/wiki/Reference-API-Dictionary) |
+  | `api/routes/collections*.py` | [Reference-API-Collections](https://github.com/wittkensis/glintstone/wiki/Reference-API-Collections) |
+  | `api/routes/composites*.py` | [Reference-API-Composites](https://github.com/wittkensis/glintstone/wiki/Reference-API-Composites) |
+  | `data-model/glintstone-schema.yaml` (layer changes) | [Reference-Data-Model](https://github.com/wittkensis/glintstone/wiki/Reference-Data-Model) and the per-layer pages |
+  | `ingestion/connectors/*.py` (new source) | [Data-Model-Data-Sources](https://github.com/wittkensis/glintstone/wiki/Data-Model-Data-Sources) |
+  | ingestion pipeline structural changes | [Data-Model-Import-Pipeline-Guide](https://github.com/wittkensis/glintstone/wiki/Data-Model-Import-Pipeline-Guide) |
+  | `gs_mcp/server_stdio.py`, MCP tool signatures | corresponding [Reference-MCP-*](https://github.com/wittkensis/glintstone/wiki/Reference-MCP) page |
+
+Leaving the note in the commit body lets the user batch wiki updates without blocking deploys.
+
+## Editing the wiki
+
+The GitHub Wiki is a separate git repository (`https://github.com/wittkensis/glintstone.wiki.git`). To edit:
+
+```bash
+git clone https://github.com/wittkensis/glintstone.wiki.git /tmp/glintstone-wiki
+cd /tmp/glintstone-wiki
+# edit Foo-Page.md
+git add -A && git commit -m "update Foo-Page" && git push origin master
+```
+
+Rules of the road:
+
+- **No YAML frontmatter.** Wiki pages must start with a markdown `# Heading`.
+- **Page names are flat with hyphens.** `Reference-API-Artifacts.md` not `reference/api/artifacts.md`.
+- **Cross-links are bare page names.** Use `[Artifacts](Reference-API-Artifacts)` — no `.md`, no `/wiki/` prefix.
+- **Default branch is `master`** (not `main`).
+- `Home.md`, `_Sidebar.md`, `_Footer.md` are special — they render on every wiki page. Keep the sidebar in sync when you add a new page.
+
 ## Staleness rule
 
 Any doc whose `modified:` stamp is older than **60 days** AND that lives in one of these categories surfaces in the freshness check:
@@ -71,7 +112,8 @@ Any doc whose `modified:` stamp is older than **60 days** AND that lives in one 
 - Skill files in `.claude/skills/`
 - Anything in `data-model/`
 - `README.md`, `CLAUDE.md`
-- `docs/` (except `docs/personas/` and `docs/research/` — research reports are point-in-time)
+
+(Wiki pages are not in scope for the in-tree staleness check. Treat the wiki as living documentation that contributors update opportunistically; the research-report pages there are explicitly point-in-time and don't need refreshing.)
 
 When you see a stale stamp, either:
 1. Re-confirm the content is still accurate, bump `modified:`, commit.
