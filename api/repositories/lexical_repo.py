@@ -1,9 +1,15 @@
 """Lexical repository — browse signs, lemmas, and glosses with filters."""
 
 import math
+import unicodedata
 from collections import defaultdict
 
 from core.repository import BaseRepository
+
+
+def _nfc(value: str) -> str:
+    return unicodedata.normalize("NFC", value)
+
 
 # POS code → full label
 POS_LABELS = {
@@ -128,7 +134,7 @@ class LexicalRepository(BaseRepository):
             conditions.append(
                 "(l.citation_form ILIKE %(search)s OR l.guide_word ILIKE %(search)s)"
             )
-            params["search"] = f"%{search}%"
+            params["search"] = f"%{_nfc(search)}%"
         if language:
             # Language family matching (akk includes akk-x-stdbab)
             lang_conds = []
@@ -223,11 +229,12 @@ class LexicalRepository(BaseRepository):
         params: dict = {}
 
         if search:
+            normalized = _nfc(search)
             conditions.append(
                 "(s.sign_name ILIKE %(search)s OR %(search_exact)s = ANY(s.values))"
             )
-            params["search"] = f"%{search}%"
-            params["search_exact"] = search.lower()
+            params["search"] = f"%{normalized}%"
+            params["search_exact"] = normalized.lower()
         if language:
             # Check if any of the selected languages overlap with sign's language_codes
             lang_conds = []
@@ -319,7 +326,7 @@ class LexicalRepository(BaseRepository):
 
         if search:
             conditions.append("l.guide_word ILIKE %(search)s")
-            params["search"] = f"%{search}%"
+            params["search"] = f"%{_nfc(search)}%"
         if language:
             lang_conds = []
             for i, lang in enumerate(language):
@@ -469,7 +476,7 @@ class LexicalRepository(BaseRepository):
 
     def get_gloss_detail(self, guide_word: str, pos: str | None = None) -> dict | None:
         conditions = ["l.guide_word = %(gw)s"]
-        params: dict = {"gw": guide_word}
+        params: dict = {"gw": _nfc(guide_word)}
         if pos:
             conditions.append("l.pos = %(pos)s")
             params["pos"] = pos
@@ -522,7 +529,7 @@ class LexicalRepository(BaseRepository):
         Returns candidates ranked by attestation count.
         Used by Knowledge Bar for S1/S3 disambiguation.
         """
-        params: dict = {"form": form_text}
+        params: dict = {"form": _nfc(form_text)}
         lang_filter = ""
         if language:
             lang_filter = "AND ll.language_code LIKE %(lang)s"
