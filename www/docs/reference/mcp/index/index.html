@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overview — Glintstone Docs</title>
+  <meta name="description" content="Glintstone documentation — federated cuneiform research platform.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            g: {
+              bg: '#1a1a1a',
+              elevated: '#242424',
+              inset: '#0a0a0a',
+              surface: '#303030',
+              accent: '#c9a962',
+              'accent-hover': '#d4b97a',
+              'accent-muted': '#8b7642',
+              text: '#e8e6e3',
+              muted: '#a0a0a0',
+              subtle: '#707070',
+              border: '#404040',
+              'border-subtle': '#303030',
+              lapis: '#4a6fa5',
+              clay: '#c19a6b',
+              success: '#6b8e6b',
+            }
+          },
+          fontFamily: {
+            display: ['Playfair Display', 'serif'],
+            body: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <link rel="icon" href="data:image/svg+xml,<svg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'><circle cx='64' cy='64' r='60' fill='%230a0e14'/><path d='M64 20L68 58H60Z' fill='%23d4af37'/><path d='M64 108L68 70H60Z' fill='%23d4af37'/><path d='M20 64L58 68V60Z' fill='%23d4af37'/><path d='M108 64L70 68V60Z' fill='%23d4af37'/><path d='M36 36L56 54 50 58 32 40Z' fill='%23c19a6b'/><path d='M92 36L74 54 70 50 96 32Z' fill='%23c19a6b'/><path d='M36 92L54 74 58 78 32 96Z' fill='%23c19a6b'/><path d='M92 92L74 74 78 70 96 96Z' fill='%23c19a6b'/><circle cx='64' cy='64' r='8' fill='%234a6fa5'/>">
+
+  <style>
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: #1a1a1a; color: #e8e6e3; font-family: 'Inter', system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #1a1a1a; }
+    ::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #505050; }
+
+.prose-glintstone h2 { font-family: 'Playfair Display', serif; font-size: 26px; color: #c9a962; margin: 2rem 0 0.75rem; line-height: 1; font-feature-settings: 'lnum' 1, 'pnum' 1; }
+.prose-glintstone h3 { font-family: 'Playfair Display', serif; font-size: 18px; color: #c9a962; margin: 1.5rem 0 0.5rem; line-height: 1; }
+.prose-glintstone p { font-family: 'Inter', system-ui, sans-serif; font-size: 14.4px; color: #888; line-height: 23px; margin: 0 0 1rem; }
+.prose-glintstone a { color: #c9a962; text-decoration: none; }
+.prose-glintstone a:hover { color: #d4b97a; text-decoration: underline; }
+.prose-glintstone code { font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; background: #0a0a0a; color: #e8e6e3; padding: 2px 6px; border-radius: 3px; }
+.prose-glintstone pre { background: #0a0a0a; border: 1px solid #404040; border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
+.prose-glintstone pre code { background: none; padding: 0; font-size: 13px; color: #e8e6e3; }
+.prose-glintstone table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 14px; }
+.prose-glintstone th { text-align: left; font-family: 'Inter', sans-serif; font-size: 12px; color: #707070; font-weight: 500; border-bottom: 1px solid #404040; padding: 8px 12px; }
+.prose-glintstone td { border-bottom: 1px solid #303030; padding: 8px 12px; font-family: 'Inter', sans-serif; font-size: 14px; color: #888; }
+.prose-glintstone ul, .prose-glintstone ol { font-family: 'Inter', sans-serif; font-size: 14.4px; color: #888; line-height: 23px; padding-left: 1.5rem; margin: 0 0 1rem; }
+.prose-glintstone li { margin-bottom: 0.25rem; }
+.prose-glintstone strong { color: #e8e6e3; font-weight: 600; }
+.prose-glintstone blockquote { border-left: 3px solid #c9a962; padding-left: 1rem; margin: 1rem 0; }
+.prose-glintstone blockquote p { color: #a0a0a0; }
+.prose-glintstone hr { border: none; border-top: 1px solid #404040; margin: 2rem 0; }
+
+  </style>
+
+</head>
+<body style="background:#1a1a1a;color:#e8e6e3;margin:0;padding:0;">
+<header style="position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(10,10,10,0.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(201,169,98,0.2);box-shadow:0 1px 2px rgba(0,0,0,0.2);">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:24px 32px 12px;">
+    <a href="/docs/" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:#e8e6e3;">
+      <svg class="h-4" viewBox="0 0 157 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M15.7607 0C15.5023 1.2245 15.1555 2.51143 14.8828 3.75586C14.5595 5.2864 14.2886 6.82851 14.0723 8.37793C13.9999 8.89719 13.862 9.51826 13.8281 10.0244C14.1767 9.77338 14.5722 9.41902 14.9043 9.13477C15.5966 8.54955 16.2748 7.94682 16.9375 7.32812C18.639 5.77884 20.3022 4.18778 21.9248 2.55566C22.1048 2.76727 22.2828 2.93944 22.4863 3.12695C22.0552 3.46834 21.3039 4.30988 20.8857 4.73535C19.4912 6.15339 18.1366 7.61164 16.8242 9.10645C16.2093 9.79897 15.6333 10.5236 15.002 11.1982C15.8992 11.3203 16.894 11.2814 17.8066 11.3545C20.5321 11.5728 23.266 11.5861 26 11.5889C26 11.8698 26.0021 12.1017 25.9717 12.3828C24.6743 12.382 23.3767 12.4031 22.0801 12.4463C20.919 12.4668 19.7577 12.5038 18.5977 12.5576C17.1969 12.6343 15.7032 12.7687 14.293 12.8672C14.6022 13.3346 15.6951 14.5496 16.0938 15.0029C18.0694 17.2497 20.1997 19.6051 22.3555 21.6758C22.1667 21.8567 21.9736 22.0371 21.7969 22.2295C21.3282 21.7829 20.8663 21.2927 20.3945 20.8369C19.1015 19.5889 17.7898 18.3599 16.4609 17.1504C15.738 16.4919 15.0103 15.8675 14.2773 15.2217C13.9772 14.9572 13.6027 14.6663 13.3359 14.3789C13.3204 14.7477 13.2517 15.1808 13.2285 15.5664L12.959 20.4551C12.8819 22.0299 12.8889 23.6992 12.874 25.2793C12.8593 25.4942 12.8631 25.7769 12.8594 25.9971L12.0508 26C12.0602 23.4816 12.01 20.9632 11.9004 18.4473C11.8609 17.4924 11.6547 16.2744 11.6992 15.3516C11.0529 16.0863 10.1847 17.3324 9.62012 18.1465C8.43866 19.8501 7.15094 21.8246 6.14941 23.6396C6.04792 23.3731 5.78334 23.0187 5.61133 22.7773C4.59249 21.3479 2.94695 19.8164 1.45605 18.8945C1.97989 18.6587 2.869 18.0729 3.38379 17.751C4.85425 16.8501 6.29026 15.8937 7.68848 14.8838C8.24548 14.4826 9.22366 13.695 9.75195 13.3984C8.92611 13.4607 8.42643 13.5634 7.61914 13.6816C5.0485 14.0635 2.50394 14.6055 0 15.3027C0.119245 14.9555 0.158617 14.4217 0.210938 14.0596C0.416026 12.6397 0.44861 11.3654 0.222656 9.94434C0.159958 9.55 0.129004 9.10806 0.0273438 8.71289C0.389736 8.76079 0.84458 8.90526 1.20996 8.99609C1.95001 9.18383 2.69294 9.36001 3.43848 9.52441C4.62565 9.77423 5.81659 10.006 7.01074 10.2197C7.43594 10.2926 7.85071 10.3232 8.28223 10.4053C7.94467 10.1826 7.64524 9.94052 7.31836 9.7041C6.85159 9.37342 6.38173 9.04699 5.90918 8.72461C4.4234 7.71509 2.90004 6.76185 1.34277 5.86719C2.47365 5.17475 3.95816 3.86486 4.81641 2.85156C5.01089 2.62165 5.19917 2.38552 5.37988 2.14453C5.53301 1.93626 5.86302 1.36096 6.03418 1.24805C6.13984 1.29204 6.67963 2.28713 6.78027 2.4541C8.08068 4.61151 9.46765 6.63865 10.9609 8.66699C10.8301 7.94625 10.7471 7.26188 10.6279 6.55273C10.4453 5.5197 10.2445 4.48997 10.0264 3.46387C9.88821 2.82121 9.72255 2.15569 9.57227 1.51367C9.45461 1.01111 9.27954 0.519084 9.18262 0.00292969C9.81041 0.0962944 10.5087 0.240564 11.1299 0.302734C12.7215 0.461896 14.1961 0.267307 15.7607 0ZM38.3926 3.55371C39.1821 3.55371 39.871 3.63767 40.459 3.80469C41.0471 3.95506 41.5516 4.14694 41.9717 4.38086C42.4085 4.59807 42.7786 4.78995 43.0811 4.95703C43.4002 5.10733 43.6855 5.18261 43.9375 5.18262C44.1895 5.18262 44.3832 5.06595 44.5176 4.83203C44.6519 4.5814 44.7521 4.19654 44.8193 3.67871H45.8281C45.8113 4.16316 45.7941 4.68985 45.7773 5.25781C45.7605 5.80916 45.7434 6.48614 45.7266 7.28809V10.2705H44.7188C44.5339 9.1177 44.1724 8.11478 43.6348 7.2627C43.0972 6.41083 42.4169 5.75095 41.5938 5.2832C40.7873 4.81541 39.8715 4.5811 38.8467 4.58105C37.6369 4.58105 36.603 4.90696 35.7461 5.55859C34.8892 6.21018 34.2339 7.15433 33.7803 8.39062C33.3266 9.61034 33.0996 11.0895 33.0996 12.8271C33.0996 15.4169 33.6042 17.4303 34.6123 18.8672C35.6204 20.3041 37.0235 21.0225 38.8213 21.0225C39.6278 21.0225 40.325 20.8971 40.9131 20.6465C41.5179 20.3959 41.9796 20.0448 42.2988 19.5938C42.6349 19.1426 42.8037 18.6162 42.8037 18.0146V16.1104C42.8037 15.6258 42.7274 15.2584 42.5762 15.0078C42.425 14.7572 42.1397 14.5817 41.7197 14.4814C41.3165 14.3645 40.7194 14.2893 39.9297 14.2559V13.3037C40.2825 13.3204 40.7957 13.3368 41.4678 13.3535C42.1566 13.3702 42.9551 13.3789 43.8623 13.3789C44.7022 13.3789 45.4245 13.3702 46.0293 13.3535C46.651 13.3368 47.1975 13.3204 47.668 13.3037V14.2559C47.1303 14.2893 46.7183 14.3645 46.4326 14.4814C46.1639 14.5984 45.9787 14.8068 45.8779 15.1074C45.7771 15.3915 45.7266 15.8263 45.7266 16.4111V21.7998H44.7695C44.6855 21.3821 44.5758 21.0813 44.4414 20.8975C44.307 20.7137 44.1056 20.6211 43.8369 20.6211C43.5681 20.6211 43.2571 20.6886 42.9043 20.8223C42.5683 20.9559 42.1819 21.1228 41.7451 21.3232C41.3083 21.507 40.7951 21.6661 40.207 21.7998C39.6359 21.9334 38.9555 22 38.166 22C36.5195 22 35.0829 21.6325 33.8564 20.8975C32.6299 20.1456 31.6799 19.1013 31.0078 17.7646C30.3358 16.4114 30.0001 14.824 30 13.0029C30 11.1317 30.353 9.4856 31.0586 8.06543C31.7643 6.64521 32.7476 5.54213 34.0078 4.75684C35.2679 3.95501 36.7294 3.55374 38.3926 3.55371Z" fill="currentColor"/>
+</svg>
+      <span style="font-family:'Playfair Display',serif;font-size:18px;color:#e8e6e3;letter-spacing:0.01em;">Docs</span>
+    </a>
+    <a href="https://app.glintstone.org" style="border:1px solid #404040;color:#e8e6e3;padding:9px 17px;border-radius:4px;font-family:'Inter',sans-serif;font-size:14.4px;text-decoration:none;transition:border-color 0.15s,color 0.15s;" onmouseover="this.style.borderColor='#c9a962';this.style.color='#c9a962';" onmouseout="this.style.borderColor='#404040';this.style.color='#e8e6e3';">Return to App</a>
+  </div>
+</header>
+<script>
+function toggleSection(id) {
+  var el = document.getElementById('sec-' + id);
+  var ch = document.getElementById('ch-' + id);
+  if (el.style.display === 'none') { el.style.display = 'block'; ch.textContent = '▾'; }
+  else { el.style.display = 'none'; ch.textContent = '▸'; }
+}
+</script>
+<div style="display:flex;padding-top:78px;">
+  <nav style="position:fixed;top:78px;left:0;width:240px;height:calc(100vh - 78px);overflow-y:auto;background:#111;border-right:1px solid #404040;padding:24px 0;z-index:40;"><div onclick="toggleSection('overview')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;"><span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#707070;">What Glintstone Is</span><span id="ch-overview" style="color:#707070;font-size:10px;">▸</span></div><div id="sec-overview" style="display:none;"><a href="/docs/overview/open-record/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">The Open Record</a><a href="/docs/overview/whats-missing/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">What's Missing</a><a href="/docs/overview/attribution/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Attribution</a><a href="/docs/overview/report-error/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Report an Error</a></div><div onclick="toggleSection('getting-started')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;"><span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#707070;">Getting Started</span><span id="ch-getting-started" style="color:#707070;font-size:10px;">▸</span></div><div id="sec-getting-started" style="display:none;"><a href="/docs/getting-started/app/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">The App</a><a href="/docs/getting-started/api/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">The API</a><a href="/docs/getting-started/mcp/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">With Claude (MCP)</a></div><div onclick="toggleSection('reference')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;"><span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#707070;">Reference</span><span id="ch-reference" style="color:#707070;font-size:10px;">▾</span></div><div id="sec-reference" style="display:block;"><div style="padding:16px 16px 4px;font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;color:#505050;letter-spacing:0.06em;">Data Sources</div><a href="/docs/reference/data-sources/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Data Sources</a><div style="padding:16px 16px 4px;font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;color:#505050;letter-spacing:0.06em;">Data Model</div><a href="/docs/reference/data-model/overview/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Overview</a><a href="/docs/reference/data-model/artifacts-layer/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Artifacts</a><a href="/docs/reference/data-model/texts-layer/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Texts</a><a href="/docs/reference/data-model/linguistic/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Linguistic Analysis</a><a href="/docs/reference/data-model/lexical/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Lexical Resources</a><a href="/docs/reference/data-model/scholarly/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Scholarly Context</a><div style="padding:16px 16px 4px;font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;color:#505050;letter-spacing:0.06em;">API Reference</div><a href="/docs/reference/api/index/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Overview</a><a href="/docs/reference/api/artifacts/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Artifacts</a><a href="/docs/reference/api/search-agentic/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Search & Agentic</a><a href="/docs/reference/api/dictionary/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Dictionary</a><a href="/docs/reference/api/collections/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Collections</a><a href="/docs/reference/api/composites/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Composites</a><a href="/docs/reference/api/stats/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Stats & Meta</a><div style="padding:16px 16px 4px;font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;color:#505050;letter-spacing:0.06em;">MCP Reference</div><a href="/docs/reference/mcp/index/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#c9a962;text-decoration:none;">Overview</a><a href="/docs/reference/mcp/semantic-search/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">semantic_search</a><a href="/docs/reference/mcp/summarize-artifact/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">summarize_artifact</a><a href="/docs/reference/mcp/interpret-token/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">interpret_token</a><a href="/docs/reference/mcp/submit-correction/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">submit_correction</a></div><div onclick="toggleSection('project')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;"><span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#707070;">Project</span><span id="ch-project" style="color:#707070;font-size:10px;">▸</span></div><div id="sec-project" style="display:none;"><a href="/docs/project/roadmap/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Roadmap</a><a href="/docs/project/open-questions/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Open Questions</a><a href="/docs/project/contributing/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Contributing</a><a href="/docs/project/team/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Team</a></div></nav>
+  <main style="flex:1;margin-left:240px;padding:48px 64px 96px;max-width:960px;">
+    <h1 style="font-family:'Playfair Display',serif;font-size:40px;line-height:52px;color:#e8e6e3;margin:0 0 1.5rem;font-weight:400;">Overview</h1>
+<div class="prose-glintstone"><p>The Glintstone MCP server exposes the corpus to Claude as four tools. It is a stdio server — Claude Desktop or Claude Code launches it as a subprocess and communicates over stdin/stdout.</p>
+<h2 id="architecture">Architecture</h2>
+<pre><code>Claude (Desktop or Code)
+  |
+  | MCP stdio protocol
+  |
+mcp/server_stdio.py
+  |
+  | httpx (HTTP)
+  |
+REST API (api.glintstone.org)
+  |
+  | psycopg
+  |
+PostgreSQL
+</code></pre>
+<p>The MCP server is a thin wrapper. It calls the same REST endpoints the web app uses. No separate logic, no separate data. Two-tier rule applies throughout.</p>
+<h2 id="installation">Installation</h2>
+<pre><code class="language-bash">pip install 'mcp[fastmcp]'
+</code></pre>
+<h2 id="configuration">Configuration</h2>
+<p>Add to <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>:</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;glintstone&quot;: {
+      &quot;command&quot;: &quot;python&quot;,
+      &quot;args&quot;: [&quot;-m&quot;, &quot;mcp.server_stdio&quot;],
+      &quot;cwd&quot;: &quot;/path/to/Glintstone&quot;,
+      &quot;env&quot;: {
+        &quot;GS_API_URL&quot;: &quot;https://api.glintstone.org/api/v2&quot;,
+        &quot;GS_CLIENT_LABEL&quot;: &quot;claude-desktop&quot;
+      }
+    }
+  }
+}
+</code></pre>
+<h2 id="the-four-tools">The four tools</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="/docs/reference/mcp/semantic-search/">semantic_search</a></td>
+<td>Search across tablets, lemmas, signs, scholars, publications, entities, composites</td>
+</tr>
+<tr>
+<td><a href="/docs/reference/mcp/summarize-artifact/">summarize_artifact</a></td>
+<td>Grounded narrative summary of a single tablet, lazy-cached</td>
+</tr>
+<tr>
+<td><a href="/docs/reference/mcp/interpret-token/">interpret_token</a></td>
+<td>Reading chain when lemmatized; ranked hypotheses when not</td>
+</tr>
+<tr>
+<td><a href="/docs/reference/mcp/submit-correction/">submit_correction</a></td>
+<td>Record a scholarly correction — flows into annotation_runs</td>
+</tr>
+</tbody>
+</table>
+<h2 id="when-to-use-mcp-vs-the-api-directly">When to use MCP vs the API directly</h2>
+<p><strong>Use MCP</strong> when you want conversational research with Claude: exploring the corpus by asking questions, following a train of thought across artifact types, requesting summaries or interpretations in prose.</p>
+<p><strong>Use the REST API directly</strong> when you need programmatic access from your own code, scripted ETL pipelines, or non-Claude clients. The API has finer-grained control over pagination, filtering, and response shape.</p>
+<p>Both surfaces expose the same underlying data. The MCP tools are structured to be useful to Claude in a research context; the REST API is structured to be useful to code.</p></div>
+  </main>
+</div>
+</body>
+</html>

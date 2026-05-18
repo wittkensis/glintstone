@@ -11,7 +11,7 @@
 # Usage:
 #   ./ops/deploy/deploy.sh                      # deploy everything
 #   ./ops/deploy/deploy.sh api                  # API only
-#   ./ops/deploy/deploy.sh app marketing        # web app + marketing site
+#   ./ops/deploy/deploy.sh app www               # web app + marketing site
 #
 # Env vars (all optional unless noted):
 #   DEPLOY_HOST       — VPS IP or hostname (REQUIRED; loaded from .env if unset)
@@ -72,15 +72,15 @@ rsync_to() { rsync -avz --delete -e "ssh ${SSH_OPTS[*]}" "$@"; }
 # --- Parse deploy targets ---
 TARGETS=("$@")
 if [ ${#TARGETS[@]} -eq 0 ]; then
-    TARGETS=(api app marketing)
+    TARGETS=(api app www)
 fi
-deploy_api=false; deploy_app=false; deploy_marketing=false
+deploy_api=false; deploy_app=false; deploy_www=false
 for target in "${TARGETS[@]}"; do
     case "$target" in
-        api)       deploy_api=true ;;
-        app)       deploy_app=true ;;
-        marketing) deploy_marketing=true ;;
-        *) echo "Unknown target: $target (use: api, app, marketing)" >&2; exit 1 ;;
+        api) deploy_api=true ;;
+        app) deploy_app=true ;;
+        www) deploy_www=true ;;
+        *) echo "Unknown target: $target (use: api, app, www)" >&2; exit 1 ;;
     esac
 done
 
@@ -127,15 +127,15 @@ EXCLUDES=(
     --exclude='ops/local'
 )
 
-# --- Build marketing docs locally before rsync so fresh HTML ships with the release ---
-if $deploy_marketing; then
+# --- Build docs locally before rsync so fresh HTML ships with the release ---
+if $deploy_www; then
     echo "Building docs site..."
     python "$PROJECT_DIR/ops/build_docs.py"
 fi
 
 # --- Always sync shared core + dependencies into the release ---
 echo "Syncing core/, requirements.txt, data-model/, ingestion/..."
-for d in core api app ingestion data-model marketing ops scripts mcp; do
+for d in core api app ingestion data-model www ops scripts mcp; do
     [ -d "$PROJECT_DIR/$d" ] || continue
     rsync_to "${EXCLUDES[@]}" "$PROJECT_DIR/$d/" "$REMOTE:$RELEASE_DIR/$d/" >/dev/null
 done
@@ -209,12 +209,12 @@ if $deploy_app; then
     ssh_run "sudo supervisorctl restart $WEB_SVC" || true
     echo "  $WEB_SVC restarted"
 fi
-if $deploy_marketing; then
-    # Nginx serves glintstone.org from shared/marketing/ (persists across releases).
-    echo "Syncing marketing/ → shared/marketing/..."
-    rsync_to --exclude='.DS_Store' "$PROJECT_DIR/marketing/" "$REMOTE:$SHARED_DIR/marketing/"
+if $deploy_www; then
+    # Nginx serves glintstone.org from shared/www/ (persists across releases).
+    echo "Syncing www/ → shared/www/..."
+    rsync_to --exclude='.DS_Store' "$PROJECT_DIR/www/" "$REMOTE:$SHARED_DIR/www/"
     ssh_run "sudo rc-service nginx reload" 2>/dev/null || ssh_run "sudo nginx -s reload" 2>/dev/null || true
-    echo "  marketing/nginx reloaded"
+    echo "  www/nginx reloaded"
 fi
 
 # --- Post-deploy smoke test ---
