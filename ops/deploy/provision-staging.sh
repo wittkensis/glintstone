@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # One-time staging environment bootstrap on the Hostinger VPS.
-# Run AS ROOT on the VPS:
+# Run AS ROOT on the VPS — DEPLOY_HOST is read from .env locally:
 #
-#   ssh root@76.13.208.149 'bash -s' < ops/deploy/provision-staging.sh
+#   ssh "root@$DEPLOY_HOST" 'bash -s' < ops/deploy/provision-staging.sh
 #
 # Idempotent: re-running is safe. Creates only what's missing.
 
@@ -166,12 +166,22 @@ else
 fi
 
 # --- Nightly prod → staging restore cron ---
-CRON_FILE="/etc/periodic/daily/glintstone-staging-restore"
-if [ ! -f "$CRON_FILE" ]; then
-    cat > "$CRON_FILE" <<RESTORE
+#
+# We schedule explicitly at 05:15 UTC rather than dropping into /etc/periodic/daily/
+# because Alpine's run-crons fires daily/* at a system-configured time (~03:00 by
+# default) — earlier than the production nightly backup completes (~04:20 UTC),
+# which would restore from yesterday's dump. STAGING.md documents 05:15 UTC.
+RESTORE_BIN="/usr/local/sbin/glintstone-staging-restore"
+# Migrate from the legacy /etc/periodic/daily/ location if it exists.
+if [ -f /etc/periodic/daily/glintstone-staging-restore ] && [ ! -f "$RESTORE_BIN" ]; then
+    mv /etc/periodic/daily/glintstone-staging-restore "$RESTORE_BIN"
+    echo "  migrated restore script from /etc/periodic/daily/ → $RESTORE_BIN"
+fi
+if [ ! -f "$RESTORE_BIN" ]; then
+    cat > "$RESTORE_BIN" <<RESTORE
 #!/bin/sh
 # Restore last night's prod backup into the staging DB.
-# Runs as root via Alpine's /etc/periodic/daily (~03:00 by default; adjust with crontab if needed).
+# Fired by /etc/crontabs/root at 05:15 UTC (after prod nightly backup completes ~04:20).
 set -e
 LOG=/var/log/glintstone-staging-restore.log
 LOCK=/var/run/glintstone-staging-restore.lock
@@ -221,10 +231,22 @@ echo "restore done"
 # Bounce staging services so they pick up the refreshed DB cleanly.
 supervisorctl restart glintstone-staging-api glintstone-staging-web 2>/dev/null || true
 RESTORE
-    chmod +x "$CRON_FILE"
-    echo "  installed $CRON_FILE"
+    chmod +x "$RESTORE_BIN"
+    echo "  installed $RESTORE_BIN"
 else
-    echo "  $CRON_FILE exists"
+    echo "  $RESTORE_BIN exists"
+fi
+
+# Install/refresh the explicit crontab entry (idempotent).
+CRON_LINE="15 5 * * * $RESTORE_BIN"
+CRONTAB="/etc/crontabs/root"
+touch "$CRONTAB"
+if ! grep -qF "$RESTORE_BIN" "$CRONTAB"; then
+    echo "$CRON_LINE" >> "$CRONTAB"
+    rc-service crond reload 2>/dev/null || rc-service crond restart 2>/dev/null || true
+    echo "  added crontab entry: $CRON_LINE"
+else
+    echo "  crontab entry for $RESTORE_BIN already present"
 fi
 
 # --- Sudo allowlist update (staging supervisor + nginx already covered by glintstone-* wildcard) ---

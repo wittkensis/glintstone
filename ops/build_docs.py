@@ -3,13 +3,12 @@
 Glintstone docs build script.
 
 Reads docs/nav.yaml, converts markdown to HTML, and outputs
-branded static pages to marketing/docs/.
+branded static pages to www/docs/.
 
 Usage:
     python ops/build_docs.py
 
-Requirements:
-    pip install -r requirements-docs.txt
+Requirements: markdown + PyYAML, already in requirements.txt.
 """
 
 import re

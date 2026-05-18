@@ -218,14 +218,18 @@ fi
 if $deploy_app; then
     ssh_run "sudo supervisorctl restart $WEB_SVC" || true
     echo "  $WEB_SVC restarted"
-    if [ "$APP_ENV" = "staging" ]; then
-        # One config covers both staging api + app.
-        ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/staging.glintstone.org.conf $NGINX_CONF_DIR/staging.glintstone.org.conf"
-        echo "  staging.glintstone.org.conf installed"
-    else
+    if [ "$APP_ENV" != "staging" ]; then
         ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/app.glintstone.org.conf $NGINX_CONF_DIR/app.glintstone.org.conf"
         echo "  app.glintstone.org.conf installed"
     fi
+    nginx_reload_needed=true
+fi
+
+# Staging's single nginx config covers both staging api + app. Install it on
+# either target so an api-only deploy doesn't skip the config refresh.
+if [ "$APP_ENV" = "staging" ] && ( $deploy_api || $deploy_app ); then
+    ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/staging.glintstone.org.conf $NGINX_CONF_DIR/staging.glintstone.org.conf"
+    echo "  staging.glintstone.org.conf installed"
     nginx_reload_needed=true
 fi
 
@@ -252,7 +256,10 @@ fi
 
 if $nginx_reload_needed; then
     echo "Validating and reloading nginx..."
-    ssh_run "sudo rc-service nginx reload 2>/dev/null || sudo nginx -s reload"
+    # Validate before reload — a bad config that fails -t will abort the deploy
+    # rather than silently leave the previous config running while reporting success.
+    # Sudoers entry: deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx -t (see provision.sh).
+    ssh_run "sudo nginx -t && (sudo rc-service nginx reload 2>/dev/null || sudo nginx -s reload)"
     echo "  nginx reloaded"
 fi
 
@@ -291,6 +298,7 @@ if $smoke_failed; then
         ssh_run "ln -sfn $PREV_RELEASE $CURRENT_LINK.new && mv -Tf $CURRENT_LINK.new $CURRENT_LINK"
         $deploy_api && ssh_run "sudo supervisorctl restart $API_SVC" || true
         $deploy_app && ssh_run "sudo supervisorctl restart $WEB_SVC" || true
+        $deploy_mcp && ssh_run "sudo supervisorctl restart glintstone-mcp" || true
         echo "Rolled back. Current is now: $PREV_RELEASE"
     else
         echo "::warning::No previous release recorded; cannot auto-roll-back"

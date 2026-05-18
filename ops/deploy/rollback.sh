@@ -19,7 +19,19 @@ fi
 
 DEPLOY_HOST="${DEPLOY_HOST:?DEPLOY_HOST not set}"
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
-REMOTE_DIR="${DEPLOY_REMOTE_DIR:-/var/www/glintstone}"
+APP_ENV="${APP_ENV:-production}"
+
+# Mirror deploy.sh: staging lives in a separate tree with its own service names.
+if [ "$APP_ENV" = "staging" ]; then
+    REMOTE_DIR="${DEPLOY_REMOTE_DIR:-/var/www/glintstone-staging}"
+    API_SVC="glintstone-staging-api"
+    WEB_SVC="glintstone-staging-web"
+else
+    REMOTE_DIR="${DEPLOY_REMOTE_DIR:-/var/www/glintstone}"
+    API_SVC="glintstone-api"
+    WEB_SVC="glintstone-web"
+fi
+
 REMOTE="$DEPLOY_USER@$DEPLOY_HOST"
 
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new)
@@ -43,9 +55,9 @@ if ! ssh_run "test -d $REMOTE_DIR/releases/$TAG"; then
     exit 1
 fi
 
-echo "Rolling back to $TAG..."
+echo "Rolling back $APP_ENV to $TAG..."
 ssh_run "ln -sfn $REMOTE_DIR/releases/$TAG $REMOTE_DIR/current.new && mv -Tf $REMOTE_DIR/current.new $REMOTE_DIR/current"
-ssh_run "sudo supervisorctl restart glintstone-api glintstone-web" || true
+ssh_run "sudo supervisorctl restart $API_SVC $WEB_SVC" || true
 ssh_run "sudo rc-service nginx reload" 2>/dev/null || true
 
 echo "Rolled back. Current is now: $TAG"

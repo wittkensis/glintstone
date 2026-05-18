@@ -87,8 +87,8 @@ mkdir -p /etc/supervisor.d
 
 cat > /etc/supervisor.d/glintstone-api.ini << 'SUPERVISOR'
 [program:glintstone-api]
-command=/var/www/glintstone/venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001
-directory=/var/www/glintstone
+command=/var/www/glintstone/current/venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001
+directory=/var/www/glintstone/current
 user=deploy
 autostart=true
 autorestart=true
@@ -98,8 +98,8 @@ SUPERVISOR
 
 cat > /etc/supervisor.d/glintstone-web.ini << 'SUPERVISOR'
 [program:glintstone-web]
-command=/var/www/glintstone/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8002
-directory=/var/www/glintstone
+command=/var/www/glintstone/current/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8002
+directory=/var/www/glintstone/current
 user=deploy
 autostart=true
 autorestart=true
@@ -107,12 +107,16 @@ stderr_logfile=/var/log/glintstone-web.err.log
 stdout_logfile=/var/log/glintstone-web.out.log
 SUPERVISOR
 
+# mcp.server_http is not implemented yet (mcp/transport/ is empty). Keep the
+# stanza so the service is registered, but don't autostart it — supervisord
+# would otherwise crash-loop the program on boot. Flip autostart back to true
+# once mcp.server_http lands.
 cat > /etc/supervisor.d/glintstone-mcp.ini << 'SUPERVISOR'
 [program:glintstone-mcp]
-command=/var/www/glintstone/venv/bin/python -m mcp.server_http --host 127.0.0.1 --port 8005
-directory=/var/www/glintstone
+command=/var/www/glintstone/current/venv/bin/python -m mcp.server_http --host 127.0.0.1 --port 8005
+directory=/var/www/glintstone/current
 user=deploy
-autostart=true
+autostart=false
 autorestart=true
 stderr_logfile=/var/log/glintstone-mcp.err.log
 stdout_logfile=/var/log/glintstone-mcp.out.log

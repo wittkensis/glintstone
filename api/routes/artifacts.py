@@ -40,6 +40,7 @@ def search_artifacts(
     has_ocr: bool = False,
     page: int = 1,
     per_page: int = 24,
+    include_filter_options: bool = False,
     conn=Depends(get_db),
 ):
     repo = ArtifactRepository(conn)
@@ -60,6 +61,20 @@ def search_artifacts(
     for item in result.get("items", []):
         key = item.pop("primary_thumbnail_key", None)
         item["thumbnail_url"] = public_url_for_key(key) if key else None
+
+    # Optional one-trip filter options: the tablet list page needs both search
+    # results and cross-filter counts. Letting the caller request both together
+    # cuts a sequential httpx round trip out of the page render.
+    if include_filter_options:
+        result["filter_options"] = repo.get_filter_options(
+            active_filters={
+                "period": period,
+                "provenience": provenience,
+                "genre": genre,
+                "language": language,
+            }
+        )
+
     return result
 
 

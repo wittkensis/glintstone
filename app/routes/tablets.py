@@ -29,7 +29,10 @@ def tablet_list(
     page: int = 1,
 ):
     api = request.app.state.api
-    params: dict = {"page": page, "per_page": 24}
+    # include_filter_options=true lets the API return both the page and the
+    # cross-filter counts in a single round trip — half the latency of two
+    # sequential httpx calls.
+    params: dict = {"page": page, "per_page": 24, "include_filter_options": "true"}
     if search:
         params["search"] = search
     if pipeline:
@@ -50,21 +53,12 @@ def tablet_list(
     except Exception:
         data = {"items": [], "total": 0, "page": 1, "per_page": 24, "total_pages": 0}
 
-    # Pass active filters to filter-options for cross-filter counts
-    filter_params: dict = {}
-    if period:
-        filter_params["period"] = period
-    if provenience:
-        filter_params["provenience"] = provenience
-    if genre:
-        filter_params["genre"] = genre
-    if language:
-        filter_params["language"] = language
-
-    try:
-        filter_options = api.get("/artifacts/filter-options", params=filter_params)
-    except Exception:
-        filter_options = {"period": [], "provenience": [], "genre": [], "language": []}
+    filter_options = data.get("filter_options") or {
+        "period": [],
+        "provenience": [],
+        "genre": [],
+        "language": [],
+    }
 
     # Build active filter pills with remove-URLs
     all_params: list[tuple[str, str]] = []

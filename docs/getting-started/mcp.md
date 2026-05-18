@@ -54,15 +54,15 @@ claude mcp add glintstone \
 
 Then set the working directory in `~/.claude.json` under `mcpServers.glintstone.cwd`.
 
-## Claude.ai web (HTTP/SSE)
+## Claude.ai web (HTTP/SSE) — not yet implemented
 
-The HTTP server runs as a persistent service and must be reachable from Anthropic's infrastructure.
-
-```bash
-python -m mcp.server_http
-```
-
-Point Claude.ai's MCP connector to `https://mcp.glintstone.org` (once deployed). See `ops/deploy/` for the service configuration.
+> **Planned.** The HTTP/SSE transport (`mcp.server_http`) is not implemented yet — `mcp/transport/` is empty and the `glintstone-mcp` supervisor service ships with `autostart=false`. Track via issue #83 / `mcp.glintstone.org` work.
+>
+> Once `mcp.server_http` lands the flow will be:
+> ```bash
+> python -m mcp.server_http
+> ```
+> with Claude.ai's MCP connector pointing at `https://mcp.glintstone.org`. See `ops/deploy/` for the service configuration.
 
 ## The four tools
 

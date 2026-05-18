@@ -53,7 +53,10 @@ echo $! > "$PID_DIR/api.pid"
 echo $! > "$PID_DIR/web.pid"
 
 # Start nginx for .test domain routing (port 80 requires sudo)
-sudo nginx -c "$SCRIPT_DIR/nginx.conf"
+# Materialise the template with PROJECT_DIR substituted, then point nginx at it.
+NGINX_RUNTIME_CONF="/tmp/glintstone-nginx.conf"
+sed "s|__PROJECT_DIR__|$PROJECT_DIR|g" "$SCRIPT_DIR/nginx.conf" > "$NGINX_RUNTIME_CONF"
+sudo nginx -c "$NGINX_RUNTIME_CONF"
 
 echo "  API:       http://api.glintstone.test"
 echo "  API Docs:  http://api.glintstone.test/docs"

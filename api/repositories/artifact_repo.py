@@ -1,6 +1,8 @@
 """Artifact repository — search, detail, composites, images."""
 
 import math
+import os
+import time
 from collections import defaultdict
 
 from core.repository import BaseRepository
@@ -11,6 +13,17 @@ _DIM_COLS = {
     "period": "a.period_normalized",
     "provenience": "a.provenience_normalized",
 }
+
+# ── Filter-options TTL cache ────────────────────────────────────────────────
+# Filter counts only change when ingestion runs, not per-request. A short TTL
+# eliminates the four serial SQL queries for the vast majority of traffic.
+# Override the TTL with FILTER_OPTIONS_CACHE_TTL (seconds, 0 disables).
+_FILTER_CACHE: dict = {}
+_FILTER_CACHE_TTL = float(os.environ.get("FILTER_OPTIONS_CACHE_TTL", "60"))
+
+
+def _filter_cache_key(active_filters: dict[str, list[str]]) -> tuple:
+    return tuple(sorted((k, tuple(sorted(v))) for k, v in active_filters.items()))
 
 
 class ArtifactRepository(BaseRepository):
@@ -59,8 +72,26 @@ class ArtifactRepository(BaseRepository):
 
         active_filters: currently-selected values per dimension.
         Counts are cross-filtered (each dimension excludes its own filter).
+
+        Implementation note: this runs four sequential SQL queries. A single
+        CTE doesn't easily share work across dimensions because each dimension
+        uses a different WHERE (cross-filter excludes self). The TTL cache
+        above already collapses repeated calls — for cold cache, the four
+        queries hit a warm Postgres pool on the same host with negligible
+        per-query connection overhead. See issue #83 phase 4d for the
+        deferred psycopg3 pipeline-mode variant if profiling later shows the
+        cold path is a bottleneck.
         """
         af = active_filters or {}
+
+        if _FILTER_CACHE_TTL > 0:
+            key = _filter_cache_key(af)
+            cached = _FILTER_CACHE.get(key)
+            if cached is not None:
+                payload, ts = cached
+                if time.monotonic() - ts < _FILTER_CACHE_TTL:
+                    return payload
+
         options: dict = {}
 
         # Period — grouped by period_canon.group_name, with date ranges
@@ -124,41 +155,49 @@ class ArtifactRepository(BaseRepository):
         )
         options["provenience"] = self._group_prov_rows(rows)
 
-        # Genre — flat list via junction table
+        # Genre — flat list via junction table. COUNT(*) is safe here:
+        # artifact_genres has PRIMARY KEY (p_number, genre_id), so within a single
+        # genre group there's at most one row per p_number — DISTINCT is redundant
+        # and forces an extra dedup pass.
         xf_where, xf_params = self._cross_filter_where(af, "genre")
         where_clause = f"WHERE {xf_where}" if xf_where else ""
         rows = self.fetch_all(
             f"""
-            SELECT cg.name AS val, COUNT(DISTINCT ag.p_number) AS count
+            SELECT cg.name AS val, COUNT(*) AS count
             FROM canonical_genres cg
             JOIN artifact_genres ag ON ag.genre_id = cg.id
             JOIN artifacts a ON a.p_number = ag.p_number
             {where_clause}
             GROUP BY cg.name
-            HAVING COUNT(DISTINCT ag.p_number) > 0
+            HAVING COUNT(*) > 0
             ORDER BY count DESC
         """,
             xf_params,
         )
         options["genre"] = [{"val": r["val"], "count": r["count"]} for r in rows]
 
-        # Language — flat list via junction table
+        # Language — same reasoning as genre. artifact_languages has
+        # PRIMARY KEY (p_number, language_id) so COUNT(*) is equivalent to
+        # COUNT(DISTINCT p_number) within each group.
         xf_where, xf_params = self._cross_filter_where(af, "language")
         where_clause = f"WHERE {xf_where}" if xf_where else ""
         rows = self.fetch_all(
             f"""
-            SELECT cl.name AS val, COUNT(DISTINCT al.p_number) AS count
+            SELECT cl.name AS val, COUNT(*) AS count
             FROM canonical_languages cl
             JOIN artifact_languages al ON al.language_id = cl.id
             JOIN artifacts a ON a.p_number = al.p_number
             {where_clause}
             GROUP BY cl.name
-            HAVING COUNT(DISTINCT al.p_number) > 0
+            HAVING COUNT(*) > 0
             ORDER BY count DESC
         """,
             xf_params,
         )
         options["language"] = [{"val": r["val"], "count": r["count"]} for r in rows]
+
+        if _FILTER_CACHE_TTL > 0:
+            _FILTER_CACHE[_filter_cache_key(af)] = (options, time.monotonic())
 
         return options
 
@@ -281,6 +320,10 @@ class ArtifactRepository(BaseRepository):
         # LATERAL pick of the primary cached image so cards can show a real
         # thumbnail when artifact_images has one. ORDER prefers display_order
         # 0 (the canonical primary), then photo over lineart, then row id.
+        #
+        # COUNT(*) OVER() returns the total matching rows pre-LIMIT, so we get
+        # the total alongside the page in a single round trip instead of running
+        # a second COUNT query.
         items = self.fetch_all(
             f"""
             SELECT a.p_number, a.designation,
@@ -292,7 +335,8 @@ class ArtifactRepository(BaseRepository):
                    ps.reading_complete, ps.linguistic_complete,
                    ps.semantic_complete, ps.has_image,
                    primary_img.r2_thumbnail_key AS primary_thumbnail_key,
-                   primary_img.credit_line     AS primary_credit_line
+                   primary_img.credit_line     AS primary_credit_line,
+                   COUNT(*) OVER() AS _total_count
             FROM artifacts a
             LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
             LEFT JOIN LATERAL (
@@ -311,21 +355,29 @@ class ArtifactRepository(BaseRepository):
             params,
         )
 
-        # Count query (same conditions, no LIMIT)
-        count_params = {
-            k: v for k, v in params.items() if k not in ("per_page", "offset")
-        }
-        total = self.fetch_scalar(
-            f"""
-            SELECT COUNT(*)
-            FROM artifacts a
-            LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
-            {where}
-        """,
-            count_params,
-        )
-
-        total = total or 0
+        if items:
+            total = items[0].get("_total_count") or 0
+            for row in items:
+                row.pop("_total_count", None)
+        else:
+            # Empty result set: could be a real no-match OR an out-of-range
+            # page request. Run a dedicated count to distinguish so pagination
+            # still shows the right total when the user overshoots.
+            count_params = {
+                k: v for k, v in params.items() if k not in ("per_page", "offset")
+            }
+            total = (
+                self.fetch_scalar(
+                    f"""
+                SELECT COUNT(*)
+                FROM artifacts a
+                LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+                {where}
+            """,
+                    count_params,
+                )
+                or 0
+            )
         return {
             "items": items,
             "total": total,

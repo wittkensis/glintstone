@@ -50,14 +50,14 @@ Two-tier FastAPI: the web layer renders HTML and calls the API layer via httpx. 
 api/                 REST API: routes, repositories, services
 app/                 Web app: routes, Jinja2 templates, CSS, JS
 core/                Shared: config, database pool, base repository
-source-data/
-  import-tools/      Numbered import scripts (01-23+)
-  migrations/        SQL migrations (008-017)
-  sources/           Raw data (gitignored, ~25GB)
-data-model/       Schema spec (YAML), design docs
-ml/                  ML model integrations
+data-model/
+  glintstone-schema.yaml   Authoritative schema spec
+  migrations/        SQL migrations (NNN_*.sql)
+  migrate.py         Migration runner
+ingestion/           ETL framework: typed connectors + CLI
+docs/                Reference docs (this file, data-model/, getting-started/)
 ops/local/           setup.sh, start.sh, stop.sh, nginx.conf
-PLANNING/            Design documents, domain research
+ops/deploy/          deploy.sh, rollback.sh, provision.sh, nginx/
 ```
 
 ### Get Running
@@ -155,10 +155,10 @@ These are seeded by `01_seed_lookup_tables.py` and used by the filter system.
 
 ```bash
 # As the table owner (for migrations, schema changes)
-/opt/homebrew/Cellar/postgresql@17/17.8/bin/psql -h 127.0.0.1 -U wittkensis -d glintstone
+$(brew --prefix postgresql@17)/bin/psql -h 127.0.0.1 -U wittkensis -d glintstone
 
 # As the app user (for read-only exploration)
-/opt/homebrew/Cellar/postgresql@17/17.8/bin/psql -h 127.0.0.1 -U glintstone -d glintstone
+$(brew --prefix postgresql@17)/bin/psql -h 127.0.0.1 -U glintstone -d glintstone
 ```
 
 **Ownership matters**: tables are owned by `wittkensis`, not `glintstone`. Run migrations as `wittkensis`. After creating new tables or sequences, GRANT permissions:
@@ -186,7 +186,7 @@ GRANT USAGE, SELECT ON SEQUENCE new_table_id_seq TO glintstone;
 
 ### How data gets in
 
-The project is on a **ingestion framework** (`ingestion/`) where every source has a typed connector. The old numbered scripts in `source-data/import-tools/` are retired; that folder is kept for reference but is not the canonical path. Detailed connector anatomy lives in the `gs-expert-integrations` skill (see `.claude/skills/gs-expert-integrations/`).
+The project is on a **typed ingestion framework** (`ingestion/`) where every source has a typed connector. The old numbered scripts that lived under `source-data/import-tools/` were retired and removed (see `_archive/` notes in CLAUDE.md). Detailed connector anatomy lives in the `gs-expert-integrations` skill (see `.claude/skills/gs-expert-integrations/`).
 
 The framework:
 
@@ -248,7 +248,7 @@ class MyConnector(SourceConnector):
 
 `upsert_batch()` covers idempotency via UPDATE / SKIP / REPLACE policies. Bad rows go to dead-letters via `ctx.dead_letter(...)`; connectors never raise on per-record problems.
 
-Source data lives in `source-data/sources/` (gitignored, ~25 GB). Each source directory has a `SETUP.md` explaining how to obtain the data.
+Source data lives outside the repo (each connector documents its own discovery / download path — see the connector source files for specifics).
 
 ---
 
@@ -271,10 +271,14 @@ Source data lives in `source-data/sources/` (gitignored, ~25 GB). Each source di
 
 ### Add a Database Migration
 
-1. Create `source-data/migrations/NNN_description.sql` (next number after 017)
-2. Run as `wittkensis`:
+1. Create `data-model/migrations/NNN_description.sql` (next number after the latest)
+2. Apply via the migration runner (preferred — records applied state):
    ```bash
-   /opt/homebrew/Cellar/postgresql@17/17.8/bin/psql -h 127.0.0.1 -U wittkensis -d glintstone -f source-data/migrations/018_description.sql
+   DATABASE_URL=postgresql://wittkensis@127.0.0.1:5432/glintstone python data-model/migrate.py up
+   ```
+   Or ad-hoc with psql:
+   ```bash
+   $(brew --prefix postgresql@17)/bin/psql -h 127.0.0.1 -U wittkensis -d glintstone -f data-model/migrations/NNN_description.sql
    ```
 3. GRANT permissions to `glintstone` user for any new tables/sequences
 4. Update the schema YAML if it affects the data model

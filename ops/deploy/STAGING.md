@@ -27,11 +27,11 @@ After all three, push a commit to the `staging` branch and watch
 
 ## 1. DNS
 
-Add two A records at your DNS provider:
+Add two A records at your DNS provider pointing at the VPS (see `DEPLOY_HOST` in `.env` for the current IP):
 
 ```
-staging.glintstone.org       A    76.13.208.149
-staging-api.glintstone.org   A    76.13.208.149
+staging.glintstone.org       A    <DEPLOY_HOST>
+staging-api.glintstone.org   A    <DEPLOY_HOST>
 ```
 
 TTL: whatever the rest of glintstone.org uses (5 min is fine for now).
@@ -42,7 +42,8 @@ Wait until `dig +short staging.glintstone.org` returns the IP before continuing.
 SSH in as root and run the bootstrap script. Idempotent — safe to re-run.
 
 ```bash
-ssh root@76.13.208.149 'apk add --no-cache bash && bash -s' < ops/deploy/provision-staging.sh
+# DEPLOY_HOST is sourced from .env. To inline: ssh root@$(grep ^DEPLOY_HOST .env | cut -d= -f2)
+ssh "root@$DEPLOY_HOST" 'apk add --no-cache bash && bash -s' < ops/deploy/provision-staging.sh
 ```
 
 > Hostinger's VPS is Alpine Linux, which doesn't ship `bash` by default; the
@@ -75,7 +76,7 @@ A. **Verify supervisor sees the new services** (they autostart=false; the
    first deploy will start them):
 
    ```bash
-   ssh deploy@76.13.208.149 'supervisorctl status | grep glintstone'
+   ssh "deploy@$DEPLOY_HOST" 'supervisorctl status | grep glintstone'
    ```
 
    You should see `glintstone-staging-api` and `glintstone-staging-web` in

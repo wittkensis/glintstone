@@ -48,13 +48,19 @@ class Settings(BaseSettings):
 
     api_port: int = 8001
     web_port: int = 8002
-    marketing_port: int = 8003
+    www_port: int = Field(
+        default=8003,
+        validation_alias=AliasChoices("WWW_PORT", "MARKETING_PORT"),
+    )
 
     api_url: str = "http://localhost:8001"
     web_url: str = "http://localhost:8002"
-    marketing_url: str = "http://localhost:8003"
+    www_url: str = Field(
+        default="http://localhost:8003",
+        validation_alias=AliasChoices("WWW_URL", "MARKETING_URL"),
+    )
 
-    image_path: str = "./app-v0.1/database/images"
+    image_path: str = ""
 
     storage_backend: str = "local"
     r2_account_id: Optional[str] = Field(

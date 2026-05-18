@@ -28,9 +28,17 @@ if [ "$ahead" -eq 0 ]; then
 fi
 
 # Refuse to promote a staging branch that hasn't been deployed to staging.
-# Heuristic: check that the latest CI run on `staging` finished green.
-latest_status=$(gh run list --branch staging --workflow deploy.yml --limit 1 \
-                  --json conclusion --jq '.[0].conclusion' 2>/dev/null || echo "")
+# Check the deploy.yml run that ran against the EXACT staging tip SHA — not just
+# the latest run on the branch (a failed deploy followed by a rollback could
+# leave the latest run pointing at an older commit, giving a false pass).
+staging_sha=$(git rev-parse origin/staging)
+latest_status=$(gh run list --branch staging --workflow deploy.yml --limit 10 \
+                  --json headSha,conclusion \
+                  --jq ".[] | select(.headSha == \"$staging_sha\") | .conclusion" 2>/dev/null \
+                  | head -1)
+if [ -z "$latest_status" ]; then
+    latest_status="(no deploy.yml run found for SHA $staging_sha)"
+fi
 if [ "$latest_status" != "success" ]; then
     cat >&2 <<EOF
 ::warning:: Latest deploy.yml run on staging is "$latest_status" (not "success").

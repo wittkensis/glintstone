@@ -10,7 +10,7 @@ This is a **production academic application** for cuneiform / Assyriology schola
 - **Migrations run as `wittkensis`.** Tables are owned by `wittkensis`; the app connects as `glintstone`. After creating any new table or sequence, `GRANT` permissions to `glintstone`.
 - **psycopg rollback trap.** `conn.rollback()` undoes ALL uncommitted changes in the transaction. Use `ON CONFLICT` or `NOT EXISTS`, not try/except `UniqueViolation`.
 - **macOS SSL workaround.** Python `urllib`/`requests` can fail on some HTTPS endpoints. Shell out to `curl` via `subprocess.run(...)`.
-- **Deployment is routed through `gs-expert-deployment`.** Never push to `main` with red CI, never modify the production Neon branch directly, never use `--no-verify`.
+- **Deployment is routed through `gs-expert-deployment`.** Never push to `main` with red CI, never run destructive operations against the production VPS Postgres directly, never use `--no-verify`.
 
 ## How to respond
 
@@ -28,15 +28,17 @@ Open `gs-orient-project/SKILL.md` for the routing map. That skill auto-loads at 
 | `gs-expert-data-model` | Schema, migrations, repository / query code, lexical API |
 | `gs-expert-ui` | CSS, BEM, semantic HTML, accessibility, `app/static/` |
 | `gs-expert-integrations` | `ingestion/`, new connectors, source-specific quirks |
-| `gs-expert-deployment` | Deploy, staging, rollback, Hostinger, Neon, GitHub Actions, R2 |
+| `gs-expert-deployment` | Deploy, staging, rollback, Hostinger, VPS Postgres, GitHub Actions, R2 |
 | `gs-scout-integrations` | "Should we use this new HuggingFace model / dataset / API?" |
 | `gs-curator-artifacts` | "Find me a test tablet / scholar / lemma / sign / search term…" |
 | `gs-curator-docs` | Before any `git commit` or `git push` (freshness check) |
+| `gs-audit-hardening` | Hardening pass, audit, "review the deployment", "run the audit" |
+| `gs-audit-frontend` | Frontend/design audit, "design system", "css audit", "clean up the frontend", "frontend entropy" |
 
 ## Tech stack (quick)
 
 - **Backend**: Python 3.13, FastAPI, uvicorn, psycopg 3
-- **Database**: PostgreSQL 17 (Neon prod, local for dev)
+- **Database**: PostgreSQL 17 (VPS-local for prod, local for dev — Neon decommissioned 2026-05-12)
 - **Web**: server-rendered Jinja2 + vanilla JS + token-driven CSS
 - **Ingestion**: `python -m ingestion.cli list|run|status|dead-letters`
 - **Deploy**: GitHub Actions → Hostinger VPS with symlink rotation

@@ -144,7 +144,7 @@ soak. Reserve for genuine emergencies.
 
 | Secret | Used by | Value |
 |---|---|---|
-| `HOSTINGER_HOST` | deploy.yml | VPS IP `76.13.208.149` |
+| `HOSTINGER_HOST` | deploy.yml | VPS IP (mirrors `DEPLOY_HOST` in `.env`) |
 | `HOSTINGER_SSH_KEY` | deploy.yml | Private deploy key |
 
 Old `DATABASE_URL_PROD` / `DATABASE_URL_STAGING` are unused — production reads
@@ -177,7 +177,7 @@ once to: create `/var/www/glintstone-staging/`, install supervisor configs
 (`/etc/nginx/http.d/staging.glintstone.org.conf`), create the
 `glintstone_staging` Postgres database, drop `/var/www/glintstone-staging/shared/.env`.
 Also a DNS A record for `staging.glintstone.org` and `staging-api.glintstone.org`
-→ `76.13.208.149`. See [STAGING.md](STAGING.md) for the bootstrap script.
+→ the VPS IP (see `DEPLOY_HOST` in `.env`). See [STAGING.md](STAGING.md) for the bootstrap script.
 
 ## When this file is wrong
 

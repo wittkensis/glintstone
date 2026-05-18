@@ -62,7 +62,7 @@ if [ -n "$STAMP_CUTOFF" ]; then
                 echo "    $f  (modified: $MOD)"
             fi
         fi
-    done < <(find .claude/skills data-model/v2 -maxdepth 4 -name '*.md' 2>/dev/null; ls README.md CLAUDE.md 2>/dev/null)
+    done < <(find .claude/skills data-model docs/data-model -maxdepth 4 -name '*.md' 2>/dev/null; ls README.md CLAUDE.md 2>/dev/null)
 fi
 
 if [ "$WARN" -ne 0 ]; then
