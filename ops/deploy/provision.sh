@@ -71,7 +71,12 @@ deploy ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl restart glintstone-*
 deploy ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl status glintstone-*
 deploy ALL=(ALL) NOPASSWD: /sbin/rc-service nginx reload
 deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx -t
+deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx -s reload
 deploy ALL=(ALL) NOPASSWD: /bin/cp * /etc/nginx/http.d/*
+deploy ALL=(ALL) NOPASSWD: /bin/cp * /etc/nginx/http.d/snippets/*
+deploy ALL=(ALL) NOPASSWD: /bin/mkdir -p /etc/nginx/http.d/snippets
+deploy ALL=(ALL) NOPASSWD: /bin/mkdir -p /var/cache/nginx/r2
+deploy ALL=(ALL) NOPASSWD: /bin/chown nginx\:nginx /var/cache/nginx/r2
 SUDOERS
 chmod 440 /etc/sudoers.d/glintstone
 
