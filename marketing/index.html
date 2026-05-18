@@ -149,11 +149,15 @@
             </a>
             <!-- Nav -->
             <div class="flex items-center gap-6">
-            <a href="/docs/" class="text-sm text-g-muted hover:text-g-accent transition-colors">Documentation</a>
-            <a href="https://github.com/wittkensis/glintstone" target="_blank" rel="noopener" class="text-sm text-g-muted hover:text-g-accent transition-colors flex items-center gap-2">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                GitHub
-            </a>
+                <a href="/docs/" class="text-sm text-g-muted hover:text-g-accent transition-colors">Docs</a>
+                <a href="https://github.com/wittkensis/glintstone" target="_blank" rel="noopener" class="text-sm text-g-muted hover:text-g-accent transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    GitHub
+                </a>
+                <a id="nav-auth-btn" href="https://app.glintstone.org/auth/login"
+                   class="text-sm px-4 py-1.5 border border-g-accent text-g-accent hover:bg-g-accent hover:text-g-bg rounded transition-colors font-medium">
+                    Sign In
+                </a>
             </div>
         </div>
     </header>
@@ -193,9 +197,9 @@
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                     Collaborate on GitHub
                 </a>
-                <a href="#early-access"
+                <a id="hero-auth-btn" href="https://app.glintstone.org/auth/login"
                    class="inline-flex items-center gap-2 px-6 py-3 bg-g-accent text-g-bg hover:bg-g-accent-hover rounded transition-colors text-sm font-medium">
-                    Get Early Access
+                    Sign In
                 </a>
             </div>
         </div>
@@ -693,16 +697,17 @@
                 </a>
             </div>
 
-            <!-- Early Access CTA -->
+            <!-- Sign In CTA -->
             <div class="bg-g-elevated border border-g-border rounded-lg p-8 text-center">
                 <div class="w-12 h-12 rounded-full bg-g-accent/10 flex items-center justify-center mx-auto mb-5">
-                    <svg class="w-6 h-6 text-g-accent" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
+                    <svg class="w-6 h-6 text-g-accent" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
                 </div>
-                <h3 class="font-display text-xl text-g-text mb-3">Get Early Access</h3>
-                <p class="text-g-muted text-sm mb-6 leading-relaxed">Sign up to get involved with early testing.</p>
-
-                <!-- MailerLite Embed -->
-                <div class="ml-embedded" data-form="yX6eg2"></div>
+                <h3 id="cta-card-heading" class="font-display text-xl text-g-text mb-3">Sign In to Glintstone</h3>
+                <p id="cta-card-body" class="text-g-muted text-sm mb-6 leading-relaxed">Use your email or ORCID iD to access the platform.</p>
+                <a id="cta-card-btn" href="https://app.glintstone.org/auth/login"
+                   class="inline-flex items-center gap-2 px-6 py-3 bg-g-accent text-g-bg hover:bg-g-accent-hover rounded transition-colors text-sm font-medium">
+                    Sign In
+                </a>
             </div>
         </div>
 
@@ -830,15 +835,32 @@
         });
     </script>
 
-    <!-- MailerLite Universal -->
+    <!-- Auth state: swap Sign In → Launch when user is already signed in -->
     <script>
-        (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
-        .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
-        n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
-        (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
-        ml('account', '1658469');
+        fetch('https://api.glintstone.org/auth/me', { credentials: 'include' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (user) {
+                if (!user) return;
+                var APP = 'https://app.glintstone.org';
+                var label = 'Launch App →';
+
+                var navBtn = document.getElementById('nav-auth-btn');
+                if (navBtn) { navBtn.textContent = label; navBtn.href = APP; }
+
+                var heroBtn = document.getElementById('hero-auth-btn');
+                if (heroBtn) { heroBtn.textContent = label; heroBtn.href = APP; }
+
+                var cardHeading = document.getElementById('cta-card-heading');
+                if (cardHeading) cardHeading.textContent = 'Welcome back';
+
+                var cardBody = document.getElementById('cta-card-body');
+                if (cardBody) cardBody.textContent = 'You’re signed in. Open the platform to continue your research.';
+
+                var cardBtn = document.getElementById('cta-card-btn');
+                if (cardBtn) { cardBtn.textContent = label; cardBtn.href = APP; }
+            })
+            .catch(function () {});
     </script>
-    <!-- End MailerLite Universal -->
 
 </body>
 </html>

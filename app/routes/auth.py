@@ -17,12 +17,14 @@ def _session_token(request: Request) -> str | None:
 
 def _set_session_cookie(response, token: str) -> None:
     settings = get_settings()
+    is_prod = settings.app_env != "local"
     response.set_cookie(
         key="session_token",
         value=token,
         httponly=True,
         samesite="lax",
-        secure=settings.app_env != "local",
+        secure=is_prod,
+        domain=".glintstone.org" if is_prod else None,
         max_age=60 * 60 * 24 * settings.session_lifetime_days,
     )
 
