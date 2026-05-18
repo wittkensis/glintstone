@@ -26,7 +26,9 @@ router = APIRouter(tags=["agentic"])
     summary="Hybrid semantic + lexical search across tablets, lemmas, signs, scholars, entities",
 )
 def semantic_search(
-    q: Annotated[str, Query(description="Free-text query")],
+    # max_length caps a single query at 500 characters — anything longer is
+    # either a corrupted client or abuse. See issue #52.
+    q: Annotated[str, Query(description="Free-text query", max_length=500)],
     types: Annotated[
         list[EntityType] | None,
         Query(description="Restrict to these entity types; omit for all"),
