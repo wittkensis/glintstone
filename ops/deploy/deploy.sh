@@ -205,6 +205,16 @@ fi
 NGINX_CONF_DIR="/etc/nginx/http.d"
 nginx_reload_needed=false
 
+# Shared http-context directives (rate-limit zones + geo) — install once on
+# every deploy that touches any nginx config. Snippets directory carries
+# include-only fragments (security headers).
+if $deploy_api || $deploy_app || $deploy_mcp || $deploy_www; then
+    ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/00-shared.conf $NGINX_CONF_DIR/00-shared.conf"
+    ssh_run "sudo mkdir -p $NGINX_CONF_DIR/snippets && sudo cp $RELEASE_DIR/ops/deploy/nginx/snippets/security-headers.conf $NGINX_CONF_DIR/snippets/security-headers.conf"
+    echo "  00-shared.conf + snippets/security-headers.conf installed"
+    nginx_reload_needed=true
+fi
+
 if $deploy_api; then
     ssh_run "sudo supervisorctl restart $API_SVC" || true
     echo "  $API_SVC restarted"

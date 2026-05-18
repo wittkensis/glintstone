@@ -28,7 +28,14 @@ jobs:
           pip install -r requirements.txt
           # Pin ruff to keep CI deterministic — bump deliberately alongside the
           # pre-commit hook pin in .pre-commit-config.yaml so local + CI agree.
-          pip install pytest pytest-asyncio "ruff==0.15.2" mypy
+          pip install pytest pytest-asyncio "ruff==0.15.2" mypy pip-audit
+
+      - name: Dependency audit (pip-audit)
+        # Non-blocking: surfaces CVEs without gating CI until the fix lands.
+        # Flip to required once the backlog is clear. See issue #52.
+        continue-on-error: true
+        run: |
+          pip-audit --strict --progress-spinner off
 
       - name: Lint (ruff)
         run: |
