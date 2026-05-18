@@ -261,6 +261,9 @@ if $deploy_www; then
     rsync_to --exclude='.DS_Store' "$PROJECT_DIR/www/" "$REMOTE:$SHARED_DIR/www/"
     ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/glintstone.org.conf $NGINX_CONF_DIR/glintstone.org.conf"
     echo "  glintstone.org.conf installed"
+    ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/assets.glintstone.org.conf $NGINX_CONF_DIR/assets.glintstone.org.conf"
+    ssh_run "sudo mkdir -p /var/cache/nginx/r2 && sudo chown nginx:nginx /var/cache/nginx/r2 2>/dev/null || true"
+    echo "  assets.glintstone.org.conf installed"
     nginx_reload_needed=true
 fi
 
