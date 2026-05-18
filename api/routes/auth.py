@@ -133,7 +133,9 @@ def magic_link_request(body: MagicLinkRequest, request: Request):
     try:
         email_service.send_magic_link(body.email, link, settings)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Email delivery failed: {exc}")
+        import logging
+        logging.getLogger(__name__).error("Email delivery failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Email service unavailable. Contact the administrator.")
     return {"status": "sent"}
 
 
