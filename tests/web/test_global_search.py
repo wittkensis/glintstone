@@ -70,7 +70,7 @@ def client(monkeypatch):
     monkeypatch.setattr(APIClient, "delete", lambda self, *a, **kw: {})
     monkeypatch.setattr(APIClient, "close", lambda self: None)
 
-    with TestClient(app_main.app) as c:
+    with TestClient(app_main.app, cookies={"session_token": "test-token"}) as c:
         # Replace app.state.api with the fake so the route's `request.app.state.api`
         # uses our recorder.
         c.app.state.api = fake
