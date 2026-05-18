@@ -52,7 +52,7 @@ data-model/                     Schema YAMLs + migrate.py + migrations/ (NNN_*.s
 ingestion/                      ETL framework
 ops/                            Deployment, local dev, hooks
 .claude/skills/gs-*/            Project-local knowledge skills
-docs/                           Persona HTML pages, interactive prototypes, navigation YAML
+docs/                           Persona HTML pages + interactive prototypes (no markdown — see wiki)
 ```
 
 Long-form narrative documentation (onboarding, data-model docs, API/MCP reference, research, opportunities, project) lives in the [GitHub Wiki](https://github.com/wittkensis/glintstone/wiki). Time-bound exploration lives on the [Ideas wiki page](https://github.com/wittkensis/glintstone/wiki/Ideas).

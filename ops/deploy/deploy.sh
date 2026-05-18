@@ -128,12 +128,6 @@ EXCLUDES=(
     --exclude='ops/local'
 )
 
-# --- Build docs locally before rsync so fresh HTML ships with the release ---
-if $deploy_www; then
-    echo "Building docs site..."
-    python "$PROJECT_DIR/ops/build_docs.py"
-fi
-
 # --- Always sync shared core + dependencies into the release ---
 echo "Syncing core/, requirements.txt, data-model/, ingestion/..."
 for d in core api app ingestion data-model www ops scripts mcp; do
