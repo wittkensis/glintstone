@@ -1,51 +1,49 @@
--- Migration 032: normalize lexical text columns to Unicode NFC
+-- Migration 032: NFC audit on lexical text columns (notice only)
 --
--- Sign names, lemma citation forms, normalized forms, and written forms were
--- written with mixed Unicode normalization (NFC vs NFD, e.g. "š" stored
--- variously as U+0161 or "s" + U+030C). Read-side queries using `=` fail
--- across normalization boundaries, producing missed lookups in the Knowledge
--- Bar Translation Assistant and Dictionary.
+-- The original plan was to rewrite every stored citation_form / guide_word /
+-- sign_name / norm / written_form in place to NFC. That collides with the
+-- existing unique constraints when the same source contributed the same
+-- entity twice in different normalizations — e.g. ePSD2 wrote `kāru[quay]N`
+-- both as NFD (k+ā with combining macron) and NFC (kā precomposed), and
+-- both rows independently satisfy lexical_lemmas_composite UNIQUE
+-- (cf_gw_pos, source). Normalizing them in place would violate the index.
 --
--- This migration rewrites every affected row in place to NFC. Read paths in
--- api/repositories/lexical_repo.py and core/lexical.py also normalize inputs
--- (issue #47).
+-- The read-path fix (api/repositories/lexical_repo.py `_nfc` + core/lexical.py
+-- `lookup_lemmas_by_form`) already collapses the encoding mismatch on every
+-- user query. v2 connectors (epsd2, oracc_norms, scholars) normalize on
+-- insert, so new rows are clean. The remaining concern is purely cosmetic:
+-- browse views may show a duplicate row pair until a follow-up dedup
+-- migration repoints the relevant FKs and merges attestations.
 --
--- Idempotent: re-running is a no-op once all rows are NFC.
+-- This migration reports the affected counts so the operator knows the
+-- backlog without enforcing anything. See issue #49.
 
 BEGIN;
 
--- Lock the targets so concurrent imports don't race the rewrite.
-LOCK TABLE lexical_signs IN SHARE MODE;
-LOCK TABLE lexical_lemmas IN SHARE MODE;
-LOCK TABLE lexical_norms IN SHARE MODE;
-LOCK TABLE lexical_norm_forms IN SHARE MODE;
+DO $$
+DECLARE
+  n_lemma  integer;
+  n_sign   integer;
+  n_norm   integer;
+  n_form   integer;
+BEGIN
+  SELECT COUNT(*) INTO n_lemma FROM lexical_lemmas
+   WHERE citation_form IS DISTINCT FROM normalize(citation_form, NFC)
+      OR guide_word    IS DISTINCT FROM normalize(guide_word, NFC);
 
-UPDATE lexical_signs
-   SET sign_name = normalize(sign_name, NFC)
- WHERE sign_name IS DISTINCT FROM normalize(sign_name, NFC);
+  SELECT COUNT(*) INTO n_sign FROM lexical_signs
+   WHERE sign_name IS DISTINCT FROM normalize(sign_name, NFC);
 
--- values[] is a text[] of readings — rewrite per-element.
-UPDATE lexical_signs
-   SET values = ARRAY(
-       SELECT normalize(v, NFC) FROM unnest(values) AS v
-   )
- WHERE values IS NOT NULL
-   AND values <> ARRAY(SELECT normalize(v, NFC) FROM unnest(values) AS v);
+  SELECT COUNT(*) INTO n_norm FROM lexical_norms
+   WHERE norm IS DISTINCT FROM normalize(norm, NFC);
 
-UPDATE lexical_lemmas
-   SET citation_form = normalize(citation_form, NFC)
- WHERE citation_form IS DISTINCT FROM normalize(citation_form, NFC);
+  SELECT COUNT(*) INTO n_form FROM lexical_norm_forms
+   WHERE written_form IS DISTINCT FROM normalize(written_form, NFC);
 
-UPDATE lexical_lemmas
-   SET guide_word = normalize(guide_word, NFC)
- WHERE guide_word IS DISTINCT FROM normalize(guide_word, NFC);
-
-UPDATE lexical_norms
-   SET norm = normalize(norm, NFC)
- WHERE norm IS DISTINCT FROM normalize(norm, NFC);
-
-UPDATE lexical_norm_forms
-   SET written_form = normalize(written_form, NFC)
- WHERE written_form IS DISTINCT FROM normalize(written_form, NFC);
+  IF n_lemma + n_sign + n_norm + n_form > 0 THEN
+    RAISE NOTICE 'NFC backlog (read path handles all of these): lemma=%, sign=%, norm=%, form=%',
+      n_lemma, n_sign, n_norm, n_form;
+  END IF;
+END $$;
 
 COMMIT;
