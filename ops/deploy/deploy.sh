@@ -72,7 +72,7 @@ rsync_to() { rsync -avz --delete -e "ssh ${SSH_OPTS[*]}" "$@"; }
 # --- Parse deploy targets ---
 TARGETS=("$@")
 if [ ${#TARGETS[@]} -eq 0 ]; then
-    TARGETS=(api app www mcp)
+    TARGETS=(api app www)
 fi
 deploy_api=false; deploy_app=false; deploy_www=false; deploy_mcp=false
 for target in "${TARGETS[@]}"; do
