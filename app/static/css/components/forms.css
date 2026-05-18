@@ -2,16 +2,69 @@
  * Form Base Styles
  * Namespace: .form-*
  *
- * Base styles for form elements.
+ * Base styles for form elements. `form` itself stays unstyled — opt-in via
+ * .filter-form / .form-card / .form-inline for layout.
  */
 
-form {
-    display: flex;
+label {
+    font-size: var(--text-sm);
+    color: var(--color-text);
 }
 
-label {
-    font-size: 0.875rem;
+/* ==========================================================================
+   Form Layout (.form-card / .form-group / .form-actions)
+   ========================================================================== */
+
+.form-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    max-width: var(--container-narrow);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.form-label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
     color: var(--color-text);
+}
+
+.form-input {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg-inset);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    line-height: var(--line-height-normal);
+    transition: border-color var(--transition-fast);
+}
+
+.form-input:hover {
+    border-color: var(--color-text-subtle);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: flex-end;
 }
 
 /* Radio Pickers */
@@ -25,7 +78,7 @@ label {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--color-text);
     cursor: pointer;
 }
@@ -46,7 +99,7 @@ label {
 }
 
 .freq-inputs span {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
 }
 
@@ -62,7 +115,12 @@ label {
  */
 
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="url"],
+textarea {
     width: 100%;
     padding: var(--space-2) var(--space-3);
     background: var(--color-bg-inset);
@@ -76,18 +134,54 @@ input[type="number"] {
 }
 
 input[type="text"]:hover,
-input[type="number"]:hover {
+input[type="number"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="search"]:hover,
+input[type="url"]:hover,
+textarea:hover {
     border-color: var(--color-text-subtle);
 }
 
 input[type="text"]:focus,
-input[type="number"]:focus {
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+input[type="url"]:focus,
+textarea:focus {
     outline: none;
     border-color: var(--color-accent);
 }
 
 input::placeholder {
     color: var(--color-text-muted);
+}
+
+/* Disabled + invalid states — apply to all input types and select/textarea */
+input:disabled,
+select:disabled,
+textarea:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--color-bg-subtle);
+}
+
+input[aria-invalid="true"],
+.input--error {
+    border-color: var(--color-error, var(--color-danger, #dc2626));
+}
+
+input[aria-invalid="true"]:focus,
+.input--error:focus {
+    border-color: var(--color-error, var(--color-danger, #dc2626));
+    outline-color: var(--color-error, var(--color-danger, #dc2626));
+}
+
+.form-error-message {
+    font-size: var(--text-xs);
+    color: var(--color-error, var(--color-danger, #dc2626));
+    margin-top: var(--space-1);
 }
 
 /* ==========================================================================
@@ -179,7 +273,7 @@ select:focus {
     top: 2px;
     width: 20px;
     height: 20px;
-    background: white;
+    background: var(--color-white);
     border-radius: 50%;
     transition: transform 0.3s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -203,7 +297,7 @@ select:focus {
 }
 
 .toggle-switch__label {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     font-weight: 500;
     color: var(--color-text);
 }

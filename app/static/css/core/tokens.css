@@ -41,6 +41,7 @@
     --color-accent: #c9a962;            /* Primary accent (warm sand/gold) */
     --color-accent-hover: #d4b97a;      /* Accent hover state */
     --color-accent-muted: #8b7642;      /* Muted accent */
+    --color-accent-teal: #5eead4;       /* Secondary accent — badges + tablet cards */
 
     /* Semantic colors */
     --color-success: #6b8e6b;           /* Success states */

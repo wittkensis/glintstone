@@ -119,7 +119,7 @@
 }
 
 .tablet-card.selected .card-overlay {
-    background: rgba(26, 26, 26, 0.95);
+    background: var(--color-overlay-solid);
 }
 
 /* ==========================================================================

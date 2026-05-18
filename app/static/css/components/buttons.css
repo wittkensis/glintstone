@@ -95,30 +95,30 @@
    Button Size Variants
    ========================================================================== */
 
-.btn-sm {
+.btn--sm {
     padding: var(--space-1) var(--space-2);
     font-size: 0.6875rem;
 }
 
-.btn-sm.btn--icon {
+.btn--sm.btn--icon {
     padding: var(--space-1);
 }
 
-.btn-sm svg {
+.btn--sm svg {
     width: 14px;
     height: 14px;
 }
 
-.btn-lg {
+.btn--lg {
     padding: var(--space-3) var(--space-6);
     font-size: 0.875rem;
 }
 
-.btn-lg.btn--icon {
+.btn--lg.btn--icon {
     padding: var(--space-3);
 }
 
-.btn-lg svg {
+.btn--lg svg {
     width: 20px;
     height: 20px;
 }
@@ -188,7 +188,7 @@
         padding: var(--space-1) var(--space-2);
     }
 
-    .btn-sm {
+    .btn--sm {
         font-size: 0.625rem;
         padding: 6px 8px;
     }
