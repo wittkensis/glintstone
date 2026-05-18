@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.config import get_settings
 from core.database import init_pool, close_pool
 from core.version import release_tag, version_payload
+from api.middleware.auth import AuthMiddleware
 from api.routes import (
     health,
     image,
@@ -19,6 +20,8 @@ from api.routes import (
     scholars,
     search,
     agent,
+    auth,
+    users,
 )
 
 
@@ -54,6 +57,8 @@ def version():
     return version_payload()
 
 
+app.add_middleware(AuthMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -77,3 +82,5 @@ app.include_router(scholars.router)
 app.include_router(search.router)
 app.include_router(agent.router)
 app.include_router(agent.corrections_router)
+app.include_router(auth.router)
+app.include_router(users.router)

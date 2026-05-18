@@ -4,13 +4,16 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api_client import APIClient
+from app.api_client import APIClient, AuthRequiredError
 from app.routes import (
+    account,
     admin,
+    auth,
     collections,
     debug,
     dictionary,
@@ -36,7 +39,38 @@ async def lifespan(app: FastAPI):
     close_pool()
 
 
+class AuthGateMiddleware(BaseHTTPMiddleware):
+    """Redirect unauthenticated requests to /auth/login.
+
+    Everything under /auth/, /static/, and the system probes are open.
+    All other paths require the session_token cookie.
+    """
+
+    _OPEN_PREFIXES = ("/auth/", "/static/")
+    _OPEN_EXACT = {"/healthz", "/version"}
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        if path in self._OPEN_EXACT or any(
+            path.startswith(p) for p in self._OPEN_PREFIXES
+        ):
+            return await call_next(request)
+        if not request.cookies.get("session_token"):
+            return RedirectResponse("/auth/login", status_code=302)
+        return await call_next(request)
+
+
 app = FastAPI(title="Glintstone Web", docs_url=None, redoc_url=None, lifespan=lifespan)
+
+app.add_middleware(AuthGateMiddleware)
+
+
+@app.exception_handler(AuthRequiredError)
+async def auth_required_handler(request: Request, exc: AuthRequiredError):
+    """Expired or invalid session cookie — clear it and send to login."""
+    response = RedirectResponse("/auth/login", status_code=302)
+    response.delete_cookie("session_token")
+    return response
 
 
 @app.middleware("http")
@@ -62,6 +96,8 @@ templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 app.include_router(home.router)
+app.include_router(auth.router)
+app.include_router(account.router)
 app.include_router(tablets.router)
 app.include_router(collections.router)
 app.include_router(dictionary.router)

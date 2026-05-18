@@ -133,6 +133,8 @@ def tablet_list(
 
 @router.get("/{p_number}")
 def tablet_detail(request: Request, p_number: str):
+    import httpx
+
     api = request.app.state.api
 
     try:
@@ -141,6 +143,25 @@ def tablet_detail(request: Request, p_number: str):
         from fastapi.responses import RedirectResponse
 
         return RedirectResponse(url="/tablets", status_code=302)
+
+    # Auth-aware bookmark state
+    current_user = None
+    saved_item_id = None
+    token = request.cookies.get("session_token")
+    if token:
+        try:
+            current_user = api.get("/auth/me", token=token)
+            items = api.get(
+                "/users/me/saved-items",
+                params={"item_type": "artifact"},
+                token=token,
+            )
+            for item in items:
+                if item.get("item_id") == p_number:
+                    saved_item_id = item["id"]
+                    break
+        except httpx.HTTPStatusError:
+            pass
 
     # Debug: full data dump + tablet navigation list
     debug_json = None
@@ -167,6 +188,8 @@ def tablet_detail(request: Request, p_number: str):
         {
             "tablet": tablet,
             "api_url": request.app.state.api.base_url,
+            "current_user": current_user,
+            "saved_item_id": saved_item_id,
             "debug_json": debug_json,
             "debug_tablets_json": debug_tablets_json,
             "web_url": settings.web_url,

@@ -35,6 +35,19 @@
                     {{ pipeline(pipe, 'inline') }}
                     {{ ocr_badge(tablet.graphemic_complete) }}
 
+                    {% if current_user %}
+                    <button class="btn btn--icon bookmark-btn {% if saved_item_id %}is-saved{% endif %}"
+                            id="bookmark-btn"
+                            data-p-number="{{ tablet.p_number }}"
+                            data-saved-id="{{ saved_item_id or '' }}"
+                            title="{{ 'Remove bookmark' if saved_item_id else 'Bookmark this artifact' }}"
+                            aria-pressed="{{ 'true' if saved_item_id else 'false' }}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="{% if saved_item_id %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </button>
+                    {% endif %}
+
                     {% if tablet.composites %}
                     <button class="btn btn--icon-left btn--toggle" id="composite-toggle"
                             aria-expanded="false" aria-controls="composite-panel"
@@ -374,6 +387,53 @@
 {% endblock %}
 
 {% block scripts %}
+{% if current_user %}
+<script>
+(function() {
+    const btn = document.getElementById('bookmark-btn');
+    if (!btn) return;
+    const API_URL = {{ api_url | tojson }};
+    const pNumber = btn.dataset.pNumber;
+
+    btn.addEventListener('click', async () => {
+        const savedId = btn.dataset.savedId;
+        btn.disabled = true;
+        try {
+            if (savedId) {
+                const res = await fetch(`${API_URL}/users/me/saved-items/${savedId}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                });
+                if (res.ok) {
+                    btn.dataset.savedId = '';
+                    btn.setAttribute('aria-pressed', 'false');
+                    btn.title = 'Bookmark this artifact';
+                    btn.querySelector('path').setAttribute('fill', 'none');
+                    btn.classList.remove('is-saved');
+                }
+            } else {
+                const res = await fetch(`${API_URL}/users/me/saved-items`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ item_type: 'artifact', item_id: pNumber }),
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    btn.dataset.savedId = data.id;
+                    btn.setAttribute('aria-pressed', 'true');
+                    btn.title = 'Remove bookmark';
+                    btn.querySelector('path').setAttribute('fill', 'currentColor');
+                    btn.classList.add('is-saved');
+                }
+            }
+        } finally {
+            btn.disabled = false;
+        }
+    });
+})();
+</script>
+{% endif %}
 <script src="/static/js/zoombox.js"></script>
 <script src="/static/js/atf-viewer.js"></script>
 <script src="/static/js/atf-viewer-integration.js"></script>

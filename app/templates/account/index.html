@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Account - Glintstone{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/pages/account.css?v={{ app_version }}">
+{% endblock %}
+
+{% block content %}
+<main class="container">
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <h1>Account</h1>
+            </div>
+            <div class="page-header-actions">
+                <form method="POST" action="/auth/logout">
+                    <button type="submit" class="btn btn--ghost">Sign out</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# Profile #}
+    <section class="account-section">
+        <h2 class="account-section-title">Profile</h2>
+        <dl class="account-profile">
+            <div class="account-profile-row">
+                <dt>Email</dt>
+                <dd>
+                    {{ user.email }}
+                    {% if user.email_verified_at %}
+                    <span class="badge badge--green">Verified</span>
+                    {% else %}
+                    <span class="badge badge--muted">Unverified</span>
+                    {% endif %}
+                </dd>
+            </div>
+            {% if user.display_name %}
+            <div class="account-profile-row">
+                <dt>Name</dt>
+                <dd>{{ user.display_name }}</dd>
+            </div>
+            {% endif %}
+            <div class="account-profile-row">
+                <dt>ORCID</dt>
+                <dd>
+                    {% if user.orcid_id %}
+                    <a href="https://orcid.org/{{ user.orcid_id }}" target="_blank" rel="noopener">{{ user.orcid_id }}</a>
+                    {% else %}
+                    <span class="text-muted">Not linked</span>
+                    {% endif %}
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    {# API Keys #}
+    <section class="account-section">
+        <h2 class="account-section-title">API Keys</h2>
+
+        {% if api_keys %}
+        <table class="account-table">
+            <thead>
+                <tr>
+                    <th>Label</th>
+                    <th>Tier</th>
+                    <th>Last used</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key in api_keys %}
+                {% if not key.is_revoked %}
+                <tr>
+                    <td>{{ key.label }}</td>
+                    <td><span class="badge badge--muted">{{ key.tier }}</span></td>
+                    <td class="text-muted">{{ key.last_used_at or 'Never' }}</td>
+                    <td>
+                        <button class="btn btn--ghost btn--sm btn--danger"
+                                data-revoke-key="{{ key.id }}"
+                                data-key-label="{{ key.label }}">Revoke</button>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">No API keys yet.</p>
+        {% endif %}
+
+        <div class="account-generate-key">
+            <h3>Generate a new key</h3>
+            <form class="account-key-form" id="generate-key-form">
+                <div class="form-group">
+                    <label for="key-label" class="form-label">Label</label>
+                    <input type="text" id="key-label" name="label" class="form-input"
+                           placeholder="e.g. My research script" required>
+                </div>
+                <button type="submit" class="btn btn--primary">Generate key</button>
+            </form>
+            <div class="account-key-reveal" id="key-reveal" hidden>
+                <p class="account-key-warning">Copy this key now — it will not be shown again.</p>
+                <code class="account-key-value" id="key-value"></code>
+                <button class="btn btn--ghost btn--sm" id="copy-key-btn">Copy</button>
+            </div>
+        </div>
+    </section>
+
+    {# Bookmarks #}
+    <section class="account-section">
+        <h2 class="account-section-title">Bookmarked Artifacts</h2>
+
+        {% if bookmarks %}
+        <ul class="account-bookmarks">
+            {% for item in bookmarks %}
+            <li class="account-bookmark-item">
+                <a href="/tablets/{{ item.item_id }}" class="account-bookmark-link">{{ item.item_id }}</a>
+                <button class="btn btn--ghost btn--sm"
+                        data-remove-bookmark="{{ item.id }}">Remove</button>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">No bookmarked artifacts yet. Click the star on any artifact page to save it here.</p>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const API_URL = '{{ api_url }}';
+
+// Generate API key
+document.getElementById('generate-key-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const label = document.getElementById('key-label').value.trim();
+    try {
+        const res = await fetch(`${API_URL}/auth/api-keys`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ label }),
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        document.getElementById('key-value').textContent = data.key;
+        document.getElementById('key-reveal').hidden = false;
+        e.target.hidden = true;
+    } catch {
+        alert('Failed to generate key. Please try again.');
+    }
+});
+
+document.getElementById('copy-key-btn')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(document.getElementById('key-value').textContent);
+    document.getElementById('copy-key-btn').textContent = 'Copied!';
+});
+
+// Revoke key
+document.querySelectorAll('[data-revoke-key]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const keyId = btn.dataset.revokeKey;
+        const label = btn.dataset.keyLabel;
+        if (!confirm(`Revoke key "${label}"? This cannot be undone.`)) return;
+        try {
+            const res = await fetch(`${API_URL}/auth/api-keys/${keyId}`, { method: 'DELETE', credentials: 'include' });
+            if (res.ok) btn.closest('tr').remove();
+        } catch {
+            alert('Failed to revoke key.');
+        }
+    });
+});
+
+// Remove bookmark
+document.querySelectorAll('[data-remove-bookmark]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const itemId = btn.dataset.removeBookmark;
+        try {
+            const res = await fetch(`${API_URL}/users/me/saved-items/${itemId}`, { method: 'DELETE', credentials: 'include' });
+            if (res.ok) btn.closest('li').remove();
+        } catch {
+            alert('Failed to remove bookmark.');
+        }
+    });
+});
+</script>
+{% endblock %}

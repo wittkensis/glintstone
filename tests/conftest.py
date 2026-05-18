@@ -35,6 +35,16 @@ def clean_env(monkeypatch):
         "MARKETING_URL",
         "IMAGE_PATH",
         "DEPLOY_HOST",
+        "ORCID_CLIENT_ID",
+        "ORCID_CLIENT_SECRET",
+        "ORCID_BASE_URL",
+        "EMAIL_BACKEND",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "SESSION_SECRET_KEY",
+        "SESSION_LIFETIME_DAYS",
     ]:
         monkeypatch.delenv(var, raising=False)
     monkeypatch.chdir(ROOT / "tests")

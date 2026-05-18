@@ -90,6 +90,22 @@ class Settings(BaseSettings):
     cdli_min_request_interval_seconds: float = 5.0
     cdli_crawl_delay_seconds: float = 60.0
 
+    # ORCID OAuth
+    orcid_client_id: Optional[str] = None
+    orcid_client_secret: Optional[str] = None
+    orcid_base_url: str = "https://sandbox.orcid.org"
+
+    # Email
+    email_backend: str = "smtp"  # 'smtp' | 'resend'
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    resend_api_key: Optional[str] = None
+    email_from: str = "noreply@glintstone.org"
+
+    # Session
+    session_secret_key: str = "dev-insecure-key"
+    session_lifetime_days: int = 30
+
     deploy_host: Optional[str] = None
     deploy_user: str = "deploy"
     deploy_remote_dir: str = "/var/www/glintstone"
