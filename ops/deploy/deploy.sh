@@ -188,7 +188,7 @@ echo "Previous release: $PREV_RELEASE"
 echo "Swapping current → $RELEASE_TAG..."
 ssh_run "ln -sfn $RELEASE_DIR $CURRENT_LINK.new && mv -Tf $CURRENT_LINK.new $CURRENT_LINK"
 
-# --- Restart services ---
+# --- Restart services + install nginx configs ---
 if [ "$APP_ENV" = "staging" ]; then
     API_SVC="glintstone-staging-api"
     WEB_SVC="glintstone-staging-web"
@@ -201,20 +201,48 @@ else
     WEB_PORT=8002
 fi
 
+NGINX_CONF_DIR="/etc/nginx/http.d"
+nginx_reload_needed=false
+
 if $deploy_api; then
     ssh_run "sudo supervisorctl restart $API_SVC" || true
     echo "  $API_SVC restarted"
+    if [ "$APP_ENV" != "staging" ]; then
+        ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/api.glintstone.org.conf $NGINX_CONF_DIR/api.glintstone.org.conf"
+        echo "  api.glintstone.org.conf installed"
+        nginx_reload_needed=true
+    fi
 fi
+
 if $deploy_app; then
     ssh_run "sudo supervisorctl restart $WEB_SVC" || true
     echo "  $WEB_SVC restarted"
+    if [ "$APP_ENV" = "staging" ]; then
+        # One config covers both staging api + app.
+        ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/staging.glintstone.org.conf $NGINX_CONF_DIR/staging.glintstone.org.conf"
+        echo "  staging.glintstone.org.conf installed"
+    else
+        ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/app.glintstone.org.conf $NGINX_CONF_DIR/app.glintstone.org.conf"
+        echo "  app.glintstone.org.conf installed"
+    fi
+    nginx_reload_needed=true
 fi
+
 if $deploy_www; then
     # Nginx serves glintstone.org from shared/www/ (persists across releases).
+    # Migrate from old shared/marketing/ path on first deploy after rename.
+    ssh_run "[ -d $SHARED_DIR/marketing ] && mv $SHARED_DIR/marketing $SHARED_DIR/www || true"
     echo "Syncing www/ → shared/www/..."
     rsync_to --exclude='.DS_Store' "$PROJECT_DIR/www/" "$REMOTE:$SHARED_DIR/www/"
-    ssh_run "sudo rc-service nginx reload" 2>/dev/null || ssh_run "sudo nginx -s reload" 2>/dev/null || true
-    echo "  www/nginx reloaded"
+    ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/glintstone.org.conf $NGINX_CONF_DIR/glintstone.org.conf"
+    echo "  glintstone.org.conf installed"
+    nginx_reload_needed=true
+fi
+
+if $nginx_reload_needed; then
+    echo "Validating and reloading nginx..."
+    ssh_run "sudo nginx -t && (sudo rc-service nginx reload 2>/dev/null || sudo nginx -s reload)"
+    echo "  nginx reloaded"
 fi
 
 # --- Post-deploy smoke test ---
