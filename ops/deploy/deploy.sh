@@ -204,10 +204,12 @@ if $deploy_app; then
     echo "  $WEB_SVC restarted"
 fi
 if $deploy_marketing; then
-    # Build docs site before syncing marketing to the server
+    # Build docs into marketing/ on the runner, then sync the whole tree to nginx's root.
     echo "Building docs site..."
     python "$PROJECT_DIR/ops/build_docs.py"
-    ssh_run "sudo rc-service nginx reload" 2>/dev/null || true
+    echo "Syncing marketing/ → /var/www/glintstone/marketing/..."
+    rsync_to --exclude='.DS_Store' "$PROJECT_DIR/marketing/" "$REMOTE:/var/www/glintstone/marketing/"
+    ssh_run "sudo rc-service nginx reload" 2>/dev/null || ssh_run "sudo nginx -s reload" 2>/dev/null || true
     echo "  marketing/nginx reloaded"
 fi
 
