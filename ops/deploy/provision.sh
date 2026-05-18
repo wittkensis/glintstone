@@ -68,7 +68,9 @@ fi
 # Allow deploy user to restart services without password
 cat > /etc/sudoers.d/glintstone << 'SUDOERS'
 deploy ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl restart glintstone-*
+deploy ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl status glintstone-*
 deploy ALL=(ALL) NOPASSWD: /sbin/rc-service nginx reload
+deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx -t
 deploy ALL=(ALL) NOPASSWD: /bin/cp * /etc/nginx/http.d/*
 SUDOERS
 chmod 440 /etc/sudoers.d/glintstone
@@ -103,6 +105,17 @@ autostart=true
 autorestart=true
 stderr_logfile=/var/log/glintstone-web.err.log
 stdout_logfile=/var/log/glintstone-web.out.log
+SUPERVISOR
+
+cat > /etc/supervisor.d/glintstone-mcp.ini << 'SUPERVISOR'
+[program:glintstone-mcp]
+command=/var/www/glintstone/venv/bin/python -m mcp.server_http --host 127.0.0.1 --port 8005
+directory=/var/www/glintstone
+user=deploy
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/glintstone-mcp.err.log
+stdout_logfile=/var/log/glintstone-mcp.out.log
 SUPERVISOR
 
 # --- Staging services (ports 8003/8004, separate deploy dir) ---
@@ -155,11 +168,13 @@ echo "  Next steps:"
 echo "    1. In Hostinger hPanel: create firewall group with ports 22, 80, 443"
 echo "    2. Point DNS A records (all -> this VPS):"
 echo "         glintstone.org, api.glintstone.org, app.glintstone.org"
+echo "         mcp.glintstone.org"
 echo "         staging.glintstone.org, staging-api.glintstone.org"
 echo "    3. Copy nginx configs: cp /path/to/ops/deploy/nginx/*.conf /etc/nginx/http.d/"
 echo "       Then reload: rc-service nginx reload"
 echo "    4. Create $APP_DIR/.env with production values (see ops/deploy/DEPLOY.md)"
 echo "    5. From local machine: ./ops/deploy/deploy.sh"
 echo "    6. SSL: certbot --nginx -d glintstone.org -d api.glintstone.org -d app.glintstone.org"
+echo "             certbot --nginx -d mcp.glintstone.org"
 echo "             certbot --nginx -d staging.glintstone.org -d staging-api.glintstone.org"
 echo ""

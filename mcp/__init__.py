@@ -13,13 +13,20 @@ Mount in Claude Desktop config:
     {
       "mcpServers": {
         "glintstone": {
-          "command": "python",
+          "command": "python3",
           "args": ["-m", "mcp.server_stdio"],
+          "cwd": "/path/to/Glintstone/PROJECT",
           "env": {
-            "GS_API_URL": "http://api.glintstone.test/api/v2",
+            "GS_API_URL": "https://api.glintstone.org/api/v2",
             "GS_CLIENT_LABEL": "claude-desktop"
           }
         }
       }
     }
 """
+
+# Merge this package with the installed mcp SDK so that mcp.server.fastmcp
+# resolves to the SDK while mcp.client and mcp.server_stdio resolve here.
+from pkgutil import extend_path
+
+__path__ = extend_path(__path__, __name__)

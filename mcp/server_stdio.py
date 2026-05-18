@@ -8,11 +8,11 @@ In Claude Desktop config (~/Library/Application Support/Claude/claude_desktop_co
     {
       "mcpServers": {
         "glintstone": {
-          "command": "python",
+          "command": "python3",
           "args": ["-m", "mcp.server_stdio"],
-          "cwd": "/Volumes/Portable Storage/Glintstone",
+          "cwd": "/path/to/Glintstone/PROJECT",
           "env": {
-            "GS_API_URL": "http://api.glintstone.test/api/v2",
+            "GS_API_URL": "https://api.glintstone.org/api/v2",
             "GS_CLIENT_LABEL": "claude-desktop"
           }
         }

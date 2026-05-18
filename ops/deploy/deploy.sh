@@ -72,15 +72,16 @@ rsync_to() { rsync -avz --delete -e "ssh ${SSH_OPTS[*]}" "$@"; }
 # --- Parse deploy targets ---
 TARGETS=("$@")
 if [ ${#TARGETS[@]} -eq 0 ]; then
-    TARGETS=(api app www)
+    TARGETS=(api app www mcp)
 fi
-deploy_api=false; deploy_app=false; deploy_www=false
+deploy_api=false; deploy_app=false; deploy_www=false; deploy_mcp=false
 for target in "${TARGETS[@]}"; do
     case "$target" in
         api) deploy_api=true ;;
         app) deploy_app=true ;;
         www) deploy_www=true ;;
-        *) echo "Unknown target: $target (use: api, app, www)" >&2; exit 1 ;;
+        mcp) deploy_mcp=true ;;
+        *) echo "Unknown target: $target (use: api, app, www, mcp)" >&2; exit 1 ;;
     esac
 done
 
@@ -228,6 +229,16 @@ if $deploy_app; then
     nginx_reload_needed=true
 fi
 
+if $deploy_mcp; then
+    ssh_run "sudo supervisorctl restart glintstone-mcp" || true
+    echo "  glintstone-mcp restarted"
+    if [ "$APP_ENV" != "staging" ]; then
+        ssh_run "sudo cp $RELEASE_DIR/ops/deploy/nginx/mcp.glintstone.org.conf $NGINX_CONF_DIR/mcp.glintstone.org.conf"
+        echo "  mcp.glintstone.org.conf installed"
+        nginx_reload_needed=true
+    fi
+fi
+
 if $deploy_www; then
     # Nginx serves glintstone.org from shared/www/ (persists across releases).
     # Migrate from old shared/marketing/ path on first deploy after rename.
@@ -241,7 +252,7 @@ fi
 
 if $nginx_reload_needed; then
     echo "Validating and reloading nginx..."
-    ssh_run "sudo nginx -t && (sudo rc-service nginx reload 2>/dev/null || sudo nginx -s reload)"
+    ssh_run "sudo rc-service nginx reload 2>/dev/null || sudo nginx -s reload"
     echo "  nginx reloaded"
 fi
 
@@ -251,7 +262,7 @@ fi
 # This is safe for additive migrations only; if a migration is destructive, the
 # pre-deploy DB snapshot (above) is the recovery path.
 smoke_failed=false
-if $deploy_api || $deploy_app; then
+if $deploy_api || $deploy_app || $deploy_mcp; then
     echo "Smoke-testing release..."
     SMOKE_CMD=""
     if $deploy_api; then
@@ -259,6 +270,9 @@ if $deploy_api || $deploy_app; then
     fi
     if $deploy_app; then
         SMOKE_CMD="$SMOKE_CMD curl -fsS --max-time 5 http://127.0.0.1:$WEB_PORT/healthz >/dev/null &&"
+    fi
+    if $deploy_mcp; then
+        SMOKE_CMD="$SMOKE_CMD curl -fsS --max-time 5 http://127.0.0.1:8005/healthz >/dev/null &&"
     fi
     SMOKE_CMD="${SMOKE_CMD% &&} && echo SMOKE_OK"
     # Up to 20 attempts × 1.5s = 30s budget.

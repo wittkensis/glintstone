@@ -27,7 +27,7 @@ import markdown
 SCRIPT_DIR = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parent
 DOCS_DIR = PROJECT_DIR / "docs"
-OUT_DIR = PROJECT_DIR / "marketing" / "docs"
+OUT_DIR = PROJECT_DIR / "www" / "docs"
 
 # ---------------------------------------------------------------------------
 # Assets extracted from marketing/index.html
@@ -496,7 +496,7 @@ def main() -> None:
 </body>
 </html>"""
     (OUT_DIR / "index.html").write_text(redirect_html, encoding="utf-8")
-    print("  -> marketing/docs/index.html  (redirect)")
+    print("  -> www/docs/index.html  (redirect)")
 
     page_count = 1  # count the redirect
 
@@ -536,12 +536,12 @@ def main() -> None:
             continue
 
         out_path.write_text(page_html, encoding="utf-8")
-        rel = out_path.relative_to(PROJECT_DIR / "marketing")
-        print(f"  -> marketing/{rel}")
+        rel = out_path.relative_to(PROJECT_DIR / "www")
+        print(f"  -> www/{rel}")
         page_count += 1
 
     print()
-    print(f"Build complete. {page_count} pages written to marketing/docs/")
+    print(f"Build complete. {page_count} pages written to www/docs/")
 
 
 if __name__ == "__main__":

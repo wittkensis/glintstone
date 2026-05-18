@@ -12,7 +12,7 @@ This is a **production academic application** for cuneiform / Assyriology schola
 - **macOS SSL workaround.** Python `urllib`/`requests` can fail on some HTTPS endpoints. Shell out to `curl` via `subprocess.run(...)`.
 - **Deployment is routed through `gs-expert-deployment`.** Never push to `main` with red CI, never modify the production Neon branch directly, never use `--no-verify`.
 
-## How to talk to Eric
+## How to respond
 
 - **Explain things in plain English.** Avoid jargon, acronyms, and code-level shorthand when explaining what something is, why it matters, or what to do about it. If a technical term is unavoidable, define it inline the first time. Save the precise terminology for the code itself.
 - **When you've made an assumption, say what you assumed and what could go wrong.** Don't bury caveats inside short bracketed asides — spell out the situation, why it might bite, and what to do if it does.

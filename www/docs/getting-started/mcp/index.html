@@ -101,34 +101,53 @@ function toggleSection(id) {
   <nav style="position:fixed;top:78px;left:0;width:240px;height:calc(100vh - 78px);overflow-y:auto;background:#111;border-right:1px solid #404040;padding:24px 0;z-index:40;"><div onclick="toggleSection('overview')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;"><span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#707070;">What Glintstone Is</span><span id="ch-overview" style="color:#707070;font-size:10px;">▸</span></div><div id="sec-overview" style="display:none;"><a href="/docs/overview/open-record/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">The Open Record</a><a href="/docs/overview/whats-missing/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">What's Missing</a><a href="/docs/overview/attribution/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Attribution</a><a href="/docs/overview/report-error/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Report an Error</a></div><div onclick="toggleSection('getting-started')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;"><span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#707070;">Getting Started</span><span id="ch-getting-started" style="color:#707070;font-size:10px;">▾</span></div><div id="sec-getting-started" style="display:block;"><a href="/docs/getting-started/app/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">The App</a><a href="/docs/getting-started/api/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">The API</a><a href="/docs/getting-started/mcp/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#c9a962;text-decoration:none;">With Claude (MCP)</a></div><div onclick="toggleSection('reference')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;"><span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#707070;">Reference</span><span id="ch-reference" style="color:#707070;font-size:10px;">▸</span></div><div id="sec-reference" style="display:none;"><div style="padding:16px 16px 4px;font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;color:#505050;letter-spacing:0.06em;">Data Sources</div><a href="/docs/reference/data-sources/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Data Sources</a><div style="padding:16px 16px 4px;font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;color:#505050;letter-spacing:0.06em;">Data Model</div><a href="/docs/reference/data-model/overview/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Overview</a><a href="/docs/reference/data-model/artifacts-layer/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Artifacts</a><a href="/docs/reference/data-model/texts-layer/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Texts</a><a href="/docs/reference/data-model/linguistic/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Linguistic Analysis</a><a href="/docs/reference/data-model/lexical/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Lexical Resources</a><a href="/docs/reference/data-model/scholarly/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Scholarly Context</a><div style="padding:16px 16px 4px;font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;color:#505050;letter-spacing:0.06em;">API Reference</div><a href="/docs/reference/api/index/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Overview</a><a href="/docs/reference/api/artifacts/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Artifacts</a><a href="/docs/reference/api/search-agentic/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Search & Agentic</a><a href="/docs/reference/api/dictionary/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Dictionary</a><a href="/docs/reference/api/collections/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Collections</a><a href="/docs/reference/api/composites/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Composites</a><a href="/docs/reference/api/stats/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Stats & Meta</a><div style="padding:16px 16px 4px;font-family:'Inter',sans-serif;font-size:10px;text-transform:uppercase;color:#505050;letter-spacing:0.06em;">MCP Reference</div><a href="/docs/reference/mcp/index/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Overview</a><a href="/docs/reference/mcp/semantic-search/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">semantic_search</a><a href="/docs/reference/mcp/summarize-artifact/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">summarize_artifact</a><a href="/docs/reference/mcp/interpret-token/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">interpret_token</a><a href="/docs/reference/mcp/submit-correction/" style="display:block;padding:4px 0 4px 28px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">submit_correction</a></div><div onclick="toggleSection('project')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;cursor:pointer;user-select:none;"><span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#707070;">Project</span><span id="ch-project" style="color:#707070;font-size:10px;">▸</span></div><div id="sec-project" style="display:none;"><a href="/docs/project/roadmap/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Roadmap</a><a href="/docs/project/open-questions/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Open Questions</a><a href="/docs/project/contributing/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Contributing</a><a href="/docs/project/team/" style="display:block;padding:5px 0 5px 16px;font-family:'Inter',sans-serif;font-size:13px;color:#a0a0a0;text-decoration:none;">Team</a></div></nav>
   <main style="flex:1;margin-left:240px;padding:48px 64px 96px;max-width:960px;">
     <h1 style="font-family:'Playfair Display',serif;font-size:40px;line-height:52px;color:#e8e6e3;margin:0 0 1.5rem;font-weight:400;">With Claude (MCP)</h1>
-<div class="prose-glintstone"><p>Glintstone exposes a Model Context Protocol (MCP) server that connects the corpus to Claude Desktop or Claude Code. Same data as the REST API — conversational interface.</p>
+<div class="prose-glintstone"><p>Glintstone exposes a Model Context Protocol (MCP) server that connects the corpus to Claude. Same data as the REST API — conversational interface.</p>
 <h2 id="what-the-mcp-server-is">What the MCP server is</h2>
-<p>The MCP server is a stdio server that wraps the Glintstone REST API as four tools. It does not implement any logic itself — it calls the same endpoints that the web app uses. Two-tier rule applies: MCP → REST API → PostgreSQL.</p>
-<h2 id="installation">Installation</h2>
-<p>Install the dependency:</p>
-<pre><code class="language-bash">pip install 'mcp[fastmcp]'
+<p>The MCP server wraps the Glintstone REST API as four tools. It does not implement any logic itself — it calls the same endpoints the web app uses. Two-tier rule applies: MCP → REST API → PostgreSQL.</p>
+<p>Two transports are supported:</p>
+<ul>
+<li><strong>stdio</strong> — for Claude Desktop and Claude Code CLI (local process)</li>
+<li><strong>HTTP/SSE</strong> — for Claude.ai web and other HTTP-capable clients</li>
+</ul>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Install the MCP SDK into the system Python:</p>
+<pre><code class="language-bash">pip3 install 'mcp[fastmcp]'
 </code></pre>
-<h2 id="configuration">Configuration</h2>
+<h2 id="claude-desktop-stdio">Claude Desktop (stdio)</h2>
 <p>Add to <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>:</p>
 <pre><code class="language-json">{
   &quot;mcpServers&quot;: {
     &quot;glintstone&quot;: {
-      &quot;command&quot;: &quot;python&quot;,
+      &quot;command&quot;: &quot;/Library/Frameworks/Python.framework/Versions/3.13/bin/python3&quot;,
       &quot;args&quot;: [&quot;-m&quot;, &quot;mcp.server_stdio&quot;],
-      &quot;cwd&quot;: &quot;/path/to/Glintstone&quot;,
+      &quot;cwd&quot;: &quot;/path/to/Glintstone/PROJECT&quot;,
       &quot;env&quot;: {
-        &quot;GS_API_URL&quot;: &quot;http://api.glintstone.test/api/v2&quot;,
+        &quot;GS_API_URL&quot;: &quot;https://api.glintstone.org/api/v2&quot;,
         &quot;GS_CLIENT_LABEL&quot;: &quot;claude-desktop&quot;
       }
     }
   }
 }
 </code></pre>
-<p>For production use, set <code>GS_API_URL</code> to <code>https://api.glintstone.org/api/v2</code>.</p>
+<p>Quit Claude Desktop fully (<code>Cmd+Q</code>), edit the config, then relaunch. Claude Desktop rewrites the config on exit, so edits made while it is running are lost.</p>
+<h2 id="claude-code-cli-stdio">Claude Code CLI (stdio)</h2>
+<pre><code class="language-bash">claude mcp add glintstone \
+  -e &quot;GS_API_URL=https://api.glintstone.org/api/v2&quot; \
+  -e &quot;GS_CLIENT_LABEL=claude-code&quot; \
+  -s user \
+  -- \
+  /Library/Frameworks/Python.framework/Versions/3.13/bin/python3 -m mcp.server_stdio
+</code></pre>
+<p>Then set the working directory in <code>~/.claude.json</code> under <code>mcpServers.glintstone.cwd</code>.</p>
+<h2 id="claudeai-web-httpsse">Claude.ai web (HTTP/SSE)</h2>
+<p>The HTTP server runs as a persistent service and must be reachable from Anthropic's infrastructure.</p>
+<pre><code class="language-bash">python -m mcp.server_http
+</code></pre>
+<p>Point Claude.ai's MCP connector to <code>https://mcp.glintstone.org</code> (once deployed). See <code>ops/deploy/</code> for the service configuration.</p>
 <h2 id="the-four-tools">The four tools</h2>
-<p><strong>semantic_search</strong> — Search across tablets, lemmas, signs, scholars, publications, named entities, and composites. Uses hybrid lexical + semantic retrieval with Reciprocal Rank Fusion. Returns up to 5 results per entity type with structured sources.</p>
-<p><strong>summarize_artifact</strong> — Generate a grounded narrative summary of a single tablet. Lazy-cached: the first call is slower (Claude generates it internally), subsequent calls reuse the cached result until any cited annotation is superseded. For sparse tablets, includes a best-guess section phrased as hypotheses.</p>
-<p><strong>interpret_token</strong> — Walk the reading chain for a single token. When lemmatized, returns form → normalized form → lemma → sense with sources. When not lemmatized, returns 1–3 ranked hypotheses with confidence bands and evidence from sign readings, neighbor context, and genre/period priors.</p>
+<p><strong>semantic_search</strong> — Search across tablets, lemmas, signs, scholars, publications, named entities, and composites. Uses hybrid lexical + semantic retrieval with Reciprocal Rank Fusion.</p>
+<p><strong>summarize_artifact</strong> — Generate a grounded narrative summary of a single tablet. Lazy-cached: first call generates via Claude, subsequent calls reuse until any cited annotation is superseded.</p>
+<p><strong>interpret_token</strong> — Walk the reading chain for a single token. When lemmatized, returns form → normalized form → lemma → sense with sources. When not lemmatized, returns 1–3 ranked hypotheses with confidence bands.</p>
 <p><strong>submit_correction</strong> — Submit a scholarly correction of something the agent said. Creates a new annotation run and invalidates cached outputs.</p>
 <h2 id="example">Example</h2>
 <p>Ask Claude: "Find Ur III tablets mentioning grain distribution."</p>
@@ -137,7 +156,7 @@ function toggleSection(id) {
 <p>MCP hypotheses are phrased as hypotheses. When the pipeline is sparse — no lemmatization, ambiguous sign readings — the tools phrase their output as "resembles," "consistent with," "likely." They do not say "means X" or "is X" for unlemmatized tokens.</p>
 <p>Corrections submitted via <code>submit_correction</code> are permanent, attributed, and stored in the same trust infrastructure as all other annotation data. They do not overwrite existing records — they layer on top.</p>
 <h2 id="mcp-vs-api-directly">MCP vs API directly</h2>
-<p>Use the MCP server when you want conversational research with Claude — asking questions, exploring corpus, following threads. Use the REST API directly when you need programmatic access from your own code, scripted pipelines, or non-Claude clients.</p></div>
+<p>Use the MCP server when you want conversational research with Claude — asking questions, exploring the corpus, following threads. Use the REST API directly when you need programmatic access from your own code, scripted pipelines, or non-Claude clients.</p></div>
   </main>
 </div>
 </body>

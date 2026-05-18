@@ -1,20 +1,25 @@
 # With Claude (MCP)
 
-Glintstone exposes a Model Context Protocol (MCP) server that connects the corpus to Claude Desktop or Claude Code. Same data as the REST API — conversational interface.
+Glintstone exposes a Model Context Protocol (MCP) server that connects the corpus to Claude. Same data as the REST API — conversational interface.
 
 ## What the MCP server is
 
-The MCP server is a stdio server that wraps the Glintstone REST API as four tools. It does not implement any logic itself — it calls the same endpoints that the web app uses. Two-tier rule applies: MCP → REST API → PostgreSQL.
+The MCP server wraps the Glintstone REST API as four tools. It does not implement any logic itself — it calls the same endpoints the web app uses. Two-tier rule applies: MCP → REST API → PostgreSQL.
 
-## Installation
+Two transports are supported:
 
-Install the dependency:
+- **stdio** — for Claude Desktop and Claude Code CLI (local process)
+- **HTTP/SSE** — for Claude.ai web and other HTTP-capable clients
+
+## Prerequisites
+
+Install the MCP SDK into the system Python:
 
 ```bash
-pip install 'mcp[fastmcp]'
+pip3 install 'mcp[fastmcp]'
 ```
 
-## Configuration
+## Claude Desktop (stdio)
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -22,11 +27,11 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "glintstone": {
-      "command": "python",
+      "command": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
       "args": ["-m", "mcp.server_stdio"],
-      "cwd": "/path/to/Glintstone",
+      "cwd": "/path/to/Glintstone/PROJECT",
       "env": {
-        "GS_API_URL": "http://api.glintstone.test/api/v2",
+        "GS_API_URL": "https://api.glintstone.org/api/v2",
         "GS_CLIENT_LABEL": "claude-desktop"
       }
     }
@@ -34,15 +39,38 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-For production use, set `GS_API_URL` to `https://api.glintstone.org/api/v2`.
+Quit Claude Desktop fully (`Cmd+Q`), edit the config, then relaunch. Claude Desktop rewrites the config on exit, so edits made while it is running are lost.
+
+## Claude Code CLI (stdio)
+
+```bash
+claude mcp add glintstone \
+  -e "GS_API_URL=https://api.glintstone.org/api/v2" \
+  -e "GS_CLIENT_LABEL=claude-code" \
+  -s user \
+  -- \
+  /Library/Frameworks/Python.framework/Versions/3.13/bin/python3 -m mcp.server_stdio
+```
+
+Then set the working directory in `~/.claude.json` under `mcpServers.glintstone.cwd`.
+
+## Claude.ai web (HTTP/SSE)
+
+The HTTP server runs as a persistent service and must be reachable from Anthropic's infrastructure.
+
+```bash
+python -m mcp.server_http
+```
+
+Point Claude.ai's MCP connector to `https://mcp.glintstone.org` (once deployed). See `ops/deploy/` for the service configuration.
 
 ## The four tools
 
-**semantic_search** — Search across tablets, lemmas, signs, scholars, publications, named entities, and composites. Uses hybrid lexical + semantic retrieval with Reciprocal Rank Fusion. Returns up to 5 results per entity type with structured sources.
+**semantic_search** — Search across tablets, lemmas, signs, scholars, publications, named entities, and composites. Uses hybrid lexical + semantic retrieval with Reciprocal Rank Fusion.
 
-**summarize_artifact** — Generate a grounded narrative summary of a single tablet. Lazy-cached: the first call is slower (Claude generates it internally), subsequent calls reuse the cached result until any cited annotation is superseded. For sparse tablets, includes a best-guess section phrased as hypotheses.
+**summarize_artifact** — Generate a grounded narrative summary of a single tablet. Lazy-cached: first call generates via Claude, subsequent calls reuse until any cited annotation is superseded.
 
-**interpret_token** — Walk the reading chain for a single token. When lemmatized, returns form → normalized form → lemma → sense with sources. When not lemmatized, returns 1–3 ranked hypotheses with confidence bands and evidence from sign readings, neighbor context, and genre/period priors.
+**interpret_token** — Walk the reading chain for a single token. When lemmatized, returns form → normalized form → lemma → sense with sources. When not lemmatized, returns 1–3 ranked hypotheses with confidence bands.
 
 **submit_correction** — Submit a scholarly correction of something the agent said. Creates a new annotation run and invalidates cached outputs.
 
@@ -60,4 +88,4 @@ Corrections submitted via `submit_correction` are permanent, attributed, and sto
 
 ## MCP vs API directly
 
-Use the MCP server when you want conversational research with Claude — asking questions, exploring corpus, following threads. Use the REST API directly when you need programmatic access from your own code, scripted pipelines, or non-Claude clients.
+Use the MCP server when you want conversational research with Claude — asking questions, exploring the corpus, following threads. Use the REST API directly when you need programmatic access from your own code, scripted pipelines, or non-Claude clients.
