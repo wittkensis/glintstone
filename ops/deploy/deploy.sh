@@ -129,7 +129,7 @@ EXCLUDES=(
 
 # --- Always sync shared core + dependencies into the release ---
 echo "Syncing core/, requirements.txt, data-model/, ingestion/..."
-for d in core api app ingestion data-model marketing ops scripts gs_mcp; do
+for d in core api app ingestion data-model marketing ops scripts mcp; do
     [ -d "$PROJECT_DIR/$d" ] || continue
     rsync_to "${EXCLUDES[@]}" "$PROJECT_DIR/$d/" "$REMOTE:$RELEASE_DIR/$d/" >/dev/null
 done

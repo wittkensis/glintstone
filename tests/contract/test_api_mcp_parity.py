@@ -52,11 +52,11 @@ def _rest_paths_from_source() -> Set[str]:
 
 
 def _mcp_tool_names_in_source() -> Set[str]:
-    """Read gs_mcp/server_stdio.py and pull out @app.tool(name="...") declarations.
+    """Read mcp/server_stdio.py and pull out @app.tool(name="...") declarations.
 
     Read as source rather than executing, since FastMCP may not be installed
     in CI."""
-    src_path = _PROJECT_ROOT / "gs_mcp" / "server_stdio.py"
+    src_path = _PROJECT_ROOT / "mcp" / "server_stdio.py"
     text = src_path.read_text(encoding="utf-8")
     return set(re.findall(r'@app\.tool\(\s*name\s*=\s*"([^"]+)"', text))
 
