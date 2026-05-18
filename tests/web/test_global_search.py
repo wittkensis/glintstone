@@ -31,6 +31,9 @@ class _FakeAPI:
         self.base_url = "http://api.test"
 
     def get(self, path, params=None, token=None):
+        # saved-items returns a list; all other paths return the search envelope
+        if "saved-items" in path:
+            return []
         self.last_path = path
         self.last_params = params
         return self.envelope
