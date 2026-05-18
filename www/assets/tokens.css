@@ -1,7 +1,12 @@
 /**
- * Design Tokens
- * All CSS custom properties (variables) for the design system
- * This is the single source of truth for design decisions
+ * Design Tokens (mirror)
+ *
+ * Copied verbatim from app/static/css/core/tokens.css so the marketing site
+ * shares the app's design system. Keep these two files in lockstep — there
+ * is no symlink because nginx serves www/ as static and a symlink to a
+ * release directory would break on release rotation.
+ *
+ * If you edit one, edit the other. See issue #84 phase 5 (TW-A).
  *
  * Categories:
  * - Colors: Base palette + semantic aliases
