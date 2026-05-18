@@ -1,0 +1,86 @@
+name: cron-ingest
+
+# Scheduled re-runs for data-stable connectors. Upstream sources drift:
+# CDLI publishes quarterly, ORACC publishes irregularly but most months.
+# These jobs SSH to the VPS and invoke the v2 ingestion CLI directly so the
+# Postgres + connector state stay local. See issue #64.
+
+on:
+  schedule:
+    # ORACC family — weekly Sunday 04:00 UTC. Norms, glossaries, lemmatizations
+    # all share the same release cadence and run lightly.
+    - cron: "0 4 * * 0"
+    # CDLI catalog + ATF — monthly on the 5th at 05:00 UTC. CDLI publishes
+    # quarterly but a monthly poll catches off-cycle corrections cheaply.
+    - cron: "0 5 5 * *"
+  workflow_dispatch:
+    inputs:
+      connector:
+        description: "Connector id to run (matches ingestion CLI)"
+        required: true
+        type: string
+      mode:
+        description: "Run mode"
+        required: false
+        default: "incremental"
+        type: choice
+        options: [incremental, full, dry_run, verify_only]
+
+jobs:
+  oracc:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 4 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 76.13.208.149 >> ~/.ssh/known_hosts
+      - name: Run ORACC connectors
+        run: |
+          set -e
+          for connector in oracc-norms oracc-glossaries oracc-lemmatizations oracc-enrichment oracc-credits; do
+            echo "::group::$connector"
+            ssh deploy@76.13.208.149 "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run $connector --mode incremental"
+            echo "::endgroup::"
+          done
+
+  cdli:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 5 5 * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 76.13.208.149 >> ~/.ssh/known_hosts
+      - name: Run CDLI connectors
+        run: |
+          set -e
+          for connector in cdli-catalog atf-parser artifact-identifiers genre-language-junctions; do
+            echo "::group::$connector"
+            ssh deploy@76.13.208.149 "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run $connector --mode incremental"
+            echo "::endgroup::"
+          done
+
+  manual:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 76.13.208.149 >> ~/.ssh/known_hosts
+      - name: Run ${{ inputs.connector }}
+        run: |
+          ssh deploy@76.13.208.149 "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run ${{ inputs.connector }} --mode ${{ inputs.mode }}"
