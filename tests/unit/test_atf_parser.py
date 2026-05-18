@@ -65,13 +65,7 @@ def test_surface_map_legacy_shortcuts():
 
 
 def test_parses_minimal_tablet(tmp_path):
-    atf = (
-        "&P000001 = Test tablet\n"
-        "#atf: lang sux\n"
-        "@obverse\n"
-        "1. lugal\n"
-        "2. dingir\n"
-    )
+    atf = "&P000001 = Test tablet\n#atf: lang sux\n@obverse\n1. lugal\n2. dingir\n"
     tablets = list(_parse_atf_file(_write_atf(tmp_path, atf)))
     assert len(tablets) == 1
     t = tablets[0]
@@ -112,14 +106,14 @@ def test_artifact_shape_surfaces_emit_real_surface(tmp_path, marker, expected):
     """Lines under these markers used to get current_surface_type=None, so
     sign_annotations on envelopes/prisms had no surface_id.
     """
-    atf = f"&P000099 = Object test\n" f"@{marker}\n" f"1. ABCDEF\n"
+    atf = f"&P000099 = Object test\n@{marker}\n1. ABCDEF\n"
     tablets = list(_parse_atf_file(_write_atf(tmp_path, atf)))
     assert expected in tablets[0]["surfaces"]
 
 
 def test_column_marker_tracks_current_column(tmp_path):
     """`@column N` sets the column counter without creating a surface row."""
-    atf = "&P000010 = Columnar tablet\n" "@obverse\n" "@column 2\n" "1. line A\n"
+    atf = "&P000010 = Columnar tablet\n@obverse\n@column 2\n1. line A\n"
     tablets = list(_parse_atf_file(_write_atf(tmp_path, atf)))
     # surfaces still just the obverse — column is metadata, not a surface row
     assert tablets[0]["surfaces"] == {"obverse": True}
@@ -133,7 +127,7 @@ def test_column_marker_tracks_current_column(tmp_path):
 
 
 def test_translation_line_captured(tmp_path):
-    atf = "&P000020 = Translated\n" "@obverse\n" "1. lugal\n" "#tr.en: the king\n"
+    atf = "&P000020 = Translated\n@obverse\n1. lugal\n#tr.en: the king\n"
     tablets = list(_parse_atf_file(_write_atf(tmp_path, atf)))
     lang, text, line_counter = tablets[0]["translations"][0]
     assert lang == "en"
@@ -146,14 +140,14 @@ def test_translation_line_captured(tmp_path):
 
 
 def test_blank_lines_ignored(tmp_path):
-    atf = "&P000030 = Sparse\n" "\n" "@obverse\n" "\n" "1. lugal\n" "\n"
+    atf = "&P000030 = Sparse\n\n@obverse\n\n1. lugal\n\n"
     tablets = list(_parse_atf_file(_write_atf(tmp_path, atf)))
     assert len(tablets) == 1
     assert tablets[0]["p_number"] == "P000030"
 
 
 def test_utf8_unicode_signs_preserved(tmp_path):
-    atf = "&P000040 = Unicode\n" "@obverse\n" "1. 𒀭 šarru\n"
+    atf = "&P000040 = Unicode\n@obverse\n1. 𒀭 šarru\n"
     tablets = list(_parse_atf_file(_write_atf(tmp_path, atf)))
     _surface, _col, _line_no, raw_text, _ruling, _blank = tablets[0]["lines"][0]
     assert "𒀭" in raw_text

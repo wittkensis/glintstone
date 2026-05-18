@@ -29,9 +29,11 @@ repos:
         pass_filenames: false
         stages: [post-merge]
 
-  # Ruff — fast lint + format, commit only (CI handles push)
+  # Ruff — fast lint + format, commit only (CI handles push).
+  # Pin matches the CI install in .github/workflows/test.yml so local
+  # auto-fixes don't drift from the gate.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.15.2
     hooks:
       - id: ruff
         args: [--fix]

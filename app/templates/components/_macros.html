@@ -455,56 +455,7 @@
         {% endif %}
     </form>
 </aside>
-
-<script>
-(function() {
-    var form = document.getElementById('filter-form');
-
-    // Auto-submit on any checkbox change (sidebar + external toggle via form attr)
-    document.querySelectorAll('#filter-form .filter-checkbox input[type="checkbox"]').forEach(function(cb) {
-        cb.addEventListener('change', function() { form.submit(); });
-    });
-
-    // External toggle (Has ML/OCR) — rendered after sidebar, so defer binding
-    function bindOcrToggle() {
-        var ocrToggle = document.querySelector('.stage-filter-bar__toggle input[type="checkbox"]');
-        if (ocrToggle) {
-            ocrToggle.addEventListener('change', function() { form.submit(); });
-        }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bindOcrToggle);
-    } else {
-        bindOcrToggle();
-    }
-
-    // "Show all" buttons — reveal overflow items, remove button
-    document.querySelectorAll('.filter-show-all').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var container = this.parentElement;
-            container.classList.remove('is-truncated');
-            this.remove();
-        });
-    });
-
-    // Animate <details> close (open is handled by CSS grid transition)
-    document.querySelectorAll('.filter-group summary').forEach(function(summary) {
-        summary.addEventListener('click', function(e) {
-            var details = this.parentElement;
-            var items = details.querySelector('.filter-group__items');
-            if (details.open) {
-                e.preventDefault();
-                items.style.gridTemplateRows = '0fr';
-                items.addEventListener('transitionend', function handler() {
-                    details.removeAttribute('open');
-                    items.style.gridTemplateRows = '';
-                    items.removeEventListener('transitionend', handler);
-                }, { once: true });
-            }
-        });
-    });
-})();
-</script>
+{# Behaviour: app/static/js/filters.js, loaded once in base.html #}
 {% endmacro %}
 
 
@@ -618,23 +569,7 @@
         {% endif %}
     </form>
 </aside>
-
-<script>
-(function() {
-    var form = document.getElementById('filter-form');
-    // Auto-submit on checkbox/radio change
-    form.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(function(cb) {
-        cb.addEventListener('change', function() { form.submit(); });
-    });
-    // "Show all" buttons
-    document.querySelectorAll('.filter-show-all').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            this.parentElement.classList.remove('is-truncated');
-            this.remove();
-        });
-    });
-})();
-</script>
+{# Behaviour: app/static/js/filters.js, loaded once in base.html #}
 {% endmacro %}
 
 
