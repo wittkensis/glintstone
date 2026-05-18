@@ -64,3 +64,10 @@ class UserRepository(BaseRepository):
                 "UPDATE users SET email_verified_at = now() WHERE id = %(id)s",
                 {"id": user_id},
             )
+
+    def update_avatar_url(self, user_id: str, avatar_url: str) -> None:
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET avatar_url = %(url)s WHERE id = %(id)s",
+                {"url": avatar_url, "id": user_id},
+            )

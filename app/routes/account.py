@@ -2,9 +2,22 @@
 
 import httpx
 from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 router = APIRouter()
+
+
+@router.get("/_me")
+def me_proxy(request: Request):
+    """Thin proxy so base.html JS can fetch user identity without exposing API_URL."""
+    token = request.cookies.get("session_token")
+    if not token:
+        return Response(status_code=204)
+    try:
+        user = request.app.state.api.get("/auth/me", token=token)
+        return JSONResponse(user)
+    except Exception:
+        return Response(status_code=204)
 
 
 @router.get("/account")

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ status_code }} — Glintstone{% endblock %}
+
+{% block content %}
+<main class="error-page">
+    <div class="error-page__inner">
+        <span class="error-page__glyph" aria-hidden="true">𒁹</span>
+        <h1 class="error-page__code">{{ status_code }}</h1>
+        <p class="error-page__title">{{ detail or "An error occurred" }}</p>
+        <p class="error-page__message">
+            Please try again, or return to the homepage.
+        </p>
+        <div class="error-page__actions">
+            <a href="/" class="btn btn--primary btn-lg">Go to homepage</a>
+        </div>
+    </div>
+</main>
+{% endblock %}

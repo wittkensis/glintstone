@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found — Glintstone{% endblock %}
+
+{% block content %}
+<main class="error-page">
+    <div class="error-page__inner">
+        <span class="error-page__glyph" aria-hidden="true">𒀭</span>
+        <h1 class="error-page__code">404</h1>
+        <p class="error-page__title">Page not found</p>
+        <p class="error-page__message">
+            The tablet you're looking for has been lost to time,
+            or this path doesn't exist in Glintstone.
+        </p>
+        <div class="error-page__actions">
+            <a href="/" class="btn btn--primary btn-lg">Go to homepage</a>
+            <a href="/tablets" class="btn btn-lg">Browse artifacts</a>
+        </div>
+    </div>
+</main>
+{% endblock %}

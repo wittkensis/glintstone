@@ -1,5 +1,6 @@
 """FastAPI application for app.glintstone.org (server-rendered pages)."""
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api_client import APIClient, AuthRequiredError
@@ -24,6 +26,8 @@ from app.routes import (
 )
 from core.database import close_pool, init_pool
 from core.version import release_tag, version_payload
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).parent
 
@@ -71,6 +75,26 @@ async def auth_required_handler(request: Request, exc: AuthRequiredError):
     response = RedirectResponse("/auth/login", status_code=302)
     response.delete_cookie("session_token")
     return response
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == 404:
+        return templates.TemplateResponse(
+            request, "errors/404.html", {}, status_code=404
+        )
+    return templates.TemplateResponse(
+        request,
+        "errors/error.html",
+        {"status_code": exc.status_code, "detail": exc.detail},
+        status_code=exc.status_code,
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception for %s %s", request.method, request.url.path)
+    return templates.TemplateResponse(request, "errors/500.html", {}, status_code=500)
 
 
 @app.middleware("http")

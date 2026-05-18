@@ -4,7 +4,7 @@ import json
 import subprocess
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
 from api.dependencies import require_user
@@ -134,8 +134,12 @@ def magic_link_request(body: MagicLinkRequest, request: Request):
         email_service.send_magic_link(body.email, link, settings)
     except Exception as exc:
         import logging
+
         logging.getLogger(__name__).error("Email delivery failed: %s", exc)
-        raise HTTPException(status_code=503, detail="Email service unavailable. Contact the administrator.")
+        raise HTTPException(
+            status_code=503,
+            detail="Email service unavailable. Contact the administrator.",
+        )
     return {"status": "sent"}
 
 
@@ -181,7 +185,36 @@ def me(user: dict = Depends(require_user)):
         "display_name": user.get("display_name"),
         "orcid_id": user.get("orcid_id"),
         "email_verified_at": user.get("email_verified_at"),
+        "avatar_url": user.get("avatar_url"),
     }
+
+
+@router.post("/avatar")
+def upload_avatar(
+    file: UploadFile,
+    user: dict = Depends(require_user),
+    conn=Depends(get_db),
+):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    data = file.file.read()
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image too large (max 5 MB)")
+
+    from core.storage import get_storage
+
+    ext = "jpg"
+    if file.filename and "." in file.filename:
+        ext = file.filename.rsplit(".", 1)[-1].lower()
+
+    storage = get_storage()
+    key = f"avatars/{user['id']}.{ext}"
+    storage.put(key, data, content_type=file.content_type or "image/jpeg")
+    avatar_url = storage.public_url(key)
+
+    UserRepository(conn).update_avatar_url(user["id"], avatar_url)
+    conn.commit()
+    return {"avatar_url": avatar_url}
 
 
 # ── API keys ──────────────────────────────────────────────────────────────────
