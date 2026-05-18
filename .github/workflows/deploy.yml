@@ -25,7 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      name: >-
+        ${{ github.ref == 'refs/heads/main' &&
+            github.actor == 'wittkensis' && 'production-auto' ||
+            github.ref == 'refs/heads/main' && 'production' ||
+            'staging' }}
 
     steps:
       - uses: actions/checkout@v4
