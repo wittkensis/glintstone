@@ -30,7 +30,7 @@ class _FakeAPI:
         self.last_params = None
         self.base_url = "http://api.test"
 
-    def get(self, path, params=None):
+    def get(self, path, params=None, token=None):
         self.last_path = path
         self.last_params = params
         return self.envelope
