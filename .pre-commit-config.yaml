@@ -1,23 +1,19 @@
 # Pre-commit framework configuration
 # See https://pre-commit.com for more information
+#
+# Philosophy: hooks are a fast local catch, not a CI replay.
+# mypy and full lint run in CI (test.yml). Hooks do ruff auto-fix,
+# lightweight doc warnings, and a schema guard on push.
 
 repos:
-  # Custom local hooks
   - repo: local
     hooks:
-      - id: python-quality
-        name: Python Code Quality (ruff + mypy)
-        entry: ops/hooks/pre-commit.sh
-        language: script
-        types: [python]
-        pass_filenames: false
-
       - id: documentation-validation
         name: Documentation Validation
         entry: ops/hooks/pre-commit-docs.sh
         language: script
         pass_filenames: false
-        always_run: true
+        stages: [commit]
 
       - id: schema-validation
         name: Database Schema Validation
@@ -33,25 +29,31 @@ repos:
         pass_filenames: false
         stages: [post-merge]
 
-  # Ruff - Fast Python linter (official pre-commit hook)
+  # Ruff — fast lint + format, commit only (CI handles push)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.4
     hooks:
-      # Run the linter
       - id: ruff
         args: [--fix]
-      # Run the formatter
+        stages: [commit]
       - id: ruff-format
+        stages: [commit]
 
-  # Standard pre-commit hooks
+  # Standard hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        stages: [commit]
       - id: end-of-file-fixer
+        stages: [commit]
       - id: check-yaml
-        args: ['--unsafe']  # Allow custom YAML tags
+        args: ['--unsafe']
+        stages: [commit]
       - id: check-added-large-files
         args: ['--maxkb=1000']
+        stages: [commit]
       - id: check-merge-conflict
+        stages: [commit]
       - id: mixed-line-ending
+        stages: [commit]
