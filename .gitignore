@@ -70,6 +70,8 @@ data-model/glintstone.db-wal
 # Runtime state
 .pids/
 ops/logs/
+ops/scripts/.logs/
+source-data/checkpoints/
 
 # Deploy: scripts and nginx configs are tracked (needed by GitHub Actions);
 # logs and provisioning credentials are not.

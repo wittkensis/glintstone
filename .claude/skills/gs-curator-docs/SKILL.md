@@ -62,6 +62,7 @@ When staged changes include any of these paths, the matching doc must also be to
 | `README.md` row-count tables | `.claude/skills/gs-orient-project/SKILL.md` row counts |
 | any migration adding new tables | `.claude/skills/gs-curator-artifacts/catalog.yaml` (scenarios that need fixtures) |
 | `.github/workflows/*.yml`, `ops/deploy/*.sh` | `.claude/skills/gs-expert-deployment/pipeline.md` |
+| `ops/deploy/supervisor/*.ini`, `ops/deploy/provision*.sh` | `.claude/skills/gs-expert-deployment/SKILL.md` — process-supervision section (services list, log paths, sudoers entries) |
 | new HuggingFace/dataset/model reference | `.claude/skills/gs-scout-integrations/worked-examples.md` |
 
 The hook is **warn-only**. It never blocks a push. Deployment-safety checks (e.g. red CI) DO block, but those live in `gs-expert-deployment`.

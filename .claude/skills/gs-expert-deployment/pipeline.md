@@ -1,8 +1,8 @@
 ---
 question: "What do test.yml and deploy.yml actually do, and how do I debug a failing run?"
 created: 2026-05-11
-modified: 2026-05-12
-context: "Created 2026-05-11. Updated 2026-05-12 when production Postgres moved from Neon to the VPS itself — migrations now run on the VPS, not in CI."
+modified: 2026-05-18
+context: "Created 2026-05-11. Updated 2026-05-12 when production Postgres moved from Neon to the VPS itself — migrations now run on the VPS, not in CI. 2026-05-18: corrected log paths and replaced journalctl references — VPS is Alpine/OpenRC/supervisord, not systemd."
 status: active
 audience: [claude, ops]
 owners: [eric]
@@ -42,16 +42,21 @@ superseded_by: null
 | Surface | Logs |
 |---|---|
 | GitHub Actions run | `gh run view <run-id> --log` |
-| Hostinger uvicorn | `/var/log/glintstone/{api,app}.log` |
+| Hostinger uvicorn (prod api) | `/var/log/glintstone-api.{out,err}.log` |
+| Hostinger uvicorn (prod web) | `/var/log/glintstone-web.{out,err}.log` |
+| Hostinger uvicorn (staging) | `/var/log/glintstone-staging-{api,web}.{out,err}.log` |
+| Hostinger crawler | `/var/log/glintstone-crawler.{out,err}.log` |
 | Hostinger nginx | `/var/log/nginx/{access,error}.log` |
-| Migration output | captured into the Actions run; also `/var/log/glintstone/migrate.log` |
+| Migration output | captured into the Actions run; tail on VPS via `supervisorctl tail -f <svc> stderr` for live view |
+
+Live stream a service: `ssh glintstone "sudo supervisorctl tail -f glintstone-api stderr"` (works for any of the 5 services). Do not use `journalctl` — there is no systemd journal on this host.
 
 ## Debugging a failed run
 
 1. `gh run list --branch main --limit 5` — find the failed run
 2. `gh run view <run-id> --log-failed` — get just the failed step
 3. If migration failed: was the migration tested against a Neon branch first? (see [staging.md](staging.md))
-4. If smoke test failed: SSH in (`ssh glintstone@<vps>`), `journalctl -u glintstone-api -n 100`
+4. If smoke test failed: `ssh glintstone "sudo supervisorctl status glintstone-api && tail -n 100 /var/log/glintstone-api.err.log"`
 5. If the run never started: check GitHub Actions secrets are still set (`gh secret list`)
 
 ## Secrets the workflows need

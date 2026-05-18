@@ -18,12 +18,11 @@ superseded_by: null
 
 | I want to… | Reach for | If MCP unavailable |
 |---|---|---|
-| Check production app status | Hostinger MCP — VPS status | `ssh` + `systemctl status` |
-| Tail production logs | Hostinger MCP — log tail | `ssh` + `journalctl -fu glintstone-api` |
-| List Neon branches | Neon MCP — `list_branches` | Neon web UI |
-| Create a Neon staging branch | Neon MCP — `create_branch` | Neon web UI |
-| Get a Neon connection string | Neon MCP — `get_connection_string` | Neon web UI |
-| Run a migration on a Neon branch | Local Python after swapping `.env` | — |
+| Check production app status | Hostinger MCP — VPS status | `ssh glintstone "sudo supervisorctl status"` |
+| Tail production logs | Hostinger MCP — log tail | `ssh glintstone "sudo supervisorctl tail -f glintstone-api stderr"` |
+| ~~List Neon branches~~ | — | Neon decommissioned 2026-05-12; staging is a separate VPS-local DB |
+| ~~Create a Neon staging branch~~ | — | Decommissioned. Staging uses its own DB at `/var/www/glintstone-staging/shared/.env` |
+| Run a migration on staging | `APP_ENV=staging ./ops/deploy/deploy.sh` | — |
 | Trigger / re-run a GitHub Actions workflow | `gh workflow run`, `gh run rerun` | GitHub web UI |
 | View a failed CI run | `gh run view <id> --log-failed` | GitHub web UI |
 | Set / rotate a GitHub secret | `gh secret set <name>` | GitHub web UI |
@@ -49,7 +48,7 @@ When the user says these, this is the routing:
 
 - VPS lifecycle (start/stop, status)
 - Log streaming
-- Service control (systemctl wrappers)
+- Service control (supervisord wrappers via `supervisorctl`)
 - File transfer (scp wrapper)
 
 ### Neon MCP

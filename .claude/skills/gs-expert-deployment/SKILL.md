@@ -4,8 +4,8 @@ description: Proactive infra concierge — Hostinger VPS, GitHub Actions, Neon, 
 metadata:
   question: "How do I safely deploy, stage, roll back, and manage Glintstone's infrastructure (Hostinger, GitHub Actions, Neon, soon Cloudflare R2)?"
   created: 2026-05-11
-  modified: 2026-05-11
-  context: "Created during the 2026-05-11 overhaul to absorb the infra-juggling burden from a non-technical operator. Designed to be proactive — surfaces problems before they bite, restates risky actions before executing, and routes to the right MCP server for the job."
+  modified: 2026-05-18
+  context: "Created during the 2026-05-11 overhaul to absorb the infra-juggling burden from a non-technical operator. Designed to be proactive — surfaces problems before they bite, restates risky actions before executing, and routes to the right MCP server for the job. Process-supervision section added 2026-05-18 after a near-miss where the operator was told 'services have no reboot survival' (false — supervisord was already running them; the audit missed it by looking for systemd/OpenRC instead of asking 'who's the parent PID?')."
   status: active
   audience: [claude, ops, engineers]
   owners: [eric]
@@ -24,7 +24,7 @@ The infra surface is wide and the operator is non-technical. This skill is **pro
 
 | Surface | What it is | MCP / tool |
 |---|---|---|
-| **Hostinger VPS** | Production + staging app server (nginx + uvicorn + static marketing + Postgres 17) | Hostinger MCP (when available); `ssh` fallback |
+| **Hostinger VPS** | Alpine 3.22, production + staging app server. nginx + supervisord-managed uvicorns + static marketing + Postgres 17. | Hostinger MCP (when available); `ssh glintstone` / `ssh glintstone-root` fallback |
 | **GitHub Actions** | CI (test.yml) + deploy (deploy.yml) → Hostinger | `gh` CLI |
 | **Cloudflare R2** | Image hosting (`glintstone-assets`, live since 2026-05-12) | Cloudflare MCP (when added) |
 | **`.env`** | DATABASE_URL + secrets per env, stored under each env's `shared/` on the VPS | server-side files; no DB secrets in GitHub |
@@ -48,7 +48,7 @@ When the user asks for one of these, I MUST restate the action and wait for conf
 1. **Never push to `main` without CI green** — check `gh pr checks` or `gh run list` first.
 2. **Never run `ops/deploy/rollback.sh` without naming the release tag** we're rolling back to.
 3. **Never modify the production Neon branch directly** — always create a branch first.
-4. **Never delete a deployment release directory** under `/opt/glintstone/releases/` — let `deploy.sh` rotate.
+4. **Never delete a deployment release directory** under `/var/www/glintstone/releases/` — let `deploy.sh` rotate.
 5. **Never commit secrets** — `.env` is gitignored; if a `.env*` file is staged, abort and surface it.
 6. **Never use `--no-verify` on git push** — pre-push hooks are warnings, not annoyances.
 7. **Never restart production nginx** without confirming the config validates (`nginx -t`).
@@ -83,14 +83,80 @@ GitHub commit on main
   └─ .github/workflows/deploy.yml
          │
          ├─ Build release tarball
-         ├─ scp to Hostinger VPS /opt/glintstone/releases/<sha>/
-         ├─ Run migrations against production Neon
-         ├─ Update symlink /opt/glintstone/current → releases/<sha>
-         ├─ Reload uvicorn (systemd) + nginx (reload, not restart)
-         └─ Smoke-test https://app.glintstone.org
+         ├─ rsync to Hostinger VPS /var/www/glintstone/releases/<tag>/
+         ├─ pip install into release's per-release venv
+         ├─ Symlink shared/.env into the release
+         ├─ Run migrations on the VPS (Postgres at 127.0.0.1, not reachable from CI)
+         ├─ Atomic symlink swap: /var/www/glintstone/current → releases/<tag>
+         ├─ supervisorctl restart glintstone-{api,web}  ← supervisord, NOT systemd
+         ├─ nginx reload if marketing/nginx target included
+         └─ Smoke-test http://127.0.0.1:{8001,8002}/health
 ```
 
 Rollback is a symlink swap; see [rollback.md](rollback.md).
+
+## Process supervision — read this BEFORE concluding services are unmanaged
+
+The VPS runs **Alpine Linux** (OpenRC-based, not systemd). The pattern is:
+
+```
+OpenRC default runlevel
+  └─ supervisord (one OpenRC service)        ← /etc/init.d/supervisord
+       ├─ glintstone-api          uvicorn :8001  ← /etc/supervisor.d/glintstone-api.ini
+       ├─ glintstone-web          uvicorn :8002  ← /etc/supervisor.d/glintstone-web.ini
+       ├─ glintstone-staging-api  uvicorn :8003  ← /etc/supervisor.d/glintstone-staging-api.ini
+       ├─ glintstone-staging-web  uvicorn :8004  ← /etc/supervisor.d/glintstone-staging-web.ini
+       └─ glintstone-crawler      python -m ops.scripts.cdli_image_crawler
+                                                 ← /etc/supervisor.d/glintstone-crawler.ini
+```
+
+**Reboot survival** is already correct: OpenRC starts supervisord, supervisord starts each program with `autostart=true autorestart=true`. Do NOT create `/etc/init.d/glintstone-*` units — they'll fight supervisord for the same ports.
+
+### When auditing process state, check in this order
+
+1. `ssh glintstone "sudo supervisorctl status"` — authoritative list of managed programs and their PIDs
+2. `ssh glintstone "ps aux | grep supervisord | grep -v grep"` — confirms supervisord itself is running
+3. `ssh glintstone "rc-update show default | grep supervisor"` — confirms supervisord auto-starts on boot
+4. `ssh glintstone "ls /etc/supervisor.d/"` — program unit files
+5. **Only then** ask "what would happen on reboot?" — by this point the answer is in front of you
+
+Do NOT conclude "services are unmanaged" because `/etc/init.d/glintstone-*` is empty or `systemctl` isn't installed. Both are expected on this stack.
+
+### Adding a new supervised service
+
+Versioned units live in `ops/deploy/supervisor/<name>.ini` in the repo. To install on the VPS:
+
+```bash
+scp ops/deploy/supervisor/<name>.ini glintstone:/tmp/
+ssh glintstone-root "install -m 0644 /tmp/<name>.ini /etc/supervisor.d/<name>.ini && supervisorctl update"
+```
+
+`supervisorctl update` (not `reload`) reads new/changed `.ini` files and starts any program with `autostart=true` that isn't already running. Existing programs are not touched unless their config changed.
+
+The api/web/staging units were baked into `provision.sh` (one-shot bring-up); the crawler and any future units ship from `ops/deploy/supervisor/` (versioned, reviewable). `deploy.sh` does not yet rsync this directory — install manually until that gap is closed.
+
+### Reading service logs
+
+| Program | stdout | stderr |
+|---|---|---|
+| glintstone-api | `/var/log/glintstone-api.out.log` | `/var/log/glintstone-api.err.log` |
+| glintstone-web | `/var/log/glintstone-web.out.log` | `/var/log/glintstone-web.err.log` |
+| glintstone-staging-api | `/var/log/glintstone-staging-api.out.log` | `/var/log/glintstone-staging-api.err.log` |
+| glintstone-staging-web | `/var/log/glintstone-staging-web.out.log` | `/var/log/glintstone-staging-web.err.log` |
+| glintstone-crawler | `/var/log/glintstone-crawler.out.log` | `/var/log/glintstone-crawler.err.log` |
+
+Or use `supervisorctl tail -f glintstone-<name> stderr` for live streaming. Never `journalctl` — there's no systemd journal on this host.
+
+### What `deploy` can do without sudo password
+
+Sudoers grants `deploy`:
+
+- `/usr/bin/supervisorctl restart glintstone-*`
+- `/usr/bin/supervisorctl status glintstone-*`
+- `/sbin/rc-service nginx reload`
+- `/usr/sbin/nginx -t` and `nginx -s reload`
+
+For anything else (writing to `/etc/supervisor.d/`, `rc-update`, package installs), `ssh glintstone-root` is the right tool.
 
 ## Open issues this skill tracks
 
