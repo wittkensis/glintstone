@@ -211,7 +211,7 @@ def assemble_artifact_facts(
         for r in cur.fetchall():
             _add_fact(
                 bundle.facts,
-                f"mentions lemma \"{r.get('guide_word') or r.get('citation_form')}\" "
+                f'mentions lemma "{r.get("guide_word") or r.get("citation_form")}" '
                 f"({r.get('attestations')} attestations)",
                 "lexical_lemma",
                 r["id"],
@@ -238,7 +238,7 @@ def assemble_artifact_facts(
             for r in cur.fetchall():
                 _add_fact(
                     bundle.facts,
-                    f"mentions named entity \"{r['canonical_name']}\" ({r.get('entity_type') or 'unknown'})",
+                    f'mentions named entity "{r["canonical_name"]}" ({r.get("entity_type") or "unknown"})',
                     "named_entity",
                     r["id"],
                     f"entity:{r['id']}",
@@ -396,7 +396,7 @@ def assemble_token_facts(
         bundle.is_fully_lemmatized = True
         _add_fact(
             bundle.facts,
-            f"lemma: {lem['citation_form']} (\"{lem.get('guide_word') or '—'}\", "
+            f'lemma: {lem["citation_form"]} ("{lem.get("guide_word") or "—"}", '
             f"{lem.get('pos') or 'unknown POS'})",
             "lexical_lemma",
             lem["lemma_id"],
@@ -425,13 +425,13 @@ def assemble_token_facts(
     for n_row in neighbors:
         offset = n_row["position"] - token["position"]
         lemma_label = (
-            f" → lemma \"{n_row.get('guide_word') or n_row['citation_form']}\""
+            f' → lemma "{n_row.get("guide_word") or n_row["citation_form"]}"'
             if n_row.get("citation_form")
             else ""
         )
         _add_fact(
             bundle.facts,
-            f"neighbor (position {offset:+d}): \"{n_row['raw_form']}\"{lemma_label}",
+            f'neighbor (position {offset:+d}): "{n_row["raw_form"]}"{lemma_label}',
             "annotation_run",
             "atf_parser",
             f"neighbor:{offset:+d}",
@@ -476,8 +476,8 @@ def assemble_token_facts(
                 for r in cur.fetchall():
                     _add_fact(
                         bundle.facts,
-                        f"candidate sign reading: \"{r['sign_name']}\" → "
-                        f"lemma \"{r.get('guide_word') or r['citation_form']}\" "
+                        f'candidate sign reading: "{r["sign_name"]}" → '
+                        f'lemma "{r.get("guide_word") or r["citation_form"]}" '
                         f"({r.get('attestation_count') or 0} attestations)",
                         "lexical_lemma",
                         r["lemma_id"],

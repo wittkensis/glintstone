@@ -164,7 +164,7 @@ def main() -> int:
         server = _build_server()
     except ImportError as exc:
         sys.stderr.write(
-            f"FastMCP not installed: {exc}\n" "Run: pip install 'mcp[fastmcp]'\n"
+            f"FastMCP not installed: {exc}\nRun: pip install 'mcp[fastmcp]'\n"
         )
         return 1
     # FastMCP exposes both .run() (sync) and async variants depending on version.

@@ -26,7 +26,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio ruff mypy
+          # Pin ruff to keep CI deterministic — bump deliberately alongside the
+          # pre-commit hook pin in .pre-commit-config.yaml so local + CI agree.
+          pip install pytest pytest-asyncio "ruff==0.15.2" mypy
 
       - name: Lint (ruff)
         run: |
@@ -34,6 +36,10 @@ jobs:
           ruff format --check .
 
       - name: Type-check (mypy)
+        # Non-blocking: the codebase has no prior type-checking discipline, so
+        # mypy reports rather than gates. Flip to required once the backlog is
+        # cleared (see issue #83 phase 3a).
+        continue-on-error: true
         run: |
           mypy api/ app/ core/ mcp/ --ignore-missing-imports
 

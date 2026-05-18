@@ -126,7 +126,7 @@ class LexicalRepository(BaseRepository):
 
         if search:
             conditions.append(
-                "(l.citation_form ILIKE %(search)s " "OR l.guide_word ILIKE %(search)s)"
+                "(l.citation_form ILIKE %(search)s OR l.guide_word ILIKE %(search)s)"
             )
             params["search"] = f"%{search}%"
         if language:
@@ -135,8 +135,7 @@ class LexicalRepository(BaseRepository):
             for i, lang in enumerate(language):
                 k = f"lang{i}"
                 lang_conds.append(
-                    f"(l.language_code = %({k})s "
-                    f"OR l.language_code LIKE %({k}_fam)s)"
+                    f"(l.language_code = %({k})s OR l.language_code LIKE %({k}_fam)s)"
                 )
                 params[k] = lang
                 params[f"{k}_fam"] = f"{lang}-%"
@@ -326,8 +325,7 @@ class LexicalRepository(BaseRepository):
             for i, lang in enumerate(language):
                 k = f"lang{i}"
                 lang_conds.append(
-                    f"(l.language_code = %({k})s "
-                    f"OR l.language_code LIKE %({k}_fam)s)"
+                    f"(l.language_code = %({k})s OR l.language_code LIKE %({k}_fam)s)"
                 )
                 params[k] = lang
                 params[f"{k}_fam"] = f"{lang}-%"

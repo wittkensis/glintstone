@@ -390,7 +390,7 @@ def render_data_integration_content(data: dict) -> str:
 
     html = ""
     for category in data.get("categories", []):
-        html += f'<h3 style="font-family:\'Playfair Display\',serif;font-size:18px;color:#c9a962;margin:2rem 0 0.5rem;line-height:1;">{category["name"]}</h3>'
+        html += f"<h3 style=\"font-family:'Playfair Display',serif;font-size:18px;color:#c9a962;margin:2rem 0 0.5rem;line-height:1;\">{category['name']}</h3>"
         for source in category.get("sources", []):
             abbr = source.get("abbr", "")
             name = source.get("name", "")
