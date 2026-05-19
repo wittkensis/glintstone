@@ -47,7 +47,7 @@ Each upstream has its own conventions, freshness story, redirect behavior, licen
 
 **License**: CC BY-SA 3.0.
 
-**Active subprojects ingested**: `dcclt`, `epsd2`, `rinap`, `saao`, `blms`, `etcsri`, `cams`, `dccmt`, `hbtin`, `ribo`. (Plus `amgg`, `riao`, `etcsl`, `ctij` discovered but partially ingested.)
+**Projects with data downloaded + annotation run registered**: `dcclt`, `epsd2`, `rinap`, `saao`, `blms`, `etcsri`, `riao`. **Data downloaded, no annotation run yet**: `hbtin`, `dccmt`, `ribo` (all three have full connector coverage). **Annotation run registered, data status unclear**: `cams`, `rimanum`. **Credits/enrichment only** (no corpus data): `etcsl`, `rime`, `amgg`. Full ORACC project list at `oracc.museum.upenn.edu/projectlist.html` — add new projects via: download zip → add to connector ORACC_PROJECTS lists → register in `annotation_runs.py`.
 
 **Access**:
 - Per-project ZIP downloads at `oracc.museum.upenn.edu/<project>/json.zip`
