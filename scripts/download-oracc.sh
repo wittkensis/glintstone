@@ -181,7 +181,8 @@ for proj in "${ALL_PROJECTS[@]}"; do
   # Subproject slugs use hyphen: cams/gkab → cams-gkab.zip
   slug=$(echo "$proj" | tr '/' '-')
   url="$BASE_URL/json/$slug.zip"
-  tmpzip=$(mktemp /tmp/oracc-XXXXXX.zip)
+  tmpzip=$(mktemp /tmp/oracc-XXXXXX)
+  tmpzip="${tmpzip}.zip"
   echo -n "  fetch $proj ... "
 
   if curl -fsSLk --max-time 300 --retry 3 --retry-delay 10 -o "$tmpzip" "$url" 2>/dev/null; then
