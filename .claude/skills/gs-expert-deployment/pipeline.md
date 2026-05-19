@@ -51,6 +51,28 @@ superseded_by: null
 
 Live stream a service: `ssh glintstone "sudo supervisorctl tail -f glintstone-api stderr"` (works for any of the 5 services). Do not use `journalctl` — there is no systemd journal on this host.
 
+## Running `deploy.sh` from a laptop
+
+`deploy.sh` dials the VPS IP directly via `ssh deploy@<ip>`. It does NOT
+consult `~/.ssh/config`, so the `Host glintstone` alias's `IdentityFile`
+is ignored. Pass the key explicitly:
+
+```bash
+SSH_KEY_PATH=~/.ssh/glintstone_deploy ./ops/deploy/deploy.sh api
+```
+
+(CI uses `HOSTINGER_SSH_KEY` written to disk by the workflow; the
+explicit `SSH_KEY_PATH` is the laptop-side equivalent.)
+
+## CHECK constraints on `outcome` / status columns
+
+Adding a new outcome value to any of the `*_fetch_log` or status tables
+typically requires a migration — these columns have a `CHECK (outcome IN
+(...))` allow-list, not free-form text. Migration `036` is the recent
+example: app code rolled out new `page_*` outcomes, hit `CheckViolation`
+on first insert, and the crawler entered BACKOFF. Always co-deploy the
+migration with the code that emits the new value.
+
 ## Debugging a failed run
 
 1. `gh run list --branch main --limit 5` — find the failed run
