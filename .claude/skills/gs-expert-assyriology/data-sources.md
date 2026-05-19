@@ -45,7 +45,7 @@ Provides:
 
 License: CC BY-SA 3.0.
 
-Currently ingested projects: dcclt, epsd2, rinap, saao, blms, etcsri, cams, dccmt, hbtin, ribo. (Plus amgg, riao, etcsl, ctij partially.)
+Projects with data downloaded AND annotation run registered: dcclt, epsd2, rinap, saao, blms, etcsri, riao. Projects with data downloaded but no annotation run yet: hbtin, dccmt, ribo. Projects with annotation run registered but data status unclear: cams, rimanum. Credits/enrichment metadata only (no lemmas or glossary): etcsl, rime, amgg. The full ORACC project universe (~50+ projects) is at oracc.museum.upenn.edu/projectlist.html — most have not been downloaded.
 
 ## eBL — electronic Babylonian Library
 
