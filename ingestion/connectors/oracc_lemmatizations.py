@@ -22,6 +22,7 @@ ORACC_BASE = Path("source-data/sources/ORACC")
 DEAD_LETTER_FLUSH_EVERY = 5000
 
 ORACC_PROJECTS = [
+    # --- previously integrated ---
     "dcclt",
     "blms",
     "etcsri",
@@ -31,19 +32,131 @@ ORACC_PROJECTS = [
     "saao",
     "riao",
     "ribo",
+    # --- newly added top-level ---
+    "adsd",
+    "akklove",
+    "ario",
+    "armep",
+    "asbp",
+    "atae",
+    "babcity",
+    "balt",
+    "borsippa",
+    "btmao",
+    "btto",
+    "ckst",
+    "cmawro",
+    "ctij",
+    "dsst",
+    "ecut",
+    "edlex",
+    "eisl",
+    "glass",
+    "lacost",
+    "nere",
+    "nimrud",
+    "obel",
+    "obmc",
+    "obta",
+    "oimea",
+    "pnao",
+    "suhu",
+    "tcma",
+    "tsae",
+    "urap",
+    # --- ADSD subprojects ---
+    "adsd/adart1",
+    "adsd/adart2",
+    "adsd/adart3",
+    "adsd/adart5",
+    "adsd/adart6",
+    # --- ASBP subprojects ---
+    "asbp/ninmed",
+    "asbp/rlasb",
+    # --- ATAE subprojects ---
+    "atae/assur",
+    "atae/burmarina",
+    "atae/durkatlimmu",
+    "atae/durszarrukin",
+    "atae/guzana",
+    "atae/huzirina",
+    "atae/imgurenlil",
+    "atae/kalhu",
+    "atae/kunalia",
+    "atae/mallanate",
+    "atae/marqasu",
+    "atae/nineveh",
+    "atae/samal",
+    "atae/szibaniba",
+    "atae/tilbarsip",
+    "atae/tuszhan",
+    # --- CAMS subprojects ---
+    "cams/akno",
+    "cams/anzu",
+    "cams/barutu",
+    "cams/etana",
+    "cams/gkab",
+    "cams/ludlul",
+    "cams/selbi",
+    # --- CMAWRO subprojects ---
+    "cmawro/cmawr1",
+    "cmawro/cmawr2",
+    "cmawro/cmawr3",
+    "cmawro/maqlu",
+    # --- DCCLT subprojects ---
+    "dcclt/ebla",
+    "dcclt/jena",
+    "dcclt/nineveh",
+    "dcclt/signlists",
+    # --- RIBO subprojects ---
+    "ribo/babylon2",
+    "ribo/babylon3",
+    "ribo/babylon4",
+    "ribo/babylon5",
+    "ribo/babylon6",
+    "ribo/babylon7",
+    "ribo/babylon8",
+    "ribo/babylon10",
+    # --- RINAP subprojects ---
+    "rinap/rinap1",
+    "rinap/rinap2",
+    "rinap/rinap3",
+    "rinap/rinap4",
+    "rinap/rinap5",
+    # --- SAAO subprojects ---
+    "saao/aebp",
+    "saao/knpp",
+    "saao/saa01",
+    "saao/saa02",
+    "saao/saa03",
+    "saao/saa04",
+    "saao/saa05",
+    "saao/saa06",
+    "saao/saa07",
+    "saao/saa08",
+    "saao/saa09",
+    "saao/saa10",
+    "saao/saa11",
+    "saao/saa12",
+    "saao/saa13",
+    "saao/saa14",
+    "saao/saa15",
+    "saao/saa16",
+    "saao/saa17",
+    "saao/saa18",
+    "saao/saa19",
+    "saao/saa20",
+    "saao/saa21",
+    "saao/saas2",
+    # --- other subprojects ---
+    "aemw/amarna",
 ]
 
-PROJECT_TO_RUN = {
-    "dcclt": "oracc/dcclt",
-    "blms": "oracc/blms",
-    "etcsri": "oracc/etcsri",
-    "hbtin": "oracc/hbtin",
-    "dccmt": "oracc/dccmt",
-    "rinap": "oracc/rinap",
-    "saao": "oracc/saao",
-    "riao": "oracc/riao",
-    "ribo": "oracc/ribo",
-}
+
+def _project_base(project: str) -> Path:
+    """Resolve an ORACC project slug (including 'parent/child') to its JSON directory."""
+    parts = project.split("/")
+    return ORACC_BASE.joinpath(*parts) / "json" / project
 
 
 def _parse_inst(inst: str) -> dict:
@@ -141,7 +254,7 @@ def _walk_cdl(nodes, state: dict, out_lemmas: list) -> None:
 
 
 def _find_corpus_dirs(project: str) -> list[Path]:
-    base = ORACC_BASE / project / "json" / project
+    base = _project_base(project)
     dirs = []
     if not base.exists():
         return dirs
@@ -220,11 +333,12 @@ class OraccLemmatizationsConnector(SourceConnector):
                 yield {"project": project, "cdl_files": [str(p) for p in cdl_files]}
 
     def load(self, ctx: RunContext, rows: Iterable[dict]) -> LoadStats:
-        # Load annotation_run IDs
+        # Load annotation_run IDs — source_name is always "oracc/{project}"
         annotation_run_ids: dict[str, int] = {}
-        for proj, source_name in PROJECT_TO_RUN.items():
+        for proj in ORACC_PROJECTS:
             row = ctx.db.execute(
-                "SELECT id FROM annotation_runs WHERE source_name = %s", (source_name,)
+                "SELECT id FROM annotation_runs WHERE source_name = %s",
+                (f"oracc/{proj}",),
             ).fetchone()
             if row:
                 annotation_run_ids[proj] = (

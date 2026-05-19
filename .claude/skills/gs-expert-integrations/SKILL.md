@@ -4,7 +4,7 @@ description: Glintstone connector framework — porting v1 import scripts, conne
 metadata:
   question: "How do I write or port an ingestion connector against Glintstone's connector framework?"
   created: 2026-02-21
-  modified: 2026-05-11
+  modified: 2026-05-18
   context: "Began life as the glintstone-connector skill during the ingestion migration (issue #60). Renamed to gs-expert-integrations during the 2026-05-11 knowledge architecture overhaul to match the new naming convention and to pair with gs-scout-integrations (the outside-view sibling)."
   status: active
   audience: [claude, engineers]
@@ -30,6 +30,14 @@ Full patterns in [framework.md](framework.md).
 - Use `upsert_batch()` from `ingestion/loader.py` — handles conflict policies + stats
 - Dead-letter bad rows via `ctx.dead_letter(...)`, never raise
 - Tests: write a `_Synthetic*` connector in the test file, hit real Neon DB
+
+## ORACC integration notes (2026-05-18)
+
+All six ORACC connectors now cover ~115 project slugs (top-level + subprojects).
+- Subproject paths handled by `_project_base(project)` in each connector — `"cams/gkab"` → `ORACC_BASE/cams/gkab/json/gkab/`
+- Download all ORACC data: `bash scripts/download-oracc.sh` (from project root)
+- Source data is shared across releases via `shared/source-data/` symlink (set up by deploy.sh)
+- Missing/future sources: see `missing-sources.md` in this skill directory
 
 ## Port checklist
 

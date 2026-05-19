@@ -144,6 +144,9 @@ ssh_run "cd $RELEASE_DIR && python3 -m venv venv && venv/bin/pip install --quiet
 # --- Symlink shared state (the .env stays out of releases for safety) ---
 ssh_run "ln -sfn $SHARED_DIR/.env $RELEASE_DIR/.env"
 
+# --- Symlink shared source-data (ORACC/CDLI bulk downloads persist across releases) ---
+ssh_run "mkdir -p $SHARED_DIR/source-data && ln -sfn $SHARED_DIR/source-data $RELEASE_DIR/source-data"
+
 # --- Verify the new venv actually imports the app code ---
 # Catches dependency drift, syntax errors, and missing-module bugs BEFORE migrations
 # run and BEFORE the symlink swap. If this fails the previous release stays live.

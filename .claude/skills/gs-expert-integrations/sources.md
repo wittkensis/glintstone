@@ -47,7 +47,7 @@ Each upstream has its own conventions, freshness story, redirect behavior, licen
 
 **License**: CC BY-SA 3.0.
 
-**Active subprojects ingested**: `dcclt`, `epsd2`, `rinap`, `saao`, `blms`, `etcsri`, `cams`, `dccmt`, `hbtin`, `ribo`. (Plus `amgg`, `riao`, `etcsl`, `ctij` discovered but partially ingested.)
+**Active projects ingested (2026-05-18)**: All ~110 ORACC top-level and subproject slugs are now wired into all six connectors. See full list in each connector's `ORACC_PROJECTS`. The data still needs to be downloaded via `ops/local/download-oracc.sh` before connectors will produce output for new projects. Previously partial coverage: `amgg`, `riao`, `etcsl`, `rimanum`, `rime` are now fully registered.
 
 **Access**:
 - Per-project ZIP downloads at `oracc.museum.upenn.edu/<project>/json.zip`
