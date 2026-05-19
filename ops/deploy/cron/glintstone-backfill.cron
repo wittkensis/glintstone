@@ -1,0 +1,15 @@
+# Glintstone — weekly backfill for artifact images the main crawler missed.
+#
+# Runs Sundays at 03:00 UTC. Shares the CDLI rate-limit lock with the main
+# crawler at /tmp/glintstone-cdli-crawler.lock — if the crawler is holding
+# the lock, this exits immediately with "Another crawler is running" and
+# the next week's cron picks it up.
+#
+# Budget: 60 minutes. Each artifact costs ~1–3 min (page fetch + image fetches
+# at 60s/req). That's 20–60 artifacts per run, plenty for failures that
+# accumulate slowly over a months-long crawl.
+#
+# This file is the source of truth; see ops/deploy/cron/README.md for
+# install instructions.
+
+0 3 * * 0 cd /var/www/glintstone/current && venv/bin/python -m ops.scripts.backfill_missing_images --max-minutes 60 >> /var/log/glintstone-backfill.out.log 2>> /var/log/glintstone-backfill.err.log

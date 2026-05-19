@@ -112,10 +112,22 @@ def release_lock() -> None:
 
 
 def candidates(conn, order: str, limit: Optional[int]) -> list[str]:
-    """P-numbers in ``artifacts`` not yet in ``artifact_images``.
+    """P-numbers in ``artifacts`` not yet in ``artifact_images`` and not in
+    the page-level skip cache.
 
-    Excludes already-cached artifacts so re-runs resume cleanly.
+    Excludes:
+    - artifacts that already have one or more rows in ``artifact_images``
+      (the main resume signal)
+    - artifacts with a recent page-level skip recorded in
+      ``artifact_image_fetch_log`` (404 or no-images). The skip cache TTL
+      matches ``api.services.image_ondemand.PAGE_SKIP_TTL_DAYS`` (90 days)
+      so previously-removed pages get re-checked eventually.
     """
+    from api.services.image_ondemand import (  # noqa: E402
+        PAGE_SKIP_OUTCOMES,
+        PAGE_SKIP_TTL_DAYS,
+    )
+
     order_clause = "a.p_number DESC" if order == "p_number_desc" else "a.p_number ASC"
     sql = f"""
         SELECT a.p_number
@@ -123,12 +135,18 @@ def candidates(conn, order: str, limit: Optional[int]) -> list[str]:
         WHERE NOT EXISTS (
             SELECT 1 FROM artifact_images ai WHERE ai.p_number = a.p_number
         )
+        AND NOT EXISTS (
+            SELECT 1 FROM artifact_image_fetch_log fl
+            WHERE fl.p_number = a.p_number
+              AND fl.outcome = ANY(%s)
+              AND fl.attempted_at > now() - interval '{PAGE_SKIP_TTL_DAYS} days'
+        )
         ORDER BY {order_clause}
     """
     if limit is not None:
         sql += f" LIMIT {int(limit)}"
     with conn.cursor() as cur:
-        cur.execute(sql)
+        cur.execute(sql, (list(PAGE_SKIP_OUTCOMES),))
         return [row["p_number"] for row in cur.fetchall()]
 
 

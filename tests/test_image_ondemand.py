@@ -61,6 +61,14 @@ class _FakeCursor:
         if "select count(*) as n from artifact_images" in sql_lower:
             self._last_result = [{"n": self.parent.existing_rows}]
             return
+        # Page-skip negative-cache lookup
+        if (
+            "from artifact_image_fetch_log" in sql_lower
+            and "outcome = any" in sql_lower
+            and "limit 1" in sql_lower
+        ):
+            self._last_result = [{"?column?": 1}] if self.parent.has_page_skip else []
+            return
         # Look up annotation run
         if "from annotation_runs" in sql_lower and sql_lower.startswith("select"):
             self._last_result = (
@@ -83,6 +91,10 @@ class _FakeCursor:
         # INSERT into artifact_image_fetch_log (no RETURNING)
         if sql_lower.startswith("insert into artifact_image_fetch_log"):
             self.parent.log_entries += 1
+            # params is a tuple (p_number, source_url, outcome, http_status, ...).
+            # Capture the outcome (index 2) so tests can assert on it.
+            if params and len(params) >= 3:
+                self.parent.log_outcomes.append(params[2])
             self._last_result = []
             return
         self._last_result = []
@@ -95,14 +107,17 @@ class _FakeCursor:
 
 
 class _FakeConn:
-    def __init__(self, existing_rows: int = 0) -> None:
+    def __init__(self, existing_rows: int = 0, has_page_skip: bool = False) -> None:
         self.existing_rows = existing_rows
+        self.has_page_skip = has_page_skip
         self.annotation_run_id = 42
         self.annotation_run_exists = True
         self.inserted_rows = 0
         self.log_entries = 0
         self.commits = 0
         self.queries: list = []
+        # Capture each fetch-log INSERT's parameters so tests can assert on outcome.
+        self.log_outcomes: list[str] = []
 
     def cursor(self) -> _FakeCursor:
         return _FakeCursor(self)
@@ -234,6 +249,8 @@ class TestEnsureFetchFailures:
         assert result.status == "not_found_at_cdli"
         assert result.image_count == 0
         assert conn.inserted_rows == 0
+        # 404 must persist a page-level skip so re-runs short-circuit.
+        assert "page_404" in conn.log_outcomes
 
     def test_html_5xx_returns_fetch_error(self) -> None:
         conn = _FakeConn(existing_rows=0)
@@ -278,6 +295,24 @@ class TestEnsureNoImagesOnPage:
             result = ensure_images_for_artifact(conn, "P000001")
         assert result.status == "not_found_at_cdli"
         assert conn.inserted_rows == 0
+        assert "page_no_images" in conn.log_outcomes
+
+
+class TestPageSkipNegativeCache:
+    def test_recent_page_skip_short_circuits_before_fetch(self) -> None:
+        conn = _FakeConn(existing_rows=0, has_page_skip=True)
+        fetch_patch, storage_patch, _ = _patch_pipeline(
+            html_status=200,
+            html_body=_SAMPLE_HTML_P000001,
+            image_status=200,
+            image_body=_synthetic_jpeg(),
+        )
+        with fetch_patch, storage_patch:
+            result = ensure_images_for_artifact(conn, "P000001")
+        # The negative cache hit must prevent any HTTP fetch + any new log row.
+        assert result.status == "not_found_at_cdli"
+        assert conn.inserted_rows == 0
+        assert conn.log_outcomes == []
 
 
 class TestLockReuse:

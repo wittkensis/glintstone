@@ -34,6 +34,19 @@ from ingestion.images.thumbnailer import generate_thumbnail, probe_dimensions
 ANNOTATION_RUN_SOURCE = "cdli-on-demand"
 ANNOTATION_RUN_METHOD = "api_fetch"
 
+# Page-level outcomes recorded in artifact_image_fetch_log when the CDLI
+# artifact PAGE (not an image binary) is unfetchable or empty. These act as a
+# negative cache so the crawler doesn't re-hit known-bad P-numbers on every
+# pass — at 60s/request and ~80% 404 rate in early ranges, the savings are
+# weeks of wall time over the full backfill.
+PAGE_OUTCOME_404 = "page_404"
+PAGE_OUTCOME_NO_IMAGES = "page_no_images"
+PAGE_OUTCOME_HTTP_ERROR = "page_http_error"
+PAGE_SKIP_OUTCOMES = (PAGE_OUTCOME_404, PAGE_OUTCOME_NO_IMAGES)
+# How long a recorded page skip is trusted before we re-check. CDLI does
+# occasionally restore previously-missing artifact pages.
+PAGE_SKIP_TTL_DAYS = 90
+
 
 _locks_guard = threading.Lock()
 _locks: dict[str, threading.Lock] = {}
@@ -71,22 +84,38 @@ def ensure_images_for_artifact(
     honors CDLI's robots.txt 60s Crawl-delay. On-demand traffic (the API
     default) uses the shorter 5s courtesy floor.
     """
+    page_url = f"https://cdli.earth/{p_number}"
     lock = _per_artifact_lock(p_number)
     with lock:
         existing = _count_existing(conn, p_number)
         if existing:
             return EnsureResult(status="cached", image_count=existing)
 
-        try:
-            result = fetch(
-                f"https://cdli.earth/{p_number}",
-                respect_crawl_delay=respect_crawl_delay,
+        # Negative cache: if a recent attempt recorded a page-level skip
+        # (404 or no-images), don't burn another 60s CDLI request slot.
+        if _has_recent_page_skip(conn, p_number):
+            return EnsureResult(
+                status="not_found_at_cdli",
+                image_count=0,
+                detail="cached page skip (within TTL)",
             )
+
+        try:
+            result = fetch(page_url, respect_crawl_delay=respect_crawl_delay)
         except FetchError as e:
             return EnsureResult(status="fetch_error", image_count=0, detail=str(e))
         if result.status_code == 404:
+            _log_page_outcome(conn, p_number, page_url, 404, PAGE_OUTCOME_404)
             return EnsureResult(status="not_found_at_cdli", image_count=0)
         if result.status_code != 200:
+            _log_page_outcome(
+                conn,
+                p_number,
+                page_url,
+                result.status_code,
+                PAGE_OUTCOME_HTTP_ERROR,
+                error_message=f"HTTP {result.status_code} for artifact page",
+            )
             return EnsureResult(
                 status="fetch_error",
                 image_count=0,
@@ -97,6 +126,7 @@ def ensure_images_for_artifact(
             result.body.decode("utf-8", errors="replace"), p_number
         )
         if not manifest.images:
+            _log_page_outcome(conn, p_number, page_url, 200, PAGE_OUTCOME_NO_IMAGES)
             return EnsureResult(status="not_found_at_cdli", image_count=0)
 
         annotation_run_id = _ensure_annotation_run(conn)
@@ -134,6 +164,52 @@ def _count_existing(conn, p_number: str) -> int:
         )
         row = cur.fetchone()
     return row["n"] if row else 0
+
+
+def _has_recent_page_skip(conn, p_number: str) -> bool:
+    """True if we recently recorded a page-level skip for this P-number.
+
+    The negative cache TTL is ``PAGE_SKIP_TTL_DAYS``. Beyond that we re-check
+    in case CDLI restored the artifact page (it has happened).
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""
+            SELECT 1 FROM artifact_image_fetch_log
+            WHERE p_number = %s
+              AND outcome = ANY(%s)
+              AND attempted_at > now() - interval '{PAGE_SKIP_TTL_DAYS} days'
+            LIMIT 1
+            """,
+            (p_number, list(PAGE_SKIP_OUTCOMES)),
+        )
+        return cur.fetchone() is not None
+
+
+def _log_page_outcome(
+    conn,
+    p_number: str,
+    page_url: str,
+    http_status: Optional[int],
+    outcome: str,
+    error_message: Optional[str] = None,
+) -> None:
+    """Record a page-level skip in ``artifact_image_fetch_log``.
+
+    ``source_url`` uses the artifact-page URL (``cdli.earth/<P>``) which is
+    distinct from any image-binary URL (``cdli.earth/dl/<type>/...``), so
+    queries that target image failures (e.g. the backfill script) can filter
+    these page-level rows out.
+    """
+    _log_fetch_outcome(
+        conn,
+        p_number=p_number,
+        source_url=page_url,
+        outcome=outcome,
+        http_status=http_status,
+        error_message=error_message,
+        artifact_image_id=None,
+    )
 
 
 def _ensure_annotation_run(conn) -> int:

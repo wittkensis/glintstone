@@ -122,6 +122,20 @@ OpenRC default runlevel
 
 Do NOT conclude "services are unmanaged" because `/etc/init.d/glintstone-*` is empty or `systemctl` isn't installed. Both are expected on this stack.
 
+### Scheduled jobs (cron)
+
+The `deploy` user's crontab handles recurring work that doesn't need a
+long-running supervised process. Fragments live in `ops/deploy/cron/`
+(versioned in the repo); see that folder's README for the install snippet.
+
+| Job | Schedule | Purpose |
+|---|---|---|
+| `pg_backup.sh` | daily 04:15 UTC | Postgres dump → `/var/www/glintstone/shared/backups/` (already in user crontab) |
+| `glintstone-backfill.cron` | Sun 03:00 UTC | Re-fetch artifact images the main crawler missed; shares the crawler's CDLI rate-limit lock |
+
+When auditing scheduled work: `ssh glintstone "crontab -l"` shows the
+`deploy` crontab. There is no root crontab in use today.
+
 ### Adding a new supervised service
 
 Versioned units live in `ops/deploy/supervisor/<name>.ini` in the repo. To install on the VPS:
