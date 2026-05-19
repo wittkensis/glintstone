@@ -153,9 +153,8 @@ ALL_PROJECTS = [
 
 
 def _project_base(project: str) -> Path:
-    """Resolve an ORACC project slug (including 'parent/child') to its JSON directory."""
     parts = project.split("/")
-    return ORACC_BASE.joinpath(*parts) / "json" / project
+    return ORACC_BASE.joinpath(*parts)
 
 
 def _find_glossary_files(project: str) -> list[Path]:
