@@ -178,24 +178,38 @@ for proj in "${ALL_PROJECTS[@]}"; do
     fi
   fi
 
-  # Subproject slugs use hyphen: cams/gkab → cams-gkab.zip
+  # Build server uses hyphen slugs: cams/gkab → cams-gkab.zip
+  # Fallback to main server for projects the build server returns 500 for (epsd2, cams, etcsl, rime, ctij, lacost, …)
   slug=$(echo "$proj" | tr '/' '-')
-  url="$BASE_URL/json/$slug.zip"
-  tmpzip=$(mktemp /tmp/oracc-XXXXXX)
-  tmpzip="${tmpzip}.zip"
+  build_url="$BASE_URL/json/$slug.zip"
+  main_url="https://oracc.museum.upenn.edu/$proj/json.zip"
+  tmpfile=$(mktemp /tmp/oracc-XXXXXX)
+  tmpzip="${tmpfile}.zip"
   echo -n "  fetch $proj ... "
 
-  if curl -fsSLk --max-time 300 --retry 3 --retry-delay 10 -o "$tmpzip" "$url" 2>/dev/null; then
-    # Extract to DEST root: zip's internal paths (e.g. cams/gkab/json/...) land correctly
+  fetched=0
+  for try_url in "$build_url" "$main_url"; do
+    if curl -fsSLk --max-time 300 --retry 2 --retry-delay 10 -o "$tmpzip" "$try_url" 2>/dev/null; then
+      # Verify it's an actual zip (not a 500 HTML page served as 200)
+      if unzip -t "$tmpzip" > /dev/null 2>&1; then
+        fetched=1
+        break
+      fi
+    fi
+    rm -f "$tmpzip"
+  done
+
+  if [[ $fetched -eq 1 ]]; then
+    # Extract to DEST root: zip's internal paths land correctly
     unzip -q -o "$tmpzip" -d "$DEST"
     mkdir -p "$DEST/$proj"
     touch "$sentinel"
-    rm -f "$tmpzip"
+    rm -f "$tmpzip" "$tmpfile"
     echo "ok"
     (( ok++ )) || true
   else
-    rm -f "$tmpzip"
-    echo "FAILED  ($url)"
+    rm -f "$tmpzip" "$tmpfile"
+    echo "FAILED"
     (( fail++ )) || true
   fi
 done

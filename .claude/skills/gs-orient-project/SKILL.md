@@ -62,20 +62,23 @@ tests/                pytest suite
 
 Long-form narrative documentation (onboarding, data-model docs, research, opportunities, personas) lives in the [GitHub Wiki](https://github.com/wittkensis/glintstone/wiki).
 
-## Current scale (as-of 2026-05-11)
+## Current scale (as-of 2026-05-19)
 
 | Table | Rows |
 |---|---|
 | artifacts | 353,283 |
-| text_lines | 1,395,668 |
-| tokens | 3,957,240 |
+| text_lines | 1,728,706 |
+| tokens | 4,905,814 |
+| lemmatizations | 416,911 |
 | translations | 43,777 |
-| lexical_lemmas | 61,435 |
-| lexical_senses | 155,491 |
+| lexical_lemmas | 346,480 |
+| lexical_norms | 834,235 |
+| lexical_senses | 860,940 |
+| glossary_entries | 220,349 |
 | scholars | 20,490 |
 | publications | 16,725 |
 
-Coverage gap: only ~2% of artifacts are lemmatized, ~35% have ATF, ~12% have translations. **Expect NULLs everywhere.**
+Coverage gap: ~2% of artifacts lemmatized, ~35% have ATF, ~12% have translations. ORACC expanded to ~115 projects (2026-05-19); ~2.4M lemma tokens in dead-letter backlog (texts not yet ATF-parsed). **Expect NULLs everywhere.**
 
 ## Routing map — which skill for what
 
