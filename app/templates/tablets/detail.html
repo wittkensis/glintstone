@@ -392,7 +392,6 @@
 (function() {
     const btn = document.getElementById('bookmark-btn');
     if (!btn) return;
-    const API_URL = {{ api_url | tojson }};
     const pNumber = btn.dataset.pNumber;
 
     btn.addEventListener('click', async () => {
@@ -400,10 +399,7 @@
         btn.disabled = true;
         try {
             if (savedId) {
-                const res = await fetch(`${API_URL}/users/me/saved-items/${savedId}`, {
-                    method: 'DELETE',
-                    credentials: 'include',
-                });
+                const res = await fetch(`/_me/saved-items/${savedId}`, { method: 'DELETE' });
                 if (res.ok) {
                     btn.dataset.savedId = '';
                     btn.setAttribute('aria-pressed', 'false');
@@ -412,10 +408,9 @@
                     btn.classList.remove('is-saved');
                 }
             } else {
-                const res = await fetch(`${API_URL}/users/me/saved-items`, {
+                const res = await fetch('/_me/saved-items', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
                     body: JSON.stringify({ item_type: 'artifact', item_id: pNumber }),
                 });
                 if (res.ok) {

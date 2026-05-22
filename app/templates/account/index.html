@@ -98,29 +98,23 @@
 
 {% block scripts %}
 <script>
-const API_URL = '{{ api_url }}';
-
-// Avatar upload
+// Avatar upload — calls the same-origin web app proxy (/_me/avatar) so the
+// session cookie is sent correctly; the proxy forwards it as a Bearer token.
 document.getElementById('avatar-file').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const formData = new FormData();
     formData.append('file', file);
     try {
-        const res = await fetch(`${API_URL}/auth/avatar`, {
-            method: 'POST',
-            credentials: 'include',
-            body: formData,
-        });
-        if (!res.ok) throw new Error();
+        const res = await fetch('/_me/avatar', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         const display = document.getElementById('account-avatar-display');
         display.innerHTML = `<img src="${data.avatar_url}" alt="" class="account-avatar__img">`;
-        // Update header avatar too
         const hav = document.getElementById('header-avatar');
         if (hav) hav.innerHTML = `<img src="${data.avatar_url}" alt="" class="header-avatar__img">`;
     } catch {
-        alert('Upload failed. Please try a smaller image.');
+        alert('Upload failed. Please try again.');
     }
 });
 
@@ -129,7 +123,7 @@ document.querySelectorAll('[data-remove-bookmark]').forEach(btn => {
     btn.addEventListener('click', async () => {
         const itemId = btn.dataset.removeBookmark;
         try {
-            const res = await fetch(`${API_URL}/users/me/saved-items/${itemId}`, { method: 'DELETE', credentials: 'include' });
+            const res = await fetch(`/_me/saved-items/${itemId}`, { method: 'DELETE' });
             if (res.ok) btn.closest('li').remove();
         } catch {
             alert('Failed to remove bookmark.');

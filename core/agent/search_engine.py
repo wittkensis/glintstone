@@ -4,8 +4,13 @@ Pipeline:
   1. Exact match (P-number, full designation, full name) — short-circuit
   2. Lexical: pg_trgm similarity + tsvector rank against search_entities
   3. Semantic: Voyage query embedding → pgvector cosine over entity_embeddings
+     (label hydration merged into a single JOIN query)
   4. Fusion: Reciprocal Rank Fusion (k=60) across the three signals
   5. Group by entity_type, paginate via opaque cursor
+
+In hybrid mode, steps 2 and 3 run in parallel via ThreadPoolExecutor — each
+acquires its own pool connection so that the ~200-1000 ms Voyage network call
+overlaps with the lexical DB query instead of sitting after it.
 
 Cursor format: base64-encoded JSON of {q_hash, score_floor, last_id, types}.
 Query embeddings cached in-process by q_hash for 5 minutes (cursor TTL).
@@ -14,6 +19,7 @@ Query embeddings cached in-process by q_hash for 5 minutes (cursor TTL).
 from __future__ import annotations
 
 import base64
+import concurrent.futures
 import hashlib
 import json
 import logging
@@ -24,6 +30,7 @@ from dataclasses import dataclass, field
 import psycopg
 
 from core.agent.voyage_client import VoyageClient
+from core.database import get_connection
 from core.schemas.search import EntityType, SearchFilters, SearchParams
 
 logger = logging.getLogger(__name__)
@@ -103,18 +110,55 @@ class SearchEngine:
         exact_hit = self._exact_match(conn, params.q)
         exact_hits = [exact_hit] if exact_hit else []
 
-        # 2. Lexical
-        lexical_hits = self._lexical_search(conn, params.q, types, params.limit * 3)
-
-        # 3. Semantic — only if mode allows and voyage available
+        # 2 + 3. Lexical and semantic — run in parallel for hybrid mode so that
+        # the Voyage HTTP call (~200-1000 ms) overlaps with the lexical DB query.
+        # Each parallel worker acquires its own connection from the pool.
+        lexical_hits: list[SearchHit] = []
         semantic_hits: list[SearchHit] = []
-        if params.mode in ("semantic", "hybrid") and self._voyage:
-            try:
-                semantic_hits = self._semantic_search(
+
+        do_semantic = params.mode in ("semantic", "hybrid") and bool(self._voyage)
+
+        if params.mode == "lexical":
+            lexical_hits = self._lexical_search(conn, params.q, types, params.limit * 3)
+        elif params.mode == "semantic":
+            if do_semantic:
+                try:
+                    semantic_hits = self._semantic_search_parallel(
+                        params.q, types, params.limit * 3
+                    )
+                except Exception as exc:
+                    logger.warning("semantic search degraded: %s", exc)
+                    lexical_hits = self._lexical_search(
+                        conn, params.q, types, params.limit * 3
+                    )
+            else:
+                lexical_hits = self._lexical_search(
                     conn, params.q, types, params.limit * 3
                 )
-            except Exception as exc:  # voyage unavailable, pgvector missing, etc.
-                logger.warning("semantic search degraded: %s", exc)
+        else:  # hybrid
+            if do_semantic:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                    lex_future = executor.submit(
+                        self._lexical_search_parallel, params.q, types, params.limit * 3
+                    )
+                    sem_future = executor.submit(
+                        self._semantic_search_parallel,
+                        params.q,
+                        types,
+                        params.limit * 3,
+                    )
+                    try:
+                        lexical_hits = lex_future.result(timeout=8.0)
+                    except Exception as exc:
+                        logger.warning("lexical search failed: %s", exc)
+                    try:
+                        semantic_hits = sem_future.result(timeout=15.0)
+                    except Exception as exc:
+                        logger.warning("semantic search degraded: %s", exc)
+            else:
+                lexical_hits = self._lexical_search(
+                    conn, params.q, types, params.limit * 3
+                )
 
         # 4. Fusion (lexical-only if semantic fell through)
         if params.mode == "lexical":
@@ -223,6 +267,20 @@ class SearchEngine:
             score = row.get("completeness_score")
             hit.pipeline_completeness = int(score) if score is not None else None
 
+    # ── Parallel wrappers (each acquires its own pool connection) ────────────
+
+    def _lexical_search_parallel(
+        self, q: str, types: list[EntityType], limit: int
+    ) -> list[SearchHit]:
+        with get_connection() as conn:
+            return self._lexical_search(conn, q, types, limit)
+
+    def _semantic_search_parallel(
+        self, q: str, types: list[EntityType], limit: int
+    ) -> list[SearchHit]:
+        with get_connection() as conn:
+            return self._semantic_search(conn, q, types, limit)
+
     # ── Implementation ───────────────────────────────────────────────────────
 
     def _exact_match(self, conn: psycopg.Connection, q: str) -> SearchHit | None:
@@ -314,7 +372,8 @@ class SearchEngine:
         if not q.strip() or self._voyage is None:
             return []
         vector = _cached_query_vector(self._voyage, q)
-        # Map entity_types in the public API to entity_embeddings.entity_type values
+
+        # Map public entity_types to embedding entity_type values stored in DB
         embedding_type_map = {
             "tablets": [
                 "artifact_translation",
@@ -332,73 +391,92 @@ class SearchEngine:
         if not embedding_types:
             return []
 
-        # pgvector cosine distance — best matches have smallest distance
+        # Single query: vector scan + dedup to best-per-entity + label hydration.
+        #
+        # Artifacts have up to 3 embedding flavors (translation / lemma_bag /
+        # designation) sharing the same entity_id. DISTINCT ON keeps only the
+        # closest embedding per entity_id before the JOIN. The HNSW index on
+        # entity_embeddings.vec handles the ORDER BY efficiently.
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT entity_type, entity_id,
-                       (1 - (vec <=> %s::vector)) AS cosine
-                FROM entity_embeddings
-                WHERE entity_type = ANY(%s)
-                  AND model = 'voyage-3-large'
-                ORDER BY vec <=> %s::vector
-                LIMIT %s
+                WITH best AS (
+                    SELECT DISTINCT ON (
+                        CASE entity_type
+                            WHEN 'artifact_translation' THEN 'tablets'
+                            WHEN 'artifact_lemma_bag'   THEN 'tablets'
+                            WHEN 'artifact_designation' THEN 'tablets'
+                            WHEN 'lemma_gloss'           THEN 'lemmas'
+                            WHEN 'scholar_blob'          THEN 'scholars'
+                            WHEN 'named_entity'          THEN 'entities'
+                            WHEN 'composite_designation' THEN 'composites'
+                            ELSE entity_type
+                        END,
+                        entity_id
+                    )
+                        CASE entity_type
+                            WHEN 'artifact_translation' THEN 'tablets'
+                            WHEN 'artifact_lemma_bag'   THEN 'tablets'
+                            WHEN 'artifact_designation' THEN 'tablets'
+                            WHEN 'lemma_gloss'           THEN 'lemmas'
+                            WHEN 'scholar_blob'          THEN 'scholars'
+                            WHEN 'named_entity'          THEN 'entities'
+                            WHEN 'composite_designation' THEN 'composites'
+                            ELSE entity_type
+                        END  AS pub_type,
+                        entity_id,
+                        (1 - (vec <=> %s::vector)) AS cosine
+                    FROM entity_embeddings
+                    WHERE entity_type = ANY(%s)
+                      AND model = 'voyage-3-large'
+                    ORDER BY
+                        CASE entity_type
+                            WHEN 'artifact_translation' THEN 'tablets'
+                            WHEN 'artifact_lemma_bag'   THEN 'tablets'
+                            WHEN 'artifact_designation' THEN 'tablets'
+                            WHEN 'lemma_gloss'           THEN 'lemmas'
+                            WHEN 'scholar_blob'          THEN 'scholars'
+                            WHEN 'named_entity'          THEN 'entities'
+                            WHEN 'composite_designation' THEN 'composites'
+                            ELSE entity_type
+                        END,
+                        entity_id,
+                        vec <=> %s::vector ASC
+                    LIMIT %s
+                )
+                SELECT
+                    se.entity_type,
+                    se.entity_id,
+                    se.primary_label,
+                    se.secondary_label,
+                    se.sources,
+                    se.p_number_ref,
+                    se.int_ref,
+                    b.cosine
+                FROM best b
+                JOIN search_entities se
+                    ON se.entity_type = b.pub_type
+                   AND se.entity_id   = b.entity_id
+                ORDER BY b.cosine DESC
                 """,
                 (vector, embedding_types, vector, limit),
             )
             rows = cur.fetchall()
 
-        # Translate embedding entity_type back to public entity_type
-        reverse_map: dict[str, str] = {}
-        for pub, embs in embedding_type_map.items():
-            for e in embs:
-                reverse_map[e] = pub
-
-        # For artifacts we have 3 flavors per p_number; reduce to best-scoring flavor
-        best_by_id: dict[tuple[str, str], dict] = {}
-        for r in rows:
-            pub_type = reverse_map.get(r["entity_type"], r["entity_type"])
-            key = (pub_type, r["entity_id"])
-            if key not in best_by_id or best_by_id[key]["cosine"] < r["cosine"]:
-                best_by_id[key] = {**r, "pub_type": pub_type}
-
-        # Hydrate labels from search_entities
-        hits: list[SearchHit] = []
-        if not best_by_id:
-            return hits
-        with conn.cursor() as cur:
-            keys = list(best_by_id.keys())
-            cur.execute(
-                """
-                SELECT entity_type, entity_id, primary_label, secondary_label,
-                       sources, p_number_ref, int_ref
-                FROM search_entities
-                WHERE (entity_type, entity_id) IN (
-                    SELECT (k.t)::text, (k.i)::text
-                    FROM unnest(%s::text[], %s::text[]) AS k(t, i)
-                )
-                """,
-                ([k[0] for k in keys], [k[1] for k in keys]),
+        hits = [
+            SearchHit(
+                entity_type=r["entity_type"],
+                entity_id=r["entity_id"],
+                primary_label=r.get("primary_label") or r["entity_id"],
+                secondary_label=r.get("secondary_label"),
+                sources=list(r.get("sources") or []),
+                score=float(r.get("cosine") or 0),
+                p_number_ref=r.get("p_number_ref"),
+                int_ref=r.get("int_ref"),
+                rank_components={"semantic": float(r.get("cosine") or 0)},
             )
-            label_rows = {(r["entity_type"], r["entity_id"]): r for r in cur.fetchall()}
-
-        for key, val in best_by_id.items():
-            label = label_rows.get(key)
-            if not label:
-                continue
-            hits.append(
-                SearchHit(
-                    entity_type=label["entity_type"],
-                    entity_id=label["entity_id"],
-                    primary_label=label.get("primary_label") or label["entity_id"],
-                    secondary_label=label.get("secondary_label"),
-                    sources=list(label.get("sources") or []),
-                    score=float(val["cosine"]),
-                    p_number_ref=label.get("p_number_ref"),
-                    int_ref=label.get("int_ref"),
-                    rank_components={"semantic": float(val["cosine"])},
-                )
-            )
+            for r in rows
+        ]
         hits.sort(key=lambda h: h.score, reverse=True)
         return hits
 

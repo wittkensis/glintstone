@@ -186,6 +186,7 @@ def me(user: dict = Depends(require_user)):
         "orcid_id": user.get("orcid_id"),
         "email_verified_at": user.get("email_verified_at"),
         "avatar_url": user.get("avatar_url"),
+        "role": user.get("role", "standard"),
     }
 
 

@@ -5,15 +5,33 @@ overview and joins import_runs / import_dead_letters for detail views.
 """
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import RedirectResponse, Response
 
 from core.database import get_connection
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+def _require_admin(request: Request):
+    """Return None if admin; return a Response to abort the handler."""
+    token = request.cookies.get("session_token")
+    if not token:
+        return RedirectResponse("/auth/login", status_code=302)
+    try:
+        user = request.app.state.api.get("/auth/me", token=token)
+    except Exception:
+        return RedirectResponse("/auth/login", status_code=302)
+    if user.get("role") != "admin":
+        return Response(status_code=403, content="Admin access required")
+    return None
+
+
 @router.get("/ingestion")
 def ingestion_dashboard(request: Request):
     """Connector overview: last run, status, open dead-letter count."""
+    guard = _require_admin(request)
+    if guard is not None:
+        return guard
     with get_connection() as conn:
         rows = conn.execute(
             """
@@ -65,6 +83,9 @@ def ingestion_dashboard(request: Request):
 @router.get("/ingestion/{connector_id}")
 def connector_detail(request: Request, connector_id: str):
     """Per-connector view: full run history and open dead-letter queue."""
+    guard = _require_admin(request)
+    if guard is not None:
+        return guard
     with get_connection() as conn:
         source = conn.execute(
             "SELECT * FROM sources WHERE id = %s",

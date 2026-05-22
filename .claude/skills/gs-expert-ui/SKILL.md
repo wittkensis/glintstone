@@ -10,7 +10,7 @@ metadata:
   audience: [claude, engineers, designers]
   owners: [eric]
   related_issues: ["#6", "#13"]
-  related_skills: [gs-expert-data-model, gs-curator-docs]
+  related_skills: [gs-expert-data-model, gs-curator-docs, gs-audit-frontend]
   supersedes: [".claude/skills-disabled/css-patterns/SKILL.md", ".claude/skills-disabled/markup-quality/SKILL.md"]
   superseded_by: null
   triggers: [css, styles, styling, flexbox, tokens, BEM, layout, spacing, html, semantic, accessibility, a11y, markup, "tokens.css", responsive, ui]
@@ -75,6 +75,9 @@ Process: **Check → try existing → extend with modifier → create (last reso
 - Rendering tablet content / glossed text / sign typography → also load `gs-expert-assyriology/lexical-model.md` (typography conventions section)
 - API data shape for new UI views → `gs-expert-data-model`
 - New endpoints to back the UI → `gs-expert-integrations` (server side) or check existing `api/routes/`
+- Auditing what's wrong before implementing → `gs-audit-frontend` (identifies findings; this skill implements the fixes)
+
+**Handoff protocol with gs-audit-frontend:** The audit skill identifies violations and writes findings. This skill implements them. When you receive a finding tagged "Implement using gs-expert-ui/css-tokens.md", load this file and apply the token-first rules.
 
 ## Open issues that touch this skill
 

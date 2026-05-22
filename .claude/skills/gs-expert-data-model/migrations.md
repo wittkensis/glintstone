@@ -1,7 +1,7 @@
 ---
 question: "How do I write, apply, and verify a Postgres migration in Glintstone, and what's already been applied?"
 created: 2026-05-11
-modified: 2026-05-11
+modified: 2026-05-22
 context: "Created during the 2026-05-11 overhaul. The rolling 'applied migrations' table below is canonical — gs-curator-docs warns on push if source-data/migrations/ changed without this file updating."
 status: active
 audience: [claude, engineers]
@@ -134,6 +134,17 @@ GRANT USAGE, SELECT ON SEQUENCE my_table_id_seq TO glintstone;
 | 024 | `024_connector_unique_constraints.sql` | Unique constraints + lexical_norm_forms cleanup for v2 ingestion connectors |
 | 025 | `025_agentic_foundations.sql` | `pg_trgm` + pgvector extensions, trigram indexes, `entity_embeddings`, `agent_interactions`, `interaction_feedback`, `agent_outputs` |
 | 026 | `026_search_entities.sql` | Matview `search_entities` (unified lexical surface) + view `pipeline_completeness` (0-5 score per artifact) |
+| 027 | `027_users_and_sessions.sql` | `users`, `sessions`, `auth_methods` tables |
+| 028 | `028_user_saved_items.sql` | `saved_items` table (bookmarks) |
+| 029 | `029_user_avatar.sql` | `avatar_url` column on `users` |
+| 030 | `030_filter_indexes.sql` | Additional indexes for filter queries |
+| 031 | `031_pg_trgm.sql` | pg_trgm extension (trigram indexes) |
+| 032 | `032_nfc_normalize_lexical.sql` | NFC normalization on lexical columns |
+| 033 | `033_surface_type_expand.sql` | Expand `surface_type` enum values |
+| 034 | `034_citation_fk_audit.sql` | FK audit and cleanup for citation pipeline |
+| 035 | `035_compvis_orphan_audit.sql` | Orphan cleanup for compvis annotations |
+| 036 | `036_artifact_image_fetch_log_page_outcomes.sql` | Widen `outcome` check constraint on `artifact_image_fetch_log` to include page-level outcomes |
+| 037 | `037_user_roles.sql` | `role` column on `users` (admin/standard); seeds `eric.wittke@gmail.com` as admin |
 
 **Always confirm `migrate.py status` matches this table.** If it doesn't, update one or the other.
 
