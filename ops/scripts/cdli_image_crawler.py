@@ -45,7 +45,10 @@ if str(_REPO_ROOT) not in sys.path:
 from core.database import connect_one_shot  # noqa: E402
 from api.services.image_ondemand import ensure_images_for_artifact  # noqa: E402
 
-CHECKPOINT_PATH = Path("source-data/checkpoints/cdli_image_crawler.json")
+_checkpoint_dir = Path(
+    os.environ.get("CRAWLER_CHECKPOINT_DIR", "source-data/checkpoints")
+)
+CHECKPOINT_PATH = _checkpoint_dir / "cdli_image_crawler.json"
 LOCK_PATH = Path("/tmp/glintstone-cdli-crawler.lock")
 
 

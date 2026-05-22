@@ -4,7 +4,7 @@ description: Proactive infra concierge — Hostinger VPS, GitHub Actions, Neon, 
 metadata:
   question: "How do I safely deploy, stage, roll back, and manage Glintstone's infrastructure (Hostinger, GitHub Actions, Neon, soon Cloudflare R2)?"
   created: 2026-05-11
-  modified: 2026-05-18
+  modified: 2026-05-22
   context: "Created during the 2026-05-11 overhaul to absorb the infra-juggling burden from a non-technical operator. Designed to be proactive — surfaces problems before they bite, restates risky actions before executing, and routes to the right MCP server for the job. Process-supervision section added 2026-05-18 after a near-miss where the operator was told 'services have no reboot survival' (false — supervisord was already running them; the audit missed it by looking for systemd/OpenRC instead of asking 'who's the parent PID?')."
   status: active
   audience: [claude, ops, engineers]
