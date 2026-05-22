@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interlinear vs. Ribbon Mode — UX Explore</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1a1a;
+  --bg-panel: #222222;
+  --bg-header: #303030;
+  --border: #404040;
+  --accent: #c9a962;
+  --text: #e8e6e3;
+  --text-subtle: #707070;
+  --text-red: #e23838;
+  --blue: #8ab4d4;
+  --green: #6b8e6b;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-ui: 'Inter', sans-serif;
+
+  /* Layer colours — subtle tints for interlinear rows */
+  --il-atf-bg:   rgba(232, 230, 227, 0.04);
+  --il-norm-bg:  rgba(138, 180, 212, 0.04);
+  --il-lemma-bg: rgba(107, 142, 107, 0.05);
+  --il-gloss-bg: rgba(201, 169, 98,  0.05);
+  --il-trans-bg: rgba(201, 169, 98,  0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.4; }
+
+.page { max-width: 1200px; margin: 0 auto; padding: 36px 24px 80px; }
+
+/* ── Intro ── */
+.intro {
+  background: #1a221a; border: 1px solid #3a5a3a; border-radius: 6px;
+  padding: 16px 20px; margin-bottom: 36px; color: #8ab88a; font-size: 12px; line-height: 1.7;
+}
+.intro h1 { font-size: 15px; font-weight: 600; color: #aad4aa; margin-bottom: 6px; }
+.intro .dot { display: inline-block; width: 7px; height: 7px; background: #6ab06a; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+/* ── Mode toggle control ── */
+.mode-toggle-bar {
+  display: flex; align-items: center; gap: 0;
+  background: var(--bg-header); border: 1px solid var(--border);
+  border-radius: 6px; overflow: hidden; width: fit-content; margin-bottom: 28px;
+}
+.mode-btn {
+  padding: 9px 20px; font-size: 13px; font-weight: 500; cursor: pointer;
+  color: var(--text-subtle); background: transparent; border: none;
+  font-family: var(--font-ui); transition: background .15s, color .15s;
+  border-right: 1px solid var(--border);
+}
+.mode-btn:last-child { border-right: none; }
+.mode-btn.active {
+  background: var(--accent); color: #1a1a1a;
+}
+.mode-label {
+  font-size: 11px; color: var(--text-subtle); margin-left: 16px; font-style: italic;
+}
+
+/* ── Tablet viewer shell ── */
+.tablet-viewer { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+
+/* ── Header bar ── */
+.tb-header {
+  background: var(--bg-header); border-bottom: 1px solid var(--border);
+  height: 45px; display: flex; align-items: stretch; padding: 0 8px; gap: 4px;
+}
+.tb-meta { display: flex; align-items: center; gap: 8px; padding: 0 12px 0 4px; border-right: 1px solid var(--border); flex-shrink: 0; }
+.meta-designation { font-size: 13px; font-weight: 500; color: var(--text); }
+.chip { font-size: 10px; padding: 2px 7px; border-radius: 3px; border: 1px solid var(--border); color: var(--text-subtle); white-space: nowrap; }
+.chip.lang-sux { color: var(--green); border-color: rgba(107,142,107,.3); background: rgba(107,142,107,.07); }
+.chip.lang-akk { color: var(--blue); border-color: rgba(138,180,212,.3); background: rgba(138,180,212,.07); }
+.surface-tabs { display: flex; align-items: stretch; border-bottom: 2px solid var(--border); flex: 1; }
+.tab { display: flex; align-items: center; padding: 12px 14px 14px; font-size: 14px; font-weight: 500; color: var(--text-subtle); border-bottom: 2px solid transparent; margin-bottom: -2px; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Content area ── */
+.tb-content { padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+
+/* ════════════════════════════════════════
+   RIBBON MODE
+════════════════════════════════════════ */
+.ribbon-rows { display: flex; flex-direction: column; gap: 6px; }
+
+.tb-row { display: flex; gap: 6px; align-items: flex-start; }
+.row-num {
+  background: var(--bg); border-radius: 4px; padding: 14px 6px 14px 8px;
+  min-width: 32px; font-family: var(--font-mono); font-size: 11px; color: var(--text);
+  flex-shrink: 0; align-self: stretch; display: flex; align-items: flex-start; justify-content: center;
+}
+.ribbons { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.ribbon-tokens { display: flex; align-items: flex-start; padding-bottom: 3px; }
+.token { display: flex; flex-direction: column; min-width: 92px; flex-shrink: 0; border-left: 1px solid rgba(255,255,255,.06); }
+.token:first-child { border-left: none; }
+.token.lang-akk { border-top: 2px solid rgba(138,180,212,.45); }
+.token.lang-sux { border-top: 2px solid rgba(107,142,107,.45); }
+.tok-flags { display: flex; align-items: center; height: 18px; padding: 0 6px; gap: 3px; }
+.tok-flag { font-family: var(--font-mono); font-size: 8px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-subtle); }
+.tok-flag.lang { color: var(--blue); background: rgba(138,180,212,.1); border-radius: 2px; padding: 0 3px; font-size: 7px; }
+.tok-flag.lang-sux { color: var(--green); background: rgba(107,142,107,.1); border-radius: 2px; padding: 0 3px; font-size: 7px; }
+.tok-row { display: flex; align-items: center; height: 22px; padding: 0 6px; border-top: 1px dashed rgba(255,255,255,.05); }
+.tok-reading { font-family: var(--font-mono); font-size: 10px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tok-norm  { font-family: var(--font-mono); font-size: 10px; color: var(--text-subtle); white-space: nowrap; }
+.tok-lemma { font-family: var(--font-mono); font-size: 10px; color: var(--text-subtle); white-space: nowrap; }
+.tok-gloss { font-size: 10px; color: var(--text-subtle); font-style: italic; white-space: nowrap; }
+.ribbon-trans {
+  display: flex; align-items: center; gap: 8px; min-height: 32px;
+  padding: 5px 10px; background: rgba(26,26,26,.5); border-radius: 4px;
+}
+.trans-dot { width: 6px; height: 20px; border-radius: 3px; flex-shrink: 0; background: var(--accent); }
+.trans-text { font-size: 10px; color: var(--accent); line-height: 1.5; flex: 1; }
+
+/* Lang separator (ribbon mode) */
+.lang-sep { display: flex; align-items: center; gap: 8px; margin: 2px 0; padding: 0 0 0 38px; }
+.lang-sep-line { flex: 1; height: 1px; background: var(--border); }
+.lang-sep-label {
+  font-size: 9px; letter-spacing: .07em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 10px; white-space: nowrap;
+}
+.lang-sep-label.sux { color: var(--green); background: rgba(107,142,107,.1); border: 1px solid rgba(107,142,107,.2); }
+.lang-sep-label.akk { color: var(--blue); background: rgba(138,180,212,.1); border: 1px solid rgba(138,180,212,.2); }
+
+/* ════════════════════════════════════════
+   INTERLINEAR MODE
+════════════════════════════════════════ */
+.il-rows { display: flex; flex-direction: column; gap: 16px; }
+
+.il-row { display: flex; gap: 0; align-items: flex-start; }
+.il-row-num {
+  background: var(--bg); border-radius: 4px 0 0 4px; padding: 0 8px;
+  min-width: 32px; font-family: var(--font-mono); font-size: 11px; color: var(--text);
+  flex-shrink: 0; align-self: stretch; display: flex; align-items: flex-start;
+  justify-content: center; padding-top: 10px;
+}
+.il-block { flex: 1; min-width: 0; }
+
+/* Each layer is a flex row — labels on left, cells stretching right */
+.il-layer {
+  display: flex; align-items: baseline; gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.il-layer:last-of-type { border-bottom: none; }
+
+.il-layer-label {
+  flex-shrink: 0; width: 52px; text-align: right; padding: 6px 10px 6px 0;
+  font-family: var(--font-mono); font-size: 9px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .07em; color: var(--text-subtle);
+  opacity: .6;
+}
+
+.il-cells { display: flex; flex-wrap: nowrap; flex: 1; }
+
+.il-cell {
+  padding: 6px 12px 6px 8px; font-family: var(--font-mono); font-size: 11px;
+  white-space: nowrap; min-width: 0;
+  /* Width syncing: each cell tracks the widest sibling via JS-set --col-w */
+  min-width: var(--col-w, auto);
+}
+
+.il-layer.atf   { background: var(--il-atf-bg); }
+.il-layer.norm  { background: var(--il-norm-bg); }
+.il-layer.lemma { background: var(--il-lemma-bg); }
+.il-layer.gloss { background: var(--il-gloss-bg); }
+.il-layer.trans { background: var(--il-trans-bg); }
+
+.il-layer.atf   .il-cell { color: var(--text); }
+.il-layer.norm  .il-cell { color: var(--blue); opacity: .85; }
+.il-layer.lemma .il-cell { color: var(--green); opacity: .85; font-size: 10px; }
+.il-layer.gloss .il-cell { color: var(--accent); font-style: italic; opacity: .9; }
+.il-layer.trans .il-cell { color: var(--accent); font-family: var(--font-ui); font-style: italic; font-size: 12px; padding: 7px 12px; letter-spacing: 0; }
+
+/* Language badge chip inside interlinear ATF cell */
+.il-lang-chip {
+  display: inline-block; font-size: 8px; font-style: normal; vertical-align: middle;
+  margin-right: 4px; padding: 1px 4px; border-radius: 2px; font-family: var(--font-mono);
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.il-lang-chip.akk { color: var(--blue); background: rgba(138,180,212,.12); }
+.il-lang-chip.sux { color: var(--green); background: rgba(107,142,107,.12); }
+
+/* Compact IL: hide norm + lemma layers */
+.tokens-compact .il-layer.norm,
+.tokens-compact .il-layer.lemma { display: none; }
+
+/* View controls */
+.view-controls {
+  display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+  background: rgba(10,10,10,.7); border-top: 1px solid var(--border);
+}
+.toggle-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.toggle-track {
+  width: 44px; height: 24px; background: #404040; border-radius: 12px;
+  position: relative; transition: background .2s; flex-shrink: 0;
+}
+.toggle-track.on { background: var(--accent); }
+.toggle-thumb {
+  position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+  background: var(--text); border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,.3);
+  transition: left .18s;
+}
+.toggle-track.on .toggle-thumb { left: 22px; }
+.toggle-label { font-size: 12px; color: var(--text); }
+
+/* ── Annotation callouts ── */
+.callout {
+  margin: 10px 0; padding: 9px 12px; border-radius: 4px;
+  font-size: 11px; line-height: 1.6; display: flex; gap: 9px; align-items: flex-start;
+}
+.callout.info { background: rgba(138,180,212,.06); border: 1px solid rgba(138,180,212,.2); color: var(--blue); }
+.callout.warn { background: rgba(201,169,98,.07); border: 1px solid rgba(201,169,98,.22); color: var(--accent); }
+.callout-tag {
+  font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  padding: 2px 5px; border-radius: 2px; flex-shrink: 0; margin-top: 1px;
+}
+.callout.info .callout-tag { background: rgba(138,180,212,.14); }
+.callout.warn .callout-tag { background: rgba(201,169,98,.18); }
+
+/* ── Comparison section ── */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 28px; }
+.compare-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+.compare-card h3 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.compare-card .subtitle { font-size: 11px; color: var(--text-subtle); margin-bottom: 14px; }
+.compare-card ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.compare-card li { font-size: 12px; color: var(--text-subtle); line-height: 1.55; padding-left: 14px; position: relative; }
+.compare-card li::before { content: '·'; position: absolute; left: 0; color: var(--text-subtle); }
+.compare-card li strong { color: var(--text); font-weight: 500; }
+.compare-card.ribbon h3 { color: var(--blue); }
+.compare-card.il h3 { color: var(--green); }
+
+.section-heading {
+  font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-subtle); margin: 36px 0 12px; display: flex; align-items: center; gap: 12px;
+}
+.section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Show/hide the two view layers */
+.ribbon-rows { display: flex; }
+.il-rows     { display: none; }
+body.il-mode .ribbon-rows { display: none; }
+body.il-mode .il-rows     { display: flex; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ── Intro ── -->
+<div class="intro">
+  <h1><span class="dot"></span>UX Explore — Interlinear vs. Ribbon Mode</h1>
+  <p>The <strong>Ribbon mode</strong> (current design) is optimised for reading — each token is a self-contained column,
+  ideal for scanning a text horizontally. The <strong>Interlinear mode</strong> rotates this 90°: each linguistic layer
+  (ATF / NORM / LEMMA / GLOSS) becomes its own horizontal band, aligned by token position.
+  This is the standard format in published grammars, the CAD, and philological commentary —
+  the format scholars already read and write in. Toggle below to switch between them on the same data.</p>
+</div>
+
+<!-- ── Mode toggle ── -->
+<div style="display:flex; align-items:center; gap:0; margin-bottom:24px;">
+  <div class="mode-toggle-bar" id="modeToggle">
+    <button class="mode-btn active" data-mode="ribbon">Ribbon</button>
+    <button class="mode-btn" data-mode="il">Interlinear</button>
+  </div>
+  <span class="mode-label" id="modeDescription">Reading mode — horizontal token columns</span>
+</div>
+
+<!-- ════════════════════════════════════════
+     TABLET: P020464 — Old Akkadian bilingual letter
+     Chosen because it has Sumerian+Akkadian switches,
+     morphologically rich verbal forms, and a long line
+     that shows the interlinear scanning advantage clearly.
+════════════════════════════════════════ -->
+<div class="tablet-viewer">
+
+  <div class="tb-header">
+    <div class="tb-meta">
+      <span class="meta-designation">P020464</span>
+      <span class="chip">Old Akkadian letter</span>
+      <span class="chip lang-sux">Sumerian</span>
+      <span class="chip lang-akk">Akkadian</span>
+    </div>
+    <div class="surface-tabs">
+      <div class="tab active">Obverse</div>
+      <div class="tab">Reverse</div>
+    </div>
+  </div>
+
+  <div class="tb-content">
+
+    <!-- ────────────────────────────────
+         RIBBON MODE
+    ──────────────────────────────── -->
+    <div class="ribbon-rows">
+
+      <!-- Row 1: a-na {d}EN.ZU-ba-ni qi₂-bi₂-ma -->
+      <div class="tb-row">
+        <div class="row-num">1</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">a-na</span></div>
+              <div class="tok-row"><span class="tok-norm">ana</span></div>
+              <div class="tok-row"><span class="tok-lemma">ana[to]PRP</span></div>
+              <div class="tok-row"><span class="tok-gloss">to</span></div>
+            </div>
+            <div class="token lang-akk" style="min-width:118px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">{d}EN.ZU-ba-ni</span></div>
+              <div class="tok-row"><span class="tok-norm" style="font-size:9px">Sîn-bāni</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">Sîn-bāni[PN]</span></div>
+              <div class="tok-row"><span class="tok-gloss">Sîn-bāni</span></div>
+            </div>
+            <div class="token lang-akk" style="min-width:102px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">qi₂-bi₂-ma</span></div>
+              <div class="tok-row"><span class="tok-norm">qibīma</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">qabû[speak]V.IMP</span></div>
+              <div class="tok-row"><span class="tok-gloss">speak!</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot"></div>
+            <span class="trans-text">To Sîn-bāni speak!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="tb-row">
+        <div class="row-num">2</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">um-ma</span></div>
+              <div class="tok-row"><span class="tok-norm">umma</span></div>
+              <div class="tok-row"><span class="tok-lemma">umma[thus]PRT</span></div>
+              <div class="tok-row"><span class="tok-gloss">thus</span></div>
+            </div>
+            <div class="token lang-akk" style="min-width:128px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">{d}EN.ZU-DU₁₀-GA-ma</span></div>
+              <div class="tok-row"><span class="tok-norm" style="font-size:9px">Sîn-damqam-ma</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">Sîn-damqam[PN]</span></div>
+              <div class="tok-row"><span class="tok-gloss">Sîn-damqam</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot"></div>
+            <span class="trans-text">thus says Sîn-damqam:</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Language switch separator -->
+      <div class="lang-sep">
+        <div class="lang-sep-line"></div>
+        <span class="lang-sep-label sux">%sux — Sumerian</span>
+        <div class="lang-sep-line"></div>
+      </div>
+
+      <!-- Row 3: %sux phrase -->
+      <div class="tb-row">
+        <div class="row-num">3</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-sux">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading">ma-da</span></div>
+              <div class="tok-row"><span class="tok-norm">mada</span></div>
+              <div class="tok-row"><span class="tok-lemma">mada[land]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">land</span></div>
+            </div>
+            <div class="token lang-sux">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading">lu₂</span></div>
+              <div class="tok-row"><span class="tok-norm">lu</span></div>
+              <div class="tok-row"><span class="tok-lemma">lu[man]N</span></div>
+              <div class="tok-row"><span class="tok-gloss">man</span></div>
+            </div>
+            <div class="token lang-sux" style="min-width:100px">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">ba-ra-tum</span></div>
+              <div class="tok-row"><span class="tok-norm">baratum</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">bārum[see]V.PTCP</span></div>
+              <div class="tok-row"><span class="tok-gloss">overseer</span></div>
+            </div>
+            <div class="token lang-sux" style="min-width:126px">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">he₂-en-ne-eb-su₃</span></div>
+              <div class="tok-row"><span class="tok-norm" style="font-size:9px">henenebsu</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">šutu[fill]V.PREC.3SG</span></div>
+              <div class="tok-row"><span class="tok-gloss">may it be filled</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot"></div>
+            <span class="trans-text">may the land of the overseers be at peace</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Language switch back -->
+      <div class="lang-sep">
+        <div class="lang-sep-line"></div>
+        <span class="lang-sep-label akk">%akk — Akkadian</span>
+        <div class="lang-sep-line"></div>
+      </div>
+
+      <!-- Row 4: long Akkadian line with morphologically rich verbal clause -->
+      <div class="tb-row">
+        <div class="row-num">4</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <div class="token lang-akk" style="min-width:100px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">a-na be-lí-ia</span></div>
+              <div class="tok-row"><span class="tok-norm" style="font-size:9px">ana bēlīya</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">ana[to] bēlu[lord]N.1SG</span></div>
+              <div class="tok-row"><span class="tok-gloss">to my lord</span></div>
+            </div>
+            <div class="token lang-akk" style="min-width:104px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">qi₂-bi₂-ma</span></div>
+              <div class="tok-row"><span class="tok-norm">qibīma</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">qabû[speak]V.IMP</span></div>
+              <div class="tok-row"><span class="tok-gloss">speak!</span></div>
+            </div>
+            <div class="token lang-akk" style="min-width:98px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">um-ma ab-ia</span></div>
+              <div class="tok-row"><span class="tok-norm">umma abīya</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">umma[thus] abu[father]N.1SG</span></div>
+              <div class="tok-row"><span class="tok-gloss">thus my father</span></div>
+            </div>
+            <div class="token lang-akk" style="min-width:98px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">at-ta-al-la-ak</span></div>
+              <div class="tok-row"><span class="tok-norm" style="font-size:9px">atallak</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">alāku[go]V.PRES.1SG</span></div>
+              <div class="tok-row"><span class="tok-gloss">I am going</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot"></div>
+            <span class="trans-text">To my lord speak! Thus my father: I am going …</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 5: Mid-line language switch -->
+      <div class="tb-row">
+        <div class="row-num">5</div>
+        <div class="ribbons">
+          <div class="ribbon-tokens">
+            <!-- Sumerian -->
+            <div class="token lang-sux" style="min-width:110px">
+              <div class="tok-flags"><span class="tok-flag lang-sux">SUX</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">lugal-gu₁₀</span></div>
+              <div class="tok-row"><span class="tok-norm">lugalgu</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">lugal[king]N.1SG</span></div>
+              <div class="tok-row"><span class="tok-gloss">my king</span></div>
+            </div>
+            <!-- Switch to Akkadian mid-line -->
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">i-na</span></div>
+              <div class="tok-row"><span class="tok-norm">ina</span></div>
+              <div class="tok-row"><span class="tok-lemma">ina[in]PRP</span></div>
+              <div class="tok-row"><span class="tok-gloss">in</span></div>
+            </div>
+            <div class="token lang-akk">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading">pī</span></div>
+              <div class="tok-row"><span class="tok-norm">pî</span></div>
+              <div class="tok-row"><span class="tok-lemma">pûm[mouth]N.CS</span></div>
+              <div class="tok-row"><span class="tok-gloss">mouth of</span></div>
+            </div>
+            <div class="token lang-akk" style="min-width:104px">
+              <div class="tok-flags"><span class="tok-flag lang">AKK</span></div>
+              <div class="tok-row"><span class="tok-reading" style="font-size:9px">šar-ri-im</span></div>
+              <div class="tok-row"><span class="tok-norm">šarrim</span></div>
+              <div class="tok-row"><span class="tok-lemma" style="font-size:9px">šarrum[king]N.GEN</span></div>
+              <div class="tok-row"><span class="tok-gloss">of the king</span></div>
+            </div>
+          </div>
+          <div class="ribbon-trans">
+            <div class="trans-dot"></div>
+            <span class="trans-text">my king — by the word of the king</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ribbon-rows -->
+
+    <!-- ────────────────────────────────
+         INTERLINEAR MODE
+    ──────────────────────────────── -->
+    <div class="il-rows">
+
+      <!-- IL Row 1: a-na {d}EN.ZU-ba-ni qi₂-bi₂-ma -->
+      <div class="il-row">
+        <div class="il-row-num">1</div>
+        <div class="il-block">
+          <div class="il-layer atf">
+            <span class="il-layer-label">ATF</span>
+            <div class="il-cells">
+              <span class="il-cell">a-na</span>
+              <span class="il-cell">{d}EN.ZU-ba-ni</span>
+              <span class="il-cell">qi₂-bi₂-ma</span>
+            </div>
+          </div>
+          <div class="il-layer norm">
+            <span class="il-layer-label">NORM</span>
+            <div class="il-cells">
+              <span class="il-cell">ana</span>
+              <span class="il-cell">Sîn-bāni</span>
+              <span class="il-cell">qibīma</span>
+            </div>
+          </div>
+          <div class="il-layer lemma">
+            <span class="il-layer-label">LEMMA</span>
+            <div class="il-cells">
+              <span class="il-cell">ana[to]<span style="opacity:.6">PRP</span></span>
+              <span class="il-cell">Sîn-bāni<span style="opacity:.6">[PN]</span></span>
+              <span class="il-cell">qabû[speak]<span style="opacity:.6">V.IMP</span></span>
+            </div>
+          </div>
+          <div class="il-layer gloss">
+            <span class="il-layer-label">GLOSS</span>
+            <div class="il-cells">
+              <span class="il-cell">to</span>
+              <span class="il-cell">Sîn-bāni</span>
+              <span class="il-cell">speak!</span>
+            </div>
+          </div>
+          <div class="il-layer trans">
+            <span class="il-layer-label" style="font-family:var(--font-ui); letter-spacing:0; font-size:10px">TRANS</span>
+            <div class="il-cells">
+              <span class="il-cell">To Sîn-bāni speak!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IL Row 2 -->
+      <div class="il-row">
+        <div class="il-row-num">2</div>
+        <div class="il-block">
+          <div class="il-layer atf">
+            <span class="il-layer-label">ATF</span>
+            <div class="il-cells">
+              <span class="il-cell">um-ma</span>
+              <span class="il-cell">{d}EN.ZU-DU₁₀-GA-ma</span>
+            </div>
+          </div>
+          <div class="il-layer norm">
+            <span class="il-layer-label">NORM</span>
+            <div class="il-cells">
+              <span class="il-cell">umma</span>
+              <span class="il-cell">Sîn-damqam-ma</span>
+            </div>
+          </div>
+          <div class="il-layer lemma">
+            <span class="il-layer-label">LEMMA</span>
+            <div class="il-cells">
+              <span class="il-cell">umma[thus]<span style="opacity:.6">PRT</span></span>
+              <span class="il-cell">Sîn-damqam<span style="opacity:.6">[PN]</span></span>
+            </div>
+          </div>
+          <div class="il-layer gloss">
+            <span class="il-layer-label">GLOSS</span>
+            <div class="il-cells">
+              <span class="il-cell">thus</span>
+              <span class="il-cell">Sîn-damqam</span>
+            </div>
+          </div>
+          <div class="il-layer trans">
+            <span class="il-layer-label" style="font-family:var(--font-ui); letter-spacing:0; font-size:10px">TRANS</span>
+            <div class="il-cells">
+              <span class="il-cell">thus says Sîn-damqam:</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IL Row 3: Sumerian phrase -->
+      <div class="il-row">
+        <div class="il-row-num">3</div>
+        <div class="il-block">
+          <div class="il-layer atf">
+            <span class="il-layer-label">ATF</span>
+            <div class="il-cells">
+              <span class="il-cell"><span class="il-lang-chip sux">sux</span>ma-da</span>
+              <span class="il-cell">lu₂</span>
+              <span class="il-cell">ba-ra-tum</span>
+              <span class="il-cell">he₂-en-ne-eb-su₃</span>
+            </div>
+          </div>
+          <div class="il-layer norm">
+            <span class="il-layer-label">NORM</span>
+            <div class="il-cells">
+              <span class="il-cell">mada</span>
+              <span class="il-cell">lu</span>
+              <span class="il-cell">baratum</span>
+              <span class="il-cell">henenebsu</span>
+            </div>
+          </div>
+          <div class="il-layer lemma">
+            <span class="il-layer-label">LEMMA</span>
+            <div class="il-cells">
+              <span class="il-cell">mada[land]<span style="opacity:.6">N</span></span>
+              <span class="il-cell">lu[man]<span style="opacity:.6">N</span></span>
+              <span class="il-cell">bārum[see]<span style="opacity:.6">V.PTCP</span></span>
+              <span class="il-cell">šutu[fill]<span style="opacity:.6">V.PREC.3SG</span></span>
+            </div>
+          </div>
+          <div class="il-layer gloss">
+            <span class="il-layer-label">GLOSS</span>
+            <div class="il-cells">
+              <span class="il-cell">land</span>
+              <span class="il-cell">man</span>
+              <span class="il-cell">overseer</span>
+              <span class="il-cell">may be filled</span>
+            </div>
+          </div>
+          <div class="il-layer trans">
+            <span class="il-layer-label" style="font-family:var(--font-ui); letter-spacing:0; font-size:10px">TRANS</span>
+            <div class="il-cells">
+              <span class="il-cell">may the land of the overseers be at peace</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IL Row 4: long Akkadian line — the key demonstration row -->
+      <div class="il-row">
+        <div class="il-row-num">4</div>
+        <div class="il-block">
+          <div class="il-layer atf">
+            <span class="il-layer-label">ATF</span>
+            <div class="il-cells">
+              <span class="il-cell"><span class="il-lang-chip akk">akk</span>a-na be-lí-ia</span>
+              <span class="il-cell">qi₂-bi₂-ma</span>
+              <span class="il-cell">um-ma ab-ia</span>
+              <span class="il-cell">at-ta-al-la-ak</span>
+            </div>
+          </div>
+          <div class="il-layer norm">
+            <span class="il-layer-label">NORM</span>
+            <div class="il-cells">
+              <span class="il-cell">ana bēlīya</span>
+              <span class="il-cell">qibīma</span>
+              <span class="il-cell">umma abīya</span>
+              <span class="il-cell">atallak</span>
+            </div>
+          </div>
+          <div class="il-layer lemma">
+            <span class="il-layer-label">LEMMA</span>
+            <div class="il-cells">
+              <span class="il-cell">ana[to] bēlu[lord]<span style="opacity:.6">N.GEN.1SG</span></span>
+              <span class="il-cell">qabû[speak]<span style="opacity:.6">V.IMP</span></span>
+              <span class="il-cell">umma[thus] abu[father]<span style="opacity:.6">N.GEN.1SG</span></span>
+              <span class="il-cell">alāku[go]<span style="opacity:.6">V.PRES.1SG</span></span>
+            </div>
+          </div>
+          <div class="il-layer gloss">
+            <span class="il-layer-label">GLOSS</span>
+            <div class="il-cells">
+              <span class="il-cell">to my lord</span>
+              <span class="il-cell">speak!</span>
+              <span class="il-cell">thus my father</span>
+              <span class="il-cell">I am going</span>
+            </div>
+          </div>
+          <div class="il-layer trans">
+            <span class="il-layer-label" style="font-family:var(--font-ui); letter-spacing:0; font-size:10px">TRANS</span>
+            <div class="il-cells">
+              <span class="il-cell">To my lord speak! Thus my father: I am going …</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IL Row 5: MID-LINE LANGUAGE SWITCH — the strongest demonstration -->
+      <div class="il-row">
+        <div class="il-row-num">5</div>
+        <div class="il-block">
+          <div class="il-layer atf">
+            <span class="il-layer-label">ATF</span>
+            <div class="il-cells">
+              <!-- Language chips inline in ATF layer make the switch immediately visible -->
+              <span class="il-cell"><span class="il-lang-chip sux">sux</span>lugal-gu₁₀</span>
+              <span class="il-cell"><span class="il-lang-chip akk">akk</span>i-na</span>
+              <span class="il-cell">pī</span>
+              <span class="il-cell">šar-ri-im</span>
+            </div>
+          </div>
+          <div class="il-layer norm">
+            <span class="il-layer-label">NORM</span>
+            <div class="il-cells">
+              <span class="il-cell">lugalgu</span>
+              <span class="il-cell">ina</span>
+              <span class="il-cell">pî</span>
+              <span class="il-cell">šarrim</span>
+            </div>
+          </div>
+          <div class="il-layer lemma">
+            <span class="il-layer-label">LEMMA</span>
+            <div class="il-cells">
+              <span class="il-cell">lugal[king]<span style="opacity:.6">N.GEN.1SG</span></span>
+              <span class="il-cell">ina[in]<span style="opacity:.6">PRP</span></span>
+              <span class="il-cell">pûm[mouth]<span style="opacity:.6">N.CS</span></span>
+              <span class="il-cell">šarrum[king]<span style="opacity:.6">N.GEN</span></span>
+            </div>
+          </div>
+          <div class="il-layer gloss">
+            <span class="il-layer-label">GLOSS</span>
+            <div class="il-cells">
+              <span class="il-cell">my king</span>
+              <span class="il-cell">in</span>
+              <span class="il-cell">mouth-of</span>
+              <span class="il-cell">the king</span>
+            </div>
+          </div>
+          <div class="il-layer trans">
+            <span class="il-layer-label" style="font-family:var(--font-ui); letter-spacing:0; font-size:10px">TRANS</span>
+            <div class="il-cells">
+              <span class="il-cell">my king — by the word of the king</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /il-rows -->
+
+  </div><!-- /tb-content -->
+
+  <div class="view-controls">
+    <div class="toggle-wrap" id="layerToggle">
+      <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+      <span class="toggle-label">Show analysis layers</span>
+    </div>
+  </div>
+
+</div><!-- /tablet-viewer -->
+
+
+<!-- ── Annotation callouts ── -->
+<div class="callout info" style="margin-top:14px">
+  <span class="callout-tag">Interlinear</span>
+  <span>In interlinear mode, scanning <strong>vertically</strong> down the LEMMA band gives an instant overview of all verbal forms in the passage — critical for checking aspect, tense, and person marking across a whole line or section. In ribbon mode, those same lemmata are scattered across the horizontal token columns and cannot be read as a sequence.</span>
+</div>
+
+<div class="callout warn" style="margin-top:6px">
+  <span class="callout-tag">Mid-line switch</span>
+  <span>Row 5 has a mid-line Sumerian → Akkadian switch. In interlinear mode the <span style="color:var(--green)">sux</span> / <span style="color:var(--blue)">akk</span> chips appear in the ATF row exactly where the switch occurs — readable without a separate separator band. In ribbon mode the same information requires the language-border treatment on each token column.</span>
+</div>
+
+
+<!-- ── When to use which ── -->
+<h2 class="section-heading">When to use each mode</h2>
+
+<div class="compare-grid">
+
+  <div class="compare-card ribbon">
+    <h3>Ribbon mode</h3>
+    <p class="subtitle">Better for reading and navigating a text</p>
+    <ul>
+      <li><strong>Horizontal flow:</strong> matches how a tablet is physically read — left to right across columns</li>
+      <li><strong>Dense layout:</strong> more lines visible at once; good for long texts (e.g., 265-line lexical lists)</li>
+      <li><strong>Context switching:</strong> a scholar jumping between sections benefits from maximum line density</li>
+      <li><strong>Casual reading:</strong> Marcus / Sophie personas — come for the translation, not the morphology</li>
+      <li><strong>Mobile-friendly:</strong> columns stack better on narrower screens if vertically condensed</li>
+    </ul>
+  </div>
+
+  <div class="compare-card il">
+    <h3>Interlinear mode</h3>
+    <p class="subtitle">Better for philological analysis and comparison</p>
+    <ul>
+      <li><strong>Layer scanning:</strong> read all lemmata, all normalisations, or all glosses as a single sequence — matches how commentary and grammars are typeset</li>
+      <li><strong>Comparison against editions:</strong> Dr. Al-Rashid compares Glintstone's LEMMA row against CAD citations — same visual alignment as printed interlinear editions</li>
+      <li><strong>Morphological teaching:</strong> David Yamamoto (educator) uses this format in classroom glossing exercises</li>
+      <li><strong>Verbal paradigm checking:</strong> spotting tense/aspect/person patterns across a passage requires seeing all V.PRES in sequence</li>
+      <li><strong>Dissertation quoting:</strong> Aisha's thesis excerpts use Leipzig-style interlinear — she can screenshot directly</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ── Implementation note ── -->
+<div class="callout info" style="margin-top:20px">
+  <span class="callout-tag">Impl note</span>
+  <span>The column widths in interlinear mode need to stay in sync across layers — each token position's minimum width must accommodate its widest item across all four rows (ATF, NORM, LEMMA, GLOSS). This is straightforward with CSS grid <code>grid-template-columns</code> where the token grid is the parent and each layer is a <code>display: contents</code> child, letting native grid alignment do the work with no JavaScript measurement loop.</span>
+</div>
+
+</div><!-- /page -->
+
+<script>
+  // ── Mode toggle (Ribbon / Interlinear) ──
+  var currentMode = 'ribbon';
+  var descriptions = {
+    ribbon: 'Reading mode — horizontal token columns',
+    il:     'Analysis mode — one horizontal band per layer'
+  };
+
+  document.getElementById('modeToggle').addEventListener('click', function(e) {
+    var btn = e.target.closest('.mode-btn');
+    if (!btn) return;
+    currentMode = btn.dataset.mode;
+
+    document.querySelectorAll('.mode-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.mode === currentMode);
+    });
+
+    document.body.classList.toggle('il-mode', currentMode === 'il');
+    document.getElementById('modeDescription').textContent = descriptions[currentMode];
+  });
+
+  // ── Analysis layers toggle ──
+  var layersOn = true;
+  document.getElementById('layerToggle').addEventListener('click', function() {
+    layersOn = !layersOn;
+    this.querySelector('.toggle-track').classList.toggle('on', layersOn);
+    document.body.classList.toggle('tokens-compact', !layersOn);
+  });
+</script>
+</body>
+</html>

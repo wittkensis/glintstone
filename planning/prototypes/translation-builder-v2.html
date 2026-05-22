@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Translation Builder v2 · CBS 3451 + IM 78910</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#111;--bg-p:#191919;--bg-el:#242424;--bg-deep:#141414;--bg-in:#0a0a0a;
+  --bd:#2e2e2e;--bd2:#3a3a3a;
+  --ac:#c9a962;--ac-dim:rgba(201,169,98,.12);--ac-glow:rgba(201,169,98,.06);
+  --tx:#e8e6e3;--tx2:#888;--tx3:#585858;--red:#e23838;
+  --sux:#6b8e6b;--sux-b:rgba(107,142,107,.1);
+  --akk:#8ab4d4;--akk-b:rgba(138,180,212,.1);
+  --hit:#c4956a;--hit-b:rgba(196,149,106,.1);
+  --elx:#b48ad4;--elx-b:rgba(180,138,212,.1);
+  --uga:#d4908a;--uga-b:rgba(212,144,138,.1);
+  --egy:#c8c06a;--egy-b:rgba(200,192,106,.1);
+  --mono:'SF Mono','JetBrains Mono','Fira Code',ui-monospace,monospace;
+  --ui:'Inter',system-ui,sans-serif;
+  --serif:'Playfair Display',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--tx);font-family:var(--ui);font-size:13px;line-height:1.4;overflow:hidden;}
+.app{display:grid;grid-template-rows:44px 56px 34px 1fr;height:100vh;overflow:hidden;}
+
+/* TOOLBAR */
+.toolbar{background:#1e1e1e;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;padding:0 14px;z-index:10;overflow-x:auto;}
+.tb-sep{width:1px;height:20px;background:var(--bd);flex-shrink:0;}
+.tb-grp{display:flex;border-radius:5px;overflow:hidden;border:1px solid var(--bd);flex-shrink:0;}
+.tb-btn{background:transparent;border:none;padding:5px 11px;font:500 11px/1 var(--ui);color:var(--tx2);cursor:pointer;transition:background .1s,color .1s;white-space:nowrap;}
+.tb-btn:hover{background:rgba(255,255,255,.05);color:var(--tx);}
+.tb-btn.on{background:var(--ac);color:#111;font-weight:600;}
+.tb-sel{background:var(--bg-in);border:1px solid var(--bd);border-radius:4px;padding:5px 10px;color:var(--tx2);font:400 11px/1 var(--ui);cursor:pointer;flex-shrink:0;}
+.pipe-nav{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.pnl{font:600 8px/1 var(--ui);text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);margin-right:2px;}
+.s-btn{background:var(--bg-in);border:1px solid var(--bd);border-radius:3px;padding:4px 6px;font:600 10px/1 var(--mono);color:var(--tx3);cursor:pointer;transition:all .1s;white-space:nowrap;}
+.s-btn:hover{border-color:var(--ac);color:var(--ac);}
+.hl-lbl{display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto;flex-shrink:0;}
+.hl-lbl input{display:none;}
+.hl-tr{width:32px;height:17px;background:#333;border-radius:9px;position:relative;transition:background .15s;}
+.hl-tr::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;background:#fff;border-radius:7px;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+.hl-lbl input:checked+.hl-tr{background:var(--ac);}
+.hl-lbl input:checked+.hl-tr::after{left:17px;}
+.hl-txt{font:400 10px/1 var(--ui);color:var(--tx3);}
+
+/* TABLET HEADER */
+.th{background:var(--bg-p);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:12px;}
+.th-l{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.th-name{font:600 13px/1 var(--mono);color:var(--tx);white-space:nowrap;}
+.chip{font:400 10px/1 var(--ui);padding:2px 6px;border-radius:3px;border:1px solid var(--bd);color:var(--tx2);white-space:nowrap;}
+.chip-j{color:var(--ac);border-color:rgba(201,169,98,.3);background:rgba(201,169,98,.06);}
+.chip-c{color:var(--akk);border-color:rgba(138,180,212,.3);background:rgba(138,180,212,.06);}
+.ps-row{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.ps{display:flex;align-items:center;gap:4px;}
+.ps-l{font:400 8px/1 var(--ui);color:var(--tx3);white-space:nowrap;}
+.ps-b{width:44px;height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;}
+.ps-f{height:100%;background:var(--ac);border-radius:2px;}
+.ps-p{font:500 8px/1 var(--mono);color:var(--tx2);}
+
+/* SURFACE TABS */
+.stabs{background:#1e1e1e;border-bottom:1px solid var(--bd);display:flex;align-items:stretch;padding:0 16px;}
+.stab{background:transparent;border:none;border-bottom:2px solid transparent;padding:7px 13px;font:500 12px/1 var(--ui);color:var(--tx2);cursor:pointer;margin-bottom:-1px;}
+.stab:hover{color:var(--tx);}
+.stab.on{color:var(--ac);border-bottom-color:var(--ac);}
+
+/* MAIN LAYOUT */
+.main{display:flex;min-height:0;overflow:hidden;}
+.content{flex:1;min-width:0;overflow:hidden;}
+.scroll{height:100%;overflow:auto;padding:16px 20px 64px;}
+
+/* COLUMNS */
+.cols{display:flex;gap:18px;align-items:flex-start;min-width:max-content;}
+.col-w{min-width:260px;}
+.col-h{display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd);}
+.col-n{font:600 8px/1 var(--ui);text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);}
+.lang-b{font:600 8px/1 var(--mono);padding:2px 5px;border-radius:2px;}
+.lang-b.sux{color:var(--sux);background:var(--sux-b);}
+.lang-b.akk{color:var(--akk);background:var(--akk-b);}
+.lang-b.hit{color:var(--hit);background:var(--hit-b);}
+.lang-b.elx{color:var(--elx);background:var(--elx-b);}
+.lang-b.uga{color:var(--uga);background:var(--uga-b);}
+.lang-b.egy{color:var(--egy);background:var(--egy-b);}
+.cov{font:400 8px/1 var(--ui);color:var(--tx3);margin-left:auto;}
+
+/* ROW */
+.tb-r{display:flex;gap:4px;align-items:flex-start;margin-bottom:4px;}
+.rn{background:var(--bg-in);border-radius:3px;padding:10px 4px 10px 6px;min-width:26px;font:400 9px/1 var(--mono);color:var(--tx2);flex-shrink:0;align-self:stretch;display:flex;align-items:flex-start;justify-content:center;padding-top:11px;}
+.ribs{flex:1;min-width:0;}
+.rib-toks{display:flex;border-radius:3px;overflow:hidden;background:var(--bg-el);}
+
+/* TOKEN */
+.tok{display:flex;flex-direction:column;min-width:80px;flex-shrink:0;cursor:pointer;border-left:1px solid rgba(255,255,255,.05);position:relative;transition:background .1s;}
+.tok:first-child{border-left:none;}
+.tok:hover{background:rgba(255,255,255,.04);}
+.tok.T--sel{outline:2px solid var(--ac);outline-offset:-2px;background:rgba(201,169,98,.07);}
+.tok.T--match{background:rgba(201,169,98,.09);}
+.tok.T--dim{opacity:.22;pointer-events:none;}
+.tok.sux{border-top:2px solid var(--sux);}
+.tok.akk{border-top:2px solid var(--akk);}
+.tok.hit{border-top:2px solid var(--hit);}
+.tok.elx{border-top:2px solid var(--elx);}
+.tok.uga{border-top:2px solid var(--uga);}
+.tok.egy{border-top:2px solid var(--egy);}
+.tok-flags{display:flex;align-items:center;height:15px;padding:0 4px;gap:2px;}
+.tf{font:600 7px/1 var(--mono);text-transform:uppercase;padding:1px 3px;border-radius:2px;}
+.tf.l.sux{color:var(--sux);background:var(--sux-b);}
+.tf.l.akk{color:var(--akk);background:var(--akk-b);}
+.tf.l.hit{color:var(--hit);background:var(--hit-b);}
+.tf.l.elx{color:var(--elx);background:var(--elx-b);}
+.tf.l.uga{color:var(--uga);background:var(--uga-b);}
+.tf.l.egy{color:var(--egy);background:var(--egy-b);}
+.tf.d{color:var(--red);}
+.tf.u{color:#e2a038;}
+.tf.r{color:#b48ad4;background:rgba(180,138,212,.1);}
+.tok-row{display:flex;align-items:center;min-height:19px;padding:0 4px;border-top:1px dashed rgba(255,255,255,.04);}
+.tr-read{font:500 10px/1 var(--mono);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tr-read.d{color:#c87860;text-decoration:underline dotted rgba(226,56,56,.4);}
+.tr-read.b{color:rgba(255,255,255,.22);font-style:italic;}
+.tr-sign{font:400 13px/1 serif;color:var(--tx2);margin-left:3px;flex-shrink:0;}
+.tr-norm{font:400 9px/1 var(--mono);color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tr-lemma{font:400 9px/1 var(--mono);color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tr-gloss{font:400 9px/1 var(--ui);color:var(--tx3);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pip-dot{width:5px;height:5px;border-radius:50%;margin-left:auto;flex-shrink:0;}
+.pip-dot.s0{background:#3a3a3a;}
+.pip-dot.s1{background:var(--hit);opacity:.8;}
+.pip-dot.s2{background:var(--akk);opacity:.8;}
+.pip-dot.s3{background:#e2a038;}
+.pip-dot.s4{background:var(--sux);}
+
+/* TRANSLATION BAR */
+.tr-bar{display:flex;align-items:center;gap:5px;min-height:26px;padding:3px 7px;background:rgba(255,255,255,.025);border-radius:0 0 3px 3px;margin-top:1px;}
+.td{width:4px;height:16px;border-radius:2px;flex-shrink:0;}
+.td.m{background:var(--ac);}
+.td.u{background:#333;}
+.tt{font:400 10px/1.4 var(--ui);color:var(--ac);flex:1;min-width:0;}
+.tt.u{color:var(--tx3);font-style:italic;}
+.tt[dir="rtl"]{text-align:right;font-size:11px;}
+
+/* STRUCTURAL LINES */
+.str-r{display:flex;align-items:center;gap:6px;padding:3px 0 3px 30px;margin:2px 0;}
+.str-r::before,.str-r::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07);}
+.str-r span{font:600 7px/1 var(--ui);text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.12);}
+.str-b{padding:4px 7px 4px 30px;font:400 10px/1 var(--ui);color:rgba(226,56,56,.45);font-style:italic;border-left:2px solid rgba(226,56,56,.18);border-radius:0 3px 3px 0;background:rgba(226,56,56,.025);margin:2px 0;}
+.lsep{display:flex;align-items:center;gap:6px;padding:3px 0 3px 30px;margin:2px 0;}
+.lsep-l{flex:1;height:1px;background:var(--bd);}
+.lsep-c{font:600 7px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:2px 5px;border-radius:9px;white-space:nowrap;}
+.lsep-c.sux{color:var(--sux);background:var(--sux-b);border:1px solid rgba(107,142,107,.18);}
+.lsep-c.akk{color:var(--akk);background:var(--akk-b);border:1px solid rgba(138,180,212,.18);}
+.lsep-c.hit{color:var(--hit);background:var(--hit-b);border:1px solid rgba(196,149,106,.18);}
+.comp-r{display:inline-flex;align-items:center;font:400 7px/1 var(--mono);color:var(--akk);background:rgba(138,180,212,.09);border:1px solid rgba(138,180,212,.2);border-radius:2px;padding:1px 4px;margin-left:3px;}
+
+/* DEPTH CONTROL */
+.depth-atf .norm-row,.depth-atf .lemma-row,.depth-atf .gloss-row{display:none;}
+.depth-reading .norm-row,.depth-reading .gloss-row{display:none;}
+
+/* INTERLINEAR */
+.mode-il .rb-cols{display:none;}
+.mode-ribbon .il-cols{display:none;}
+.il-cols{display:flex;gap:18px;align-items:flex-start;min-width:max-content;}
+.il-rn{background:var(--bg-in);border-radius:3px 0 0 3px;min-width:26px;font:400 9px/1 var(--mono);color:var(--tx2);flex-shrink:0;align-self:stretch;display:flex;align-items:flex-start;justify-content:center;padding-top:9px;}
+.il-blk{flex:1;min-width:0;background:var(--bg-el);border-radius:0 3px 3px 0;overflow:hidden;}
+.il-ly{display:flex;align-items:baseline;border-bottom:1px solid rgba(255,255,255,.035);}
+.il-ly:last-child{border-bottom:none;}
+.il-lbl{flex-shrink:0;width:42px;text-align:right;padding:5px 7px 5px 0;font:600 7px/1 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--tx3);opacity:.55;}
+.il-cells{display:flex;flex-wrap:nowrap;flex:1;}
+.il-c{padding:5px 9px 5px 6px;font:400 10px/1 var(--mono);white-space:nowrap;cursor:pointer;transition:background .1s;}
+.il-c:hover{background:rgba(255,255,255,.05);}
+.il-c.T--sel{background:rgba(201,169,98,.1);outline:1px solid rgba(201,169,98,.3);outline-offset:-1px;}
+.il-c.T--match{background:rgba(201,169,98,.07);}
+.il-c.T--dim{opacity:.2;}
+.il-ly.atf .il-c{color:var(--tx);}
+.il-ly.norm .il-c{color:var(--akk);opacity:.8;}
+.il-ly.lemma .il-c{color:var(--sux);opacity:.8;font-size:9px;}
+.il-ly.gloss .il-c{color:var(--ac);font-style:italic;font-family:var(--ui);}
+.il-ly.trans .il-c{color:var(--ac);font-family:var(--ui);font-style:italic;font-size:11px;letter-spacing:0;padding:5px 9px;}
+.ilc{display:inline-block;font:600 7px/1 var(--mono);text-transform:uppercase;padding:1px 3px;border-radius:2px;margin-right:3px;vertical-align:middle;}
+.ilc.sux{color:var(--sux);background:var(--sux-b);}
+.ilc.akk{color:var(--akk);background:var(--akk-b);}
+.ilc.hit{color:var(--hit);background:var(--hit-b);}
+.ilc.elx{color:var(--elx);background:var(--elx-b);}
+.ilc.uga{color:var(--uga);background:var(--uga-b);}
+.ilc.egy{color:var(--egy);background:var(--egy-b);}
+.il-nd{color:rgba(255,255,255,.18);font-style:italic;}
+.depth-atf .il-ly.norm,.depth-atf .il-ly.lemma,.depth-atf .il-ly.gloss{display:none;}
+.depth-reading .il-ly.norm,.depth-reading .il-ly.gloss{display:none;}
+.il-row{display:flex;gap:0;align-items:flex-start;margin-bottom:8px;}
+
+/* SIDEBAR */
+.sidebar{width:300px;flex-shrink:0;overflow-y:auto;border-left:1px solid var(--bd);background:var(--bg-p);}
+.sb-def{padding:16px;display:flex;flex-direction:column;gap:12px;}
+.sb-def-h{font:500 12px/1 var(--ui);color:var(--tx2);}
+.sb-def-p{font:400 11px/1.55 var(--ui);color:var(--tx3);}
+.sb-states{display:flex;flex-direction:column;gap:4px;}
+.sb-sr{display:flex;align-items:center;gap:8px;padding:6px 7px;background:var(--bg-el);border-radius:4px;cursor:pointer;border:1px solid transparent;}
+.sb-sr:hover{border-color:rgba(201,169,98,.2);}
+.sb-sb{font:600 8px/1 var(--mono);padding:2px 4px;border-radius:2px;background:var(--bg-in);color:var(--tx2);flex-shrink:0;}
+.sb-sd{font:400 10px/1.3 var(--ui);color:var(--tx3);}
+/* Sidebar filled */
+.sb-head{background:var(--bg);padding:13px 15px;border-bottom:1px solid var(--bd2);}
+.sb-pipe{display:flex;flex-direction:column;}
+.sb-step{display:flex;gap:9px;align-items:flex-start;padding-bottom:9px;position:relative;}
+.sb-step::before{content:'';position:absolute;left:3px;top:15px;width:1px;bottom:0;background:rgba(255,255,255,.06);}
+.sb-step:last-of-type{padding-bottom:6px;}
+.sb-step:last-of-type::before{display:none;}
+.sb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:2px;}
+.sb-dot.f{background:var(--ac);}
+.sb-dot.e{background:#2e2e2e;border:1px solid #444;}
+.sb-dot.p{background:linear-gradient(135deg,var(--ac) 50%,#2e2e2e 50%);border:1px solid #555;}
+.sb-sc{flex:1;min-width:0;}
+.sb-sm{font:500 11px/1 var(--mono);color:var(--tx);}
+.sb-ss{font:400 10px/1 var(--ui);color:var(--tx3);margin-top:2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.sb-nc{display:flex;align-items:center;gap:5px;font:400 10px/1 var(--mono);margin-top:3px;}
+.sb-nc .a{color:var(--tx);}
+.sb-nc .r{color:var(--tx3);}
+.sb-nc .n{color:var(--akk);}
+.pos-b{font:400 10px/1 var(--ui);padding:2px 4px;border-radius:3px;background:var(--bg-in);color:var(--tx2);}
+.lng-b{font:500 10px/1 var(--ui);padding:2px 5px;border-radius:3px;background:var(--ac);color:#111;}
+.sb-ctx{padding:7px 0 0;border-top:1px solid rgba(255,255,255,.05);margin-top:5px;}
+.sb-ctx-l{font:700 7px/1 var(--ui);text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);margin-bottom:4px;}
+.sb-ctx-v{font:400 10px/1.5 var(--ui);color:var(--tx3);}
+/* Sections */
+.sb-sec{border-bottom:1px solid rgba(255,255,255,.04);padding:11px 15px;}
+.sb-sec:last-child{border-bottom:none;}
+.sb-st{font:400 16px/1 var(--serif);color:var(--tx2);margin-bottom:7px;}
+.sb-sp{font:400 11px/1.6 var(--ui);color:var(--tx);}
+.sb-card{background:var(--bg-deep);border-radius:5px;padding:9px 10px;margin-top:5px;}
+.sb-card+.sb-card{margin-top:4px;}
+.sb-ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+.sb-ct{font:500 11px/1 var(--ui);color:var(--ac);}
+.sb-ct.a{color:var(--tx);}
+.sb-cb{display:flex;gap:3px;}
+.sb-ca{font:400 9px/1 var(--ui);color:var(--tx3);margin-top:3px;}
+.sb-code{font:400 10px/1.8 var(--mono);color:var(--tx2);}
+.sb-nc2{display:flex;align-items:center;gap:5px;background:var(--bg-deep);border-radius:4px;padding:7px 9px;margin-top:5px;}
+.p-lem{background:var(--bg-deep);border-radius:5px;padding:8px 10px;margin-top:5px;cursor:pointer;border:1px solid transparent;}
+.p-lem:hover{border-color:rgba(201,169,98,.28);}
+.p-lem-f{font:500 11px/1 var(--mono);color:var(--tx);}
+.p-lem-g{font:400 10px/1 var(--ui);color:var(--tx2);margin-top:3px;}
+.p-lem-n{font:400 9px/1 var(--ui);color:var(--tx3);margin-top:2px;font-style:italic;}
+.p-lem-a{font:400 9px/1 var(--ui);color:var(--tx3);margin-top:2px;}
+.sb-next-h{display:flex;align-items:center;justify-content:space-between;}
+.sb-btn{background:var(--ac);color:#111;border:none;border-radius:4px;padding:5px 11px;font:500 11px/1 var(--ui);cursor:pointer;}
+.sb-btn:hover{opacity:.88;}
+</style>
+</head>
+<body>
+<div id="app" class="app mode-ribbon depth-reading">
+  <header class="toolbar">
+    <div class="tb-grp" id="modeG">
+      <button class="tb-btn on" data-m="ribbon">Ribbon</button>
+      <button class="tb-btn" data-m="il">Interlinear</button>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-grp" id="depthG">
+      <button class="tb-btn" data-d="atf">ATF</button>
+      <button class="tb-btn on" data-d="reading">Reading</button>
+      <button class="tb-btn" data-d="full">Full</button>
+    </div>
+    <select class="tb-sel" id="langSel">
+      <option value="en">English</option>
+      <option value="de">Deutsch</option>
+      <option value="he">עברית</option>
+      <option value="fa">فارسی</option>
+    </select>
+    <div class="tb-sep"></div>
+    <div class="pipe-nav">
+      <span class="pnl">States:</span>
+      <button class="s-btn" data-j="jnnfr" title="S0 – No sign match">S0</button>
+      <button class="s-btn" data-j="mlk_sign" title="S1 – Sign matched">S1↑</button>
+      <button class="s-btn" data-j="ibtasa" title="S1 – Norm matched">S1~</button>
+      <button class="s-btn" data-j="karan" title="S1 – Polysemy">S1?</button>
+      <button class="s-btn" data-j="kiengi" title="S2 – Lemmatized">S2</button>
+      <button class="s-btn" data-j="sarrim" title="S2 – Norm chain">S2~</button>
+      <button class="s-btn" data-j="bel" title="S3 – Competing lemmas">S3</button>
+      <button class="s-btn" data-j="hassan" title="S3 – Norm disambig.">S3~</button>
+      <button class="s-btn" data-j="lugal" title="S4 – Fully translated">S4</button>
+      <button class="s-btn" data-j="tuppim" title="S4 – Full + norm chain">S4~</button>
+    </div>
+    <label class="hl-lbl" id="hlWrap">
+      <input type="checkbox" id="hlCk" checked>
+      <div class="hl-tr"></div>
+      <span class="hl-txt">Highlight matches</span>
+    </label>
+  </header>
+  <div class="th">
+    <div class="th-l">
+      <span class="th-name">CBS 3451 + IM 78910</span>
+      <span class="chip chip-j">⊕ Fragment join</span>
+      <span class="chip">Late Bronze Age · c. 1360 BCE</span>
+      <span class="chip">Royal Treaty / Diplomatic</span>
+      <span class="chip">Amarna (mod. Tell el-Amarna)</span>
+      <span class="chip chip-c">Q000831 exemplar</span>
+    </div>
+    <div class="ps-row">
+      <div class="ps"><div class="ps-l">Physical</div><div class="ps-b"><div class="ps-f" style="width:15%"></div></div><div class="ps-p">15%</div></div>
+      <div class="ps"><div class="ps-l">Graphemic</div><div class="ps-b"><div class="ps-f" style="width:45%"></div></div><div class="ps-p">45%</div></div>
+      <div class="ps"><div class="ps-l">Reading</div><div class="ps-b"><div class="ps-f" style="width:78%"></div></div><div class="ps-p">78%</div></div>
+      <div class="ps"><div class="ps-l">Linguistic</div><div class="ps-b"><div class="ps-f" style="width:32%"></div></div><div class="ps-p">32%</div></div>
+      <div class="ps"><div class="ps-l">Semantic</div><div class="ps-b"><div class="ps-f" style="width:18%"></div></div><div class="ps-p">18%</div></div>
+    </div>
+  </div>
+  <div class="stabs">
+    <button class="stab on">Obverse</button>
+    <button class="stab">Reverse</button>
+    <button class="stab">Left Edge</button>
+  </div>
+  <div class="main">
+    <div class="content">
+      <div class="scroll">
+        <div class="rb-cols cols" id="rbCols"></div>
+        <div class="il-cols" id="ilCols"></div>
+      </div>
+    </div>
+    <aside class="sidebar" id="sidebar"></aside>
+  </div>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════
+// TOKEN DATA
+// ═══════════════════════════════════════════════════════════
+const T = {
+  lugal:{id:'lugal',atf:'lugal',norm:'lugal',lemma:'lugal[king]N',gloss:'king',lang:'sux',sign:'𒈗',
+    pipeline:'S4',
+    tr:{en:'king',de:'König',he:'מֶלֶך',fa:'پادشاه'},
+    gls:[{t:'"king"',pos:'Noun',att:16412,p:true},{t:'"ruler, sovereign"',pos:'Noun',att:9847},{t:'"master, owner"',pos:'Noun',att:4231},{t:'"lord (personal names)"',pos:'Noun',att:3201},{t:'"big man" (lit.)',pos:'Noun',att:1200}],
+    xl:[{f:'šarru',l:'Akkadian',g:'king',a:28441,s:'ORACC/DCCLT'},{f:'bēlu',l:'Akkadian',g:'lord',a:8332,s:'ORACC/DCCLT'},{f:'mlk',l:'Ugaritic',g:'king',a:1842,s:'ORACC/BDFSN'}],
+    sp:['lugal (58×)','lugal-e (12×)','lugal-la (7×)','LUGAL (34×)'],
+    ctx:{period:'Late Bronze Age',genre:'Royal Treaty',prov:'Amarna',uses:8},att:34891,src:'ePSD2'},
+
+  kiengi:{id:'kiengi',atf:'ki-en-gi',norm:'kiengi',lemma:'ki-en-gi[Sumer]GN',gloss:'Sumer',lang:'sux',
+    pipeline:'S2',
+    tr:{en:'Sumer',de:'Sumer',he:'שומר',fa:'سومر'},
+    gls:[{t:'"Sumer" (geographical name)',pos:'GN',att:12891,p:true},{t:'"the land of Sumer"',pos:'GN',att:4231}],
+    ctx:{period:'Late Bronze Age',genre:'Royal Title',prov:'Amarna',uses:3},att:12891,src:'ePSD2',
+    ns:'Confirm geographic name interpretation in treaty context.'},
+
+  kiuri:{id:'kiuri',atf:'ki-uri',norm:'kiuri',lemma:'ki-uri[Akkad]GN',gloss:'Akkad',lang:'sux',
+    pipeline:'S2',tr:{en:'Akkad',de:'Akkad',he:'אכד',fa:'اکد'},
+    gls:[{t:'"Akkad" (geographical name)',pos:'GN',att:9234,p:true}],
+    ctx:{period:'Late Bronze Age',genre:'Royal Title',prov:'Amarna',uses:3},att:9234,src:'ePSD2',
+    ns:'Confirm in context as parallel to ki-en-gi.'},
+
+  anubda:{id:'anubda',atf:'an-ub-da',norm:'anubda',lemma:'an-ub-da[quarter]N',gloss:'quarter',lang:'sux',
+    pipeline:'S4',tr:{en:'quarter (of the world)',de:'Weltgegend',he:'פינה',fa:'جهت'},
+    gls:[{t:'"quarter, corner (of the world)"',pos:'Noun',att:4892,p:true}],sp:['an-ub-da (23×)'],
+    ctx:{period:'Late Bronze Age',genre:'Royal Title',prov:'Amarna',uses:2},att:4892,src:'ePSD2'},
+
+  limmu:{id:'limmu',atf:'limmu₂-ba',norm:'limmuba',lemma:'limmu[four]NU',gloss:'four',lang:'sux',
+    pipeline:'S4',tr:{en:'four',de:'vier',he:'ארבע',fa:'چهار'},
+    gls:[{t:'"four"',pos:'Num',att:8921,p:true}],
+    ctx:{period:'Late Bronze Age',genre:'Royal Title',prov:'Amarna',uses:1},att:8921,src:'ePSD2'},
+
+  nita:{id:'nita',atf:'nita₂',norm:'nita',lemma:'nita[male]N',gloss:'man',lang:'sux',sign:'𒌇',
+    pipeline:'S4',tr:{en:'man, warrior',de:'Mann',he:'גבר',fa:'مرد'},
+    gls:[{t:'"man, male"',pos:'Noun',att:14234,p:true},{t:'"warrior, hero"',pos:'Noun',att:3421}],
+    ctx:{period:'Late Bronze Age',genre:'Royal Treaty',prov:'Amarna',uses:1},att:14234,src:'ePSD2'},
+
+  kala:{id:'kala',atf:'kala-ga',norm:'kalaga',lemma:'kala[strong]AJ',gloss:'strong',lang:'sux',
+    pipeline:'S4',tr:{en:'strong, mighty',de:'stark',he:'חזק',fa:'قوی'},
+    gls:[{t:'"strong, powerful"',pos:'AJ',att:6234,p:true},{t:'"mighty (epithet)"',pos:'AJ',att:2341}],
+    ctx:{period:'Late Bronze Age',genre:'Royal Treaty',prov:'Amarna',uses:2},att:6234,src:'ePSD2'},
+
+  innansum:{id:'innansum',atf:'in-na-an-sum',norm:'innansum',lemma:'nad[give]V.3SG.PRET',gloss:'gave',lang:'sux',
+    pipeline:'S4',tr:{en:'has given to him',de:'hat ihm gegeben',he:'נתן לו',fa:'به او داد'},
+    gls:[{t:'"gave, presented"',pos:'V.PRET',att:11234,p:true}],
+    ctx:{period:'Late Bronze Age',genre:'Administrative',prov:'Amarna',uses:1},att:11234,src:'ePSD2'},
+
+  num1:{id:'num1',atf:'1(diš)',norm:'1',lemma:'1[one]NU',gloss:'1',lang:'sux',
+    pipeline:'S4',tr:{en:'one (1)',de:'ein (1)',he:'אחד',fa:'یک'},
+    gls:[{t:'"one, numeral 1"',pos:'Num',att:89234,p:true}],att:89234,src:'ePSD2'},
+
+  gun:{id:'gun',atf:'gu₂-un',norm:'gun',lemma:'gun[talent]N',gloss:'talent',lang:'sux',
+    pipeline:'S4',tr:{en:'talent (unit of weight)',de:'Talent (Gewicht)',he:'כיכר',fa:'تالنت'},
+    gls:[{t:'"talent" (≈ 30 kg)',pos:'Noun',att:8432,p:true}],
+    sp:['gu₂-un (18×)'],att:8432,src:'ePSD2'},
+
+  kubabbar:{id:'kubabbar',atf:'kù-babbar',norm:'kubabbar',lemma:'kù-babbar[silver]N',gloss:'silver',lang:'sux',sign:'𒆬',
+    pipeline:'S2',tr:{en:'silver',de:'Silber',he:'כסף',fa:'نقره'},
+    gls:[{t:'"silver" (metal)',pos:'Noun',att:22891,p:true},{t:'"white metal"',pos:'Noun',att:3421}],
+    ctx:{period:'Late Bronze Age',genre:'Administrative',prov:'Amarna',uses:4},att:22891,src:'ePSD2',
+    ns:'Confirm standard administrative interpretation in treaty context.'},
+
+  sabi:{id:'sabi',atf:'sá-bi',norm:'sabi',lemma:'sa[its]PRN',gloss:'its price',lang:'sux',
+    pipeline:'S4',tr:{en:'its price',de:'sein Preis',he:'מחירו',fa:'قیمت آن'},
+    gls:[{t:'"its (price, value)"',pos:'PRN',att:2341,p:true}],att:2341,src:'ePSD2'},
+
+  mu:{id:'mu',atf:'mu',norm:'mu',lemma:'mu[year]N',gloss:'year',lang:'sux',sign:'𒈬',
+    pipeline:'S4',tr:{en:'year',de:'Jahr',he:'שנה',fa:'سال'},
+    gls:[{t:'"year"',pos:'Noun',att:70234,p:true},{t:'"name"',pos:'Noun',att:12341}],
+    sp:['mu (892×)'],att:70234,src:'ePSD2'},
+
+  bala:{id:'bala',atf:'bala-a-ka',norm:'balaka',lemma:'bala[term]N',gloss:'reign',lang:'sux',
+    pipeline:'S4',tr:{en:'regnal year',de:'Regierungsjahr',he:'שנת מלכות',fa:'سال سلطنت'},
+    gls:[{t:'"regnal year, term of office"',pos:'Noun',att:8923,p:true}],att:8923,src:'ePSD2'},
+
+  sisa:{id:'sisa',atf:'si-sá',norm:'sisa',lemma:'sisa[straight]AJ',gloss:'just',lang:'sux',
+    pipeline:'S4',tr:{en:'justly, righteously',de:'gerecht',he:'בצדק',fa:'به عدالت'},
+    gls:[{t:'"straight, just, right"',pos:'AJ',att:4823,p:true},{t:'"righteously (adv.)"',pos:'AV',att:2341}],
+    att:4823,src:'ePSD2'},
+
+  broken_x:{id:'broken_x',atf:'[x]',norm:null,lemma:null,gloss:null,lang:'sux',
+    pipeline:'S0',broken:true,tr:{en:'[broken]',de:'[gebrochen]',he:'[שבור]',fa:'[شکسته]'},
+    att:0,src:null},
+
+  // AKKADIAN
+  sarru:{id:'sarru',atf:'šar-rum',norm:'šarrum',lemma:'šarrum[king]N',gloss:'king',lang:'akk',sign:'𒈗',
+    pipeline:'S4',tr:{en:'king',de:'König',he:'מֶלֶך',fa:'پادشاه'},
+    gls:[{t:'"king, monarch"',pos:'Noun',att:28441,p:true},{t:'"ruler"',pos:'Noun',att:8921}],
+    xl:[{f:'lugal',l:'Sumerian',g:'king',a:34891,s:'ePSD2'}],
+    sp:['šar-rum (44×)','LUGAL (89×)','šar-ri (32×)'],
+    ctx:{period:'Late Bronze Age',genre:'Royal Treaty',prov:'Amarna',uses:11},att:28441,src:'CAD Š'},
+
+  LUGAL:{id:'LUGAL',atf:'LUGAL',norm:'šarrum',lemma:'šarrum[king]N',gloss:'king',lang:'akk',sign:'𒈗',
+    pipeline:'S4',tr:{en:'king (logogram)',de:'König',he:'מֶלֶך',fa:'پادشاه'},
+    gls:[{t:'"king" (Sumerian logogram in Akk. text)',pos:'Noun',att:28441,p:true}],
+    xl:[{f:'lugal',l:'Sumerian',g:'king',a:34891,s:'ePSD2'}],
+    ctx:{period:'Late Bronze Age',genre:'Royal Treaty',prov:'Amarna',uses:8},att:28441,src:'CAD Š'},
+
+  mat:{id:'mat',atf:'māt',norm:'māt',lemma:'mātu[land]N.CS',gloss:'land of',lang:'akk',sign:'𒆳',
+    pipeline:'S4',tr:{en:'land of',de:'Land von',he:'ארץ',fa:'سرزمین'},
+    gls:[{t:'"land, country" (construct state)',pos:'Noun.CS',att:18923,p:true}],
+    att:18923,src:'CAD M'},
+
+  shumeri:{id:'shumeri',atf:'Šumerim',norm:'Šumerim',lemma:'Šumeru[Sumer]GN.GEN',gloss:'of Sumer',lang:'akk',
+    pipeline:'S2-norm',norm_chain:'Šumerim → Šumeru (gen.)',
+    tr:{en:'of Sumer',de:'von Sumer',he:'שומר',fa:'سومر'},
+    gls:[{t:'"Sumer" (genitive)',pos:'GN.GEN',att:8432,p:true}],att:8432,src:'CAD Š'},
+
+  sarrim:{id:'sarrim',atf:'šar-ri-im',norm:'šarrim',lemma:'šarrum[king]N.GEN',gloss:'of the king',lang:'akk',
+    pipeline:'S2-norm',norm_chain:'šar-ri-im → šarrim → šarrum (gen.)',
+    tr:{en:'of the king',de:'des Königs',he:'של המלך',fa:'پادشاه را'},
+    gls:[{t:'"of the king" (genitive)',pos:'Noun.GEN',att:12892,p:true},{t:'"royal" (attributive use)',pos:'Noun.GEN',att:4231}],
+    ctx:{period:'Late Bronze Age',genre:'Royal Treaty',prov:'Amarna',uses:5},att:12892,src:'CAD Š',
+    ns:'Confirm case as genitive based on context.'},
+
+  bel:{id:'bel',atf:'be-el',norm:'bēl',lemma:null,gloss:null,lang:'akk',
+    pipeline:'S3',
+    pl:[{f:'bēlu[lord]N',g:'lord, master',pos:'Noun',a:18442,s:'ORACC',note:'Most common in royal epithets',p:true},{f:'bālum[withholding]N',g:'withholding, absence',pos:'Noun',a:234,s:'CAD B',note:'Rare; different root'}],
+    tr:{en:'?',de:'?',he:'?',fa:'?'},
+    ctx:{period:'Late Bronze Age',genre:'Royal Treaty',prov:'Amarna',uses:2},att:0,src:null},
+
+  ina:{id:'ina',atf:'i-na',norm:'ina',lemma:'ina[in]PRP',gloss:'in',lang:'akk',
+    pipeline:'S4-norm',norm_chain:'i-na → ina',
+    tr:{en:'in, at, by',de:'in, bei',he:'ב',fa:'در'},
+    gls:[{t:'"in, at, by, from, through"',pos:'Prep',att:89234,p:true}],
+    xl:[{f:'a (logogram)',l:'Sumerian',g:'in',a:12341,s:'ePSD2'}],
+    sp:['i-na (232×)'],att:89234,src:'CAD I',
+    ctx:{period:'Late Bronze Age',genre:'Royal Treaty',prov:'Amarna',uses:23}},
+
+  matim:{id:'matim',atf:'ma-tim',norm:'mātim',lemma:'mātu[land]N.GEN',gloss:'of the land',lang:'akk',
+    pipeline:'S4',tr:{en:'of the land',de:'des Landes',he:'של הארץ',fa:'سرزمین'},
+    gls:[{t:'"of the land" (genitive)',pos:'Noun.GEN',att:11234,p:true}],att:11234,src:'CAD M'},
+
+  awatim:{id:'awatim',atf:'a-wa-tim',norm:'awātim',lemma:'awātu[word]N.GEN.PL',gloss:'the words',lang:'akk',
+    pipeline:'S4',tr:{en:'the words (of)',de:'die Worte',he:'הדברים',fa:'کلمات'},
+    gls:[{t:'"words, matters" (gen. pl.)',pos:'Noun.GEN',att:8923,p:true}],att:8923,src:'CAD A'},
+
+  tuppim:{id:'tuppim',atf:'ṭup-pi-im',norm:'ṭuppim',lemma:'ṭuppu[tablet]N.GEN',gloss:'of the tablet',lang:'akk',sign:'𒁾',
+    pipeline:'S4-norm',norm_chain:'ṭup-pi-im → ṭuppim → ṭuppu (gen.)',
+    tr:{en:'of this tablet',de:'dieser Tafel',he:'הלוח',fa:'این لوح'},
+    gls:[{t:'"of the tablet, clay document"',pos:'Noun.GEN',att:9124,p:true},{t:'"written document, deed"',pos:'Noun.GEN',att:3421},{t:'"official record"',pos:'Noun.GEN',att:891}],
+    xl:[{f:'IM (logogram)',l:'Sumerian',g:'clay/tablet',a:12841,s:'ePSD2'}],
+    sp:['ṭup-pi-im (12×)','ṭup-pi-šu (8×)','ṭup-pa-am (4×)'],
+    ctx:{period:'Late Bronze Age',genre:'Royal Treaty',prov:'Amarna',uses:2},att:9124,src:'CAD Ṭ'},
+
+  qibima:{id:'qibima',atf:'qi₂-bí-ma',norm:'qibīma',lemma:'qabû[speak]V.IMP',gloss:'speak!',lang:'akk',
+    pipeline:'S2',tr:{en:'speak!',de:'sprich!',he:'אמור',fa:'بگو'},
+    gls:[{t:'"speak! (imperative)"',pos:'V.IMP',att:14231,p:true}],att:14231,src:'CAD Q',
+    ns:'Confirm imperative form in epistolary formula context.'},
+
+  umma:{id:'umma',atf:'um-ma',norm:'umma',lemma:'umma[thus]PRT',gloss:'thus',lang:'akk',
+    pipeline:'S4',tr:{en:'thus (says)',de:'so (spricht)',he:'כה',fa:'چنین'},
+    gls:[{t:'"thus" (epistolary particle)',pos:'Particle',att:22341,p:true}],att:22341,src:'CAD U'},
+
+  annim:{id:'annim',atf:'an-ni-im',norm:'annîm',lemma:'annûm[this]DEM.GEN',gloss:'this',lang:'akk',
+    pipeline:'S4',tr:{en:'this (very)',de:'dieses',he:'זה',fa:'این'},
+    gls:[{t:'"this" (demonstrative, genitive)',pos:'DEM.GEN',att:18234,p:true}],att:18234,src:'CAD A'},
+
+  asha:{id:'asha',atf:'ša',norm:'ša',lemma:'ša[of/who]REL',gloss:'of',lang:'akk',
+    pipeline:'S4',tr:{en:'of, which, who',de:'des, welcher',he:'אשר',fa:'که'},
+    gls:[{t:'"of; which; who" (relative)',pos:'REL',att:112341,p:true}],att:112341,src:'CAD Š'},
+
+  kibrat:{id:'kibrat',atf:'kib-ra-tim',norm:'kibrātim',lemma:'kibrātu[quarters]N.GEN.PL',gloss:'quarters',lang:'akk',
+    pipeline:'S4',tr:{en:'(four) quarters of the world',de:'Weltgegenden',he:'קצוות הארץ',fa:'چهار گوشه جهان'},
+    gls:[{t:'"quarters, corners (of the world)"',pos:'Noun.GEN',att:4892,p:true}],att:4892,src:'CAD K'},
+
+  arba:{id:'arba',atf:"arba'im",norm:"arba'im",lemma:"arba'u[four]NU",gloss:'four',lang:'akk',
+    pipeline:'S4',tr:{en:'four',de:'vier',he:'ארבע',fa:'چهار'},
+    gls:[{t:'"four"',pos:'Num',att:12341,p:true}],att:12341,src:'CAD A'},
+
+  // HITTITE
+  LUGAL_us:{id:'LUGAL_us',atf:'LUGAL-uš',norm:'šarruš',lemma:'šarruš[king]N.NOM',gloss:'king',lang:'hit',sign:'𒈗',
+    pipeline:'S4',tr:{en:'Great King',de:'Großkönig',he:'מלך גדול',fa:'پادشاه بزرگ'},
+    gls:[{t:'"(Great) King" (nominative, Hittite)',pos:'Noun.NOM',att:8923,p:true}],
+    xl:[{f:'lugal',l:'Sumerian',g:'king',a:34891,s:'ePSD2'},{f:'šarru',l:'Akkadian',g:'king',a:28441,s:'CAD'}],
+    sp:['LUGAL-uš (38×)','LUGAL-i (12×)'],att:8923,src:'HZL/eDHL'},
+
+  ibtasa:{id:'ibtasa',atf:'ib₂-ta-sa',norm:'ibtasa',lemma:null,gloss:null,lang:'hit',
+    pipeline:'S1-norm',norm_chain:'ib₂-ta-sa → ibtasa',
+    tr:{en:'[unlemmatized]',de:'[nicht lemmatisiert]',he:'[לא מזוהה]',fa:'[شناسایی نشده]'},
+    ctx:{period:'Middle Hittite',genre:'Treaty',prov:'Hattusa',uses:1},att:0,src:null,
+    ns:'Search Hittite lemma database for normalized form "ibtasa". May be a rare verbal form.'},
+
+  hassan:{id:'hassan',atf:'ḫa-aš-ša-an',norm:'ḫaššan',lemma:null,gloss:null,lang:'hit',
+    pipeline:'S3-norm',norm_chain:'ḫa-aš-ša-an → ḫaššan',
+    pl:[{f:'ḫaššu[great]N',g:'great king, heir',pos:'Noun',a:892,s:'HZL',note:'Via normalization — most likely in treaty context',p:true},{f:'ḫašša[offspring]N',g:'offspring, scion',pos:'Noun',a:234,s:'eDHL',note:'Alternate reading'}],
+    tr:{en:'[disambiguation needed]',de:'[mehrdeutig]',he:'[דו-משמעי]',fa:'[مبهم]'},
+    ctx:{period:'Middle Hittite',genre:'Treaty',prov:'Hattusa',uses:1},att:0,src:null},
+
+  nu_hit:{id:'nu_hit',atf:'nu',norm:'nu',lemma:'nu[and]CNJ',gloss:'and',lang:'hit',
+    pipeline:'S4',tr:{en:'and, then',de:'und, dann',he:'ו',fa:'و'},
+    gls:[{t:'"and; then; now" (Hittite conjunction)',pos:'CNJ',att:89234,p:true}],att:89234,src:'HZL'},
+
+  kur:{id:'kur',atf:'KUR',norm:'māt',lemma:'mātu[land]N',gloss:'land',lang:'hit',sign:'𒆳',
+    pipeline:'S4',tr:{en:'land, country',de:'Land',he:'ארץ',fa:'سرزمین'},
+    gls:[{t:'"land, country" (logogram in Hittite)',pos:'Noun',att:18923,p:true}],att:18923,src:'HZL'},
+
+  hatti:{id:'hatti',atf:'URU Ha-at-ti',norm:'Hatti',lemma:'Hatti[Hatti]GN',gloss:'Hatti',lang:'hit',
+    pipeline:'S4',tr:{en:'(the land of) Hatti',de:'Hatti',he:'חיתי',fa:'هاتی'},
+    gls:[{t:'"Hatti" (Hittite homeland)',pos:'GN',att:8921,p:true}],att:8921,src:'HZL'},
+
+  kuwapi:{id:'kuwapi',atf:'ku-wa-pí',norm:'kuwapi',lemma:'kuwapi[when]ADV',gloss:'when',lang:'hit',
+    pipeline:'S4',tr:{en:'when',de:'als, wenn',he:'כאשר',fa:'وقتی'},
+    gls:[{t:'"when, wherever"',pos:'ADV',att:4892,p:true}],att:4892,src:'HZL'},
+
+  ier:{id:'ier',atf:'i-e-er',norm:'ier',lemma:'iya[make]V.3PL.PRET',gloss:'they made',lang:'hit',
+    pipeline:'S4',tr:{en:'they made, they did',de:'sie machten',he:'עשו',fa:'انجام دادند'},
+    gls:[{t:'"they made" (3pl. preterite)',pos:'V.3PL.PRET',att:3421,p:true}],att:3421,src:'HZL'},
+
+  dais:{id:'dais',atf:'da-a-iš',norm:'daiš',lemma:'dai[place]V.3SG.PRET',gloss:'placed',lang:'hit',
+    pipeline:'S4',tr:{en:'(he) established, placed',de:'(er) stellte auf',he:'הציב',fa:'برقرار کرد'},
+    gls:[{t:'"(he) placed, established"',pos:'V.3SG.PRET',att:5823,p:true}],att:5823,src:'HZL'},
+
+  katta:{id:'katta',atf:'kat-ta-an',norm:'kattan',lemma:'katta[below]ADV',gloss:'below',lang:'hit',
+    pipeline:'S4',tr:{en:'below, underneath',de:'darunter',he:'למטה',fa:'پایین'},
+    gls:[{t:'"below, down, under"',pos:'ADV',att:6234,p:true}],att:6234,src:'HZL'},
+
+  // ELAMITE
+  ini:{id:'ini',atf:'i-ni',norm:'ini',lemma:'ini[I]PRN',gloss:'I',lang:'elx',
+    pipeline:'S2',tr:{en:'I (first person singular)',de:'ich',he:'אני',fa:'من'},
+    gls:[{t:'"I" (Elamite 1st person sg.)',pos:'PRN',att:4892,p:true}],att:4892,src:'Stolper ELA'},
+
+  shutras:{id:'shutras',atf:'šu-ut-ra-aš',norm:'šutraš',lemma:'šutruk[king]N',gloss:'king',lang:'elx',
+    pipeline:'S2',tr:{en:'king (Elamite)',de:'König (Elamisch)',he:'מלך',fa:'پادشاه'},
+    gls:[{t:'"king" (Elamite royal title)',pos:'Noun',att:1892,p:true}],att:1892,src:'Stolper ELA'},
+
+  karan:{id:'karan',atf:'ka-ra-an',norm:'karan',lemma:null,gloss:null,lang:'elx',
+    pipeline:'S1-poly',
+    pl:[{f:'karan[place]N',g:'place, location',pos:'Noun',a:234,s:'Stolper ELA',note:'Genitival particle in some contexts'},{f:'karan[strong]AJ',g:'strong, powerful',pos:'AJ',a:89,s:'Stolper ELA',note:'Less common reading'},{f:'karan[covenant]N',g:'oath, covenant',pos:'Noun',a:156,s:'Stolper ELA',note:'Plausible in treaty context',p:true}],
+    tr:{en:'[3 candidates]',de:'[3 Möglichkeiten]',he:'[3 אפשרויות]',fa:'[۳ احتمال]'},
+    ctx:{period:'Middle Elamite',genre:'Treaty Witness',prov:'Susa',uses:1},att:0,src:null,
+    ns:'Review treaty context to disambiguate between covenant, place, or strong.'},
+
+  nigira:{id:'nigira',atf:'ni-gi-ra-me',norm:'nigirame',lemma:'nigi-me[treaty]N.1SG',gloss:'my treaty',lang:'elx',
+    pipeline:'S2',tr:{en:'my treaty, my covenant',de:'mein Vertrag',he:'בריתי',fa:'پیمان من'},
+    gls:[{t:'"my treaty, covenant" (1sg. poss.)',pos:'Noun.1SG',att:341,p:true}],att:341,src:'Stolper ELA'},
+
+  umatu:{id:'umatu',atf:'ú-ma-tu',norm:'umatu',lemma:'umatu[this]DEM',gloss:'this',lang:'elx',
+    pipeline:'S2',tr:{en:'this',de:'dieses',he:'זה',fa:'این'},
+    gls:[{t:'"this" (Elamite demonstrative)',pos:'DEM',att:892,p:true}],att:892,src:'Stolper ELA'},
+
+  shakri:{id:'shakri',atf:'ša-ak-rí',norm:'šakri',lemma:'šakri[oath]N',gloss:'oath',lang:'elx',
+    pipeline:'S2',tr:{en:'oath, sworn declaration',de:'Eid',he:'שבועה',fa:'سوگند'},
+    gls:[{t:'"oath, sworn declaration"',pos:'Noun',att:421,p:true}],att:421,src:'Stolper ELA'},
+
+  inshusnak:{id:'inshusnak',atf:'In-šu-uš-na-ak',norm:'Inšušnak',lemma:'Inšušnak[DN]',gloss:'Inšušnak',lang:'elx',
+    pipeline:'S4',tr:{en:'Inšušnak (god of Susa)',de:'Inšušnak (Gott)',he:'אינשושנק',fa:'اینشوشیناک'},
+    gls:[{t:'"Inšušnak" (chief deity of Susa, lord of the dead)',pos:'DN',att:892,p:true}],
+    ctx:{period:'Middle Elamite',genre:'Divine Witness',prov:'Susa',uses:2},att:892,src:'Stolper ELA'},
+
+  // UGARITIC
+  mlk:{id:'mlk',atf:'mlk',norm:'malku',lemma:'malku[king]N',gloss:'king',lang:'uga',
+    pipeline:'S4',tr:{en:'king',de:'König',he:'מֶלֶך',fa:'پادشاه'},
+    gls:[{t:'"king, lord"',pos:'Noun',att:1842,p:true},{t:'"ruler (of a city-state)"',pos:'Noun',att:891}],
+    xl:[{f:'lugal',l:'Sumerian',g:'king',a:34891,s:'ePSD2'},{f:'šarru',l:'Akkadian',g:'king',a:28441,s:'CAD Š'}],
+    sp:['mlk (28×)','mlkt (fem. 4×)'],
+    ctx:{period:'Late Bronze Age',genre:'Treaty',prov:'Ugarit',uses:4},att:1842,src:'ORACC/BDFSN'},
+
+  mlk_sign:{id:'mlk_sign',atf:'mLK',norm:null,lemma:null,gloss:null,lang:'uga',
+    sign:'mlk',pipeline:'S1-sign',
+    tr:{en:'[sign matched, no lemma]',de:'[Zeichen bekannt, kein Lemma]',he:'[סימן מזוהה]',fa:'[علامت شناسایی شده]'},
+    ctx:{period:'Late Bronze Age',genre:'Treaty Addendum',prov:'Ugarit',uses:1},att:0,src:null,
+    ns:'Add normalization to enable lemma lookup. Possible logographic variant of mlk.'},
+
+  ugrt:{id:'ugrt',atf:'ugrt',norm:'Ugaritu',lemma:'Ugaritu[Ugarit]GN',gloss:'Ugarit',lang:'uga',
+    pipeline:'S2',tr:{en:'Ugarit (city-state)',de:'Ugarit',he:'אוגרית',fa:'اوگاریت'},
+    gls:[{t:'"Ugarit" (city-state on Syrian coast)',pos:'GN',att:892,p:true}],att:892,src:'ORACC/BDFSN'},
+
+  bn:{id:'bn',atf:'bn',norm:'bin',lemma:'binu[son]N.CS',gloss:'son of',lang:'uga',
+    pipeline:'S4',tr:{en:'son of',de:'Sohn des',he:'בן',fa:'پسر'},
+    gls:[{t:'"son of" (construct state)',pos:'Noun.CS',att:12892,p:true}],att:12892,src:'ORACC/BDFSN'},
+
+  il:{id:'il',atf:'il',norm:'ilu',lemma:'ilu[god]N',gloss:'El/god',lang:'uga',
+    pipeline:'S4',tr:{en:'El, god',de:'El, Gott',he:'אֵל',fa:'ایل/خدا'},
+    gls:[{t:'"El" (head of Ugaritic pantheon)',pos:'DN/Noun',att:8923,p:true},{t:'"god" (generic)',pos:'Noun',att:5231}],
+    ctx:{period:'Late Bronze Age',genre:'Mythological',prov:'Ugarit',uses:2},att:8923,src:'ORACC/BDFSN'},
+
+  ksp:{id:'ksp',atf:'ksp',norm:'kaspu',lemma:'kaspu[silver]N',gloss:'silver',lang:'uga',
+    pipeline:'S2',tr:{en:'silver',de:'Silber',he:'כסף',fa:'نقره'},
+    gls:[{t:'"silver" (monetary metal)',pos:'Noun',att:4892,p:true}],att:4892,src:'ORACC/BDFSN',
+    ns:'Confirm as standard trade silver in coastal treaty context.'},
+
+  tql:{id:'tql',atf:'tqlh',norm:'taqulu',lemma:'tql[weigh]V.3SG',gloss:'weighed',lang:'uga',
+    pipeline:'S4',tr:{en:'(he) weighed it',de:'(er) wog es',he:'שקל',fa:'وزن کرد'},
+    gls:[{t:'"(he) weighed" (3sg. perf.)',pos:'V.3SG',att:1234,p:true}],att:1234,src:'ORACC/BDFSN'},
+
+  mspr:{id:'mspr',atf:'mspr',norm:'mispar',lemma:'mspr[count]N',gloss:'count',lang:'uga',
+    pipeline:'S2',tr:{en:'count, reckoning',de:'Zählung, Abrechnung',he:'מספר',fa:'شمارش'},
+    gls:[{t:'"count, reckoning, tally"',pos:'Noun',att:891,p:true}],att:891,src:'ORACC/BDFSN'},
+
+  // EGYPTIAN
+  jnnfr:{id:'jnnfr',atf:'j-n-nfr',norm:null,lemma:null,gloss:null,lang:'egy',
+    pipeline:'S0',
+    tr:{en:'[unidentified]',de:'[unidentifiziert]',he:'[לא מזוהה]',fa:'[شناسایی نشده]'},
+    ctx:{period:'New Kingdom (Amarna Period)',genre:'Pharaonic Seal',prov:'Amarna',uses:1},att:0,src:null,
+    ns:'Search similar readings in Egyptian corpus (Amarna period). May be a royal epithet or scribal variant.'},
+
+  nswt:{id:'nswt',atf:'nswt',norm:'nisut',lemma:'nsw[king]N',gloss:'king',lang:'egy',
+    pipeline:'S2',tr:{en:'King of Upper Egypt',de:'König Oberägyptens',he:'מלך מצרים העליונה',fa:'پادشاه مصر فوقانی'},
+    gls:[{t:'"king, pharaoh" (Upper Egypt)',pos:'Noun',att:8923,p:true}],att:8923,src:'Wb/TLA'},
+
+  bjty:{id:'bjty',atf:'bjty',norm:'bity',lemma:'bjty[bee-king]N',gloss:'king',lang:'egy',
+    pipeline:'S2',tr:{en:'King of Lower Egypt',de:'König Unterägyptens',he:'מלך מצרים התחתונה',fa:'پادشاه مصر تحتانی'},
+    gls:[{t:'"king of Lower Egypt" (bee symbol)',pos:'Noun',att:6234,p:true}],att:6234,src:'Wb/TLA'},
+
+  nfr_hpr:{id:'nfr_hpr',atf:"[Nfr-ḥprw-R']",norm:"Neferkheperure",lemma:"Nfr-ḥprw-R'[Akhenaten]RN",gloss:'Akhenaten',lang:'egy',
+    pipeline:'S4',broken:true,
+    tr:{en:'[Akhenaten] (broken)',de:'[Echnaton] (gebrochen)',he:'[אחנאתן] (שבור)',fa:'[آخناتون] (شکسته)'},
+    gls:[{t:'"Beautiful are the forms of Re" (prenomen of Akhenaten)',pos:'RN',att:892,p:true}],
+    ctx:{period:'Amarna Period',genre:'Royal Name',prov:'Amarna',uses:1},att:892,src:'TLA'},
+
+  anh:{id:'anh',atf:"'nḫ",norm:'ankh',lemma:"'nh[life]N",gloss:'life',lang:'egy',
+    pipeline:'S2',tr:{en:'living, life',de:'lebend',he:'חי',fa:'زندگی'},
+    gls:[{t:'"life, living"',pos:'Noun',att:18923,p:true}],att:18923,src:'Wb/TLA'},
+
+  htp:{id:'htp',atf:'htp-dj-nswt',norm:'hotep-di-nesu',lemma:'htp[peace]N',gloss:'royal offering',lang:'egy',
+    pipeline:'S2',tr:{en:'royal offering formula',de:'königliche Opferformel',he:'נוסחת קרבן מלכותי',fa:'فرمول نذری شاهانه'},
+    gls:[{t:'"an offering which the king gives" (royal formula)',pos:'Formula',att:4892,p:true}],att:4892,src:'Wb/TLA'},
+
+  nbtawy:{id:'nbtawy',atf:'nb-tꜣwy',norm:'nebtawy',lemma:'nb[lord]N',gloss:'lord of lands',lang:'egy',
+    pipeline:'S4',tr:{en:'lord of the two lands',de:'Herr der beiden Länder',he:'אדון שתי הארצות',fa:'سرور دو سرزمین'},
+    gls:[{t:'"Lord of the Two Lands" (pharaonic title)',pos:'Title',att:8921,p:true}],
+    ctx:{period:'New Kingdom',genre:'Pharaonic Title',prov:'Amarna',uses:1},att:8921,src:'TLA'},
+};
+
+// ═══════════════════════════════════════════════════════════
+// COLUMN DATA
+// ═══════════════════════════════════════════════════════════
+// Line types: {num,toks,tr} | {ruling} | {broken,text} | {switch,lang}
+const COLS = [
+  {id:'c1',num:1,lang:'sux',label:'Column i',cov:{m:10,t:12},lines:[
+    {num:'1',toks:['lugal','kiengi','kiuri'],tr:{en:'King of Sumer and Akkad',de:'König von Sumer und Akkad',he:'מלך שומר ואכד',fa:'پادشاه سومر و اکد'}},
+    {num:'2',toks:['lugal','anubda','limmu'],tr:{en:'King of the Four Quarters',de:'König der vier Weltgegenden',he:'מלך ארבע רוחות השמים',fa:'پادشاه چهار جهت جهان'}},
+    {num:'3',toks:['nita','kala'],tr:{en:'the mighty man',de:'der starke Mann',he:'הגבר האדיר',fa:'مرد نیرومند'}},
+    {ruling:true,label:'single ruling'},
+    {num:'4',toks:['innansum'],tr:{en:'has given to him',de:'hat ihm gegeben',he:'נתן לו',fa:'به او داد'}},
+    {num:'5',toks:['num1','gun','kubabbar'],tr:{en:'1 talent of silver',de:'1 Talent Silber',he:'כיכר אחד של כסף',fa:'یک تالنت نقره'}},
+    {num:'6',toks:['sabi'],tr:{en:'its price',de:'sein Preis',he:'מחירו',fa:'قیمتش'}},
+    {num:'7',toks:['broken_x','broken_x'],broken:true,tr:{en:'[...] ...',de:'[...] ...',he:'[...] ...',fa:'[...] ...'}},
+    {broken:true,text:'lines 8–9 broken'},
+    {num:"10'",toks:['mu','bala'],tr:{en:'in the year of the reign',de:'im Jahr der Regentschaft',he:'בשנת המלכות',fa:'در سال سلطنت'}},
+    {num:"11'",toks:['sisa'],tr:{en:'justly and righteously',de:'gerecht und aufrecht',he:'בצדק וביושר',fa:'به عدل و انصاف'}},
+    {num:"12'",toks:['lugal','kiengi'],tr:{en:'(the) king of Sumer',de:'(der) König von Sumer',he:'מלך שומר',fa:'پادشاه سومر'}},
+  ]},
+  {id:'c2',num:2,lang:'akk',label:'Column ii',cov:{m:12,t:14},lines:[
+    {num:'1',toks:['LUGAL','mat','shumeri'],tr:{en:'King of Sumer and Akkad',de:'König von Sumer und Akkad',he:'מלך שומר ואכד',fa:'پادشاه سومر و اکد'}},
+    {num:'2',toks:['LUGAL','kibrat','arba'],tr:{en:'King of the Four Quarters',de:'König der vier Weltgegenden',he:'מלך ארבע כיוונים',fa:'پادشاه چهار جهت'}},
+    {num:'3',toks:['umma','sarru'],tr:{en:'Thus: the king',de:'Folgendermaßen: der König',he:'כה: המלך',fa:'چنین: پادشاه'}},
+    {num:'4',toks:['bel','matim'],tr:{en:'lord of the land',de:'Herr des Landes',he:'אדון הארץ',fa:'سرور سرزمین'}},
+    {ruling:true,label:'single ruling'},
+    {num:'5',toks:['sarrim','kibrat'],tr:{en:'of the king of all quarters',de:'des Königs aller Weltgegenden',he:'של מלך כל רוחות',fa:'پادشاه همه جهات'}},
+    {num:'6',toks:['ina','matim'],tr:{en:'in the land',de:'im Land',he:'בארץ',fa:'در سرزمین'}},
+    {num:'7',toks:['qibima'],tr:{en:'speak!',de:'sprich!',he:'אמור!',fa:'بگو!'}},
+    {num:'8',toks:['asha','mat'],tr:{en:'which the land',de:'welches das Land',he:'אשר הארץ',fa:'که سرزمین'}},
+    {num:'9',toks:['awatim','annim'],tr:{en:'these words',de:'diese Worte',he:'הדברים האלה',fa:'این کلمات'}},
+    {ruling:true,label:'single ruling'},
+    {num:'10',toks:['umma','LUGAL','sarrim'],tr:{en:'thus the king: of the king',de:'so der König: des Königs',he:'כה המלך: של המלך',fa:'چنین پادشاه: پادشاه را'}},
+    {num:'11',toks:['ina','tuppim','annim'],composite_ref:'>>Q000831 l.14',tr:{en:'on this very tablet',de:'auf dieser Tafel',he:'על הלוח הזה',fa:'بر روی همین لوح'}},
+    {num:'12',toks:['qibima','umma'],tr:{en:'speak, thus:',de:'sprich, folgendermaßen:',he:'אמור, כה:',fa:'بگو، چنین:'}},
+  ]},
+  {id:'c3',num:3,lang:'hit',label:'Column iii',cov:{m:7,t:11},lines:[
+    {broken:true,text:'beginning broken'},
+    {num:"1'",toks:['LUGAL_us','nu_hit'],tr:{en:'The Great King and...',de:'Der Großkönig und...',he:'המלך הגדול ו...',fa:'پادشاه بزرگ و...'}},
+    {num:"2'",toks:['kuwapi','ier'],tr:{en:'when they made (the treaty)',de:'als sie (den Vertrag) machten',he:'כשעשו (את הברית)',fa:'وقتی انجام دادند (پیمان)'}},
+    {num:"3'",toks:['ibtasa'],tr:{en:'[ibtasa — unlemmatized]',de:'[ibtasa — nicht lemmatisiert]',he:'[ibtasa — לא ממופה]',fa:'[ibtasa — بدون لما]'}},
+    {num:"4'",toks:['hassan','LUGAL_us'],tr:{en:'[disambiguation needed] king',de:'[mehrdeutig] König',he:'[דו-משמעי] מלך',fa:'[مبهم] پادشاه'}},
+    {num:"5'",toks:['nu_hit','kur','hatti'],tr:{en:'and the land of Hatti',de:'und das Land Hatti',he:'וארץ חיתי',fa:'و سرزمین هاتی'}},
+    {num:"6'",toks:['dais'],tr:{en:'(he) established',de:'(er) errichtete',he:'הציב',fa:'برقرار کرد'}},
+    {ruling:true,label:'double ruling'},
+    {num:"7'",toks:['LUGAL_us','ier'],tr:{en:'the Great King made',de:'der Großkönig machte',he:'המלך הגדול עשה',fa:'پادشاه بزرگ کرد'}},
+    {num:"8'",toks:['nu_hit','katta'],tr:{en:'and below',de:'und darunter',he:'ולמטה',fa:'و در پایین'}},
+    {num:"9'",toks:['kuwapi','dais'],tr:{en:'when he placed',de:'als er aufstellte',he:'כשהציב',fa:'وقتی گذاشت'}},
+  ]},
+  {id:'c4',num:4,lang:'elx',label:'Column iv',cov:{m:5,t:9},lines:[
+    {num:'1',toks:['ini','shutras'],tr:{en:'I am the king',de:'Ich bin der König',he:'אני המלך',fa:'من پادشاه هستم'}},
+    {num:'2',toks:['inshusnak'],tr:{en:'(by) Inšušnak (god of Susa)',de:'(durch) Inšušnak',he:'(ב)אינשושנק',fa:'(به) اینشوشیناک'}},
+    {num:'3',toks:['karan','nigira'],tr:{en:'[3 lemma candidates] my treaty',de:'[3 Lemma-Kandidaten] mein Vertrag',he:'[3 מועמדים] בריתי',fa:'[۳ احتمال] پیمان من'}},
+    {num:'4',toks:['umatu','shakri'],tr:{en:'this oath',de:'dieser Eid',he:'השבועה הזאת',fa:'این سوگند'}},
+    {ruling:true,label:'single ruling'},
+    {broken:true,text:'lines 5–6 broken'},
+    {num:"7'",toks:['ini','inshusnak'],tr:{en:'I (swear by) Inšušnak',de:'Ich (schwöre bei) Inšušnak',he:'אני (נשבע ב)אינשושנק',fa:'من (سوگند به) اینشوشیناک'}},
+    {num:"8'",toks:['shakri','nigira'],tr:{en:'oath of my treaty',de:'Eid meines Vertrages',he:'שבועת בריתי',fa:'سوگند پیمانم'}},
+    {broken:true,text:'rest broken'},
+  ]},
+  {id:'c5',num:5,lang:'uga',label:'Column v',cov:{m:6,t:9},lines:[
+    {num:'1',toks:['mlk','ugrt'],tr:{en:'King of Ugarit',de:'König von Ugarit',he:'מלך אוגרית',fa:'پادشاه اوگاریت'}},
+    {num:'2',toks:['bn','il'],tr:{en:'son of El',de:'Sohn des El',he:'בן אֵל',fa:'پسر ایل'}},
+    {num:'3',toks:['mlk_sign'],tr:{en:'[sign matched — no lemma]',de:'[Zeichen gefunden — kein Lemma]',he:'[סימן מזוהה — אין למה]',fa:'[علامت یافته شد — بدون لما]'}},
+    {num:'4',toks:['mlk','ksp'],tr:{en:'king: silver',de:'König: Silber',he:'מלך: כסף',fa:'پادشاه: نقره'}},
+    {ruling:true,label:'single ruling'},
+    {num:'5',toks:['tql','ksp'],tr:{en:'he weighed the silver',de:'er wog das Silber',he:'שקל את הכסף',fa:'نقره را وزن کرد'}},
+    {num:'6',toks:['mspr'],tr:{en:'according to reckoning',de:'nach Abrechnung',he:'לפי חשבון',fa:'طبق شمارش'}},
+    {num:'7',toks:['mlk','ugrt'],composite_ref:'>>Q000831 l.14',tr:{en:'(the) king of Ugarit',de:'(der) König von Ugarit',he:'מלך אוגרית',fa:'پادشاه اوگاریت'}},
+    {broken:true,text:'remainder fragmentary'},
+  ]},
+  {id:'c6',num:6,lang:'egy',label:'Column vi',cov:{m:4,t:8},lines:[
+    {num:'1',toks:['nswt','bjty'],tr:{en:'King of Upper and Lower Egypt',de:'König von Ober- und Unterägypten',he:'מלך מצרים העליונה והתחתונה',fa:'پادشاه مصر فوقانی و تحتانی'}},
+    {num:'2',toks:['jnnfr'],tr:{en:'[unidentified — S0]',de:'[unidentifiziert — S0]',he:'[לא מזוהה — S0]',fa:'[شناسایی نشده — S0]'}},
+    {num:'3',toks:['nfr_hpr'],broken:true,tr:{en:'[Akhenaten] (broken)',de:'[Echnaton] (gebrochen)',he:'[אחנאתן] (שבור)',fa:'[آخناتون] (شکسته)'}},
+    {num:'4',toks:['nbtawy'],tr:{en:'lord of the two lands',de:'Herr der beiden Länder',he:'אדון שתי הארצות',fa:'سرور دو سرزمین'}},
+    {num:'5',toks:['anh'],tr:{en:'living forever',de:'lebend ewiglich',he:'חי לנצח',fa:'زندگی ابدی'}},
+    {ruling:true,label:'single ruling'},
+    {num:'6',toks:['htp'],tr:{en:'royal offering formula',de:'königliche Opferformel',he:'נוסחת קרבן מלכותי',fa:'فرمول نذری شاهانه'}},
+    {broken:true,text:'remainder broken'},
+  ]},
+];
+
+// ═══════════════════════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════════════════════
+let activeLang = 'en';
+let hlOn = true;
+let selectedTokId = null;
+const instanceMap = {}; // typeId → [dom id array]
+let tokCounter = 0;
+
+function pipeClass(p){
+  if(!p) return 's0';
+  if(p.startsWith('S4')) return 's4';
+  if(p.startsWith('S3')) return 's3';
+  if(p.startsWith('S2')) return 's2';
+  if(p.startsWith('S1')) return 's1';
+  return 's0';
+}
+
+function renderRibbonToken(typeId, lineIdx, tokIdx, colIdx){
+  const tok = T[typeId]; if(!tok) return '';
+  const uid = `rt-${colIdx}-${lineIdx}-${tokIdx}`;
+  if(!instanceMap[typeId]) instanceMap[typeId]=[];
+  instanceMap[typeId].push(uid);
+  const dmg = tok.damaged ? ' d':''; const brk = tok.broken ? ' b':'';
+  const sign = tok.sign ? `<span class="tr-sign">${tok.sign}</span>` : '';
+  const norm = tok.norm||'<span style="opacity:.3">—</span>';
+  const lemma = tok.lemma||'<span style="opacity:.3">—</span>';
+  const gloss = tok.gloss||'<span style="opacity:.3">—</span>';
+  return `<div class="tok ${tok.lang}${brk?' T--broken':''}" id="${uid}" data-tid="${typeId}" data-lemma="${tok.lemma||''}" data-pipeline="${tok.pipeline||'S0'}" tabindex="0">
+    <div class="tok-flags"><span class="tf l ${tok.lang}">${tok.lang.toUpperCase()}</span>${tok.damaged?'<span class="tf d">#</span>':''}${tok.uncertain?'<span class="tf u">?</span>':''}${tok.rubric?`<span class="tf r">${tok.rubric}</span>`:''}</div>
+    <div class="tok-row"><span class="tr-read${dmg+brk}">${tok.atf}</span>${sign}<span class="pip-dot ${pipeClass(tok.pipeline)}"></span></div>
+    <div class="tok-row norm-row"><span class="tr-norm">${norm}</span></div>
+    <div class="tok-row lemma-row"><span class="tr-lemma">${lemma}</span></div>
+    <div class="tok-row gloss-row"><span class="tr-gloss">${gloss}</span></div>
+  </div>`;
+}
+
+function renderRibbonLine(line, lineIdx, colIdx){
+  if(line.ruling) return `<div class="str-r"><span>${line.label||'ruling'}</span></div>`;
+  if(line.broken) return `<div class="str-b">${line.broken===true?'[broken]':line.text}</div>`;
+  if(line.switch) return `<div class="lsep"><div class="lsep-l"></div><span class="lsep-c ${line.lang}">${line.lang.toUpperCase()}</span><div class="lsep-l"></div></div>`;
+  const toks = (line.toks||[]).map((tid,ti)=>renderRibbonToken(tid,lineIdx,ti,colIdx)).join('');
+  const compRef = line.composite_ref ? `<span class="comp-r">${line.composite_ref}</span>` : '';
+  const tr = line.tr||{};
+  const matched = !!(tr.en||tr.de||tr.he||tr.fa);
+  return `<div class="tb-r">
+    <div class="rn">${line.num||''}</div>
+    <div class="ribs">
+      <div class="rib-toks">${toks}</div>
+      <div class="tr-bar" data-en="${encodeURIComponent(tr.en||'')}" data-de="${encodeURIComponent(tr.de||'')}" data-he="${encodeURIComponent(tr.he||'')}" data-fa="${encodeURIComponent(tr.fa||'')}">
+        <div class="td ${matched?'m':'u'}"></div>
+        <span class="tt ${matched?'':'u'}">${tr[activeLang]||tr.en||'—'}</span>
+        ${compRef}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderRibbonCol(col){
+  const lines = col.lines.map((l,i)=>renderRibbonLine(l,i,col.num)).join('');
+  const covColor = col.cov.m/col.cov.t>0.8?'#6b8e6b':col.cov.m/col.cov.t>0.5?'var(--ac)':'#e23838';
+  return `<div class="col-w">
+    <div class="col-h">
+      <span class="col-n">Column ${col.num}</span>
+      <span class="lang-b ${col.lang}">${col.lang.toUpperCase()}</span>
+      <span class="cov" style="color:${covColor}">${col.cov.m}/${col.cov.t} translated</span>
+    </div>
+    ${lines}
+  </div>`;
+}
+
+function renderILToken(typeId, layer){
+  const tok = T[typeId]; if(!tok) return '<span class="il-c"><span class="il-nd">—</span></span>';
+  const uid = `il-${layer}-${typeId}-${tokCounter++}`;
+  const lemma = tok.lemma||''; const pipeline = tok.pipeline||'S0';
+  let content = '';
+  if(layer==='atf'){
+    content = `<span class="ilc ${tok.lang}">${tok.lang.substring(0,3).toUpperCase()}</span>${tok.atf}`;
+  } else if(layer==='norm'){
+    content = tok.norm ? tok.norm : '<span class="il-nd">—</span>';
+  } else if(layer==='lemma'){
+    content = tok.lemma ? tok.lemma : '<span class="il-nd">—</span>';
+  } else if(layer==='gloss'){
+    content = tok.gloss ? tok.gloss : '<span class="il-nd">—</span>';
+  }
+  return `<span class="il-c" id="${uid}" data-tid="${typeId}" data-lemma="${lemma}" data-pipeline="${pipeline}">${content}</span>`;
+}
+
+function renderILLine(line, colIdx){
+  if(line.ruling) return `<div class="str-r"><span>${line.label||'ruling'}</span></div>`;
+  if(line.broken) return `<div class="str-b">${line.broken===true?'[broken]':line.text}</div>`;
+  if(line.switch) return `<div class="lsep"><div class="lsep-l"></div><span class="lsep-c ${line.lang}">${line.lang.toUpperCase()}</span><div class="lsep-l"></div></div>`;
+  const toks = line.toks||[];
+  const layers = ['atf','norm','lemma','gloss'];
+  const layerHTML = layers.map(ly=>{
+    const cells = toks.map(tid=>renderILToken(tid,ly)).join('');
+    return `<div class="il-ly ${ly}"><span class="il-lbl">${ly}</span><div class="il-cells">${cells}</div></div>`;
+  }).join('');
+  const tr = line.tr||{};
+  const transHTML = `<div class="il-ly trans"><span class="il-lbl">TRANS</span><div class="il-cells"><span class="il-c"${activeLang==='he'||activeLang==='fa'?' dir="rtl"':''}>${tr[activeLang]||tr.en||'—'}</span></div></div>`;
+  return `<div class="il-row">
+    <div class="il-rn">${line.num||''}</div>
+    <div class="il-blk">${layerHTML}${transHTML}</div>
+  </div>`;
+}
+
+function renderILCol(col){
+  const lines = col.lines.map((l,i)=>renderILLine(l,col.num)).join('');
+  const covColor = col.cov.m/col.cov.t>0.8?'#6b8e6b':col.cov.m/col.cov.t>0.5?'var(--ac)':'#e23838';
+  return `<div class="col-w">
+    <div class="col-h">
+      <span class="col-n">Column ${col.num}</span>
+      <span class="lang-b ${col.lang}">${col.lang.toUpperCase()}</span>
+      <span class="cov" style="color:${covColor}">${col.cov.m}/${col.cov.t} translated</span>
+    </div>
+    ${lines}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════════
+function sbSrc(s){ return s?`<span class="sb-step-src">${s}</span>`:''; }
+function sbAtt(a){ return a?`<span class="sb-step-att">${a.toLocaleString()} attestations</span>`:''; }
+function posB(p){ return p?`<span class="pos-b">${p}</span>`:''; }
+function lngB(l){ return l?`<span class="lng-b">${l}</span>`:''; }
+
+function renderSidebarHeader(tok){
+  const p = tok.pipeline||'S0';
+  const hasNorm = !!(tok.norm);
+  const hasSign = !!(tok.sign);
+  const hasLemma = !!(tok.lemma);
+  const hasGloss = !!(tok.gloss);
+  // reading step
+  const readingStep = `<div class="sb-step">
+    <div class="sb-dot f"></div>
+    <div class="sb-sc">
+      <div class="sb-sm">${tok.atf}</div>
+      ${hasNorm&&tok.norm_chain?`<div class="sb-nc"><span class="a">${tok.atf}</span><span class="r">→</span><span class="n">${tok.norm}</span></div>`:''}
+      <div class="sb-ss">${sbAtt(tok.att)} ${sbSrc(tok.src)}</div>
+    </div>
+  </div>`;
+  // sign step
+  const signStep = `<div class="sb-step">
+    <div class="sb-dot ${hasSign?'f':'e'}"></div>
+    <div class="sb-sc">
+      ${hasSign?`<div class="sb-sm">${tok.atf} <span style="font-size:14px;color:var(--tx2)">${tok.sign}</span></div><div class="sb-ss">${sbSrc(tok.src)}</div>`:`<div class="sb-sm" style="color:var(--tx3);font-size:10px">No sign matched</div>`}
+    </div>
+  </div>`;
+  // lemma step
+  const lemmaStep = `<div class="sb-step">
+    <div class="sb-dot ${hasLemma?'f':tok.pl?'p':'e'}"></div>
+    <div class="sb-sc">
+      ${hasLemma?`<div class="sb-sm">${tok.lemma}</div><div class="sb-ss">${posB(tok.gls&&tok.gls[0]?tok.gls[0].pos:'')} ${lngB(tok.lang==='sux'?'Sumerian':tok.lang==='akk'?'Akkadian':tok.lang==='hit'?'Hittite':tok.lang==='elx'?'Elamite':tok.lang==='uga'?'Ugaritic':'Egyptian')} ${sbSrc(tok.src)}</div>`:tok.pl?`<div class="sb-sm" style="color:#e2a038;font-size:10px">${tok.pl.length} candidates</div>`:`<div class="sb-sm" style="color:var(--tx3);font-size:10px">No lemma found</div>`}
+    </div>
+  </div>`;
+  // gloss step
+  const glossStep = `<div class="sb-step">
+    <div class="sb-dot ${hasGloss?'f':'e'}"></div>
+    <div class="sb-sc">
+      ${hasGloss?`<div class="sb-sm">${tok.gloss}</div><div class="sb-ss">${sbAtt(tok.gls&&tok.gls[0]?tok.gls[0].att:0)} ${sbSrc(tok.src)}</div>`:`<div class="sb-sm" style="color:var(--tx3);font-size:10px">No gloss available</div>`}
+    </div>
+  </div>`;
+  const ctx = tok.ctx||{};
+  const ctxHTML = `<div class="sb-ctx"><div class="sb-ctx-l">This Context</div><div class="sb-ctx-v">${ctx.period?'Period: '+ctx.period+'<br>':''}${ctx.genre?'Genre: '+ctx.genre+'<br>':''}${ctx.prov?'Prov: '+ctx.prov+'<br>':''}${ctx.uses?'Appears '+ctx.uses+'× on this tablet':''}</div></div>`;
+  return `<div class="sb-head">
+    <div class="sb-pipe">${readingStep}${signStep}${lemmaStep}${glossStep}</div>
+    ${ctxHTML}
+  </div>`;
+}
+
+function renderSidebarSections(tok){
+  const p = tok.pipeline||'S0';
+  let secs = '';
+
+  // Possible Signs (S0, S1-sign)
+  if(p==='S0'||p==='S1-sign'){
+    secs += `<div class="sb-sec"><div class="sb-st">Possible Signs</div><div class="sb-sp">${tok.sign?tok.atf+' → sign matched: '+tok.sign:'IB₂ ... ? ... (compound?)<br>No confirmed sign match'}</div></div>`;
+  }
+  // Normalization (S0, S1-sign, S1-norm, S2-norm, S3-norm, S4-norm)
+  if(['S0','S1-sign','S1-norm'].includes(p)){
+    const empty = !tok.norm;
+    secs += `<div class="sb-sec"><div class="sb-st">Normalization</div>${empty?'<div class="sb-sp">No matching normalized forms.</div>':tok.norm_chain?`<div class="sb-nc2"><span class="sb-nc" style="gap:8px"><span class="a">${tok.atf}</span><span class="r">→</span><span class="n">${tok.norm}</span></span></div>`:''}</div>`;
+  }
+  if(['S2-norm','S3-norm','S4-norm'].includes(p)&&tok.norm_chain){
+    secs += `<div class="sb-sec"><div class="sb-st">Normalization</div><div class="sb-nc2"><span class="sb-nc" style="gap:8px"><span class="a">${tok.atf}</span><span class="r">→</span><span class="n">${tok.norm}</span></span></div><div class="sb-sp" style="margin-top:6px;font-size:10px;color:var(--tx3)">${tok.norm_chain}</div></div>`;
+  }
+  // Possible Lemmas (S1-poly, S3, S3-norm)
+  if((p==='S1-poly'||p==='S3'||p==='S3-norm')&&tok.pl){
+    const lemmas = tok.pl.map(l=>`<div class="p-lem${l.p?' p-lem--primary':''}">
+      <div class="p-lem-f">${l.f}</div>
+      <div class="p-lem-g">${l.g} ${posB(l.pos)}</div>
+      ${l.note?`<div class="p-lem-n">${l.note}</div>`:''}
+      <div class="p-lem-a">${l.a.toLocaleString()} att. · ${sbSrc(l.s)}</div>
+    </div>`).join('');
+    secs += `<div class="sb-sec"><div class="sb-st">Possible Lemmas</div><div class="sb-sp">Review context to disambiguate:</div>${lemmas}</div>`;
+  }
+  // Glosses (S2+, S3, S4)
+  if(tok.gls&&tok.gls.length&&(p.startsWith('S2')||p.startsWith('S3')||p.startsWith('S4'))){
+    const cards = tok.gls.map((g,i)=>`<div class="sb-card">
+      <div class="sb-ch"><span class="sb-ct ${i>0?'a':''}">${g.t}</span><div class="sb-cb">${posB(g.pos)}</div></div>
+      <div class="sb-ca">${(g.att||0).toLocaleString()} attestations</div>
+    </div>`).join('');
+    secs += `<div class="sb-sec"><div class="sb-st">Glosses</div><div class="sb-sp">Possible definitions for this usage:</div>${cards}</div>`;
+  }
+  // Spellings (S4 only)
+  if(p.startsWith('S4')&&tok.sp&&tok.sp.length){
+    secs += `<div class="sb-sec"><div class="sb-st">Spellings</div><div class="sb-sp">On this tablet:</div><div class="sb-card"><div class="sb-code">${tok.sp.join('<br>')}</div></div></div>`;
+  }
+  // Cross-Language (S4 only)
+  if(p.startsWith('S4')&&tok.xl&&tok.xl.length){
+    const xl = tok.xl.map(x=>`<div class="sb-card">
+      <div class="sb-ch"><span class="sb-ct">${x.f}</span><div class="sb-cb">${posB('Noun')} ${lngB(x.l)}</div></div>
+      <div class="sb-ca">${x.g}</div>
+      <div class="sb-ca">${(x.a||0).toLocaleString()} att. · ${sbSrc(x.s)}</div>
+    </div>`).join('');
+    secs += `<div class="sb-sec"><div class="sb-st">Cross-Language</div><div class="sb-sp">Equivalents in other languages:</div>${xl}</div>`;
+  }
+  // Context Clues (always, richer at S4)
+  const ctx = tok.ctx||{};
+  if(p.startsWith('S4')){
+    secs += `<div class="sb-sec"><div class="sb-st">Context Clues</div>
+      <div class="sb-sp">${ctx.period?'Period: '+ctx.period+'<br>':''}${ctx.genre?'Genre: '+ctx.genre+'<br>':''}${ctx.prov?'Prov: '+ctx.prov+'<br>':''}${ctx.uses?'Usage on this tablet:<br>• Appears '+ctx.uses+'× — consistent lemmatization across all occurrences':''}</div>
+    </div>`;
+  }
+  // Next Steps (S0, S1, S2)
+  if(tok.ns||(p==='S0')||(p.startsWith('S1'))||(p==='S2')||(p==='S2-norm')){
+    const ns = tok.ns||'Refine lemma assignment and verify gloss.';
+    secs += `<div class="sb-sec"><div class="sb-next-h"><div class="sb-st">Next Steps</div><button class="sb-btn">Search</button></div><div class="sb-sp" style="margin-top:6px">${ns}</div></div>`;
+  }
+  return secs;
+}
+
+function renderSidebar(typeId){
+  const tok = T[typeId];
+  if(!tok){ document.getElementById('sidebar').innerHTML = renderSidebarDefault(); return; }
+  document.getElementById('sidebar').innerHTML = renderSidebarHeader(tok) + renderSidebarSections(tok);
+}
+
+function renderSidebarDefault(){
+  return `<div class="sb-def">
+    <div class="sb-def-h">Click any token to inspect</div>
+    <div class="sb-def-p">Select a token from the columns to see its pipeline state, possible lemmas, glosses, and suggested next steps. Use the <strong>S0–S4~</strong> buttons in the toolbar to jump directly to specific pipeline state examples.</div>
+    <div class="sb-def-p" style="margin-top:4px">This tablet contains tokens in 6 languages across all 10 pipeline states.</div>
+    <div class="sb-states">
+      ${[['S0','jnnfr','No sign match (Egyptian)'],['S1↑','mlk_sign','Sign matched, no lemma (Ugaritic)'],['S1~','ibtasa','Norm matched only (Hittite)'],['S1?','karan','Polysemy — 3 candidates (Elamite)'],['S2','kiengi','Single lemma + gloss (Sumerian)'],['S2~','sarrim','Akkadian norm chain'],['S3','bel','Competing lemmatizations'],['S3~','hassan','Norm disambiguates (Hittite)'],['S4','lugal','Fully translated (Sumerian)'],['S4~','tuppim','Full + norm chain (Akkadian)']].map(([s,j,d])=>`<div class="sb-sr" data-j="${j}"><span class="sb-sb">${s}</span><span class="sb-sd">${d}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT + EVENTS
+// ═══════════════════════════════════════════════════════════
+function init(){
+  const rb = document.getElementById('rbCols');
+  const il = document.getElementById('ilCols');
+  COLS.forEach(col=>{
+    const div = document.createElement('div');
+    div.innerHTML = renderRibbonCol(col);
+    while(div.firstChild) rb.appendChild(div.firstChild);
+    const div2 = document.createElement('div');
+    div2.innerHTML = renderILCol(col);
+    while(div2.firstChild) il.appendChild(div2.firstChild);
+  });
+  document.getElementById('sidebar').innerHTML = renderSidebarDefault();
+  bindEvents();
+}
+
+function setMode(m){
+  const app = document.getElementById('app');
+  app.classList.toggle('mode-ribbon', m==='ribbon');
+  app.classList.toggle('mode-il', m==='il');
+  document.querySelectorAll('[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  // sync IL display
+  document.getElementById('rbCols').style.display = m==='ribbon' ? 'flex' : 'none';
+  document.getElementById('ilCols').style.display = m==='il' ? 'flex' : 'none';
+}
+
+function setDepth(d){
+  const app = document.getElementById('app');
+  ['depth-atf','depth-reading','depth-full'].forEach(c=>app.classList.remove(c));
+  app.classList.add('depth-'+d);
+  document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('on',b.dataset.d===d));
+}
+
+function setLang(l){
+  activeLang = l;
+  document.querySelectorAll('.tr-bar').forEach(bar=>{
+    const txt = bar.querySelector('.tt');
+    if(!txt) return;
+    const val = decodeURIComponent(bar.dataset[l]||bar.dataset.en||'');
+    txt.textContent = val||'—';
+    const rtl = l==='he'||l==='fa';
+    txt.dir = rtl ? 'rtl' : 'ltr';
+  });
+}
+
+function selectToken(typeId, domId){
+  // Clear previous
+  document.querySelectorAll('.tok.T--sel,.tok.T--match,.tok.T--dim,.il-c.T--sel,.il-c.T--match,.il-c.T--dim').forEach(el=>{
+    el.classList.remove('T--sel','T--match','T--dim');
+  });
+  selectedTokId = typeId;
+  const tok = T[typeId]; if(!tok) return;
+  const lemma = tok.lemma||'';
+  // Highlight matching tokens
+  if(hlOn&&lemma){
+    document.querySelectorAll('[data-lemma]').forEach(el=>{
+      const elLemma = el.dataset.lemma;
+      const elId = el.id;
+      if(elId===domId||el.dataset.tid===typeId){
+        el.classList.add('T--sel');
+      } else if(elLemma&&elLemma===lemma){
+        el.classList.add('T--match');
+      } else {
+        el.classList.add('T--dim');
+      }
+    });
+  } else {
+    document.querySelectorAll('[data-tid="'+typeId+'"]').forEach(el=>el.classList.add('T--sel'));
+  }
+  renderSidebar(typeId);
+}
+
+function jumpToToken(typeId){
+  const ids = instanceMap[typeId];
+  if(!ids||!ids.length) return;
+  const el = document.getElementById(ids[0]);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+  setTimeout(()=>selectToken(typeId, ids[0]),300);
+}
+
+function bindEvents(){
+  // Mode
+  document.getElementById('modeG').addEventListener('click',e=>{
+    const b = e.target.closest('[data-m]'); if(b) setMode(b.dataset.m);
+  });
+  // Depth
+  document.getElementById('depthG').addEventListener('click',e=>{
+    const b = e.target.closest('[data-d]'); if(b) setDepth(b.dataset.d);
+  });
+  // Lang
+  document.getElementById('langSel').addEventListener('change',e=>setLang(e.target.value));
+  // Highlight
+  document.getElementById('hlCk').addEventListener('change',e=>{
+    hlOn = e.target.checked;
+    if(!hlOn){
+      document.querySelectorAll('.T--dim').forEach(el=>el.classList.remove('T--dim'));
+    }
+  });
+  // Token click (ribbon)
+  document.getElementById('rbCols').addEventListener('click',e=>{
+    const tok = e.target.closest('.tok'); if(!tok) return;
+    selectToken(tok.dataset.tid, tok.id);
+  });
+  // Token click (IL)
+  document.getElementById('ilCols').addEventListener('click',e=>{
+    const c = e.target.closest('.il-c'); if(!c||!c.dataset.tid) return;
+    selectToken(c.dataset.tid, c.id);
+  });
+  // Pipeline nav buttons (toolbar)
+  document.querySelector('.pipe-nav').addEventListener('click',e=>{
+    const b = e.target.closest('[data-j]'); if(b) jumpToToken(b.dataset.j);
+  });
+  // Sidebar state rows (default view)
+  document.getElementById('sidebar').addEventListener('click',e=>{
+    const r = e.target.closest('[data-j]'); if(r) jumpToToken(r.dataset.j);
+  });
+  // Surface tabs
+  document.querySelector('.stabs').addEventListener('click',e=>{
+    const t = e.target.closest('.stab'); if(!t) return;
+    document.querySelectorAll('.stab').forEach(s=>s.classList.remove('on'));
+    t.classList.add('on');
+  });
+  // Keyboard
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      document.querySelectorAll('.T--sel,.T--match,.T--dim').forEach(el=>el.classList.remove('T--sel','T--match','T--dim'));
+      document.getElementById('sidebar').innerHTML = renderSidebarDefault();
+      selectedTokId = null;
+    }
+  });
+  // Sidebar event delegation (re-attach when sidebar updates)
+  document.getElementById('sidebar').addEventListener('click',e=>{
+    const r = e.target.closest('[data-j]'); if(r) jumpToToken(r.dataset.j);
+  });
+  // Init IL display
+  document.getElementById('ilCols').style.display = 'none';
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
