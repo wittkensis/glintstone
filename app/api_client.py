@@ -63,6 +63,19 @@ class APIClient:
         )
         return r.json()
 
+    def patch(
+        self,
+        path: str,
+        json: dict | None = None,
+        token: Optional[str] = None,
+    ) -> dict | None:
+        r = self._check(
+            self._client.patch(path, json=json, headers=self._auth_headers(token))
+        )
+        if r.status_code == 204:
+            return None
+        return r.json()
+
     def delete(
         self,
         path: str,

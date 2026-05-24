@@ -65,6 +65,34 @@ def avatar_proxy(file: UploadFile, request: Request):
         return Response(status_code=500)
 
 
+_VALID_THEMES = {"default", "lapis-clay", "scholars-studio", "instrument-panel"}
+
+
+class _PreferencesBody(BaseModel):
+    theme: str
+
+
+@router.patch("/_me/preferences", status_code=204)
+def preferences_proxy(body: _PreferencesBody, request: Request, response: Response):
+    token = request.cookies.get("session_token")
+    if not token:
+        return Response(status_code=401)
+    if body.theme not in _VALID_THEMES:
+        return Response(status_code=422)
+    request.app.state.api.patch(
+        "/users/me/preferences",
+        json={"theme": body.theme},
+        token=token,
+    )
+    response.set_cookie(
+        "glintstone_theme",
+        body.theme,
+        max_age=365 * 24 * 3600,
+        samesite="lax",
+        httponly=False,
+    )
+
+
 @router.get("/_me")
 def me_proxy(request: Request):
     """Thin proxy so base.html JS can fetch user identity without exposing API_URL."""

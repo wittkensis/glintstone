@@ -71,3 +71,10 @@ class UserRepository(BaseRepository):
                 "UPDATE users SET avatar_url = %(url)s WHERE id = %(id)s",
                 {"url": avatar_url, "id": user_id},
             )
+
+    def update_theme(self, user_id: str, theme: str) -> None:
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET theme = %(theme)s WHERE id = %(id)s",
+                {"theme": theme, "id": user_id},
+            )

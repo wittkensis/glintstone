@@ -212,6 +212,71 @@
     text-decoration: underline;
 }
 
+/* Theme picker */
+.account-section-description {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-5);
+}
+
+.theme-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.theme-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    min-width: 88px;
+}
+
+.theme-option:hover {
+    border-color: var(--color-accent);
+    color: var(--color-text);
+}
+
+.theme-option--active {
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-glow);
+    color: var(--color-text);
+}
+
+.theme-option__swatch {
+    width: 40px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    display: block;
+}
+
+/* Swatch hardcoded colours — these are decoration, not theme tokens */
+.theme-option__swatch--default {
+    background: linear-gradient(135deg, #1a1a2e 50%, #2d2d4e 50%);
+}
+
+.theme-option__swatch--lapis-clay {
+    background: linear-gradient(135deg, #141210 50%, #3d6fa8 50%);
+}
+
+.theme-option__swatch--scholars-studio {
+    background: linear-gradient(135deg, #f2ece2 50%, #2d6a5a 50%);
+}
+
+.theme-option__swatch--instrument-panel {
+    background: linear-gradient(135deg, #111418 50%, #c9920a 50%);
+}
+
 /* Misc */
 .text-muted {
     color: var(--color-text-muted);

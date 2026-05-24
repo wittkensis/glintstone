@@ -1,19 +1,37 @@
-"""User routes — saved items (bookmarks)."""
+"""User routes — saved items (bookmarks), preferences."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from typing import Optional
+from typing import Literal, Optional
 
 from api.dependencies import require_user
 from api.repositories.saved_items_repo import SavedItemsRepository
+from api.repositories.user_repo import UserRepository
 from core.database import get_db
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+VALID_THEMES = {"default", "lapis-clay", "scholars-studio", "instrument-panel"}
+
+
 class SaveItemRequest(BaseModel):
     item_type: str
     item_id: str
+
+
+class PreferencesRequest(BaseModel):
+    theme: Literal["default", "lapis-clay", "scholars-studio", "instrument-panel"]
+
+
+@router.patch("/me/preferences", status_code=204)
+def update_preferences(
+    body: PreferencesRequest,
+    user: dict = Depends(require_user),
+    conn=Depends(get_db),
+):
+    UserRepository(conn).update_theme(user["id"], body.theme)
+    conn.commit()
 
 
 @router.get("/me/saved-items")

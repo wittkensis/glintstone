@@ -1,0 +1,100 @@
+/**
+ * Theme: Lapis & Clay
+ * Warm dark excavation. Two-accent: lapis (structure) + clay (content).
+ * Inset inputs, raised interactive surfaces, Source Serif 4 body.
+ *
+ * Fonts loaded by base.html when this theme is active:
+ *   Space Grotesk, Source Serif 4
+ */
+
+html[data-theme="lapis-clay"] {
+    /* ── Backgrounds ─────────────────────────────────────────── */
+    --color-bg:           #141210;
+    --color-bg-inset:     #0e0c0a;
+    --color-bg-deep:      #1a1714;
+    --color-bg-deepest:   #0e0c0a;
+    --color-bg-elevated:  #2c271f;
+    --color-bg-subtle:    #211d19;
+    --color-surface:      #352f26;
+    --color-bg-pure-black:#000000;
+
+    /* ── Borders ─────────────────────────────────────────────── */
+    --color-border:        #3a332a;
+    --color-border-subtle: #211d19;
+    --color-border-deep:   #1e1b16;
+
+    /* ── Text ────────────────────────────────────────────────── */
+    --color-text:           #e9e4de;
+    --color-text-secondary: #9e9288;
+    --color-text-muted:     #6b6158;
+    --color-text-subtle:    #4a4038;
+
+    /* ── Primary accent: lapis (interactive chrome) ──────────── */
+    --color-accent:       #3d6fa8;
+    --color-accent-hover: #5585c0;
+    --color-accent-muted: #2a4d78;
+    --color-accent-teal:  #5585c0;
+
+    /* ── Secondary accent: clay (content highlights) ─────────── */
+    --color-clay:         #c19a6b;
+    --color-clay-hover:   #d4b080;
+    --color-lapis:        #3d6fa8;
+
+    /* ── Semantic ────────────────────────────────────────────── */
+    --color-success: #5d8a5d;
+    --color-warning: #c9a040;
+    --color-error:   #a84848;
+    --color-danger:  #c0392b;
+    --color-info:    #4a7a9e;
+
+    /* ── Pipeline ────────────────────────────────────────────── */
+    --color-pipeline-complete:   #5d8a5d;
+    --color-pipeline-incomplete: #c9a040;
+
+    /* ── Language colors ─────────────────────────────────────── */
+    --color-lang-sux:    #7eb8a0;
+    --color-lang-akk:    #c19a6b;
+    --color-lang-sux-20: rgba(126, 184, 160, 0.20);
+    --color-lang-akk-20: rgba(193, 154, 107, 0.20);
+
+    /* ── Overlays ────────────────────────────────────────────── */
+    --color-overlay-light:  rgba(255, 255, 255, 0.06);
+    --color-overlay-medium: rgba(0, 0, 0, 0.45);
+    --color-overlay-heavy:  rgba(0, 0, 0, 0.65);
+    --color-overlay-solid:  rgba(20, 18, 16, 0.95);
+
+    /* ── Accent opacity scales ───────────────────────────────── */
+    --color-accent-10: rgba(61, 111, 168, 0.10);
+    --color-accent-15: rgba(61, 111, 168, 0.15);
+    --color-accent-20: rgba(61, 111, 168, 0.20);
+    --color-accent-25: rgba(61, 111, 168, 0.25);
+    --color-accent-30: rgba(61, 111, 168, 0.30);
+    --color-accent-50: rgba(61, 111, 168, 0.50);
+
+    /* ── Shadows (inset/raised duality) ──────────────────────── */
+    --shadow-inset:  inset 0 1px 4px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3);
+    --shadow-xs:     0 1px 2px rgba(0,0,0,0.4);
+    --shadow-sm:     0 1px 2px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.04) inset;
+    --shadow-md:     0 2px 6px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.05) inset;
+    --shadow-lg:     0 6px 16px rgba(0,0,0,0.6),  0 1px 0 rgba(255,255,255,0.05) inset;
+    --shadow-xl:     0 16px 40px rgba(0,0,0,0.7);
+    --shadow-glow:   0 0 0 3px rgba(61, 111, 168, 0.35);
+
+    /* ── Border radius (sharp dominant) ─────────────────────── */
+    --radius-xs: 2px;
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --radius-lg: 6px;
+
+    /* ── Transitions ─────────────────────────────────────────── */
+    --transition-fast:   0.12s cubic-bezier(0.22, 1, 0.36, 1);
+    --transition-normal: 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    --transition-slow:   0.38s cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* ── Typography ──────────────────────────────────────────── */
+    --font-sans:    'Space Grotesk', system-ui, -apple-system, sans-serif;
+    --font-heading: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    --font-body:    'Source Serif 4', Georgia, serif;
+    --font-serif:   'Source Serif 4', Georgia, serif;
+    --font-mono:    'Cascadia Code', 'SF Mono', Monaco, monospace;
+}

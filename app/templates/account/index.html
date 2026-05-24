@@ -75,6 +75,43 @@
         </div>
     </section>
 
+    {# Appearance #}
+    <section class="account-section">
+        <h2 class="account-section-title">Appearance</h2>
+        <p class="account-section-description">Choose a theme for your session. Your preference is saved to your account and synced across devices.</p>
+        <div class="theme-picker" id="theme-picker" role="radiogroup" aria-label="Color theme">
+            {% set _theme = request.state.theme %}
+            <button class="theme-option{% if _theme == 'default' %} theme-option--active{% endif %}"
+                    data-theme-value="default"
+                    role="radio"
+                    aria-checked="{{ 'true' if _theme == 'default' else 'false' }}">
+                <span class="theme-option__swatch theme-option__swatch--default" aria-hidden="true"></span>
+                <span class="theme-option__name">Default</span>
+            </button>
+            <button class="theme-option{% if _theme == 'lapis-clay' %} theme-option--active{% endif %}"
+                    data-theme-value="lapis-clay"
+                    role="radio"
+                    aria-checked="{{ 'true' if _theme == 'lapis-clay' else 'false' }}">
+                <span class="theme-option__swatch theme-option__swatch--lapis-clay" aria-hidden="true"></span>
+                <span class="theme-option__name">Lapis &amp; Clay</span>
+            </button>
+            <button class="theme-option{% if _theme == 'scholars-studio' %} theme-option--active{% endif %}"
+                    data-theme-value="scholars-studio"
+                    role="radio"
+                    aria-checked="{{ 'true' if _theme == 'scholars-studio' else 'false' }}">
+                <span class="theme-option__swatch theme-option__swatch--scholars-studio" aria-hidden="true"></span>
+                <span class="theme-option__name">Scholar's Studio</span>
+            </button>
+            <button class="theme-option{% if _theme == 'instrument-panel' %} theme-option--active{% endif %}"
+                    data-theme-value="instrument-panel"
+                    role="radio"
+                    aria-checked="{{ 'true' if _theme == 'instrument-panel' else 'false' }}">
+                <span class="theme-option__swatch theme-option__swatch--instrument-panel" aria-hidden="true"></span>
+                <span class="theme-option__name">Instrument Panel</span>
+            </button>
+        </div>
+    </section>
+
     {# Bookmarks #}
     <section class="account-section">
         <h2 class="account-section-title">Bookmarked Artifacts</h2>
@@ -98,6 +135,34 @@
 
 {% block scripts %}
 <script>
+// Theme picker — instant preview + persists via PATCH /_me/preferences
+document.getElementById('theme-picker').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-theme-value]');
+    if (!btn) return;
+    const theme = btn.dataset.themeValue;
+
+    // Instant preview
+    document.documentElement.dataset.theme = theme;
+
+    // Update active state
+    document.querySelectorAll('.theme-option').forEach(b => {
+        const active = b.dataset.themeValue === theme;
+        b.classList.toggle('theme-option--active', active);
+        b.setAttribute('aria-checked', String(active));
+    });
+
+    // Persist (cookie + DB)
+    try {
+        await fetch('/_me/preferences', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme }),
+        });
+    } catch {
+        // Non-fatal — cookie already set server-side on next full page load
+    }
+});
+
 // Avatar upload — calls the same-origin web app proxy (/_me/avatar) so the
 // session cookie is sent correctly; the proxy forwards it as a Bearer token.
 document.getElementById('avatar-file').addEventListener('change', async (e) => {

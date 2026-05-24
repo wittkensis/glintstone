@@ -1,0 +1,125 @@
+/**
+ * Theme: Instrument Panel
+ * Cool dark precision. Amber phosphor signal. Monospace-first.
+ * Zero pill-radius. Structural hairlines over atmospheric shadows.
+ *
+ * Fonts loaded by base.html when this theme is active:
+ *   DM Sans, DM Mono
+ */
+
+html[data-theme="instrument-panel"] {
+    /* ── Backgrounds ─────────────────────────────────────────── */
+    --color-bg:           #111418;
+    --color-bg-inset:     #0d1014;
+    --color-bg-deep:      #161b21;
+    --color-bg-deepest:   #0d1014;
+    --color-bg-elevated:  #242d38;
+    --color-bg-subtle:    #1d242d;
+    --color-surface:      #2c3645;
+    --color-bg-pure-black:#000000;
+
+    /* ── Borders ─────────────────────────────────────────────── */
+    --color-border:        #2a3340;
+    --color-border-subtle: #1e2630;
+    --color-border-deep:   #1a2028;
+
+    /* ── Text ────────────────────────────────────────────────── */
+    --color-text:           #d8e0e8;
+    --color-text-secondary: #8a9aaa;
+    --color-text-muted:     #5a6878;
+    --color-text-subtle:    #3a4858;
+
+    /* ── Primary accent: amber phosphor ─────────────────────── */
+    --color-accent:       #c9920a;
+    --color-accent-hover: #e8a830;
+    --color-accent-muted: #8a6108;
+    --color-accent-teal:  #6b97c4;
+
+    /* ── Signal colors ───────────────────────────────────────── */
+    --color-clay:  #c9920a;   /* reuse amber slot */
+    --color-lapis: #4a7aaa;   /* signal blue */
+
+    /* ── Semantic ────────────────────────────────────────────── */
+    --color-success: #3a7a52;
+    --color-warning: #c9920a;
+    --color-error:   #a83838;
+    --color-danger:  #c0392b;
+    --color-info:    #4a7aaa;
+
+    /* ── Pipeline ────────────────────────────────────────────── */
+    --color-pipeline-complete:   #3a7a52;
+    --color-pipeline-incomplete: #c9920a;
+
+    /* ── Language colors ─────────────────────────────────────── */
+    --color-lang-sux:    #5a9e88;
+    --color-lang-akk:    #c9920a;
+    --color-lang-sux-20: rgba(90, 158, 136, 0.18);
+    --color-lang-akk-20: rgba(201, 146, 10, 0.12);
+
+    /* ── Overlays ────────────────────────────────────────────── */
+    --color-overlay-light:  rgba(255, 255, 255, 0.04);
+    --color-overlay-medium: rgba(0, 0, 0, 0.55);
+    --color-overlay-heavy:  rgba(0, 0, 0, 0.70);
+    --color-overlay-solid:  rgba(17, 20, 24, 0.96);
+
+    /* ── Accent opacity scales (amber) ───────────────────────── */
+    --color-accent-10: rgba(201, 146, 10, 0.10);
+    --color-accent-15: rgba(201, 146, 10, 0.12);
+    --color-accent-20: rgba(201, 146, 10, 0.18);
+    --color-accent-25: rgba(201, 146, 10, 0.22);
+    --color-accent-30: rgba(201, 146, 10, 0.28);
+    --color-accent-50: rgba(201, 146, 10, 0.45);
+
+    /* ── Shadows (structural hairlines, not atmospheric) ─────── */
+    --shadow-inset:  inset 0 1px 3px rgba(0,0,0,0.45);
+    --shadow-xs:     0 1px 2px rgba(0,0,0,0.4),  0 0 0 1px var(--color-border);
+    --shadow-sm:     0 1px 3px rgba(0,0,0,0.45), 0 0 0 1px var(--color-border);
+    --shadow-md:     0 2px 6px rgba(0,0,0,0.50), 0 0 0 1px var(--color-border-subtle);
+    --shadow-lg:     0 6px 16px rgba(0,0,0,0.55),0 0 0 1px var(--color-border-subtle);
+    --shadow-xl:     0 12px 28px rgba(0,0,0,0.65), 0 0 0 1px var(--color-border);
+    /* Amber glow for focus/active states */
+    --shadow-glow:   0 0 0 2px var(--color-accent), 0 0 8px rgba(201, 146, 10, 0.35);
+
+    /* ── Border radius (zero pill policy) ────────────────────── */
+    --radius-xs: 0px;
+    --radius-sm: 0px;
+    --radius-md: 2px;
+    --radius-lg: 2px;
+    --radius-full: 2px;   /* override pill — nothing is fully rounded */
+
+    /* ── Transitions (instrument precision — faster) ─────────── */
+    --transition-instant: 0.05s ease;
+    --transition-fast:    0.10s ease;
+    --transition-normal:  0.18s ease;
+    --transition-slow:    0.30s ease;
+
+    /* ── Typography ──────────────────────────────────────────── */
+    --font-sans:    'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-heading: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-body:    'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-serif:   'DM Sans', system-ui, sans-serif;
+    --font-mono:    'DM Mono', 'Cascadia Code', 'SF Mono', monospace;
+}
+
+/* ── Instrument-panel structural overrides ───────────────────────────────── */
+
+/* Amber top-edge on focused/active containers */
+html[data-theme="instrument-panel"] input:focus,
+html[data-theme="instrument-panel"] select:focus,
+html[data-theme="instrument-panel"] textarea:focus {
+    border-top-color: var(--color-accent) !important;
+}
+
+/* Monospace nav labels */
+html[data-theme="instrument-panel"] .site-header nav,
+html[data-theme="instrument-panel"] .site-header a:not(.logo) {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+}
+
+/* Amber top border on active nav indicator */
+html[data-theme="instrument-panel"] .site-header {
+    border-bottom-color: var(--color-accent);
+}

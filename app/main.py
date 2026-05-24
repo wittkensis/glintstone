@@ -43,6 +43,23 @@ async def lifespan(app: FastAPI):
     close_pool()
 
 
+_VALID_THEMES = {"default", "lapis-clay", "scholars-studio", "instrument-panel"}
+_THEME_COOKIE = "glintstone_theme"
+
+
+class ThemeMiddleware(BaseHTTPMiddleware):
+    """Read the theme cookie and expose it as request.state.theme.
+
+    Falls back to 'default' for unknown or missing values so templates
+    always have a safe string to work with.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        raw = request.cookies.get(_THEME_COOKIE, "default")
+        request.state.theme = raw if raw in _VALID_THEMES else "default"
+        return await call_next(request)
+
+
 class AuthGateMiddleware(BaseHTTPMiddleware):
     """Redirect unauthenticated requests to /auth/login.
 
@@ -66,6 +83,7 @@ class AuthGateMiddleware(BaseHTTPMiddleware):
 
 app = FastAPI(title="Glintstone Web", docs_url=None, redoc_url=None, lifespan=lifespan)
 
+app.add_middleware(ThemeMiddleware)
 app.add_middleware(AuthGateMiddleware)
 
 

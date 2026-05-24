@@ -1,13 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{ request.state.theme }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Glintstone{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Cuneiform&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {# Noto Sans Cuneiform is always needed for sign rendering #}
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Cuneiform&display=swap" rel="stylesheet">
+    {# Theme-specific design fonts — only load what the active theme needs #}
+    {% if request.state.theme == 'default' %}
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {% elif request.state.theme == 'lapis-clay' %}
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    {% elif request.state.theme == 'scholars-studio' %}
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+    {% elif request.state.theme == 'instrument-panel' %}
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+    {% endif %}
     <link rel="stylesheet" href="/static/css/main.css?v={{ app_version }}">
+    {% if request.state.theme != 'default' %}
+    <link rel="stylesheet" href="/static/css/themes/{{ request.state.theme }}.css?v={{ app_version }}">
+    {% endif %}
     {% block head %}{% endblock %}
 </head>
 {# Compute global-search context from the URL once per request. The drawer's

@@ -1,0 +1,144 @@
+/**
+ * Theme: Scholar's Studio
+ * Light editorial — ink on warm stone. Verdigris interactive,
+ * iron red for danger only. Underline inputs, serif headings.
+ *
+ * Fonts loaded by base.html when this theme is active:
+ *   Instrument Serif, IBM Plex Sans, IBM Plex Mono
+ */
+
+html[data-theme="scholars-studio"] {
+    /* ── Backgrounds ─────────────────────────────────────────── */
+    --color-bg:           #f2ece2;
+    --color-bg-inset:     #e8e0d4;
+    --color-bg-deep:      #e8e0d4;
+    --color-bg-deepest:   #ddd4c6;
+    --color-bg-elevated:  #ffffff;
+    --color-bg-subtle:    #faf6f0;
+    --color-surface:      #ede6da;
+    --color-bg-pure-black:#000000;
+
+    /* ── Borders ─────────────────────────────────────────────── */
+    --color-border:        #c8bfb2;
+    --color-border-subtle: #ddd6cc;
+    --color-border-deep:   #b8ae9e;
+
+    /* ── Text ────────────────────────────────────────────────── */
+    --color-text:           #1c1917;
+    --color-text-secondary: #4a4540;
+    --color-text-muted:     #7a726a;
+    --color-text-subtle:    #a09890;
+
+    /* ── Primary accent: verdigris (interactive) ─────────────── */
+    --color-accent:       #2d6a5a;
+    --color-accent-hover: #3a8570;
+    --color-accent-muted: #1f4f42;
+    --color-accent-teal:  #3a8570;
+
+    /* ── Secondary: gold (bookmarks only) ───────────────────── */
+    --color-clay:  #9a7a3a;
+    --color-lapis: #1c4e7a;
+
+    /* ── Semantic ────────────────────────────────────────────── */
+    --color-success: #2d6a4a;
+    --color-warning: #8a6020;
+    --color-error:   #8b3a3a;
+    --color-danger:  #8b3a3a;
+    --color-info:    #1c4e7a;
+
+    /* ── Pipeline ────────────────────────────────────────────── */
+    --color-pipeline-complete:   #2d6a4a;
+    --color-pipeline-incomplete: #8a6020;
+
+    /* ── Language colors ─────────────────────────────────────── */
+    --color-lang-sux:    #2a6b50;
+    --color-lang-akk:    #7a4a28;
+    --color-lang-sux-20: rgba(42, 107, 80, 0.15);
+    --color-lang-akk-20: rgba(122, 74, 40, 0.15);
+
+    /* ── Overlays ────────────────────────────────────────────── */
+    --color-overlay-light:  rgba(0, 0, 0, 0.05);
+    --color-overlay-medium: rgba(28, 25, 23, 0.4);
+    --color-overlay-heavy:  rgba(28, 25, 23, 0.6);
+    --color-overlay-solid:  rgba(242, 236, 226, 0.96);
+
+    /* ── Accent opacity scales (verdigris) ───────────────────── */
+    --color-accent-10: rgba(45, 106, 90, 0.08);
+    --color-accent-15: rgba(45, 106, 90, 0.10);
+    --color-accent-20: rgba(45, 106, 90, 0.15);
+    --color-accent-25: rgba(45, 106, 90, 0.20);
+    --color-accent-30: rgba(45, 106, 90, 0.25);
+    --color-accent-50: rgba(45, 106, 90, 0.45);
+
+    /* ── Shadows (paper lift, warm-toned) ────────────────────── */
+    --shadow-inset:  inset 0 1px 3px rgba(100, 80, 60, 0.12);
+    --shadow-xs:     0 1px 2px rgba(100, 80, 60, 0.10);
+    --shadow-sm:     0 2px 4px rgba(100, 80, 60, 0.12), 0 0 0 1px var(--color-border);
+    --shadow-md:     0 4px 12px rgba(100, 80, 60, 0.16), 0 0 0 1px var(--color-border);
+    --shadow-lg:     0 8px 24px rgba(100, 80, 60, 0.20), 0 0 0 1px var(--color-border-deep);
+    --shadow-xl:     0 16px 40px rgba(100, 80, 60, 0.24);
+    --shadow-glow:   0 0 0 3px rgba(45, 106, 90, 0.25);
+
+    /* ── Border radius (slightly more generous) ──────────────── */
+    --radius-xs: 2px;
+    --radius-sm: 3px;
+    --radius-md: 5px;
+    --radius-lg: 8px;
+
+    /* ── Transitions ─────────────────────────────────────────── */
+    --transition-fast:   0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow:   0.38s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ── Typography ──────────────────────────────────────────── */
+    --font-sans:    'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --font-heading: 'Instrument Serif', Georgia, serif;
+    --font-body:    'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --font-serif:   'Instrument Serif', Georgia, serif;
+    --font-mono:    'IBM Plex Mono', 'Cascadia Code', monospace;
+
+    /* ── Badge colors adjusted for light bg ─────────────────── */
+    --color-badge-purple-bg:     #f0ebfa;
+    --color-badge-purple-text:   #5a3a8a;
+    --color-badge-purple-border: #c0a8e0;
+    --color-badge-green-bg:      #e8f4ee;
+    --color-badge-green-text:    #2d6a4a;
+    --color-badge-green-border:  #a0c8b0;
+    --color-badge-blue-bg:       #e8f0f8;
+    --color-badge-blue-text:     #1c4e7a;
+    --color-badge-blue-border:   #a0b8d0;
+    --color-badge-brown-bg:      #f5ede0;
+    --color-badge-brown-text:    #7a4a28;
+    --color-badge-brown-border:  #c0a080;
+}
+
+/* ── Light-theme component overrides ─────────────────────────────────────── */
+
+/* Invert the site header to provide contrast anchor on light bg */
+html[data-theme="scholars-studio"] .site-header {
+    background: #1c1917;
+    border-bottom-color: #2a2724;
+}
+
+html[data-theme="scholars-studio"] .site-header .logo {
+    color: #f2ece2;
+}
+
+html[data-theme="scholars-studio"] .site-header a,
+html[data-theme="scholars-studio"] .site-header button {
+    color: rgba(242, 236, 226, 0.75);
+}
+
+html[data-theme="scholars-studio"] .site-header a:hover,
+html[data-theme="scholars-studio"] .site-header button:hover {
+    color: #f2ece2;
+}
+
+/* Scrollbar tint for light mode */
+html[data-theme="scholars-studio"] ::-webkit-scrollbar-track {
+    background: var(--color-bg-deep);
+}
+
+html[data-theme="scholars-studio"] ::-webkit-scrollbar-thumb {
+    background: var(--color-border-deep);
+}
