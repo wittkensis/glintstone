@@ -35,9 +35,14 @@ import sys
 from typing import Iterable
 
 import psycopg
+from dotenv import load_dotenv
 
 from core.agent.voyage_client import VoyageClient, _hash
 from core.database import get_connection
+
+# pydantic_settings loads .env into its model but not os.environ; VoyageClient
+# reads os.environ directly, so we need load_dotenv() to bridge the gap.
+load_dotenv()
 
 logger = logging.getLogger("backfill")
 

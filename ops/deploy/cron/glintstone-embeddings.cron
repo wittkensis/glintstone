@@ -1,0 +1,19 @@
+# Glintstone — nightly embedding backfill.
+#
+# Runs every night at 02:00 UTC. Uses source_hash to skip rows whose text is
+# unchanged since last run, so only new or modified entities are embedded.
+# After a large ingestion run the job may take several hours; after a quiet
+# night it finishes in seconds.
+#
+# Priority order matches scripts/backfill_embeddings.py: translations first
+# (highest semantic value), then designations (all tablets), then scholars,
+# lemma_bag, glosses, named_entities.
+#
+# Log rotation is handled by Alpine's logrotate; the deploy user's crontab
+# appends to the same log file as the image-backfill job for operational
+# simplicity.
+#
+# This file is the source of truth; see ops/deploy/cron/README.md for
+# install instructions.
+
+0 2 * * * cd /var/www/glintstone/current && venv/bin/python -m scripts.backfill_embeddings --target all >> /var/log/glintstone-embeddings.out.log 2>> /var/log/glintstone-embeddings.err.log

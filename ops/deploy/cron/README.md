@@ -21,6 +21,7 @@ reviews, rollbacks, and a fresh VPS provision.
 | File | Schedule | Purpose |
 |---|---|---|
 | `glintstone-backfill.cron` | Sun 03:00 UTC | Backfill artifact images the main crawler missed; 60-min budget; shares CDLI lock |
+| `glintstone-embeddings.cron` | Daily 02:00 UTC | Voyage embedding backfill for all entity types; skips unchanged rows via source_hash; after initial run (~hours) subsequent runs are seconds unless ingestion ran |
 
 ## Install a fragment on the VPS
 
