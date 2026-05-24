@@ -5,8 +5,13 @@ API directly. The drawer's JS posts here; this route proxies to /api/v2/search
 and renders the matching Jinja partial.
 """
 
+import logging
+import time
+
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, Response
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/_search")
 
@@ -51,6 +56,7 @@ def suggest(
 
     types = SCOPE_TO_TYPES.get(scope, SCOPE_TO_TYPES["all"])
     api = request.app.state.api
+    t0 = time.monotonic()
     try:
         envelope = api.get(
             "/search",
@@ -58,6 +64,12 @@ def suggest(
         )
     except Exception:
         envelope = {"data": {"groups": []}, "summary": "Search unavailable."}
+    logger.info(
+        "suggest scope=%s duration_ms=%d q=%r",
+        scope,
+        int((time.monotonic() - t0) * 1000),
+        q[:60],
+    )
 
     groups = (envelope.get("data") or {}).get("groups") or []
 

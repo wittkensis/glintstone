@@ -1,28 +1,32 @@
 """FastAPI application for api.glintstone.org."""
 
+import logging
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from core.config import get_settings
-from core.database import init_pool, close_pool
-from core.version import release_tag, version_payload
 from api.middleware.auth import AuthMiddleware
 from api.routes import (
-    health,
-    image,
-    stats,
+    agent,
     artifacts,
+    auth,
     collections,
     composites,
     dictionary,
+    health,
+    image,
     scholars,
     search,
-    agent,
-    auth,
+    stats,
     users,
 )
+from core.config import get_settings
+from core.database import close_pool, init_pool
+from core.version import release_tag, version_payload
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -45,9 +49,19 @@ app = FastAPI(
 
 
 @app.middleware("http")
-async def add_release_header(request: Request, call_next):
+async def timing_and_release(request: Request, call_next):
+    t0 = time.monotonic()
     response = await call_next(request)
+    duration_ms = int((time.monotonic() - t0) * 1000)
     response.headers["X-Glintstone-Release"] = release_tag()
+    response.headers["X-Response-Time-Ms"] = str(duration_ms)
+    logger.info(
+        "api %s %s %d duration_ms=%d",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
     return response
 
 

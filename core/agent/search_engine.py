@@ -79,8 +79,15 @@ def _cached_query_vector(voyage: VoyageClient, q: str) -> list[float]:
     now = time.time()
     cached = _QUERY_VEC_CACHE.get(h)
     if cached and (now - cached[0]) < _CURSOR_TTL_SECONDS:
+        logger.debug("voyage cache hit q_hash=%s", h[:8])
         return cached[1]
+    t0 = time.monotonic()
     result = voyage.embed_query(q)
+    logger.info(
+        "voyage embed duration_ms=%d q_hash=%s",
+        int((time.monotonic() - t0) * 1000),
+        h[:8],
+    )
     _QUERY_VEC_CACHE[h] = (now, result.vector)
     return result.vector
 
@@ -97,6 +104,8 @@ class SearchEngine:
         conn: psycopg.Connection,
         params: SearchParams,
     ) -> SearchResults:
+        t_start = time.monotonic()
+
         types = params.types or [
             "tablets",
             "lemmas",
@@ -118,6 +127,7 @@ class SearchEngine:
 
         do_semantic = params.mode in ("semantic", "hybrid") and bool(self._voyage)
 
+        t_retrieval_start = time.monotonic()
         if params.mode == "lexical":
             lexical_hits = self._lexical_search(conn, params.q, types, params.limit * 3)
         elif params.mode == "semantic":
@@ -159,6 +169,7 @@ class SearchEngine:
                 lexical_hits = self._lexical_search(
                     conn, params.q, types, params.limit * 3
                 )
+        t_retrieval_ms = int((time.monotonic() - t_retrieval_start) * 1000)
 
         # 4. Fusion (lexical-only if semantic fell through)
         if params.mode == "lexical":
@@ -190,13 +201,31 @@ class SearchEngine:
                 groups[hit.entity_type].append(hit)
 
         # Total counts come from a separate count query for accuracy
+        t_count_start = time.monotonic()
         accurate_totals = self._count_per_type(conn, params.q, types, params.filters)
+        t_count_ms = int((time.monotonic() - t_count_start) * 1000)
         for t in types:
             totals[t] = max(totals[t], accurate_totals.get(t, 0))
 
         # Hydrate tablet hits with thumbnail + pipeline-completeness for the
         # global-search drawer rows (cheap single-pass joins keyed by p_number).
+        t_hydrate_start = time.monotonic()
         self._hydrate_tablet_extras(conn, groups.get("tablets", []))
+        t_hydrate_ms = int((time.monotonic() - t_hydrate_start) * 1000)
+
+        t_total_ms = int((time.monotonic() - t_start) * 1000)
+        logger.info(
+            "search mode=%s total_ms=%d retrieval_ms=%d count_ms=%d hydrate_ms=%d "
+            "lexical_hits=%d semantic_hits=%d q=%r",
+            params.mode,
+            t_total_ms,
+            t_retrieval_ms,
+            t_count_ms,
+            t_hydrate_ms,
+            len(lexical_hits),
+            len(semantic_hits),
+            params.q[:60],
+        )
 
         return SearchResults(groups=groups, totals=totals, cursor_data=None)
 
