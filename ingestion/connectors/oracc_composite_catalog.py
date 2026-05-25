@@ -151,7 +151,6 @@ class OraccCompositeCatalogConnector(SourceConnector):
             _flush(cur)
             ctx.db.commit()
 
-        stats.inserted = 0  # let verify report actual counts
         return stats
 
     def verify(self, ctx: RunContext) -> None:
