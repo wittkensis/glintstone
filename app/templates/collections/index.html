@@ -60,41 +60,107 @@
         {% endif %}
     </div>
 
-    <div id="composites-panel" class="tab-panel" role="tabpanel" aria-labelledby="composites-tab">
-        <div class="section-header">
-            <div class="section-header__content">
+    <div id="composites-panel" class="tab-panel composites-panel" role="tabpanel" aria-labelledby="composites-tab" data-view="card">
+
+        <div class="composites-header">
+            <div class="composites-header__content">
                 <h2>Composites</h2>
-                <p class="section-description">Standardized literary and administrative texts reconstructed from multiple exemplar tablets.</p>
+                <p>Canonical texts reconstructed from multiple exemplar tablets. A composite exists when scholars recognize that many different physical tablets all contain versions of the same composition. Sorted by witness count — the more tablets, the more important the text.</p>
+            </div>
+            <div class="view-toggle" role="group" aria-label="View style">
+                <button class="view-toggle__btn is-active"
+                        data-view="card"
+                        aria-pressed="true"
+                        title="Card view">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <rect x="1" y="1" width="6" height="6" rx="1"/>
+                        <rect x="9" y="1" width="6" height="6" rx="1"/>
+                        <rect x="1" y="9" width="6" height="6" rx="1"/>
+                        <rect x="9" y="9" width="6" height="6" rx="1"/>
+                    </svg>
+                    Cards
+                </button>
+                <button class="view-toggle__btn"
+                        data-view="table"
+                        aria-pressed="false"
+                        title="Table view">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <path d="M1 4h14M1 8h14M1 12h14"/>
+                        <path d="M5 2v12"/>
+                    </svg>
+                    Table
+                </button>
             </div>
         </div>
 
         {% if composites %}
+
+        {# Card view #}
+        {% set max_count = composites[0].exemplar_count or 1 %}
+        <div class="composites-cards" role="list">
+            {% for composite in composites %}
+            {% set bar_pct = ([((composite.exemplar_count or 0) / max_count * 100) | int, 2] | max) %}
+            <article class="composite-card" role="listitem">
+                <div class="composite-card__eyebrow">{{ composite.q_number }}</div>
+                <div class="composite-card__title{% if not composite.designation %} is-unnamed{% endif %}">
+                    {{ composite.designation or 'Name not yet catalogued' }}
+                </div>
+                {% if composite.genre or composite.language or composite.period %}
+                <div class="composite-card__tags">
+                    {% if composite.genre %}
+                        <span class="badge badge--sm">{{ composite.genre }}</span>
+                    {% endif %}
+                    {% if composite.language %}
+                        <span class="badge badge--sm badge--language">{{ composite.language }}</span>
+                    {% endif %}
+                    {% if composite.period %}
+                        <span class="badge badge--sm">{{ composite.period }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="composite-card__footer">
+                    <div class="composite-card__exemplars">
+                        <span class="composite-card__exemplar-count">{{ composite.exemplar_count or 0 }}</span>
+                        <span class="composite-card__exemplar-label">{{ 'exemplar' if composite.exemplar_count == 1 else 'exemplars' }}</span>
+                        <div class="composite-card__exemplar-bar">
+                            <div class="composite-card__exemplar-bar-fill" style="width: {{ bar_pct }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        {# Table view #}
         <div class="composites-table">
             <table>
                 <thead>
                     <tr>
-                        <th>Q-Number</th>
-                        <th>Designation</th>
+                        <th class="col-q-number">Q-Number</th>
+                        <th class="col-designation">Designation</th>
                         <th>Language</th>
                         <th>Period</th>
                         <th>Genre</th>
-                        <th class="text-right">Exemplars</th>
+                        <th class="col-exemplars">Exemplars</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for composite in composites %}
                     <tr>
-                        <td class="q-number">{{ composite.q_number }}</td>
-                        <td class="designation">{{ composite.designation or '—' }}</td>
+                        <td class="col-q-number">{{ composite.q_number }}</td>
+                        <td class="col-designation{% if not composite.designation %} col-empty{% endif %}">
+                            {{ composite.designation or '—' }}
+                        </td>
                         <td>{{ composite.language or '—' }}</td>
                         <td>{{ composite.period or '—' }}</td>
                         <td>{{ composite.genre or '—' }}</td>
-                        <td class="text-right">{{ composite.exemplar_count or 0 }}</td>
+                        <td class="col-exemplars">{{ composite.exemplar_count or 0 }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+
         {% else %}
             {{ empty_state(
                 icon='&#x12000;',
@@ -106,4 +172,31 @@
         {% endif %}
     </div>
 </main>
+
+<script>
+(function () {
+    var STORAGE_KEY = 'composites-view';
+    var panel = document.getElementById('composites-panel');
+    var btns = document.querySelectorAll('.view-toggle__btn');
+
+    function setView(view) {
+        panel.setAttribute('data-view', view);
+        btns.forEach(function (btn) {
+            var active = btn.dataset.view === view;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        try { localStorage.setItem(STORAGE_KEY, view); } catch (_) {}
+    }
+
+    try {
+        var saved = localStorage.getItem(STORAGE_KEY);
+        if (saved === 'table' || saved === 'card') { setView(saved); }
+    } catch (_) {}
+
+    btns.forEach(function (btn) {
+        btn.addEventListener('click', function () { setView(btn.dataset.view); });
+    });
+}());
+</script>
 {% endblock %}

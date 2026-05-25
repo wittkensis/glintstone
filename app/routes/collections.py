@@ -15,7 +15,7 @@ def collection_list(request: Request):
         collections = {"items": []}
 
     try:
-        composites = api.get("/composites")
+        composites = api.get("/composites", params={"limit": 500})
     except Exception:
         composites = {"items": [], "total": 0}
 

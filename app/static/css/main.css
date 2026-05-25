@@ -29,6 +29,7 @@
 @import url('components/section-header.css');
 @import url('components/progress-meter.css');
 @import url('components/tabs.css');
+@import url('components/composites.css');
 
 /* Pages */
 @import url('pages/homepage.css');

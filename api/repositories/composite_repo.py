@@ -30,7 +30,7 @@ class CompositeRepository(BaseRepository):
                 genre,
                 exemplar_count
             FROM composites
-            ORDER BY q_number
+            ORDER BY exemplar_count DESC, q_number
             LIMIT %(limit)s OFFSET %(offset)s
         """,
             {"limit": limit, "offset": offset},
@@ -79,8 +79,7 @@ class CompositeRepository(BaseRepository):
                 a.period,
                 a.provenience,
                 a.genre,
-                ac.line_ref,
-                ac.notes
+                ac.line_ref
             FROM artifacts a
             JOIN artifact_composites ac ON a.p_number = ac.p_number
             WHERE ac.q_number = %(q_number)s
@@ -154,7 +153,7 @@ class CompositeRepository(BaseRepository):
                 exemplar_count
             FROM composites
             {where}
-            ORDER BY q_number
+            ORDER BY exemplar_count DESC, q_number
             LIMIT %(limit)s OFFSET %(offset)s
         """,
             params,
