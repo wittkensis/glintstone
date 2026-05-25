@@ -164,13 +164,13 @@ def _iter_lemma_bag(conn: psycopg.Connection) -> Iterable[tuple[str, str]]:
         cur.execute(
             """
             SELECT s.p_number,
-                   string_agg(DISTINCT COALESCE(ll.guide_word, ll.citation_form),
-                              ', ' ORDER BY COALESCE(ll.guide_word, ll.citation_form)) AS bag
+                   string_agg(DISTINCT COALESCE(lz.guide_word, lz.citation_form),
+                              ', ' ORDER BY COALESCE(lz.guide_word, lz.citation_form)) AS bag
             FROM tokens t
             JOIN lemmatizations lz ON lz.token_id = t.id
-            JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
             JOIN text_lines tl ON t.line_id = tl.id
             JOIN surfaces s ON tl.surface_id = s.id
+            WHERE COALESCE(lz.guide_word, lz.citation_form) IS NOT NULL
             GROUP BY s.p_number
             """
         )
