@@ -158,13 +158,14 @@ ssh_run "cd $RELEASE_DIR && set -a && . ./.env && set +a && \
 # A failed pg_dump aborts the deploy: deploying without a backup right before a
 # migration is the risk profile we're trying to eliminate.
 if [ "$APP_ENV" = "production" ]; then
-    SNAPSHOT_NAME="pre-deploy-$RELEASE_TAG.dump.gz"
+    SNAPSHOT_NAME="pre-deploy-$RELEASE_TAG.dump"
     echo "Snapshotting production DB → $SNAPSHOT_NAME..."
+    # -Fc (custom format) compresses internally — do not pipe through gzip.
     ssh_run "set -a && . $SHARED_DIR/.env && set +a && \
         mkdir -p $SHARED_DIR/backups && \
-        pg_dump -Fc \"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" | gzip > $SHARED_DIR/backups/$SNAPSHOT_NAME"
+        pg_dump -Fc \"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" > $SHARED_DIR/backups/$SNAPSHOT_NAME"
     # Keep the most recent 3 pre-deploy snapshots; daily-cron backups are retained separately.
-    ssh_run "cd $SHARED_DIR/backups && ls -1t pre-deploy-*.dump.gz 2>/dev/null | tail -n +4 | xargs -r rm -f"
+    ssh_run "cd $SHARED_DIR/backups && ls -1t pre-deploy-*.dump 2>/dev/null | tail -n +4 | xargs -r rm -f"
 fi
 
 # --- Run migrations against the target database ---
