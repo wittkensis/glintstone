@@ -14,12 +14,14 @@ See `.claude/skills/gs-expert-agentic/citation-contract.md` and `prompts/`.
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from core.agent.anthropic_client import AnthropicClient, CompletionResult
 from core.agent.citation_parser import (
     SynthesisGroundingError,
+    ValidationResult,
     extract_marker_ns,
     validate,
 )
@@ -82,7 +84,7 @@ def synthesize_artifact_summary(
     client: AnthropicClient,
     bundle: ArtifactFactBundle,
     focus: str = "general",
-    prompt_version: str = "synthesis.v1",
+    prompt_version: str = "synthesis.v2",
 ) -> SynthesisResult:
     """Run the grounded synthesis loop for summarize_artifact."""
     system_prompt = _load_prompt(prompt_version)
@@ -111,6 +113,7 @@ def synthesize_artifact_summary(
         facts=bundle.facts,
         best_guess_allowed=bundle.best_guess_allowed,
         prompt_version=prompt_version,
+        run_v2_checks=prompt_version.startswith("synthesis.v2"),
     )
 
 
@@ -143,6 +146,58 @@ def synthesize_token_interpretation(
     )
 
 
+# ── v2 semantic checks ────────────────────────────────────────────────────────
+
+_RAW_DIALECT_RE = re.compile(r"\bakk-x-[a-z]+\b")
+_MIXED_LANG_SIGNAL = "mixed language:"
+_DISAGREEMENT_SIGNAL = "scholarly disagreement on"
+_UNCERTAINTY_PHRASES_RE = re.compile(
+    r"\b(disagree|contested|uncertain|scholars? read|reading of)\b", re.I
+)
+
+
+def _validate_v2_semantics(text: str, facts: list[Fact]) -> ValidationResult:
+    """Extra checks for synthesis.v2 — only run when dialect/mixed/disagreement facts exist."""
+    fact_texts = [f.text.lower() for f in facts]
+
+    has_dialect_fact = any("akkadian dialect" in ft for ft in fact_texts)
+    has_mixed_fact = any(_MIXED_LANG_SIGNAL in ft for ft in fact_texts)
+    has_disagreement_fact = any(_DISAGREEMENT_SIGNAL in ft for ft in fact_texts)
+
+    if has_dialect_fact and _RAW_DIALECT_RE.search(text):
+        return ValidationResult(
+            ok=False,
+            complaint=(
+                "Output contains a raw akk-x-* dialect code. Translate to the "
+                "human-readable form (e.g. 'Old Babylonian Akkadian' for akk-x-oldbab). "
+                "See dialect mapping in the system prompt."
+            ),
+        )
+
+    if has_mixed_fact and not re.search(
+        r"\b(sumerian|akkadian|bilingual|mixed|both languages?)\b", text, re.I
+    ):
+        return ValidationResult(
+            ok=False,
+            complaint=(
+                "A 'mixed language' fact is in the FACTS list but the summary makes no "
+                "mention of the bilingual or mixed-language character of the text. Address it."
+            ),
+        )
+
+    if has_disagreement_fact and not _UNCERTAINTY_PHRASES_RE.search(text):
+        return ValidationResult(
+            ok=False,
+            complaint=(
+                "A 'scholarly disagreement' fact is in the FACTS list but the summary "
+                "asserts the reading without qualification. Use phrases like "
+                "'scholars disagree', 'the reading is contested', or 'possibly'."
+            ),
+        )
+
+    return ValidationResult(ok=True)
+
+
 # ── Inner loop ────────────────────────────────────────────────────────────────
 
 
@@ -154,9 +209,11 @@ def _run_loop(
     best_guess_allowed: bool,
     prompt_version: str,
     max_tokens: int = 2048,
+    run_v2_checks: bool = False,
 ) -> SynthesisResult:
     valid_ns = {f.n for f in facts}
     user_message = user_message_base
+    result: ValidationResult | None = None
 
     for attempt in range(2):
         completion = client.complete(
@@ -170,6 +227,8 @@ def _run_loop(
         # [n] markers using the same heuristic. JSON braces don't trip the
         # marker regex.
         result = validate(text, valid_ns, best_guess_allowed=best_guess_allowed)
+        if result.ok and run_v2_checks:
+            result = _validate_v2_semantics(text, facts)
         if result.ok:
             cited_ns, citations = _filter_cited(text, facts)
             return SynthesisResult(
@@ -181,17 +240,19 @@ def _run_loop(
                 retried=(attempt == 1),
             )
 
-        # Append the validator's complaint and retry
+        # Retry: send only a brief excerpt of the failed output to avoid
+        # flooding smaller models with a confusing blob of bad text.
         logger.warning(
             "synthesis validation failed (attempt %d/2): %s",
             attempt + 1,
             result.complaint,
         )
+        failed_excerpt = text[:300] + ("…" if len(text) > 300 else "")
         user_message = (
             user_message_base
-            + "\n\nYour previous response was:\n"
-            + text
-            + "\n\nProblem with that response: "
+            + "\n\nYour previous response started: "
+            + failed_excerpt
+            + "\n\nProblem: "
             + result.complaint
             + "\n\nRe-write following the GROUNDING RULES exactly."
         )
