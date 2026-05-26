@@ -107,12 +107,13 @@ def assemble_artifact_facts(
     """Pull every fact about the artifact that the synthesizer can ground on."""
     bundle = ArtifactFactBundle(p_number=p_number)
 
-    # Catalog facts (period, provenience, genre, language, museum, dimensions)
+    # Catalog facts (period, provenience, language, museum, dimensions)
     with conn.cursor() as cur:
         cur.execute(
             """
             SELECT a.p_number, a.designation,
                    a.period_normalized, a.provenience_normalized,
+                   a.language_normalized,
                    a.museum_no, a.dimensions
             FROM artifacts a
             WHERE a.p_number = %s
@@ -155,6 +156,135 @@ def assemble_artifact_facts(
             "cdli_catalog",
             "designation",
         )
+
+    # Genre facts (canonical genres via junction table, primary first)
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT cg.name, ag.is_primary
+            FROM artifact_genres ag
+            JOIN canonical_genres cg ON cg.id = ag.genre_id
+            WHERE ag.p_number = %s
+            ORDER BY ag.is_primary DESC, cg.name
+            LIMIT 3
+            """,
+            (p_number,),
+        )
+        genre_rows = cur.fetchall()
+
+    if genre_rows:
+        genre_names = [r["name"] for r in genre_rows]
+        _add_fact(
+            bundle.facts,
+            f"genre: {', '.join(genre_names)}",
+            "annotation_run",
+            "cdli_catalog",
+            "genre",
+        )
+
+    # Language and dialect facts
+    # Base language from catalog field; dialect detail from per-word lemmatization codes.
+    if row.get("language_normalized"):
+        _add_fact(
+            bundle.facts,
+            f"primary language: {row['language_normalized']}",
+            "annotation_run",
+            "cdli_catalog",
+            "language_normalized",
+        )
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT lz.language
+            FROM tokens t
+            JOIN text_lines tl ON t.line_id = tl.id
+            JOIN surfaces s ON tl.surface_id = s.id
+            JOIN lemmatizations lz ON lz.token_id = t.id
+            WHERE s.p_number = %s
+              AND lz.language IS NOT NULL
+            """,
+            (p_number,),
+        )
+        lang_rows = [r["language"] for r in cur.fetchall()]
+
+    if lang_rows:
+        # Detect Akkadian dialect variants (akk-x-* subtags)
+        dialects = sorted({lc for lc in lang_rows if lc.startswith("akk-x-")})
+        if dialects:
+            _add_fact(
+                bundle.facts,
+                f"Akkadian dialect(s) attested: {', '.join(dialects)}",
+                "annotation_run",
+                "oracc_lemmatization",
+                "dialect",
+            )
+
+        # Mixed-language flag: both Sumerian and Akkadian lemmatizations present
+        has_sumerian = any(lc.startswith("sux") for lc in lang_rows)
+        has_akkadian = any(lc.startswith("akk") for lc in lang_rows)
+        if has_sumerian and has_akkadian:
+            _add_fact(
+                bundle.facts,
+                "mixed language: Sumerian and Akkadian lemmatizations coexist in this text",
+                "annotation_run",
+                "oracc_lemmatization",
+                "mixed_language",
+            )
+
+    # Composite membership (Q-number and sibling exemplars)
+    with conn.cursor() as cur:
+        try:
+            cur.execute(
+                """
+                SELECT c.q_number, c.designation, c.exemplar_count
+                FROM artifact_composites ac
+                JOIN composites c ON c.q_number = ac.q_number
+                WHERE ac.p_number = %s
+                """,
+                (p_number,),
+            )
+            composite = cur.fetchone()
+        except psycopg.errors.UndefinedTable:
+            conn.rollback()
+            composite = None
+
+    if composite:
+        _add_fact(
+            bundle.facts,
+            f"part of composite {composite['q_number']} "
+            f"({composite.get('designation') or 'untitled'}; "
+            f"{composite.get('exemplar_count') or '?'} known exemplars)",
+            "annotation_run",
+            "cdli_catalog",
+            f"composite:{composite['q_number']}",
+        )
+        # Best-attested sibling (highest pipeline completeness among exemplars)
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT ac2.p_number, pc.completeness_score, a.designation
+                FROM artifact_composites ac2
+                JOIN pipeline_completeness pc ON pc.p_number = ac2.p_number
+                JOIN artifacts a ON a.p_number = ac2.p_number
+                WHERE ac2.q_number = %s
+                  AND ac2.p_number <> %s
+                ORDER BY pc.completeness_score DESC
+                LIMIT 1
+                """,
+                (composite["q_number"], p_number),
+            )
+            best_sibling = cur.fetchone()
+        if best_sibling and best_sibling.get("completeness_score", 0) > 0:
+            _add_fact(
+                bundle.facts,
+                f"best-attested sibling exemplar: {best_sibling['p_number']} "
+                f"({best_sibling.get('designation') or 'unnamed'}, "
+                f"completeness {best_sibling['completeness_score']}/5)",
+                "computed",
+                "pipeline_completeness",
+                f"sibling:{best_sibling['p_number']}",
+            )
 
     # Pipeline completeness
     with conn.cursor() as cur:
@@ -218,6 +348,41 @@ def assemble_artifact_facts(
                 f"lemma:{r['id']}",
             )
 
+    # Competing lemmatizations — tokens where >1 annotation_run offers a different reading.
+    # Signals scholarly disagreement; the synthesizer should flag uncertainty.
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT t.raw_form, COUNT(DISTINCT lz.annotation_run_id) AS run_count,
+                   array_agg(DISTINCT ll.guide_word ORDER BY ll.guide_word) AS readings
+            FROM tokens t
+            JOIN text_lines tl ON t.line_id = tl.id
+            JOIN surfaces s ON tl.surface_id = s.id
+            JOIN lemmatizations lz ON lz.token_id = t.id
+            JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
+            WHERE s.p_number = %s
+            GROUP BY t.id, t.raw_form
+            HAVING COUNT(DISTINCT lz.annotation_run_id) > 1
+            ORDER BY run_count DESC
+            LIMIT 3
+            """,
+            (p_number,),
+        )
+        competing = cur.fetchall()
+
+    if competing:
+        examples = "; ".join(
+            f'"{r["raw_form"]}" read as {"/".join(r["readings"] or [])}'
+            for r in competing
+        )
+        _add_fact(
+            bundle.facts,
+            f"scholarly disagreement on {len(competing)} token(s): {examples}",
+            "annotation_run",
+            "oracc_lemmatization",
+            "competing_lemmatizations",
+        )
+
     # Named entities (when populated) — up to 5
     with conn.cursor() as cur:
         try:
@@ -270,68 +435,77 @@ def assemble_artifact_facts(
         except psycopg.errors.UndefinedTable:
             conn.rollback()
 
-    # Similar tablets via embedding (lemma_bag for now; falls back gracefully)
+    # Similar tablets via embedding.
+    # Primary: artifact_lemma_bag (requires lemmatization). Fallback: artifact_designation
+    # (text embedding of the designation string; available for most artifacts, threshold 0.65).
+    _embedding_query = """
+        WITH this_vec AS (
+            SELECT vec
+            FROM entity_embeddings
+            WHERE entity_type = %s
+              AND entity_id = %s
+              AND model = 'voyage-3-large'
+            LIMIT 1
+        )
+        SELECT ee.entity_id AS p_number,
+               a.designation, a.period_normalized, a.provenience_normalized,
+               1 - (ee.vec <=> tv.vec) AS cosine
+        FROM entity_embeddings ee, this_vec tv
+        JOIN artifacts a ON a.p_number = ee.entity_id
+        WHERE ee.entity_type = %s
+          AND ee.model = 'voyage-3-large'
+          AND ee.entity_id <> %s
+        ORDER BY ee.vec <=> tv.vec
+        LIMIT %s
+    """
+
+    def _load_similar(cur: psycopg.Cursor, entity_type: str, min_cosine: float) -> None:
+        cur.execute(
+            _embedding_query,
+            (entity_type, p_number, entity_type, p_number, similar_tablet_count),
+        )
+        for r in cur.fetchall():
+            if (r.get("cosine") or 0) < min_cosine:
+                continue
+            n = _next_n(bundle.facts)
+            citation = Citation(
+                n=n,
+                source_kind="computed",
+                source_id=f"similar:{r['p_number']}",
+                retrieval_field=f"similar_tablet:{r['p_number']}",
+            )
+            fact = Fact(
+                n=n,
+                text=(
+                    f"{r['p_number']} — "
+                    f"{r.get('period_normalized') or 'unknown period'}, "
+                    f"{r.get('provenience_normalized') or 'unknown provenience'}; "
+                    f"cosine {r['cosine']:.2f}"
+                ),
+                citation=citation,
+            )
+            bundle.facts.append(fact)
+            bundle.similar_tablets.append(
+                SimilarTablet(
+                    n=n,
+                    p_number=r["p_number"],
+                    designation=r.get("designation"),
+                    period=r.get("period_normalized"),
+                    provenience=r.get("provenience_normalized"),
+                    cosine=r["cosine"],
+                )
+            )
+
     with conn.cursor() as cur:
         try:
-            cur.execute(
-                """
-                WITH this_vec AS (
-                    SELECT vec
-                    FROM entity_embeddings
-                    WHERE entity_type = 'artifact_lemma_bag'
-                      AND entity_id = %s
-                      AND model = 'voyage-3-large'
-                    LIMIT 1
-                )
-                SELECT ee.entity_id AS p_number,
-                       a.designation, a.period_normalized, a.provenience_normalized,
-                       1 - (ee.vec <=> tv.vec) AS cosine
-                FROM entity_embeddings ee, this_vec tv
-                JOIN artifacts a ON a.p_number = ee.entity_id
-                WHERE ee.entity_type = 'artifact_lemma_bag'
-                  AND ee.model = 'voyage-3-large'
-                  AND ee.entity_id <> %s
-                ORDER BY ee.vec <=> tv.vec
-                LIMIT %s
-                """,
-                (p_number, p_number, similar_tablet_count),
-            )
-            for r in cur.fetchall():
-                if (r.get("cosine") or 0) < similar_tablet_min_cosine:
-                    continue
-                n = _next_n(bundle.facts)
-                citation = Citation(
-                    n=n,
-                    source_kind="computed",
-                    source_id=f"similar:{r['p_number']}",
-                    retrieval_field=f"similar_tablet:{r['p_number']}",
-                )
-                fact = Fact(
-                    n=n,
-                    text=(
-                        f"{r['p_number']} — "
-                        f"{r.get('period_normalized') or 'unknown period'}, "
-                        f"{r.get('provenience_normalized') or 'unknown provenience'}; "
-                        f"cosine {r['cosine']:.2f}"
-                    ),
-                    citation=citation,
-                )
-                bundle.facts.append(fact)
-                bundle.similar_tablets.append(
-                    SimilarTablet(
-                        n=n,
-                        p_number=r["p_number"],
-                        designation=r.get("designation"),
-                        period=r.get("period_normalized"),
-                        provenience=r.get("provenience_normalized"),
-                        cosine=r["cosine"],
-                    )
-                )
+            _load_similar(cur, "artifact_lemma_bag", similar_tablet_min_cosine)
+            if not bundle.similar_tablets:
+                # Sparse tablet: try designation embedding at a lower threshold
+                _load_similar(cur, "artifact_designation", 0.65)
         except (psycopg.errors.UndefinedTable, psycopg.errors.UndefinedFunction):
-            # entity_embeddings empty or pgvector ops not available
             conn.rollback()
 
-    # Best-guess gate (see decisions.md): completeness ≤ 2 AND ≥3 similar tablets
+    # Best-guess gate: completeness ≤ 2 AND ≥3 similar tablets found via either embedding type
     bundle.best_guess_allowed = completeness <= 2 and len(bundle.similar_tablets) >= 3
 
     return bundle
