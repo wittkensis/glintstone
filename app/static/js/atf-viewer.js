@@ -45,7 +45,7 @@ class ATFViewer {
 
         // Knowledge sidebar state
         this.knowledgeSidebarOpen = false;
-        this.activeKnowledgeTab = 'dictionary';
+        this.activeKnowledgeTab = 'summary';
         this.lastDictionaryWord = null;
         this.sidebarTransitioning = false;
         this.transitionTimeout = null;
@@ -1079,7 +1079,7 @@ class ATFViewer {
 
         const sidebar = document.getElementById('knowledge-sidebar');
         if (!sidebar) return;
-        const tabToShow = tab || this.activeKnowledgeTab || 'dictionary';
+        const tabToShow = tab || this.activeKnowledgeTab || 'summary';
 
         // Set data-state for CSS transitions
         sidebar.dataset.state = 'open';
@@ -1135,6 +1135,7 @@ class ATFViewer {
      */
     getTabTitle(tabName) {
         const titles = {
+            summary: 'Summary',
             dictionary: 'Dictionary',
             research: 'Research',
             discussion: 'Discussion',
