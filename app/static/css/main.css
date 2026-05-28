@@ -30,6 +30,7 @@
 @import url('components/progress-meter.css');
 @import url('components/tabs.css');
 @import url('components/composites.css');
+@import url('components/line-suggestions.css');
 
 /* Pages */
 @import url('pages/homepage.css');

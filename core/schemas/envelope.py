@@ -157,6 +157,58 @@ class ChainPayload(BaseModel):
     )
 
 
+# Line Translation Suggestions
+
+
+class TokenChainStep(BaseModel):
+    token_id: int
+    raw_form: str
+    is_determinative: bool = False
+    lemma: str | None = None
+    guide_word: str | None = None
+    pos: str | None = None
+    case: str | None = None
+    number: str | None = None
+    gender: str | None = None
+    translation_fragment: str | None = PField(
+        default=None,
+        description="null when confidence_band is 'unknown' — prevent hallucination",
+    )
+    fact_refs: list[int] = PField(default_factory=list)
+    confidence_band: Literal["known", "inferred", "unknown"] = "unknown"
+
+
+class LineSuggestion(BaseModel):
+    rank: int
+    translation: str
+    confidence_band: Literal["low", "medium", "high"]
+    evidence_chain: list[str] = PField(
+        default_factory=list,
+        description="1-4 short fragments explaining the reasoning",
+    )
+    fact_refs: list[int] = PField(default_factory=list)
+    caveat: str | None = None
+
+
+class LineSuggestionPayload(BaseModel):
+    line_id: int | None = None
+    atf: str
+    language: str
+    dialect: str | None = None
+    is_mixed_language: bool = False
+    language_shift_position: int | None = None
+    language_supported: bool = True
+    token_chain: list[TokenChainStep] = PField(default_factory=list)
+    suggestions: list[LineSuggestion] = PField(default_factory=list)
+    missing_layers: list[str] = PField(
+        default_factory=list,
+        description="Server-computed list of missing pipeline stages affecting confidence",
+    )
+    context_variant: Literal["a", "b"] = "a"
+    model: str = ""
+    prompt_version: str = ""
+
+
 # Timeline
 
 

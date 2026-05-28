@@ -751,6 +751,8 @@ class ATFViewer {
         }
 
         contentArea.innerHTML = html;
+        // Expose surface name for line-suggestions.js to key API calls
+        contentArea.dataset.surfaceName = surface.name || 'obverse';
 
         // Add word click handlers
         this.attachWordHandlers();

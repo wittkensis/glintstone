@@ -25,7 +25,12 @@ from core.agent.citation_parser import (
     extract_marker_ns,
     validate,
 )
-from core.agent.fact_assembly import ArtifactFactBundle, Fact, TokenFactBundle
+from core.agent.fact_assembly import (
+    ArtifactFactBundle,
+    Fact,
+    LineFactBundle,
+    TokenFactBundle,
+)
 from core.schemas.citation import Citation
 
 logger = logging.getLogger(__name__)
@@ -114,6 +119,39 @@ def synthesize_artifact_summary(
         best_guess_allowed=bundle.best_guess_allowed,
         prompt_version=prompt_version,
         run_v2_checks=prompt_version.startswith("synthesis.v2"),
+    )
+
+
+def synthesize_line_suggestion(
+    client: AnthropicClient,
+    bundle: LineFactBundle,
+    prompt_version: str = "suggest-line.v1",
+) -> SynthesisResult:
+    """Run the grounded synthesis loop for suggest_line_translation.
+
+    Returns JSON with token_chain + suggestions; [n] markers appear inside
+    fact_refs arrays. The caller parses the JSON.
+    """
+    system_prompt = _load_prompt(prompt_version)
+
+    user_message_base = (
+        _render_facts(bundle.facts)
+        + f"\n\nINTENT: suggest translation for line {bundle.line_number} "
+        f"({bundle.surface_name}, {bundle.language})"
+    )
+    if bundle.missing_layers:
+        user_message_base += "\n\nMISSING PIPELINE LAYERS:\n" + "\n".join(
+            f"- {m}" for m in bundle.missing_layers
+        )
+
+    return _run_loop(
+        client=client,
+        system_prompt=system_prompt,
+        user_message_base=user_message_base,
+        facts=bundle.facts,
+        best_guess_allowed=True,
+        prompt_version=prompt_version,
+        max_tokens=2048,
     )
 
 

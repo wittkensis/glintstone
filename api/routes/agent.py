@@ -1,5 +1,6 @@
 """REST: GET /api/v2/artifacts/{p}/summary  (summarize_artifact)
         GET /api/v2/artifacts/{p}/tokens/{tid}/interpret  (interpret_token)
+        GET /api/v2/artifacts/{p}/lines/suggest  (suggest_line_translation)
         POST /api/v2/agentic/corrections  (user correction → annotation_run)
         POST /api/v2/agentic/batch/summarize  (internal — seed the cache)
 
@@ -25,7 +26,12 @@ from core.schemas.agent import (
     SummaryFocus,
     TokenInterpretParams,
 )
-from core.schemas.envelope import CardPayload, ChainPayload, ToolResponse
+from core.schemas.envelope import (
+    CardPayload,
+    ChainPayload,
+    LineSuggestionPayload,
+    ToolResponse,
+)
 
 router = APIRouter(prefix="/artifacts", tags=["agentic"])
 
@@ -101,6 +107,44 @@ def interpret_token(
             sources_count=len(response.sources),
         )
 
+    if interaction.id is not None:
+        response.interaction_id = str(interaction.id)
+    return response
+
+
+@router.get(
+    "/{p_number}/lines/suggest",
+    response_model=ToolResponse[LineSuggestionPayload],
+    summary="Ranked translation proposals for a single cuneiform line",
+)
+def suggest_line(
+    p_number: Annotated[str, Path()],
+    surface: str = "obverse",
+    line: str = "1",
+    variant: str | None = None,
+    conn=Depends(get_db),
+) -> ToolResponse[LineSuggestionPayload]:
+    interaction_id_str = str(uuid.uuid4())
+    with log_interaction(
+        conn,
+        surface="api",
+        route_path="/artifacts/{p}/lines/suggest",
+        tool_name="suggest_line_translation",
+        request={"p_number": p_number, "surface": surface, "line": line},
+    ) as interaction:
+        response = agent_service.do_suggest_line_translation(
+            conn,
+            p_number=p_number,
+            surface_name=surface,
+            line_number=line,
+            session_variant=variant,
+            interaction_id_str=interaction_id_str,
+        )
+        interaction.record_response(
+            summary=response.summary,
+            result_ids=[p_number],
+            sources_count=len(response.sources),
+        )
     if interaction.id is not None:
         response.interaction_id = str(interaction.id)
     return response

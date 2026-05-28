@@ -4,11 +4,12 @@ This is the data-collection step that runs before the Claude call. Every Fact
 carries (n, text, citation) so the synthesis call can reference it by number
 and the validator can confirm round-trip integrity.
 
-Two assemblers:
-  assemble_artifact_facts(p_number, focus)  → for summarize_artifact
-  assemble_token_facts(p_number, token_id)  → for interpret_token
+Three assemblers:
+  assemble_artifact_facts(p_number, focus)          → for summarize_artifact
+  assemble_token_facts(p_number, token_id)          → for interpret_token
+  assemble_line_facts(p_number, surface, line_num)  → for suggest_line_translation
 
-Both query the DB via the existing repository layer where possible to stay
+All query the DB via the existing repository layer where possible to stay
 inside the project's idiom. They return dataclasses, not SQL rows — the
 synthesis layer renders them to numbered prompt text.
 """
@@ -58,6 +59,25 @@ class TokenFactBundle:
     token_id: int
     facts: list[Fact] = field(default_factory=list)
     is_fully_lemmatized: bool = False
+
+
+@dataclass
+class LineFactBundle:
+    p_number: str
+    line_id: int | None
+    surface_name: str
+    line_number: str  # ATF line number string e.g. "4" or "3'"
+    atf_text: str  # raw ATF of the target line
+    language: str
+    dialect: str | None
+    is_mixed_language: bool
+    language_shift_position: int | None
+    language_supported: bool
+    context_variant: str  # "a" | "b"
+    facts: list[Fact] = field(default_factory=list)
+    token_rows: list[dict] = field(default_factory=list)  # raw DB token rows
+    missing_layers: list[str] = field(default_factory=list)
+    surface_atf: str | None = None  # full surface ATF for variant B
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -390,7 +410,7 @@ def assemble_artifact_facts(
                 """
                 SELECT DISTINCT ne.id, ne.canonical_name, ne.entity_type
                 FROM entity_mentions em
-                JOIN named_entities ne ON em.named_entity_id = ne.id
+                JOIN named_entities ne ON em.entity_id = ne.id
                 LEFT JOIN tokens t ON em.token_id = t.id
                 LEFT JOIN text_lines tl_t ON t.line_id = tl_t.id
                 LEFT JOIN text_lines tl_l ON em.line_id = tl_l.id
@@ -408,7 +428,7 @@ def assemble_artifact_facts(
                     r["id"],
                     f"entity:{r['id']}",
                 )
-        except psycopg.errors.UndefinedTable:
+        except (psycopg.errors.UndefinedTable, psycopg.errors.UndefinedColumn):
             # named_entities not yet populated; skip
             conn.rollback()
 
@@ -432,7 +452,7 @@ def assemble_artifact_facts(
                     "publication_citations",
                     "citation_count",
                 )
-        except psycopg.errors.UndefinedTable:
+        except (psycopg.errors.UndefinedTable, psycopg.errors.UndefinedColumn):
             conn.rollback()
 
     # Similar tablets via embedding.
@@ -661,3 +681,328 @@ def assemble_token_facts(
                 conn.rollback()
 
     return bundle
+
+
+# ── Line translation fact assembly ────────────────────────────────────────────
+
+_SUPPORTED_LANG_PREFIXES = ("sumerian", "akkadian")
+
+_DETERMINATIVE_RE = __import__("re").compile(r"\{[^}]+\}")
+
+_GENRE_B_VARIANTS = frozenset(
+    ["literary", "letter", "royal/monumental", "royal inscription", "lexical"]
+)
+
+
+def _language_supported_str(language: str) -> bool:
+    lang_lc = language.lower()
+    return any(lang_lc.startswith(p) for p in _SUPPORTED_LANG_PREFIXES)
+
+
+def _should_use_variant_b(genre: str | None) -> bool:
+    if not genre:
+        return False
+    return any(g in genre.lower() for g in _GENRE_B_VARIANTS)
+
+
+def assemble_line_facts(
+    conn: psycopg.Connection,
+    p_number: str,
+    surface_name: str,
+    line_number: str,
+    session_variant: str | None = None,  # "a"|"b"|None (None=auto)
+) -> LineFactBundle | None:
+    """Assemble facts for suggest_line_translation.
+
+    Returns None if the line cannot be found.
+
+    context_variant:
+      a = target line + ±2 neighbor lines (default for administrative genre)
+      b = full surface ATF, middle-truncated (for literary/epistolary)
+    """
+    bundle_facts: list[Fact] = []
+
+    # 1. Resolve line from DB
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT tl.id AS line_id,
+                   tl.atf_text,
+                   tl.position,
+                   s.id AS surface_id,
+                   s.name AS surface_name,
+                   a.language_normalized,
+                   a.period_normalized,
+                   a.genre
+            FROM text_lines tl
+            JOIN surfaces s ON s.id = tl.surface_id
+            JOIN artifacts a ON a.p_number = s.p_number
+            WHERE s.p_number = %s
+              AND s.name ILIKE %s
+              AND (tl.position::text = %s OR tl.atf_text ILIKE %s)
+            ORDER BY tl.position
+            LIMIT 1
+            """,
+            (p_number, surface_name, line_number, f"{line_number}.%"),
+        )
+        row = cur.fetchone()
+
+    if not row:
+        # Fallback: match by position number only
+        try:
+            pos_int = int(line_number.replace("'", ""))
+        except ValueError:
+            return None
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT tl.id AS line_id,
+                       tl.atf_text,
+                       tl.position,
+                       s.id AS surface_id,
+                       s.name AS surface_name,
+                       a.language_normalized,
+                       a.period_normalized,
+                       a.genre
+                FROM text_lines tl
+                JOIN surfaces s ON s.id = tl.surface_id
+                JOIN artifacts a ON a.p_number = s.p_number
+                WHERE s.p_number = %s AND s.name ILIKE %s
+                ORDER BY ABS(tl.position - %s)
+                LIMIT 1
+                """,
+                (p_number, surface_name, pos_int),
+            )
+            row = cur.fetchone()
+
+    if not row:
+        return None
+
+    line_id: int = row["line_id"]
+    atf_text: str = row["atf_text"] or ""
+    surface_id: int = row["surface_id"]
+    language: str = row["language_normalized"] or "Unknown"
+    period: str | None = row["period_normalized"]
+    genre: str | None = row["genre"]
+    position: int = row["position"]
+
+    # 2. Missing layer analysis (server-computed, not model-generated)
+    missing_layers: list[str] = []
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT
+                COUNT(t.id) AS token_count,
+                COUNT(lz.id) AS lemma_count
+            FROM text_lines tl
+            JOIN tokens t ON t.line_id = tl.id
+            LEFT JOIN lemmatizations lz ON lz.token_id = t.id
+            WHERE tl.id = %s
+            """,
+            (line_id,),
+        )
+        counts = cur.fetchone() or {}
+
+    token_count = counts.get("token_count", 0) or 0
+    lemma_count = counts.get("lemma_count", 0) or 0
+
+    if token_count == 0:
+        missing_layers.append("No tokenization — line parsed as raw ATF only")
+    elif lemma_count == 0:
+        missing_layers.append(
+            f"Lemmatization missing for all {token_count} token(s) — suggestions inferred from sign candidates"
+        )
+    elif lemma_count < token_count:
+        gap = token_count - lemma_count
+        missing_layers.append(
+            f"Lemmatization missing for {gap} of {token_count} token(s)"
+        )
+
+    # 3. Determine context variant
+    auto_variant = "b" if _should_use_variant_b(genre) else "a"
+    context_variant = session_variant if session_variant in ("a", "b") else auto_variant
+
+    # 4. Catalog facts (period, language, genre)
+    if period:
+        _add_fact(
+            bundle_facts,
+            f"period: {period}",
+            "annotation_run",
+            "cdli_catalog",
+            "period",
+        )
+    if genre:
+        _add_fact(
+            bundle_facts, f"genre: {genre}", "annotation_run", "cdli_catalog", "genre"
+        )
+    _add_fact(
+        bundle_facts,
+        f"language: {language}",
+        "annotation_run",
+        "cdli_catalog",
+        "language",
+    )
+
+    # 5. Target line fact
+    # Strip ATF line number prefix if present (e.g. "4. i-na ṭup-pi-im" → "i-na ṭup-pi-im")
+    atf_clean = __import__("re").sub(r"^\s*\d+'?\.\s*", "", atf_text).strip()
+    _add_fact(
+        bundle_facts,
+        f"TARGET LINE (line {line_number}, {surface_name}): {atf_clean or atf_text}",
+        "annotation_run",
+        p_number,
+        "atf_text",
+    )
+
+    # 6. Context variant A: neighbor lines (±2)
+    surface_atf: str | None = None
+    if context_variant == "a":
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT tl.position, tl.atf_text
+                FROM text_lines tl
+                WHERE tl.surface_id = %s
+                  AND tl.position BETWEEN %s AND %s
+                  AND tl.id != %s
+                ORDER BY tl.position
+                """,
+                (surface_id, position - 2, position + 2, line_id),
+            )
+            neighbors = cur.fetchall()
+        for nb in neighbors:
+            direction = "before" if nb["position"] < position else "after"
+            nb_text = (
+                __import__("re")
+                .sub(r"^\s*\d+'?\.\s*", "", nb["atf_text"] or "")
+                .strip()
+            )
+            _add_fact(
+                bundle_facts,
+                f"neighbor line ({direction}, pos {nb['position']}): {nb_text}",
+                "annotation_run",
+                p_number,
+                f"neighbor_line:{nb['position']}",
+            )
+    else:
+        # Variant B: full surface ATF (middle-truncated, ends preserved)
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT string_agg(atf_text, E'\n' ORDER BY position) AS full_atf
+                FROM text_lines
+                WHERE surface_id = %s
+                """,
+                (surface_id,),
+            )
+            full_row = cur.fetchone()
+        full_atf = (full_row["full_atf"] or "") if full_row else ""
+        # Keep first 800 + last 400 chars; drop middle
+        if len(full_atf) > 1300:
+            omitted = len(full_atf) - 1200
+            surface_atf = (
+                full_atf[:800]
+                + f"\n[... {omitted} chars omitted ...]\n"
+                + full_atf[-400:]
+            )
+        else:
+            surface_atf = full_atf
+        _add_fact(
+            bundle_facts,
+            f"full surface ATF (variant B context):\n{surface_atf}",
+            "annotation_run",
+            p_number,
+            "surface_atf",
+        )
+
+    # 7. Token data with determinative extraction
+    token_rows: list[dict] = []
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT t.id AS token_id,
+                       t.raw_form,
+                       lz.id AS lemma_id_on_lz,
+                       ll.citation_form,
+                       ll.guide_word,
+                       ll.pos,
+                       lz.language AS lz_language
+                FROM tokens t
+                LEFT JOIN lemmatizations lz ON lz.token_id = t.id
+                LEFT JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
+                WHERE t.line_id = %s
+                ORDER BY t.id
+                """,
+                (line_id,),
+            )
+            token_rows = [dict(r) for r in cur.fetchall()]
+
+        for tr in token_rows:
+            raw = tr.get("raw_form") or ""
+            is_det = bool(_DETERMINATIVE_RE.match(raw))
+            tr["is_determinative"] = is_det
+
+            if is_det:
+                det_type = raw.strip("{}")
+                _add_fact(
+                    bundle_facts,
+                    f"determinative {raw} on token {tr['token_id']} — likely {det_type} category classifier",
+                    "annotation_run",
+                    p_number,
+                    f"determinative:{tr['token_id']}",
+                )
+            elif tr.get("citation_form"):
+                _add_fact(
+                    bundle_facts,
+                    f"token {tr['token_id']} ({raw}): lemma={tr['citation_form']}, meaning={tr.get('guide_word') or 'unknown'}",
+                    "annotation_run",
+                    p_number,
+                    f"lemma:{tr['token_id']}",
+                )
+            else:
+                _add_fact(
+                    bundle_facts,
+                    f"token {tr['token_id']} ({raw}): not yet lemmatized",
+                    "annotation_run",
+                    p_number,
+                    f"token:{tr['token_id']}",
+                )
+    except (psycopg.errors.UndefinedColumn, psycopg.errors.UndefinedTable):
+        conn.rollback()
+        missing_layers.append(
+            "Token data unavailable (schema not available in this environment)"
+        )
+
+    # 8. Dialect detection
+    dialect: str | None = None
+    is_mixed = False
+    lang_shift_pos: int | None = None
+    lz_langs = {tr.get("lz_language") for tr in token_rows if tr.get("lz_language")}
+    if lz_langs:
+        dialects = sorted(
+            lz for lz in lz_langs if isinstance(lz, str) and lz.startswith("akk-x-")
+        )
+        if dialects:
+            dialect = dialects[0]
+        has_sux = any(isinstance(lc, str) and lc.startswith("sux") for lc in lz_langs)
+        has_akk = any(isinstance(lc, str) and lc.startswith("akk") for lc in lz_langs)
+        is_mixed = has_sux and has_akk
+
+    return LineFactBundle(
+        p_number=p_number,
+        line_id=line_id,
+        surface_name=surface_name,
+        line_number=line_number,
+        atf_text=atf_text,
+        language=language,
+        dialect=dialect,
+        is_mixed_language=is_mixed,
+        language_shift_position=lang_shift_pos,
+        language_supported=_language_supported_str(language),
+        context_variant=context_variant,
+        facts=bundle_facts,
+        token_rows=token_rows,
+        missing_layers=missing_layers,
+        surface_atf=surface_atf,
+    )

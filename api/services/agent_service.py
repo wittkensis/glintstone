@@ -27,6 +27,7 @@ from core.agent.fact_assembly import (
 from core.agent.search_engine import SearchEngine
 from core.agent.synthesis import (
     synthesize_artifact_summary,
+    synthesize_line_suggestion,
     synthesize_token_interpretation,
 )
 from core.agent.voyage_client import VoyageClient
@@ -41,6 +42,9 @@ from core.schemas.envelope import (
     Group,
     GroupedTablePayload,
     Hypothesis,
+    LineSuggestion,
+    LineSuggestionPayload,
+    TokenChainStep,
     ToolResponse,
 )
 from core.schemas.search import SearchParams
@@ -714,6 +718,163 @@ def _degraded_token_response(
         data=payload,
         sources=[
             SourceRef.computed(method="degraded-no-synthesis", label="degraded path")
+        ],
+        interaction_id=interaction_id_str,
+        render_hint="chain",
+    )
+
+
+# ── 4. Suggest line translation ───────────────────────────────────────────────
+
+
+def do_suggest_line_translation(
+    conn: psycopg.Connection,
+    *,
+    p_number: str,
+    surface_name: str,
+    line_number: str,
+    session_variant: str | None = None,
+    interaction_id_str: str,
+) -> ToolResponse[LineSuggestionPayload]:
+    """Hero scenario 4: suggest_line_translation.
+
+    Returns ranked translation proposals for a single cuneiform line,
+    with per-token confidence chain and missing-layer diagnostics.
+    """
+    prompt_version = "suggest-line.v1"
+
+    bundle = fact_assembly.assemble_line_facts(
+        conn,
+        p_number=p_number,
+        surface_name=surface_name,
+        line_number=line_number,
+        session_variant=session_variant,
+    )
+
+    if bundle is None:
+        empty_payload = LineSuggestionPayload(
+            atf="",
+            language="Unknown",
+            language_supported=False,
+            missing_layers=["Line not found in database"],
+            model="",
+            prompt_version=prompt_version,
+        )
+        return ToolResponse[LineSuggestionPayload](
+            summary=f"Line {line_number} not found on {surface_name} of {p_number}.",
+            data=empty_payload,
+            sources=[SourceRef.computed(method="line-not-found", label="not found")],
+            interaction_id=interaction_id_str,
+            render_hint="chain",
+        )
+
+    if not bundle.language_supported:
+        unsupported_payload = LineSuggestionPayload(
+            line_id=bundle.line_id,
+            atf=bundle.atf_text,
+            language=bundle.language,
+            language_supported=False,
+            missing_layers=bundle.missing_layers,
+            model="",
+            prompt_version=prompt_version,
+        )
+        return ToolResponse[LineSuggestionPayload](
+            summary=f"AI suggestions not available for {bundle.language}.",
+            data=unsupported_payload,
+            sources=[
+                SourceRef.computed(
+                    method="language-not-supported", label="unsupported language"
+                )
+            ],
+            interaction_id=interaction_id_str,
+            render_hint="chain",
+        )
+
+    anthropic = _get_anthropic()
+
+    try:
+        result = synthesize_line_suggestion(
+            anthropic, bundle, prompt_version=prompt_version
+        )
+        raw_json = result.text.strip()
+    except SynthesisGroundingError as exc:
+        logger.warning(
+            "line synthesis grounding failed for %s %s %s: %s",
+            p_number,
+            surface_name,
+            line_number,
+            exc.last_complaint,
+        )
+        raw_json = None
+
+    # Parse JSON output
+    token_chain: list[TokenChainStep] = []
+    suggestions: list[LineSuggestion] = []
+
+    if raw_json:
+        try:
+            import json as _json  # noqa: PLC0415
+
+            parsed = _json.loads(raw_json)
+            for step in parsed.get("token_chain", []):
+                token_chain.append(
+                    TokenChainStep(
+                        token_id=int(step.get("token_id", 0)),
+                        raw_form=step.get("raw_form", ""),
+                        is_determinative=bool(step.get("is_determinative", False)),
+                        lemma=step.get("lemma"),
+                        guide_word=step.get("guide_word"),
+                        pos=step.get("pos"),
+                        case=step.get("case"),
+                        number=step.get("number"),
+                        gender=step.get("gender"),
+                        translation_fragment=step.get("translation_fragment"),
+                        fact_refs=step.get("fact_refs", []),
+                        confidence_band=step.get("confidence_band", "unknown"),
+                    )
+                )
+            for sug in parsed.get("suggestions", []):
+                suggestions.append(
+                    LineSuggestion(
+                        rank=int(sug.get("rank", 1)),
+                        translation=sug.get("translation", ""),
+                        confidence_band=sug.get("confidence_band", "low"),
+                        evidence_chain=sug.get("evidence_chain", []),
+                        fact_refs=sug.get("fact_refs", []),
+                        caveat=sug.get("caveat"),
+                    )
+                )
+        except Exception as exc:
+            logger.warning("line suggestion JSON parse failed: %s", exc)
+
+    model_name = anthropic.model if hasattr(anthropic, "model") else ""
+
+    payload = LineSuggestionPayload(
+        line_id=bundle.line_id,
+        atf=bundle.atf_text,
+        language=bundle.language,
+        dialect=bundle.dialect,
+        is_mixed_language=bundle.is_mixed_language,
+        language_shift_position=bundle.language_shift_position,
+        language_supported=bundle.language_supported,
+        token_chain=token_chain,
+        suggestions=suggestions,
+        missing_layers=bundle.missing_layers,
+        context_variant=bundle.context_variant,
+        model=model_name,
+        prompt_version=prompt_version,
+    )
+
+    top_suggestion = (
+        suggestions[0].translation if suggestions else "No suggestion generated"
+    )
+    summary = f"Line {line_number}: {top_suggestion}"
+
+    return ToolResponse[LineSuggestionPayload](
+        summary=summary,
+        data=payload,
+        sources=[
+            SourceRef.computed(method="grounded-synthesis", label="grounded synthesis")
         ],
         interaction_id=interaction_id_str,
         render_hint="chain",
