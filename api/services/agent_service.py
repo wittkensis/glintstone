@@ -160,7 +160,7 @@ def do_search(
                     WHERE output_type = 'artifact_summary'
                       AND focus = 'general'
                       AND target_id = ANY(%s)
-                    ORDER BY target_id, created_at DESC
+                    ORDER BY target_id, generated_at DESC
                     """,
                     (p_numbers,),
                 )
