@@ -14,6 +14,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel
+from typing import Literal
 
 from api.services import agent_service
 from core.agent.interactions import log_interaction
@@ -105,10 +106,49 @@ def interpret_token(
     return response
 
 
-# ── Corrections ───────────────────────────────────────────────────────────────
+# ── Feedback + Corrections ────────────────────────────────────────────────────
 
 
 corrections_router = APIRouter(prefix="/agentic", tags=["agentic"])
+
+
+class FeedbackParams(BaseModel):
+    interaction_id: int
+    rating: Literal["up", "down"]
+
+
+class FeedbackResponse(BaseModel):
+    feedback_id: int
+
+
+@corrections_router.post(
+    "/feedback",
+    response_model=FeedbackResponse,
+    summary="Record a thumbs-up/down rating for any agent interaction",
+)
+def submit_feedback(
+    body: FeedbackParams,
+    conn=Depends(get_db),
+) -> FeedbackResponse:
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id FROM agent_interactions WHERE id = %s",
+            (body.interaction_id,),
+        )
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="interaction_id not found")
+
+        cur.execute(
+            """
+            INSERT INTO interaction_feedback (interaction_id, kind, payload)
+            VALUES (%s, 'explicit_rating', %s::jsonb)
+            RETURNING id
+            """,
+            (body.interaction_id, json.dumps({"rating": body.rating})),
+        )
+        feedback_id = cur.fetchone()["id"]
+    conn.commit()
+    return FeedbackResponse(feedback_id=feedback_id)
 
 
 class CorrectionResponse(BaseModel):
