@@ -16,7 +16,7 @@
                 <p class="page-header-subtitle">
                     Canonical texts reconstructed from multiple physical tablets.
                     {% if total %}
-                    <span class="compositions-page__total">{{ total | int | format_number if total else total }} compositions</span>
+                    <span class="compositions-page__total">{{ "{:,}".format(total | int) if total else "" }} compositions</span>
                     {% endif %}
                 </p>
             </div>
