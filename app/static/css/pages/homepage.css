@@ -338,3 +338,68 @@
 .explore-chip:hover .explore-chip__count {
     color: color-mix(in srgb, var(--color-accent) 70%, transparent);
 }
+
+/* ==========================================================================
+   Section 3 — The Frontier (conditionally rendered when line_ref data present)
+   ========================================================================== */
+
+.homepage-frontier {
+    background: var(--color-bg);
+}
+
+.frontier-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-4);
+}
+
+.frontier-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.frontier-card:hover {
+    border-color: var(--color-accent);
+    background: var(--color-bg-elevated);
+}
+
+.frontier-card__name {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.3;
+}
+
+.frontier-card__q {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.frontier-card__stats {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: auto;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+}
+
+.frontier-card__exemplars {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.frontier-card__gap {
+    font-size: var(--text-xs);
+    color: color-mix(in srgb, var(--color-accent) 80%, var(--color-text-muted));
+    font-weight: 500;
+}

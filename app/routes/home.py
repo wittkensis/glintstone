@@ -53,6 +53,13 @@ def homepage(request: Request):
     top_genres = (kpi or {}).get("top_genres", [])[:5] if kpi else []
     top_languages = (kpi or {}).get("top_languages", [])[:5] if kpi else []
 
+    # The Frontier: compositions with large unattested gaps (Phase 2)
+    try:
+        gaps_data = api.get("/stats/coverage-gaps", params={"limit": 4})
+        frontier = gaps_data.get("items", [])
+    except Exception:
+        frontier = []
+
     from app.main import templates
 
     return templates.TemplateResponse(
@@ -62,6 +69,7 @@ def homepage(request: Request):
             "kpi": kpi,
             "canon": canon,
             "composites_total": composites_total,
+            "frontier": frontier,
             "top_periods": top_periods,
             "top_genres": top_genres,
             "top_languages": top_languages,

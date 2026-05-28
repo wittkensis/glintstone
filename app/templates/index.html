@@ -122,7 +122,34 @@
     </section>
     {% endif %}
 
-    {# ── SECTION 3: EXPLORE ────────────────────────────────────────────────── #}
+    {# ── SECTION 3: THE FRONTIER (only when line_ref data is populated) ────── #}
+    {% if frontier %}
+    <section class="homepage-section homepage-frontier" aria-labelledby="frontier-heading">
+        <div class="homepage-section__inner">
+            <header class="homepage-section__header">
+                <h2 id="frontier-heading" class="homepage-section__title">Where Knowledge is Incomplete</h2>
+                <p class="homepage-section__sub">Compositions with many witnesses but large unattested gaps — where scholarly work would have the highest impact.</p>
+            </header>
+
+            <div class="frontier-grid">
+                {% for gap in frontier %}
+                <a class="frontier-card" href="/compositions/{{ gap.q_number }}">
+                    <div class="frontier-card__name">{{ gap.designation or gap.q_number }}</div>
+                    <div class="frontier-card__q">{{ gap.q_number }}</div>
+                    <div class="frontier-card__stats">
+                        <span class="frontier-card__exemplars">{{ "{:,}".format(gap.exemplar_count or 0) }} exemplars</span>
+                        {% if gap.gap_count %}
+                        <span class="frontier-card__gap">~{{ "{:,}".format(gap.gap_count) }} unattested</span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {# ── SECTION 4: EXPLORE ────────────────────────────────────────────────── #}
     <section class="homepage-section homepage-explore" aria-labelledby="explore-heading">
         <div class="homepage-section__inner">
             <header class="homepage-section__header">

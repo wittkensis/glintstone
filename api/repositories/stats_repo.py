@@ -83,3 +83,38 @@ class StatsRepository(BaseRepository):
             "top_periods": top_periods,
             "top_genres": top_genres,
         }
+
+    def get_coverage_gaps(self, min_exemplars: int = 5, limit: int = 4) -> list[dict]:
+        """Return compositions with the largest coverage gaps.
+
+        A coverage gap is a composition with many exemplars but a large
+        fraction of its line_ref range unattested. Requires line_ref data
+        from the atf-parser connector — returns empty list when not populated.
+        """
+        try:
+            rows = self.fetch_all(
+                """
+                SELECT
+                    c.q_number,
+                    c.designation,
+                    c.exemplar_count,
+                    COUNT(ac.p_number) AS linked_count,
+                    COUNT(ac.p_number) FILTER (WHERE ac.line_ref IS NOT NULL) AS with_line_ref,
+                    -- Approximate gap: exemplars without line_ref coverage
+                    (c.exemplar_count - COUNT(ac.p_number) FILTER (WHERE ac.line_ref IS NOT NULL))
+                        AS gap_count
+                FROM composites c
+                LEFT JOIN artifact_composites ac ON ac.q_number = c.q_number
+                WHERE c.exemplar_count >= %s
+                GROUP BY c.q_number, c.designation, c.exemplar_count
+                HAVING COUNT(ac.p_number) FILTER (WHERE ac.line_ref IS NOT NULL) > 0
+                   AND (c.exemplar_count - COUNT(ac.p_number) FILTER (WHERE ac.line_ref IS NOT NULL))
+                       > c.exemplar_count * 0.2
+                ORDER BY gap_count DESC
+                LIMIT %s
+                """,
+                (min_exemplars, limit),
+            )
+            return [dict(r) for r in rows] if rows else []
+        except Exception:
+            return []
