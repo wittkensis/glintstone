@@ -3,9 +3,10 @@
  *
  * Lifecycle:
  *   1. Sidebar opens → fetch summary from API if not already loaded
- *   2. Render synthesis text with [n] markers stripped
- *   3. Render hypothesis sentence separately (visually distinct, provisional)
- *   4. Show thumbs up/down feedback buttons; POST rating on click
+ *   2. Render pipeline bar + language badge in header
+ *   3. Render synthesis text (or unsupported-language notice)
+ *   4. Render hypothesis sentence separately (visually distinct, provisional)
+ *   5. Show thumbs up/down feedback buttons; POST rating on click
  *
  * API:
  *   GET  {apiUrl}/artifacts/{p}/summary?focus=general
@@ -24,6 +25,8 @@
 
     const loadingEl = document.getElementById('artifact-summary-loading');
     const contentEl = document.getElementById('artifact-summary-content');
+    const headerEl = document.getElementById('artifact-summary-header');
+    const unsupportedEl = document.getElementById('artifact-summary-unsupported');
     const textEl = document.getElementById('artifact-summary-text');
     const hypothesisEl = document.getElementById('artifact-summary-hypothesis');
     const metaEl = document.getElementById('artifact-summary-meta');
@@ -72,8 +75,64 @@
         row.innerHTML = '<span class="artifact-summary__feedback-thanks">Thanks</span>';
     }
 
+    function renderHeader(card) {
+        if (!headerEl) return;
+        headerEl.innerHTML = '';
+
+        // Pipeline completeness bar
+        const completeness = (card.badges || []).find((b) => b.kind === 'completeness');
+        if (completeness) {
+            const match = completeness.label.match(/(\d+)\/(\d+)/);
+            if (match) {
+                const score = parseInt(match[1], 10);
+                const total = parseInt(match[2], 10);
+                const bar = document.createElement('div');
+                bar.className = 'artifact-summary__pipeline';
+                bar.setAttribute('aria-label', `Pipeline completeness ${score} of ${total}`);
+                for (let i = 0; i < total; i++) {
+                    const dot = document.createElement('span');
+                    dot.className = 'artifact-summary__pipeline-dot' +
+                        (i < score ? ' artifact-summary__pipeline-dot--complete' : '');
+                    bar.appendChild(dot);
+                }
+                const lbl = document.createElement('span');
+                lbl.className = 'artifact-summary__pipeline-label';
+                lbl.textContent = `${score}/${total}`;
+                bar.appendChild(lbl);
+                headerEl.appendChild(bar);
+            }
+        }
+
+        // Language badge
+        const langField = (card.fields || []).find(
+            (f) => f.label && f.label.toLowerCase().includes('primary language')
+        );
+        if (langField && langField.value) {
+            const badge = document.createElement('span');
+            badge.className = 'artifact-summary__lang';
+            badge.textContent = langField.value;
+            headerEl.appendChild(badge);
+        }
+    }
+
     function renderSummary(data) {
         const card = data.data;
+
+        renderHeader(card);
+
+        // Gate on language support
+        if (card.language_supported === false) {
+            const langField = (card.fields || []).find(
+                (f) => f.label && f.label.toLowerCase().includes('primary language')
+            );
+            const langName = langField ? langField.value : 'this language';
+            unsupportedEl.textContent = `AI suggestions not available for ${langName}.`;
+            unsupportedEl.classList.remove('is-hidden');
+            loadingEl.classList.add('is-hidden');
+            contentEl.classList.remove('is-hidden');
+            return;
+        }
+
         const synthesis = card.synthesis || data.summary || '';
 
         const hypMatch = synthesis.match(/\(hypothesis\)[^.!?]*[.!?]/i);

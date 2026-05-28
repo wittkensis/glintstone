@@ -84,6 +84,9 @@
             {% if item.secondary_label %}
               <span class="search-row__secondary">{{ item.secondary_label }}</span>
             {% endif %}
+            {% if item.snippet %}
+              <span class="search-row__snippet">{{ item.snippet }}</span>
+            {% endif %}
           </span>
           {% if gtype == 'tablets' and item.pipeline_stages %}
             {# First not-yet-complete stage is the "active" (in-progress) gold dot. #}

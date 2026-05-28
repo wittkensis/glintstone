@@ -269,6 +269,10 @@
                         </div>
                         <!-- Populated by artifact-summary.js -->
                         <div class="artifact-summary__content is-hidden" id="artifact-summary-content">
+                            <!-- Pipeline bar + language badge — populated by JS -->
+                            <div class="artifact-summary__header" id="artifact-summary-header"></div>
+                            <!-- Unsupported language notice — shown by JS when language_supported=false -->
+                            <p class="artifact-summary__unsupported is-hidden" id="artifact-summary-unsupported"></p>
                             <p class="artifact-summary__text" id="artifact-summary-text"></p>
                             <p class="artifact-summary__hypothesis is-hidden" id="artifact-summary-hypothesis"></p>
                             <div class="artifact-summary__meta" id="artifact-summary-meta"></div>

@@ -53,6 +53,9 @@ _voyage: VoyageClient | None = None
 _anthropic: AnthropicClient | None = None
 _search_engine: SearchEngine | None = None
 
+# First sentence: ends at ., !, or ? followed by space or end-of-string.
+_re_sentence = re.compile(r"[^.!?]*[.!?](?=\s|$)")
+
 
 def _get_voyage() -> VoyageClient | None:
     """Return Voyage client if configured, else None (semantic search degrades)."""
@@ -143,6 +146,30 @@ def do_search(
     types_requested = params.types or list(results.groups.keys())
     groups: list[Group] = []
 
+    # Pre-fetch cached summaries for any tablet hits so we can show snippets.
+    tablet_hits_all = results.groups.get("tablets", [])
+    snippet_map: dict[str, str] = {}
+    if tablet_hits_all:
+        p_numbers = [h.p_number_ref for h in tablet_hits_all if h.p_number_ref]
+        if p_numbers:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT DISTINCT ON (target_id) target_id, output_text
+                    FROM agent_outputs
+                    WHERE output_type = 'artifact_summary'
+                      AND focus = 'general'
+                      AND target_id = ANY(%s)
+                    ORDER BY target_id, created_at DESC
+                    """,
+                    (p_numbers,),
+                )
+                for row in cur.fetchall():
+                    text = row["output_text"] or ""
+                    m = _re_sentence.search(text)
+                    snippet = (m.group(0) if m else text[:160]).strip()
+                    snippet_map[row["target_id"]] = snippet
+
     for entity_type in types_requested:
         hits = results.groups.get(entity_type, [])
         total = results.totals.get(entity_type, 0)
@@ -161,6 +188,8 @@ def do_search(
                 item["thumbnail_url"] = h.thumbnail_url
                 item["pipeline_completeness"] = h.pipeline_completeness
                 item["pipeline_stages"] = h.pipeline_stages
+                if h.p_number_ref and h.p_number_ref in snippet_map:
+                    item["snippet"] = snippet_map[h.p_number_ref]
             items.append(item)
 
         view_all = None
@@ -312,6 +341,7 @@ def do_summarize_artifact(
         synthesis=synthesis_text,
         synthesis_citations=synthesis_citations,
         best_guess=best_guess,
+        language_supported=_language_supported(bundle),
     )
 
     summary = (
@@ -360,6 +390,7 @@ def _card_response_from_persisted(
         synthesis=persisted.output_text,
         synthesis_citations=persisted.citations,
         best_guess=best_guess,
+        language_supported=_language_supported(bundle),
     )
     return ToolResponse[CardPayload](
         summary=_plain_summary_from_synthesis(persisted.output_text) or p_number,
@@ -422,6 +453,15 @@ def _extract_best_guess(
         similar_tablets=similar_p,
         citations=citations,
     )
+
+
+def _language_supported(bundle: ArtifactFactBundle) -> bool:
+    """Sumerian and Akkadian (all dialects) are in scope for AI suggestions."""
+    for f in bundle.facts:
+        if f.text.startswith("primary language:"):
+            lang = f.text.split(":", 1)[1].strip().lower()
+            return lang.startswith("sumerian") or lang.startswith("akkadian")
+    return True  # unknown language → allow rather than silently block
 
 
 def _badges_from_bundle(bundle: ArtifactFactBundle) -> list:

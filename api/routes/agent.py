@@ -1,6 +1,7 @@
 """REST: GET /api/v2/artifacts/{p}/summary  (summarize_artifact)
         GET /api/v2/artifacts/{p}/tokens/{tid}/interpret  (interpret_token)
         POST /api/v2/agentic/corrections  (user correction → annotation_run)
+        POST /api/v2/agentic/batch/summarize  (internal — seed the cache)
 
 Thin projection of api/services/agent_service.py — same service the MCP server
 hits. Two-tier rule: web app and MCP both go through the REST API.
@@ -10,11 +11,10 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path
 from pydantic import BaseModel
-from typing import Literal
 
 from api.services import agent_service
 from core.agent.interactions import log_interaction
@@ -224,4 +224,81 @@ def submit_correction(
             "Correction recorded. The next request that re-loads any agent "
             "output citing the corrected annotation will regenerate."
         ),
+    )
+
+
+# ── Batch ─────────────────────────────────────────────────────────────────────
+
+
+class BatchSummarizeParams(BaseModel):
+    limit: int = 100
+    focus: str = "general"
+    lang_filter: str | None = None
+    period_filter: str | None = None
+    skip_cached: bool = True
+
+
+class BatchSummarizeResponse(BaseModel):
+    queued: int
+    message: str
+
+
+def _run_batch(
+    conn,
+    params: BatchSummarizeParams,
+) -> None:
+    """Fire-and-forget worker — called from background task."""
+    import logging  # noqa: PLC0415
+
+    from core.agent.batch import _fetch_candidates, cmd_summarize  # noqa: PLC0415
+
+    logger = logging.getLogger(__name__)
+    candidates = _fetch_candidates(
+        conn,
+        limit=params.limit,
+        focus=params.focus,
+        lang_filter=params.lang_filter,
+        period_filter=params.period_filter,
+        skip_cached=params.skip_cached,
+    )
+    logger.info("batch/summarize: %d candidates", len(candidates))
+    import argparse  # noqa: PLC0415
+
+    ns = argparse.Namespace(
+        limit=params.limit,
+        focus=params.focus,
+        lang=params.lang_filter,
+        period=params.period_filter,
+        skip_cached=params.skip_cached,
+        dry_run=False,
+    )
+    cmd_summarize(ns)
+
+
+@corrections_router.post(
+    "/batch/summarize",
+    response_model=BatchSummarizeResponse,
+    summary="Seed the artifact-summary cache in the background (internal)",
+)
+def batch_summarize(
+    body: BatchSummarizeParams,
+    background_tasks: BackgroundTasks,
+    conn=Depends(get_db),
+) -> BatchSummarizeResponse:
+    """Enqueues a background pass. Returns immediately with the candidate count.
+    Idempotent: skips artifacts with a fresh cached summary by default."""
+    from core.agent.batch import _fetch_candidates  # noqa: PLC0415
+
+    candidates = _fetch_candidates(
+        conn,
+        limit=body.limit,
+        focus=body.focus,
+        lang_filter=body.lang_filter,
+        period_filter=body.period_filter,
+        skip_cached=body.skip_cached,
+    )
+    background_tasks.add_task(_run_batch, conn, body)
+    return BatchSummarizeResponse(
+        queued=len(candidates),
+        message=f"Queued {len(candidates)} artifact(s) for summarization.",
     )
