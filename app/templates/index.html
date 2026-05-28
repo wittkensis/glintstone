@@ -1,38 +1,185 @@
 {% extends "base.html" %}
-{% from "components/_macros.html" import kpi_dashboard, collection_card, empty_state %}
 
 {% block title %}Glintstone{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="/static/css/pages/homepage.css?v={{ app_version }}">
+{% endblock %}
+
 {% block content %}
-<main class="homepage-container">
+<main class="homepage">
 
-    <section class="progress-meter-section">
-        {{ kpi_dashboard(kpi) }}
-    </section>
+    {# ── SECTION 1: THE CORPUS ─────────────────────────────────────────────── #}
+    <section class="homepage-section homepage-corpus" aria-labelledby="corpus-heading">
+        <div class="homepage-section__inner">
+            <div class="corpus-lead">
+                {% if kpi and kpi.total_tablets %}
+                <div class="corpus-lead__number">{{ "{:,}".format(kpi.total_tablets) }}</div>
+                <div class="corpus-lead__label">cuneiform artifacts</div>
+                <p class="corpus-lead__sub">
+                    The most complete aggregation of cuneiform scholarship in one place.
+                </p>
+                {% else %}
+                <div class="corpus-lead__number">—</div>
+                <div class="corpus-lead__label">cuneiform artifacts</div>
+                {% endif %}
+            </div>
 
-    <div class="section-divider"></div>
-
-    <section class="featured-collections">
-        <header class="featured-collections-header">
-            <h2>Explore Collections</h2>
-            <p>Discover curated sets of tablets organized by theme, period, and scholarly interest</p>
-        </header>
-
-        {% if featured_collections %}
-        <div class="collection-grid">
-            {% for collection in featured_collections %}
-                {{ collection_card(collection, api_url=api_url) }}
-            {% endfor %}
+            {% if kpi and kpi.pipeline_stages %}
+            {% set total = kpi.total_tablets or 1 %}
+            {% set stages = kpi.pipeline_stages %}
+            <div class="corpus-pipeline" aria-label="Corpus pipeline progress">
+                <div class="corpus-pipeline__row">
+                    <span class="corpus-pipeline__stage-label">What survives</span>
+                    <div class="corpus-pipeline__bar-wrap">
+                        <div class="corpus-pipeline__bar corpus-pipeline__bar--full"></div>
+                    </div>
+                    <span class="corpus-pipeline__count">{{ "{:,}".format(kpi.total_tablets) }} artifacts catalogued</span>
+                </div>
+                {% if stages.physical %}
+                <div class="corpus-pipeline__row">
+                    <span class="corpus-pipeline__stage-label">Have images</span>
+                    <div class="corpus-pipeline__bar-wrap">
+                        <div class="corpus-pipeline__bar" style="width: {{ [stages.physical.percent, 1]|max }}%"></div>
+                    </div>
+                    <span class="corpus-pipeline__count">{{ "{:,}".format(stages.physical.count) }} <span class="corpus-pipeline__pct">({{ stages.physical.percent }}%)</span></span>
+                </div>
+                {% endif %}
+                {% if stages.reading %}
+                <div class="corpus-pipeline__row">
+                    <span class="corpus-pipeline__stage-label">Transliterated</span>
+                    <div class="corpus-pipeline__bar-wrap">
+                        <div class="corpus-pipeline__bar" style="width: {{ [stages.reading.percent, 1]|max }}%"></div>
+                    </div>
+                    <span class="corpus-pipeline__count">{{ "{:,}".format(stages.reading.count) }} <span class="corpus-pipeline__pct">({{ stages.reading.percent }}%)</span></span>
+                </div>
+                {% endif %}
+                {% if stages.linguistic %}
+                <div class="corpus-pipeline__row">
+                    <span class="corpus-pipeline__stage-label">Lemmatized</span>
+                    <div class="corpus-pipeline__bar-wrap">
+                        <div class="corpus-pipeline__bar" style="width: {{ [stages.linguistic.percent, 1]|max }}%"></div>
+                    </div>
+                    <span class="corpus-pipeline__count">{{ "{:,}".format(stages.linguistic.count) }} <span class="corpus-pipeline__pct">({{ stages.linguistic.percent }}%)</span></span>
+                </div>
+                {% endif %}
+                {% if stages.semantic %}
+                <div class="corpus-pipeline__row">
+                    <span class="corpus-pipeline__stage-label">Translated</span>
+                    <div class="corpus-pipeline__bar-wrap">
+                        <div class="corpus-pipeline__bar" style="width: {{ [stages.semantic.percent, 1]|max }}%"></div>
+                    </div>
+                    <span class="corpus-pipeline__count">{{ "{:,}".format(stages.semantic.count) }} <span class="corpus-pipeline__pct">({{ stages.semantic.percent }}%)</span></span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-            {{ empty_state(
-                icon='&#x12000;',
-                title='No collections yet',
-                message='Collections will appear here once created.',
-                action_url='/collections/new',
-                action_text='Create Collection'
-            ) }}
-        {% endif %}
     </section>
+
+    {# ── SECTION 2: THE CANON ──────────────────────────────────────────────── #}
+    {% if canon %}
+    <section class="homepage-section homepage-canon" aria-labelledby="canon-heading">
+        <div class="homepage-section__inner">
+            <header class="homepage-section__header">
+                <h2 id="canon-heading" class="homepage-section__title">The Most-Copied Texts of Human Civilization</h2>
+                <p class="homepage-section__sub">Ancient scribes voted with their hands. These are the texts Mesopotamian culture considered worth preserving.</p>
+            </header>
+
+            <ol class="canon-list" role="list">
+                {% for c in canon %}
+                <li class="canon-item">
+                    <a class="canon-item__link" href="/compositions/{{ c.q_number }}">
+                        <div class="canon-item__body">
+                            <span class="canon-item__name">{{ c.designation or c.q_number }}</span>
+                            {% if c.description %}
+                            <span class="canon-item__desc">{{ c.description }}</span>
+                            {% elif c.language or c.period %}
+                            <span class="canon-item__desc">
+                                {% if c.language %}{{ c.language }}{% endif %}{% if c.language and c.period %} · {% endif %}{% if c.period %}{{ c.period }}{% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="canon-item__witnesses">
+                            {% if c.exemplar_count %}
+                            <span class="canon-item__count">{{ "{:,}".format(c.exemplar_count) }}</span>
+                            <span class="canon-item__count-label">witnesses</span>
+                            {% endif %}
+                            <svg class="canon-item__arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                <path d="M3 8h10M9 4l4 4-4 4"/>
+                            </svg>
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ol>
+
+            <a href="/compositions" class="canon-see-all">
+                Browse all {% if composites_total %}{{ "{:,}".format(composites_total) }}{% endif %} compositions
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+            </a>
+        </div>
+    </section>
+    {% endif %}
+
+    {# ── SECTION 3: EXPLORE ────────────────────────────────────────────────── #}
+    <section class="homepage-section homepage-explore" aria-labelledby="explore-heading">
+        <div class="homepage-section__inner">
+            <header class="homepage-section__header">
+                <h2 id="explore-heading" class="homepage-section__title">Explore the Corpus</h2>
+            </header>
+
+            <div class="explore-facets">
+                {% if top_periods %}
+                <div class="explore-facet">
+                    <h3 class="explore-facet__title">Browse by Period</h3>
+                    <ul class="explore-facet__list">
+                        {% for item in top_periods %}
+                        <li>
+                            <a href="/tablets?period={{ item.period | urlencode }}" class="explore-chip">
+                                {{ item.period }}
+                                <span class="explore-chip__count">{{ "{:,}".format(item.count) }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if top_genres %}
+                <div class="explore-facet">
+                    <h3 class="explore-facet__title">Browse by Genre</h3>
+                    <ul class="explore-facet__list">
+                        {% for item in top_genres %}
+                        <li>
+                            <a href="/tablets?genre={{ item.genre | urlencode }}" class="explore-chip">
+                                {{ item.genre }}
+                                <span class="explore-chip__count">{{ "{:,}".format(item.count) }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if top_languages %}
+                <div class="explore-facet">
+                    <h3 class="explore-facet__title">Browse by Language</h3>
+                    <ul class="explore-facet__list">
+                        {% for item in top_languages %}
+                        <li>
+                            <a href="/tablets?language={{ item.language | urlencode }}" class="explore-chip">
+                                {{ item.language }}
+                                <span class="explore-chip__count">{{ "{:,}".format(item.count) }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
 </main>
 {% endblock %}
