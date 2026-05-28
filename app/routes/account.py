@@ -79,11 +79,8 @@ def preferences_proxy(body: _PreferencesBody, request: Request, response: Respon
         return Response(status_code=401)
     if body.theme not in _VALID_THEMES:
         return Response(status_code=422)
-    request.app.state.api.patch(
-        "/users/me/preferences",
-        json={"theme": body.theme},
-        token=token,
-    )
+    # Cookie is the source of truth for the theme on every page load.
+    # Set it before the API write so a failing backend never reverts the choice.
     response.set_cookie(
         "glintstone_theme",
         body.theme,
@@ -91,6 +88,14 @@ def preferences_proxy(body: _PreferencesBody, request: Request, response: Respon
         samesite="lax",
         httponly=False,
     )
+    try:
+        request.app.state.api.patch(
+            "/users/me/preferences",
+            json={"theme": body.theme},
+            token=token,
+        )
+    except Exception:
+        pass  # DB sync is best-effort; cookie already guarantees the theme persists
 
 
 @router.get("/_me")

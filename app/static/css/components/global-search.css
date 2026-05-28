@@ -33,7 +33,7 @@
     height: 44px;
     padding: 0 var(--space-3) 0 calc(var(--space-3) + 18px + var(--space-2));
     background: var(--color-bg-inset);
-    border: 1px solid transparent;
+    border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-full);
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -79,19 +79,29 @@
     opacity: 0.6;
 }
 
-.global-search__input {
+/* Three-level nesting gives specificity [0,3,0], beating forms.css rules including
+   their :hover [0,2,1] and :focus [0,2,1] pseudo-class variants. */
+.global-search .global-search__input-wrap .global-search__input,
+.global-search .global-search__input-wrap .global-search__input:hover,
+.global-search .global-search__input-wrap .global-search__input:focus {
     flex: 1;
     min-width: 0;
     background: transparent;
     border: 0;
+    border-color: transparent;
+    border-radius: 0;
+    padding: 0;
+    width: auto;
     outline: 0;
+    box-shadow: none;
     color: var(--color-text);
     font-family: var(--font-sans);
     font-size: var(--text-sm);
     line-height: 1.4;
+    transition: none;
 }
 
-.global-search__input::placeholder {
+.global-search .global-search__input-wrap .global-search__input::placeholder {
     color: var(--color-text-muted);
     opacity: 0.7;
 }
@@ -110,6 +120,11 @@
 
 .global-search.is-open .global-search__kbd {
     display: none;
+}
+
+/* Keep browse row visible when open — the drawer covers it from above. */
+.global-search.is-open .global-search__browse {
+    visibility: visible;
 }
 
 /* ==========================================================================
@@ -159,7 +174,7 @@
     position: absolute;
     left: 0;
     right: 0;
-    top: calc(100% + var(--space-2));
+    top: calc(44px + var(--space-2)); /* 44px = input pill height; positions drawer just below the input, covering the browse row */
     background: rgba(var(--color-bg-rgb), 0.92);
     border: 1px solid var(--color-bg-elevated);
     border-radius: var(--radius-lg);

@@ -141,8 +141,26 @@ document.getElementById('theme-picker').addEventListener('click', async (e) => {
     if (!btn) return;
     const theme = btn.dataset.themeValue;
 
-    // Instant preview
+    // Instant preview: update data-theme attribute
     document.documentElement.dataset.theme = theme;
+
+    // Swap the theme stylesheet. The server only injects it at page load;
+    // we have to load/unload it dynamically when the user picks a different theme.
+    const existing = document.getElementById('theme-stylesheet');
+    if (theme === 'default') {
+        if (existing) existing.remove();
+    } else {
+        const href = `/static/css/themes/${theme}.css`;
+        if (existing) {
+            existing.href = href;
+        } else {
+            const link = document.createElement('link');
+            link.id = 'theme-stylesheet';
+            link.rel = 'stylesheet';
+            link.href = href;
+            document.head.appendChild(link);
+        }
+    }
 
     // Update active state
     document.querySelectorAll('.theme-option').forEach(b => {

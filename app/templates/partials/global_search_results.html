@@ -54,6 +54,7 @@
 
   {% for group in groups %}
     {% set rows = group['items'] %}
+    {% if rows %}
     {% set total = group['total'] %}
     {% set gtype = group['group_type'] %}
     <section class="search-section" data-group-type="{{ gtype }}">
@@ -65,48 +66,45 @@
         {% endif %}
       </header>
 
-      {% if rows %}
-        {% for item in rows %}
-          <a class="search-row search-row--{{ gtype }}"
-             href="{{ entity_href(gtype, item) }}"
-             role="option"
-             tabindex="-1"
-             data-result-index="{{ loop.index0 }}">
-            <span class="search-row__thumb search-row__thumb--{{ gtype }}">
-              {% if gtype == 'tablets' and item.thumbnail_url %}
-                <img src="{{ item.thumbnail_url }}" alt="" loading="lazy">
-              {% else %}
-                <span class="search-row__letter">{{ (item.primary_label[:2] if item.primary_label else '?')|upper }}</span>
-              {% endif %}
-            </span>
-            <span class="search-row__text">
-              <span class="search-row__primary">{{ item.primary_label }}</span>
-              {% if item.secondary_label %}
-                <span class="search-row__secondary">{{ item.secondary_label }}</span>
-              {% endif %}
-            </span>
-            {% if gtype == 'tablets' and item.pipeline_stages %}
-              {# First not-yet-complete stage is the "active" (in-progress) gold dot. #}
-              {% set ns = namespace(active_marked=False) %}
-              <span class="pipeline-mini" aria-label="Pipeline completeness {{ item.pipeline_completeness or 0 }} of 5">
-                {% for stage in item.pipeline_stages %}
-                  {% if stage == 1 %}
-                    <span class="pipeline-mini__dot pipeline-mini__dot--complete"></span>
-                  {% elif not ns.active_marked %}
-                    <span class="pipeline-mini__dot pipeline-mini__dot--active"></span>
-                    {% set ns.active_marked = True %}
-                  {% else %}
-                    <span class="pipeline-mini__dot pipeline-mini__dot--idle"></span>
-                  {% endif %}
-                {% endfor %}
-              </span>
+      {% for item in rows %}
+        <a class="search-row search-row--{{ gtype }}"
+           href="{{ entity_href(gtype, item) }}"
+           role="option"
+           tabindex="-1"
+           data-result-index="{{ loop.index0 }}">
+          <span class="search-row__thumb search-row__thumb--{{ gtype }}">
+            {% if gtype == 'tablets' and item.thumbnail_url %}
+              <img src="{{ item.thumbnail_url }}" alt="" loading="lazy">
+            {% else %}
+              <span class="search-row__letter">{{ (item.primary_label[:2] if item.primary_label else '?')|upper }}</span>
             {% endif %}
-          </a>
-        {% endfor %}
-      {% else %}
-        <div class="search-empty">No results</div>
-      {% endif %}
+          </span>
+          <span class="search-row__text">
+            <span class="search-row__primary">{{ item.primary_label }}</span>
+            {% if item.secondary_label %}
+              <span class="search-row__secondary">{{ item.secondary_label }}</span>
+            {% endif %}
+          </span>
+          {% if gtype == 'tablets' and item.pipeline_stages %}
+            {# First not-yet-complete stage is the "active" (in-progress) gold dot. #}
+            {% set ns = namespace(active_marked=False) %}
+            <span class="pipeline-mini" aria-label="Pipeline completeness {{ item.pipeline_completeness or 0 }} of 5">
+              {% for stage in item.pipeline_stages %}
+                {% if stage == 1 %}
+                  <span class="pipeline-mini__dot pipeline-mini__dot--complete"></span>
+                {% elif not ns.active_marked %}
+                  <span class="pipeline-mini__dot pipeline-mini__dot--active"></span>
+                  {% set ns.active_marked = True %}
+                {% else %}
+                  <span class="pipeline-mini__dot pipeline-mini__dot--idle"></span>
+                {% endif %}
+              {% endfor %}
+            </span>
+          {% endif %}
+        </a>
+      {% endfor %}
     </section>
+    {% endif %}
   {% endfor %}
 
 </div>

@@ -56,6 +56,13 @@ echo $! > "$PID_DIR/web.pid"
 # Materialise the template with PROJECT_DIR substituted, then point nginx at it.
 NGINX_RUNTIME_CONF="/tmp/glintstone-nginx.conf"
 sed "s|__PROJECT_DIR__|$PROJECT_DIR|g" "$SCRIPT_DIR/nginx.conf" > "$NGINX_RUNTIME_CONF"
+# Stop any nginx that may be running (even if started with a different config).
+# We kill by pid file rather than relying on the config path matching, since a
+# stale nginx started with the raw template file has the wrong alias paths.
+if [ -f "/tmp/glintstone-nginx.pid" ]; then
+    sudo kill -QUIT "$(cat /tmp/glintstone-nginx.pid)" 2>/dev/null || true
+    sleep 1
+fi
 sudo nginx -c "$NGINX_RUNTIME_CONF"
 
 echo "  API:       http://api.glintstone.test"

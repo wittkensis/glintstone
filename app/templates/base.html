@@ -20,7 +20,7 @@
     {% endif %}
     <link rel="stylesheet" href="/static/css/main.css?v={{ app_version }}">
     {% if request.state.theme != 'default' %}
-    <link rel="stylesheet" href="/static/css/themes/{{ request.state.theme }}.css?v={{ app_version }}">
+    <link id="theme-stylesheet" rel="stylesheet" href="/static/css/themes/{{ request.state.theme }}.css?v={{ app_version }}">
     {% endif %}
     {% block head %}{% endblock %}
 </head>

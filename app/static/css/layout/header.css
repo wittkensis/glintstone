@@ -16,9 +16,14 @@
     box-shadow: var(--shadow-xs);
 }
 
+/* backdrop-filter creates a stacking context, capping the drawer at --z-sticky.
+   When the search drawer is open, elevate the whole header so it paints above
+   page elements (sticky filters, tab bars) that share the same z-index. */
+.site-header:has(.global-search.is-open) {
+    z-index: var(--z-modal);
+}
+
 .header-inner {
-    max-width: var(--container-wide);
-    margin: 0 auto;
     padding: var(--space-3) var(--space-6);
     display: grid;
     grid-template-columns: auto 1fr auto;
