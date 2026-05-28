@@ -17,6 +17,7 @@ from app.routes import (
     admin,
     auth,
     collections,
+    compositions,
     debug,
     dictionary,
     home,
@@ -141,6 +142,7 @@ app.include_router(home.router)
 app.include_router(auth.router)
 app.include_router(account.router)
 app.include_router(tablets.router)
+app.include_router(compositions.router)
 app.include_router(collections.router)
 app.include_router(dictionary.router)
 app.include_router(scholars.router)

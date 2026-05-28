@@ -1,0 +1,231 @@
+/**
+ * Compositions page — /compositions list and /compositions/{q} detail.
+ * Component-level styles (composite-card, view-toggle, composites-table)
+ * live in components/composites.css and are loaded via main.css.
+ */
+
+/* ==========================================================================
+   Page layout
+   ========================================================================== */
+
+.compositions-page,
+.composition-detail-page {
+    max-width: var(--container-wide);
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-6);
+}
+
+.compositions-page .page-header {
+    margin-bottom: var(--space-5);
+}
+
+.compositions-page__total {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+/* ==========================================================================
+   Filter bar
+   ========================================================================== */
+
+.compositions-filters {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.compositions-filters__search {
+    position: relative;
+    flex: 0 0 260px;
+}
+
+.compositions-filters__input {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    padding-right: 28px;
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+}
+
+.compositions-filters__input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.compositions-filters__clear {
+    position: absolute;
+    right: var(--space-2);
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+}
+
+.compositions-filters__facets {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+.compositions-filters__select {
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    cursor: pointer;
+}
+
+.compositions-filters__reset {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+}
+
+.compositions-filters__reset:hover {
+    color: var(--color-text);
+}
+
+.compositions-filters__view {
+    margin-left: auto;
+    display: flex;
+    gap: var(--space-1);
+}
+
+/* ==========================================================================
+   View toggle — adapts composites-panel rules to compositions-grid element
+   ========================================================================== */
+
+#compositions-view[data-view="table"] .compositions-cards,
+#compositions-view[data-view="card"] .composites-table {
+    display: none;
+}
+
+/* The card grid on the compositions page */
+.compositions-grid .compositions-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-4);
+}
+
+/* Make the whole card clickable */
+.composite-card__link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+}
+
+.composite-card__link:hover .composite-card__title {
+    color: var(--color-accent);
+}
+
+/* ==========================================================================
+   Empty state
+   ========================================================================== */
+
+.compositions-empty {
+    padding: var(--space-8) 0;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+/* ==========================================================================
+   Composition detail page
+   ========================================================================== */
+
+.composition-detail__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-5);
+}
+
+.composition-detail__count {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.composition-detail__exemplars h2 {
+    font-size: var(--text-base);
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+}
+
+.exemplars-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+}
+
+.exemplars-table th {
+    text-align: left;
+    padding: var(--space-2) var(--space-3);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.exemplars-table td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.exemplars-table tbody tr:hover td {
+    background: var(--color-bg-elevated);
+}
+
+.exemplars-table td a {
+    color: var(--color-accent);
+    text-decoration: none;
+}
+
+.exemplars-table td a:hover {
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   Breadcrumb
+   ========================================================================== */
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-4);
+}
+
+.breadcrumb a {
+    color: var(--color-accent);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}

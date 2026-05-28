@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ composite.designation or composite.q_number }} - Compositions - Glintstone{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/pages/compositions.css?v={{ app_version }}">
+{% endblock %}
+
+{% block content %}
+<main class="composition-detail-page">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/compositions">Compositions</a>
+        <span aria-hidden="true">/</span>
+        <span>{{ composite.q_number }}</span>
+    </nav>
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <h1>{{ composite.designation or 'Unnamed Composition' }}</h1>
+                <p class="page-header-subtitle">{{ composite.q_number }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="composition-detail__meta">
+        {% if composite.language %}
+        <span class="badge badge--sm badge--language">{{ composite.language }}</span>
+        {% endif %}
+        {% if composite.period %}
+        <span class="badge badge--sm">{{ composite.period }}</span>
+        {% endif %}
+        {% if composite.genre %}
+        <span class="badge badge--sm">{{ composite.genre }}</span>
+        {% endif %}
+        {% if composite.exemplar_count %}
+        <span class="composition-detail__count">{{ composite.exemplar_count }} exemplars</span>
+        {% endif %}
+    </div>
+
+    {% if exemplars %}
+    <section class="composition-detail__exemplars">
+        <h2>Exemplars</h2>
+        <table class="exemplars-table">
+            <thead>
+                <tr>
+                    <th>P-Number</th>
+                    <th>Designation</th>
+                    <th>Period</th>
+                    <th>Provenience</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ex in exemplars %}
+                <tr>
+                    <td><a href="/tablets/{{ ex.p_number }}">{{ ex.p_number }}</a></td>
+                    <td>{{ ex.designation or '—' }}</td>
+                    <td>{{ ex.period or '—' }}</td>
+                    <td>{{ ex.provenience or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% else %}
+    <p class="compositions-empty">No linked exemplars yet.</p>
+    {% endif %}
+
+</main>
+{% endblock %}

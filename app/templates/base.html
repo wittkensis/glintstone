@@ -36,6 +36,9 @@
 {% if _path.startswith('/tablets') %}
     {% set _scope_default = 'tablets' %}
     {% set _scope_label = 'Artifacts' %}
+{% elif _path.startswith('/compositions') %}
+    {% set _scope_default = 'compositions' %}
+    {% set _scope_label = 'Compositions' %}
 {% elif _path.startswith('/collections') %}
     {% set _scope_default = 'collections' %}
     {% set _scope_label = 'Collections' %}
