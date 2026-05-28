@@ -166,10 +166,122 @@
     color: var(--color-text-muted);
 }
 
+.composition-detail__exemplars-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-4);
+}
+
 .composition-detail__exemplars h2 {
     font-size: var(--text-base);
     font-weight: 600;
-    margin-bottom: var(--space-3);
+    margin: 0;
+}
+
+.exemplar-filters {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   Transmission History Timeline
+   ========================================================================== */
+
+.composition-timeline {
+    margin-bottom: var(--space-8);
+    padding: var(--space-6);
+    background: var(--color-bg-inset);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+}
+
+.composition-timeline__title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    margin: 0 0 var(--space-1);
+}
+
+.composition-timeline__sub {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-5);
+}
+
+.composition-timeline__rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.timeline-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: 24px;
+}
+
+@media (max-width: 640px) {
+    .timeline-row {
+        grid-template-columns: 1fr;
+        gap: var(--space-1);
+    }
+}
+
+.timeline-row__label {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.timeline-row__count {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-subtle);
+    flex-shrink: 0;
+}
+
+.timeline-row__dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    align-items: center;
+}
+
+.timeline-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-border);
+    border: 1px solid var(--color-border-subtle);
+    flex-shrink: 0;
+    transition: background var(--transition-fast), transform var(--transition-fast);
+    text-decoration: none;
+}
+
+.timeline-dot--linked {
+    background: color-mix(in srgb, var(--color-accent) 60%, transparent);
+    border-color: var(--color-accent);
+}
+
+.timeline-dot--linked:hover {
+    background: var(--color-accent);
+    transform: scale(1.4);
+    z-index: 1;
+}
+
+.timeline-overflow {
+    font-size: var(--text-xxs);
+    color: var(--color-text-muted);
+    margin-left: var(--space-1);
 }
 
 .exemplars-table {

@@ -12,7 +12,7 @@ In Claude Desktop config (~/Library/Application Support/Claude/claude_desktop_co
           "args": ["-m", "mcp.server_stdio"],
           "cwd": "/path/to/Glintstone/PROJECT",
           "env": {
-            "GS_API_URL": "https://api.glintstone.org/api/v2",
+            "GS_API_URL": "https://api.glintstone.org",
             "GS_CLIENT_LABEL": "claude-desktop"
           }
         }

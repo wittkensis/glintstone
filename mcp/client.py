@@ -13,7 +13,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BASE_URL = "http://api.glintstone.test/api/v2"
+DEFAULT_BASE_URL = "http://api.glintstone.test"
 
 
 class APIError(RuntimeError):

@@ -15,6 +15,7 @@
         <span>{{ composite.q_number }}</span>
     </nav>
 
+    {# ── Header ─────────────────────────────────────────────────────────────── #}
     <div class="page-header">
         <div class="page-header-main">
             <div class="page-header-title">
@@ -34,14 +35,78 @@
         {% if composite.genre %}
         <span class="badge badge--sm">{{ composite.genre }}</span>
         {% endif %}
-        {% if composite.exemplar_count %}
-        <span class="composition-detail__count">{{ composite.exemplar_count }} exemplars</span>
-        {% endif %}
+        <span class="composition-detail__count">
+            {% if oracc_count and oracc_count != linked_count %}
+            {{ "{:,}".format(oracc_count) }} exemplars recorded by ORACC
+            · {{ "{:,}".format(linked_count) }} linked in Glintstone
+            {% elif linked_count %}
+            {{ "{:,}".format(linked_count) }} exemplars
+            {% endif %}
+        </span>
     </div>
 
-    {% if exemplars %}
-    <section class="composition-detail__exemplars">
-        <h2>Exemplars</h2>
+    {% if timeline %}
+    {# ── Transmission History Timeline ──────────────────────────────────────── #}
+    <section class="composition-timeline" aria-labelledby="timeline-heading">
+        <h2 id="timeline-heading" class="composition-timeline__title">Transmission History</h2>
+        <p class="composition-timeline__sub">How this text was copied across the centuries. Each dot is one tablet.</p>
+
+        <div class="composition-timeline__rows" role="list">
+            {% for period_name, period_exemplars in timeline %}
+            <div class="timeline-row" role="listitem">
+                <div class="timeline-row__label" title="{{ period_name }}">
+                    {{ period_name | truncate(28, True, '…') }}
+                    <span class="timeline-row__count">{{ period_exemplars | length }}</span>
+                </div>
+                <div class="timeline-row__dots">
+                    {% for ex in period_exemplars[:80] %}
+                    <a class="timeline-dot
+                        {% if ex.p_number %} timeline-dot--linked{% endif %}"
+                       href="/tablets/{{ ex.p_number }}"
+                       title="{{ ex.p_number }}{% if ex.designation %} — {{ ex.designation }}{% endif %}{% if ex.provenience %} ({{ ex.provenience }}){% endif %}"
+                       aria-label="{{ ex.p_number }}">
+                    </a>
+                    {% endfor %}
+                    {% if period_exemplars | length > 80 %}
+                    <span class="timeline-overflow">+{{ period_exemplars | length - 80 }} more</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {# ── Exemplar List ──────────────────────────────────────────────────────── #}
+    <section class="composition-detail__exemplars" aria-labelledby="exemplars-heading">
+        <div class="composition-detail__exemplars-header">
+            <h2 id="exemplars-heading">Exemplars</h2>
+            {% if periods or proveniences %}
+            <form class="exemplar-filters" method="GET" action="/compositions/{{ composite.q_number }}">
+                {% if periods %}
+                <select name="filter_period" class="compositions-filters__select" aria-label="Filter by period" onchange="this.form.submit()">
+                    <option value="">All periods</option>
+                    {% for p in periods %}
+                    <option value="{{ p }}" {% if filter_period == p %}selected{% endif %}>{{ p }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                {% if proveniences %}
+                <select name="filter_provenience" class="compositions-filters__select" aria-label="Filter by provenience" onchange="this.form.submit()">
+                    <option value="">All sites</option>
+                    {% for prov in proveniences %}
+                    <option value="{{ prov }}" {% if filter_provenience == prov %}selected{% endif %}>{{ prov }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                {% if filter_period or filter_provenience %}
+                <a href="/compositions/{{ composite.q_number }}" class="compositions-filters__reset">Clear</a>
+                {% endif %}
+            </form>
+            {% endif %}
+        </div>
+
+        {% if exemplars %}
         <table class="exemplars-table">
             <thead>
                 <tr>
@@ -62,10 +127,10 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <p class="compositions-empty">No exemplars match the current filters.</p>
+        {% endif %}
     </section>
-    {% else %}
-    <p class="compositions-empty">No linked exemplars yet.</p>
-    {% endif %}
 
 </main>
 {% endblock %}

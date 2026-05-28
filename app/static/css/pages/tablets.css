@@ -699,6 +699,69 @@
     padding: var(--space-2);
 }
 
+/* Multi-composite: tablet belongs to more than one composition */
+.composite-panel__multi {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-2);
+}
+
+.composite-panel__multi-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.composite-panel__multi-row:hover {
+    background: var(--color-bg-elevated);
+}
+
+.composite-panel__multi-name {
+    font-size: 0.8125rem;
+    color: var(--color-text);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.composite-panel__multi-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--color-accent);
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.composite-panel__multi-link:hover {
+    text-decoration: underline;
+}
+
+/* Single composite: "View all exemplars" link at the bottom of the panel */
+.composite-panel__view-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--color-accent);
+    text-decoration: none;
+    padding: var(--space-2) var(--space-2);
+    margin-top: auto;
+    align-self: flex-end;
+}
+
+.composite-panel__view-all:hover {
+    text-decoration: underline;
+}
+
 /* Tablet item in composite list - matches ATF composite item styling */
 .composite-tablet-item {
     display: flex;

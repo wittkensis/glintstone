@@ -10,19 +10,40 @@
 {% block content %}
 <header class="page-header tablet-header">
     {% if tablet.composites %}
-    <div class="composite-panel" id="composite-panel" data-q-number="{{ tablet.composites[0].q_number }}">
+    {% set primary = tablet.composites[0] %}
+    {% set extra_count = (tablet.composites | length) - 1 %}
+    <div class="composite-panel" id="composite-panel" data-q-number="{{ primary.q_number }}">
         <div class="composite-panel__header">
             <div class="composite-panel__title-group">
-                <h2 class="composite-panel__title">{{ tablet.composites[0].designation or tablet.composites[0].q_number }}</h2>
-                {% if tablet.composites[0].designation %}
-                <span class="composite-panel__subtitle">{{ tablet.composites[0].q_number }}</span>
+                <h2 class="composite-panel__title">{{ primary.designation or primary.q_number }}</h2>
+                {% if primary.designation %}
+                <span class="composite-panel__subtitle">{{ primary.q_number }}</span>
                 {% endif %}
             </div>
-            <span class="composite-panel__count" id="composite-count">{{ tablet.composites[0].exemplar_count or '?' }} tablets</span>
+            <span class="composite-panel__count" id="composite-count">{{ primary.exemplar_count or '?' }} tablets</span>
         </div>
+        {# Multi-composite: show all compositions this tablet belongs to #}
+        {% if extra_count > 0 %}
+        <div class="composite-panel__multi">
+            {% for c in tablet.composites %}
+            <div class="composite-panel__multi-row">
+                <span class="composite-panel__multi-name">{{ c.designation or c.q_number }}</span>
+                <a class="composite-panel__multi-link" href="/compositions/{{ c.q_number }}">
+                    View all{% if c.exemplar_count %} {{ "{:,}".format(c.exemplar_count) }}{% endif %} exemplars
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
         <div class="composite-panel__list" id="composite-list">
             <div class="composite-panel__loading">Loading tablets...</div>
         </div>
+        <a class="composite-panel__view-all" href="/compositions/{{ primary.q_number }}">
+            View all{% if primary.exemplar_count %} {{ "{:,}".format(primary.exemplar_count) }}{% endif %} exemplars
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+        {% endif %}
     </div>
     {% endif %}
 
@@ -49,10 +70,12 @@
                     {% endif %}
 
                     {% if tablet.composites %}
+                    {% set _c0 = tablet.composites[0] %}
+                    {% set _extra = (tablet.composites | length) - 1 %}
                     <button class="btn btn--icon-left btn--toggle" id="composite-toggle"
                             aria-expanded="false" aria-controls="composite-panel"
-                            title="View composite text">
-                        <span>{{ tablet.composites[0].designation or tablet.composites[0].q_number }}</span>
+                            title="View composition">
+                        <span>{{ _c0.designation or _c0.q_number }}{% if _extra > 0 %} + {{ _extra }} more{% endif %}</span>
                     </button>
                     {% endif %}
 
