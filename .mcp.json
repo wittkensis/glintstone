@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "glintstone": {
+      "command": "/Users/wittkensis/Library/Mobile Documents/com~apple~CloudDocs/PROJECTS – Current Era/Glintstone/PROJECT/venv/bin/python3.13",
+      "args": ["-m", "mcp.server_stdio"],
+      "cwd": "/Users/wittkensis/Library/Mobile Documents/com~apple~CloudDocs/PROJECTS – Current Era/Glintstone/PROJECT",
+      "env": {
+        "GS_API_URL": "http://api.glintstone.test",
+        "GS_CLIENT_LABEL": "claude-code"
+      }
+    }
+  }
+}
