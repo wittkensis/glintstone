@@ -330,3 +330,100 @@
     background: var(--color-lang-akk);
     vertical-align: middle;
 }
+
+
+/* ==========================================================================
+   Competing Interpretations Indicator (PRD-013)
+
+   ⚡ appears inline after any token where multiple annotation runs assigned
+   different citation forms. Tooltip shows all readings + source attribution.
+   ========================================================================== */
+
+/* Token wrapper — needs position:relative to anchor the tooltip */
+.atf-word--competing {
+    position: relative;
+}
+
+/* The ⚡ glyph itself */
+.atf-competing-indicator {
+    display: inline-block;
+    font-size: 0.65em;
+    line-height: 0;
+    vertical-align: super;
+    color: var(--color-warning);
+    cursor: help;
+    margin-left: 1px;
+    /* Prevent the indicator from triggering the parent word's click handler */
+    pointer-events: auto;
+}
+
+/* Tooltip — hidden until hover/focus-within on the indicator */
+.atf-competing-tooltip {
+    display: none;
+    position: absolute;
+    /* Float above the word; left-aligned with the indicator */
+    bottom: calc(100% + 6px);
+    left: 0;
+    z-index: 200;
+    min-width: 220px;
+    max-width: 340px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    /* Don't inherit the small font-size of the indicator */
+    font-size: 11px;
+    font-family: var(--font-sans);
+    white-space: normal;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+.atf-competing-indicator:hover .atf-competing-tooltip,
+.atf-competing-indicator:focus-within .atf-competing-tooltip {
+    display: block;
+}
+
+.atf-competing-tooltip__header {
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-1);
+    font-size: 11px;
+    border-bottom: 1px solid var(--color-border-subtle);
+    padding-bottom: var(--space-1);
+}
+
+.atf-competing-tooltip__list {
+    list-style: none;
+    margin: var(--space-1) 0;
+    padding: 0;
+}
+
+.atf-competing-tooltip__reading {
+    margin: var(--space-1) 0;
+    line-height: 1.5;
+}
+
+.atf-competing-tooltip__form {
+    font-family: var(--font-mono, monospace);
+    font-size: 11px;
+    color: var(--color-accent);
+    background: none;
+    padding: 0;
+}
+
+.atf-competing-tooltip__source {
+    color: var(--color-text-subtle);
+    font-size: 10px;
+}
+
+.atf-competing-tooltip__note {
+    margin: var(--space-2) 0 0;
+    padding-top: var(--space-1);
+    border-top: 1px solid var(--color-border-subtle);
+    color: var(--color-text-subtle);
+    font-style: italic;
+    font-size: 10px;
+}
