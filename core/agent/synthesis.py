@@ -36,6 +36,67 @@ from core.schemas.citation import Citation
 logger = logging.getLogger(__name__)
 
 
+# ── JSON extraction ───────────────────────────────────────────────────────────
+
+
+def extract_json(text: str) -> dict:
+    """Extract a JSON object from LLM output with fence-stripping and fallback.
+
+    Three attempts in order:
+      1. Direct json.loads on the stripped text (happy path — no fences).
+      2. Strip markdown code fences (```json ... ```) and retry.
+      3. Find the first balanced {…} block and parse that.
+
+    Raises ValueError if all three fail. Callers that previously used a bare
+    json.loads() on result.text should switch to this to handle the common
+    case where Claude wraps its JSON response in a ``` fence.
+
+    Named without leading underscore so agent_service.py can import it:
+      from core.agent.synthesis import extract_json
+    """
+    cleaned = text.strip()
+
+    # Attempt 1: direct parse
+    try:
+        import json as _json
+
+        return _json.loads(cleaned)
+    except _json.JSONDecodeError:
+        pass
+
+    # Attempt 2: strip markdown fences
+    fence_stripped = re.sub(
+        r"^```(?:json)?\s*|\s*```$", "", cleaned, flags=re.MULTILINE
+    ).strip()
+    try:
+        import json as _json
+
+        return _json.loads(fence_stripped)
+    except _json.JSONDecodeError:
+        pass
+
+    # Attempt 3: find the first balanced {…} block
+    start = fence_stripped.find("{")
+    if start >= 0:
+        depth = 0
+        for i in range(start, len(fence_stripped)):
+            if fence_stripped[i] == "{":
+                depth += 1
+            elif fence_stripped[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        import json as _json
+
+                        return _json.loads(fence_stripped[start : i + 1])
+                    except _json.JSONDecodeError:
+                        break
+
+    raise ValueError(
+        f"Could not extract JSON from LLM response. First 200 chars: {text[:200]!r}"
+    )
+
+
 _PROMPTS_DIR = (
     Path(__file__).resolve().parents[2] / ".claude/skills/gs-expert-agentic/prompts"
 )
