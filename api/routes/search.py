@@ -53,6 +53,9 @@ def semantic_search(
         tool_name="semantic_search",
         request=params.model_dump(mode="json"),
     ) as interaction:
+        # PRD-006: agent_outputs snippet enrichment is handled inside do_search —
+        # it pre-fetches cached artifact summaries for all tablet hits and attaches
+        # snippet text to each tablet result item.
         response = agent_service.do_search(
             conn, params, interaction_id=interaction_id_str
         )

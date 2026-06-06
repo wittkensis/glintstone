@@ -144,10 +144,12 @@ def assemble_artifact_facts(
         if not row:
             return None
 
+    # Fix 2d: append "(CDLI catalog)" source tag to each catalog-derived fact so the
+    # synthesizer and readers can trace provenance without opening citations.
     if row.get("period_normalized"):
         _add_fact(
             bundle.facts,
-            f"period: {row['period_normalized']}",
+            f"period: {row['period_normalized']} (CDLI catalog)",
             "annotation_run",
             "cdli_catalog",
             "period",
@@ -155,7 +157,7 @@ def assemble_artifact_facts(
     if row.get("provenience_normalized"):
         _add_fact(
             bundle.facts,
-            f"provenience: {row['provenience_normalized']}",
+            f"provenience: {row['provenience_normalized']} (CDLI catalog)",
             "annotation_run",
             "cdli_catalog",
             "provenience",
@@ -163,7 +165,7 @@ def assemble_artifact_facts(
     if row.get("museum_no"):
         _add_fact(
             bundle.facts,
-            f"museum: {row['museum_no']}",
+            f"museum: {row['museum_no']} (CDLI catalog)",
             "annotation_run",
             "cdli_catalog",
             "museum",
@@ -171,13 +173,14 @@ def assemble_artifact_facts(
     if row.get("designation"):
         _add_fact(
             bundle.facts,
-            f"designation: {row['designation']}",
+            f"designation: {row['designation']} (CDLI catalog)",
             "annotation_run",
             "cdli_catalog",
             "designation",
         )
 
-    # Genre facts (canonical genres via junction table, primary first)
+    # Genre facts (canonical genres via junction table, primary first).
+    # genre_normalized is the canonical form; fall back to raw genre if absent.
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -196,18 +199,33 @@ def assemble_artifact_facts(
         genre_names = [r["name"] for r in genre_rows]
         _add_fact(
             bundle.facts,
-            f"genre: {', '.join(genre_names)}",
+            f"genre: {', '.join(genre_names)} (CDLI catalog)",
             "annotation_run",
             "cdli_catalog",
             "genre",
         )
 
-    # Language and dialect facts
-    # Base language from catalog field; dialect detail from per-word lemmatization codes.
+    # Language and dialect facts.
+    # Base language from catalog; rendered with ISO code where available from lemmatization data.
+    # Format: "primary language: Sumerian (sux)" mirrors ORACC display conventions.
     if row.get("language_normalized"):
+        lang_label = row["language_normalized"]
+        # Map common normalized language names to ISO/ORACC codes for scholars
+        _LANG_CODE_MAP = {
+            "Sumerian": "sux",
+            "Akkadian": "akk",
+            "Elamite": "elx",
+            "Hurrian": "hur",
+            "Hittite": "hit",
+            "Ugaritic": "uga",
+            "Eblaite": "xeb",
+        }
+        iso_code = _LANG_CODE_MAP.get(lang_label)
+        if iso_code:
+            lang_label = f"{lang_label} ({iso_code})"
         _add_fact(
             bundle.facts,
-            f"primary language: {row['language_normalized']}",
+            f"primary language: {lang_label} (CDLI catalog)",
             "annotation_run",
             "cdli_catalog",
             "language_normalized",
@@ -234,7 +252,7 @@ def assemble_artifact_facts(
         if dialects:
             _add_fact(
                 bundle.facts,
-                f"Akkadian dialect(s) attested: {', '.join(dialects)}",
+                f"Akkadian dialect(s) attested: {', '.join(dialects)} (ORACC)",
                 "annotation_run",
                 "oracc_lemmatization",
                 "dialect",
@@ -246,7 +264,7 @@ def assemble_artifact_facts(
         if has_sumerian and has_akkadian:
             _add_fact(
                 bundle.facts,
-                "mixed language: Sumerian and Akkadian lemmatizations coexist in this text",
+                "mixed language: Sumerian and Akkadian lemmatizations coexist in this text (ORACC)",
                 "annotation_run",
                 "oracc_lemmatization",
                 "mixed_language",
@@ -341,32 +359,65 @@ def assemble_artifact_facts(
         "completeness",
     )
 
-    # Top lemmas (when lemmatized) — emit up to 5
+    # Top lemmas (when lemmatized) — emit up to 5.
+    # Fix 2f: append (uncertain) when annotation_runs.trust < 0.7 if column exists.
+    # The trust column may not be present (see LEARNINGS.md) — catch UndefinedColumn gracefully.
     with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT ll.id, ll.citation_form, ll.guide_word, COUNT(*) AS attestations
-            FROM tokens t
-            JOIN text_lines tl ON t.line_id = tl.id
-            JOIN surfaces s ON tl.surface_id = s.id
-            JOIN lemmatizations lz ON lz.token_id = t.id
-            JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
-            WHERE s.p_number = %s
-            GROUP BY ll.id, ll.citation_form, ll.guide_word
-            ORDER BY attestations DESC
-            LIMIT 5
-            """,
-            (p_number,),
-        )
-        for r in cur.fetchall():
-            _add_fact(
-                bundle.facts,
-                f'mentions lemma "{r.get("guide_word") or r.get("citation_form")}" '
-                f"({r.get('attestations')} attestations)",
-                "lexical_lemma",
-                r["id"],
-                f"lemma:{r['id']}",
+        try:
+            cur.execute(
+                """
+                SELECT ll.id, ll.citation_form, ll.guide_word, COUNT(*) AS attestations,
+                       bool_or(ar.trust IS NOT NULL AND ar.trust < 0.7) AS any_uncertain
+                FROM tokens t
+                JOIN text_lines tl ON t.line_id = tl.id
+                JOIN surfaces s ON tl.surface_id = s.id
+                JOIN lemmatizations lz ON lz.token_id = t.id
+                JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
+                LEFT JOIN annotation_runs ar ON ar.id = lz.annotation_run_id
+                WHERE s.p_number = %s
+                GROUP BY ll.id, ll.citation_form, ll.guide_word
+                ORDER BY attestations DESC
+                LIMIT 5
+                """,
+                (p_number,),
             )
+            for r in cur.fetchall():
+                uncertain_tag = " (uncertain)" if r.get("any_uncertain") else ""
+                _add_fact(
+                    bundle.facts,
+                    f'mentions lemma "{r.get("guide_word") or r.get("citation_form")}" '
+                    f"({r.get('attestations')} attestations){uncertain_tag} (ORACC)",
+                    "lexical_lemma",
+                    r["id"],
+                    f"lemma:{r['id']}",
+                )
+        except psycopg.errors.UndefinedColumn:
+            # annotation_runs.trust column not yet added (migration pending) — fall back without trust signal
+            conn.rollback()
+            cur.execute(
+                """
+                SELECT ll.id, ll.citation_form, ll.guide_word, COUNT(*) AS attestations
+                FROM tokens t
+                JOIN text_lines tl ON t.line_id = tl.id
+                JOIN surfaces s ON tl.surface_id = s.id
+                JOIN lemmatizations lz ON lz.token_id = t.id
+                JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
+                WHERE s.p_number = %s
+                GROUP BY ll.id, ll.citation_form, ll.guide_word
+                ORDER BY attestations DESC
+                LIMIT 5
+                """,
+                (p_number,),
+            )
+            for r in cur.fetchall():
+                _add_fact(
+                    bundle.facts,
+                    f'mentions lemma "{r.get("guide_word") or r.get("citation_form")}" '
+                    f"({r.get('attestations')} attestations) (ORACC)",
+                    "lexical_lemma",
+                    r["id"],
+                    f"lemma:{r['id']}",
+                )
 
     # Competing lemmatizations — tokens where >1 annotation_run offers a different reading.
     # Signals scholarly disagreement; the synthesizer should flag uncertainty.
@@ -397,7 +448,7 @@ def assemble_artifact_facts(
         )
         _add_fact(
             bundle.facts,
-            f"scholarly disagreement on {len(competing)} token(s): {examples}",
+            f"scholarly disagreement on {len(competing)} token(s): {examples} (ORACC)",
             "annotation_run",
             "oracc_lemmatization",
             "competing_lemmatizations",
@@ -733,7 +784,8 @@ def assemble_line_facts(
                    s.name AS surface_name,
                    a.language_normalized,
                    a.period_normalized,
-                   a.genre
+                   -- Fix 2a: prefer genre_normalized (canonical form) over raw genre string
+                   COALESCE(a.genre_normalized, a.genre) AS genre
             FROM text_lines tl
             JOIN surfaces s ON s.id = tl.surface_id
             JOIN artifacts a ON a.p_number = s.p_number
@@ -763,7 +815,8 @@ def assemble_line_facts(
                        s.name AS surface_name,
                        a.language_normalized,
                        a.period_normalized,
-                       a.genre
+                       -- Fix 2a: prefer genre_normalized (canonical form) over raw genre string
+                       COALESCE(a.genre_normalized, a.genre) AS genre
                 FROM text_lines tl
                 JOIN surfaces s ON s.id = tl.surface_id
                 JOIN artifacts a ON a.p_number = s.p_number

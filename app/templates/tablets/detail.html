@@ -263,7 +263,8 @@
         <aside class="atf-knowledge-sidebar" id="knowledge-sidebar"
                data-state="closed"
                data-p-number="{{ tablet.p_number }}"
-               data-api-url="{{ api_url }}">
+               data-api-url="{{ api_url }}"
+               data-summarize-url="{{ summarize_url }}">
             <!-- Vertical Icon Bar — single tab for now; more will be added -->
             <nav class="tabs-nav tabs-nav--vertical-icons" role="tablist" aria-label="Knowledge panels">
                 <button class="tab-button tab-button--active" data-tab="summary" role="tab"
@@ -360,6 +361,7 @@
 <script src="/static/js/atf-viewer-integration.js"></script>
 <script src="/static/js/tablet-detail.js"></script>
 <script src="/static/js/artifact-summary.js"></script>
+<script src="/static/js/sidebar.js" defer></script>
 <script src="/static/js/line-suggestions.js"></script>
 {% if debug_tablets_json %}
 <script>

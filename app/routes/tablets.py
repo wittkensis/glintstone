@@ -174,6 +174,10 @@ def tablet_detail(request: Request, p_number: str):
         except FileNotFoundError:
             debug_tablets_json = None
 
+    # summarize_url: the API endpoint that generates/retrieves the AI artifact summary.
+    # Passed as a data attribute so sidebar.js can fetch without constructing the URL in JS.
+    summarize_url = f"{request.app.state.api.base_url}/artifacts/{p_number}/summary"
+
     from app.main import templates
 
     return templates.TemplateResponse(
@@ -182,6 +186,7 @@ def tablet_detail(request: Request, p_number: str):
         {
             "tablet": tablet,
             "api_url": request.app.state.api.base_url,
+            "summarize_url": summarize_url,
             "current_user": current_user,
             "saved_item_id": saved_item_id,
             "debug_json": debug_json,
