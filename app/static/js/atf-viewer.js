@@ -73,6 +73,10 @@ class ATFViewer {
         this.lemmasLoaded = false;
         this.glossaryGlossCache = new Map();  // lookup → guide_word cache
 
+        // Competing-lemmatization data — keyed same as lemmasData
+        // {lineIdx: {wordPos: [{citation_form, guide_word, source_type, source, confidence}]}}
+        this.competingData = {};
+
         // Build initial structure
         this.render();
     }
@@ -133,11 +137,12 @@ class ATFViewer {
             // Set initial surface
             this.currentSurface = 0;
 
-            // Load translation, normalized readings, and lemmas in parallel
+            // Load translation, normalized readings, lemmas, and competing data in parallel
             await Promise.all([
                 this.loadTranslation(),
                 this.loadNormalized(),
                 this.loadLemmas(),
+                this.loadCompetingLemmas(),
             ]);
 
             // Render content
@@ -236,6 +241,26 @@ class ATFViewer {
             console.log('ATFViewer: Lemmas not available for glossing');
             this.lemmasLoaded = false;
             this.lemmasData = {};
+        }
+    }
+
+    /**
+     * Load competing-lemmatization data for this tablet.
+     * Silently no-ops when the endpoint returns no conflicts or errors —
+     * the indicator is purely additive and must not break the viewer.
+     */
+    async loadCompetingLemmas() {
+        this.competingData = {};
+        try {
+            const response = await fetch(
+                `${this.options.apiUrl}/artifacts/${this.pNumber}/competing-lemmas`
+            );
+            if (response.ok) {
+                const result = await this.safeJsonParse(response);
+                this.competingData = result.competing || {};
+            }
+        } catch (err) {
+            // Non-fatal — competing indicators simply won't appear
         }
     }
 
@@ -385,10 +410,87 @@ class ATFViewer {
                         }
                     }
 
+                    // Attach competing-readings indicator when multiple scholars disagree
+                    const competingReadings = this.competingData[String(lineNo)]?.[String(wordNo)];
+                    if (competingReadings && competingReadings.length > 1) {
+                        this.attachCompetingIndicator(wordEl, competingReadings);
+                    }
+
                     wordNo++;
                 }
             }
         }
+    }
+
+    /**
+     * Attach ⚡ indicator + tooltip to a word element that has competing readings.
+     * Safe to call multiple times — checks for existing indicator first.
+     *
+     * @param {Element} wordEl - The .atf-word element
+     * @param {Array}   readings - Array of {citation_form, guide_word, source_type, source, confidence}
+     */
+    attachCompetingIndicator(wordEl, readings) {
+        if (wordEl.querySelector('.atf-competing-indicator')) return;
+
+        wordEl.classList.add('atf-word--competing');
+        wordEl.dataset.competing = 'true';
+
+        const indicator = document.createElement('span');
+        indicator.className = 'atf-competing-indicator';
+        indicator.textContent = '⚡';
+        indicator.setAttribute('aria-label', `${readings.length} competing readings`);
+        indicator.setAttribute('role', 'img');
+
+        const tooltip = this.buildCompetingTooltip(readings);
+        indicator.appendChild(tooltip);
+
+        wordEl.appendChild(indicator);
+    }
+
+    /**
+     * Build the tooltip DOM node for a competing-readings indicator.
+     *
+     * @param {Array} readings - Competing reading objects from the API
+     * @returns {Element} Tooltip div
+     */
+    buildCompetingTooltip(readings) {
+        const tip = document.createElement('div');
+        tip.className = 'atf-competing-tooltip';
+        tip.setAttribute('role', 'tooltip');
+
+        const header = document.createElement('div');
+        header.className = 'atf-competing-tooltip__header';
+        header.textContent = `Competing readings (${readings.length})`;
+        tip.appendChild(header);
+
+        const list = document.createElement('ul');
+        list.className = 'atf-competing-tooltip__list';
+
+        for (const r of readings) {
+            const li = document.createElement('li');
+            li.className = 'atf-competing-tooltip__reading';
+
+            const form = this.escapeHtml(r.citation_form || '—');
+            const gw = r.guide_word ? ` "${this.escapeHtml(r.guide_word)}"` : '';
+            const sourceLabel = r.source
+                ? this.escapeHtml(r.source)
+                : r.source_type === 'human' ? 'Human annotation' : 'Model annotation';
+            const confStr = r.confidence != null
+                ? ` · ${Math.round(r.confidence * 100)}%`
+                : '';
+
+            li.innerHTML = `<code class="atf-competing-tooltip__form">${form}</code>${gw} <span class="atf-competing-tooltip__source">— ${sourceLabel}${confStr}</span>`;
+            list.appendChild(li);
+        }
+
+        tip.appendChild(list);
+
+        const note = document.createElement('p');
+        note.className = 'atf-competing-tooltip__note';
+        note.textContent = 'Both readings are stored. No consensus established.';
+        tip.appendChild(note);
+
+        return tip;
     }
 
     /**

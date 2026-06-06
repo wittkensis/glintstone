@@ -689,6 +689,86 @@ class ArtifactRepository(BaseRepository):
 
         return {"p_number": p_number, "lemmas": lemmas, "total": len(lemmas)}
 
+    def get_competing_lemmas(self, p_number: str) -> dict:
+        """Find tokens where multiple annotation runs assigned different citation forms.
+
+        Returns a nested dict keyed by {line_index: {word_position: [readings]}},
+        mirroring the structure used by get_lemmas so the ATF viewer can look
+        up both datasets with the same (line_no, word_no) key.
+
+        A token is only flagged as contested when at least two distinct
+        citation_form values appear across its lemmatizations — differing
+        annotation_run_ids on the same citation form is NOT a conflict.
+        """
+        rows = self.fetch_all(
+            """
+            SELECT
+                tl.line_number,
+                t.position,
+                l.citation_form,
+                l.guide_word,
+                l.confidence,
+                ar.source_type,
+                ar.source_name
+            FROM lemmatizations l
+            JOIN tokens t ON l.token_id = t.id
+            JOIN text_lines tl ON t.line_id = tl.id
+            LEFT JOIN annotation_runs ar ON l.annotation_run_id = ar.id
+            WHERE tl.p_number = %(p_number)s
+              AND t.id IN (
+                  -- Only tokens with 2+ distinct citation forms across all their lemmatizations
+                  SELECT lz.token_id
+                  FROM lemmatizations lz
+                  JOIN tokens tk ON lz.token_id = tk.id
+                  JOIN text_lines tl2 ON tk.line_id = tl2.id
+                  WHERE tl2.p_number = %(p_number)s
+                  GROUP BY lz.token_id
+                  HAVING COUNT(DISTINCT lz.citation_form) > 1
+              )
+            ORDER BY tl.line_number, t.position, l.citation_form
+            """,
+            {"p_number": p_number},
+        )
+
+        # Build {line_idx: {position: [reading, ...]}} from flat rows
+        grouped: dict[str, dict[str, list[dict]]] = {}
+        for row in rows:
+            ln = row.get("line_number", "")
+            try:
+                line_idx = int(str(ln).replace("'", "").rstrip(".")) - 1
+            except (ValueError, TypeError):
+                continue
+            pos = row.get("position", 0)
+            line_key = str(line_idx)
+            word_key = str(pos)
+
+            grouped.setdefault(line_key, {}).setdefault(word_key, []).append(
+                {
+                    "citation_form": row.get("citation_form"),
+                    "guide_word": row.get("guide_word"),
+                    "confidence": row.get("confidence"),
+                    "source_type": row.get("source_type"),
+                    "source": row.get("source_name"),
+                }
+            )
+
+        # Deduplicate: keep only positions that still have 2+ distinct citation forms
+        # after collapsing duplicate (citation_form, source) pairs.
+        result: dict[str, dict[str, list[dict]]] = {}
+        for line_key, positions in grouped.items():
+            for word_key, readings in positions.items():
+                seen_forms: set[str] = set()
+                unique: list[dict] = []
+                for r in readings:
+                    cf = r.get("citation_form") or ""
+                    if cf not in seen_forms:
+                        seen_forms.add(cf)
+                        unique.append(r)
+                if len(unique) > 1:
+                    result.setdefault(line_key, {})[word_key] = unique
+
+        return {"p_number": p_number, "competing": result}
+
     def debug_all(self, p_number: str) -> dict | None:
         """Aggregate every data layer for a single artifact."""
         artifact = self.find_by_p_number(p_number)

@@ -241,6 +241,31 @@ def get_artifact_lemmas(p_number: str, conn=Depends(get_db)):
     return {"p_number": result["p_number"], "lemmas": indexed, "total": result["total"]}
 
 
+@router.get("/{p_number}/competing-lemmas")
+def get_competing_lemmas(p_number: str, conn=Depends(get_db)):
+    """Return tokens where multiple annotation runs disagree on the citation form.
+
+    Response shape:
+      {
+        "p_number": "P123456",
+        "competing": {
+          "<line_idx>": {
+            "<word_pos>": [
+              {"citation_form": "...", "guide_word": "...", "confidence": 0.9,
+               "source_type": "human", "source": "CDLI"},
+              ...
+            ]
+          }
+        }
+      }
+
+    Keys use the same (line_idx, word_pos) indexing as /lemmas so the ATF
+    viewer can merge both datasets with a single lookup.
+    """
+    repo = ArtifactRepository(conn)
+    return repo.get_competing_lemmas(p_number)
+
+
 @router.get("/{p_number}/sign-annotations")
 def get_sign_annotations(p_number: str, conn=Depends(get_db)):
     """Get sign annotations (OCR bounding boxes) for overlay display."""
