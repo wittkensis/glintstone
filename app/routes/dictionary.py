@@ -1,8 +1,8 @@
 """Dictionary route — browse signs, lemmas, and glosses."""
 
-from urllib.parse import quote
-
 from fastapi import APIRouter, Query, Request
+
+from app.list_view import Page, build_filtered_list, active_filters_as_dicts
 
 router = APIRouter(prefix="/dictionary")
 
@@ -47,7 +47,8 @@ def dictionary_index(
     except Exception:
         data = {"items": [], "total": 0, "page": 1, "per_page": 50, "total_pages": 0}
 
-    # Filter options (cross-filtered)
+    # Dictionary uses a separate filter-options endpoint (cross-filtered counts).
+    # We inject those into the Page so the assembler can expose them to the template.
     filter_params: dict = {"level": level}
     if language:
         filter_params["language"] = language
@@ -63,49 +64,36 @@ def dictionary_index(
     except Exception:
         filter_options = {}
 
-    # Build active filter pills with remove URLs
-    all_params: list[tuple[str, str]] = []
-    if search:
-        all_params.append(("search", search))
-    for lang in language:
-        all_params.append(("language", lang))
-    for p in pos:
-        all_params.append(("pos", p))
-    for s in source:
-        all_params.append(("source", s))
-    if frequency:
-        all_params.append(("frequency", frequency))
-
-    # Find filter option labels for pills
-    _label_cache: dict[tuple[str, str]] = {}
+    # Build the label cache from filter_options so pill labels are human-readable
+    # (e.g. language code "sux" → "Sumerian"). This shared cache avoids duplicating
+    # the resolution logic in every route that has coded option values.
+    label_cache: dict[tuple[str, str], str] = {}
     for dim_name in ("language", "pos", "source", "frequency"):
-        opts = filter_options.get(dim_name, [])
-        for opt in opts:
-            _label_cache[(dim_name, opt["val"])] = opt.get("label", opt["val"])
+        for opt in filter_options.get(dim_name, []):
+            label_cache[(dim_name, opt["val"])] = opt.get("label", opt["val"])
 
-    def _pill_label(key: str, val: str) -> str:
-        if key == "search":
-            return f"\u201c{val}\u201d"
-        return _label_cache.get((key, val), val)
+    # Inject filter_options into the page dict before wrapping so the assembler
+    # passes them through to the template context via lv.filter_options.
+    data_with_opts = dict(data)
+    data_with_opts["filter_options"] = filter_options
+    page_obj = Page.from_dict(data_with_opts, per_page=50)
 
-    active_filters: list[dict] = []
-    for i, (key, val) in enumerate(all_params):
-        remaining = [
-            f"{k}={quote(v, safe='')}" for j, (k, v) in enumerate(all_params) if j != i
-        ]
-        # Always preserve level and sort
-        remaining.append(f"level={level}")
-        if sort:
-            remaining.append(f"sort={sort}")
-        qs = "&".join(remaining)
-        remove_url = f"/dictionary?{qs}" if qs else "/dictionary"
-        active_filters.append(
-            {
-                "dimension": key,
-                "label": _pill_label(key, val),
-                "remove_url": remove_url,
-            }
-        )
+    # level and sort must survive in remove-URLs — they're state, not filters.
+    lv = build_filtered_list(
+        scope="dictionary",
+        base_path="/dictionary",
+        query_args={
+            "search": search,
+            "language": language,
+            "pos": pos,
+            "source": source,
+            "frequency": frequency,
+        },
+        filter_dims=["language", "pos", "source", "frequency"],
+        page_obj=page_obj,
+        label_cache=label_cache,
+        preserve_params={"level": level, "sort": sort},
+    )
 
     from app.main import templates
 
@@ -114,18 +102,18 @@ def dictionary_index(
         "dictionary/index.html",
         {
             "level": level,
-            "items": data.get("items", []),
-            "total": data.get("total", 0),
-            "page": data.get("page", 1),
-            "total_pages": data.get("total_pages", 0),
+            "items": lv.items,
+            "total": lv.total,
+            "page": lv.page,
+            "total_pages": lv.total_pages,
             "search": search,
             "language": language,
             "pos": pos,
             "source": source,
             "frequency": frequency,
             "sort": sort,
-            "filter_options": filter_options,
-            "active_filters": active_filters,
+            "filter_options": lv.filter_options,
+            "active_filters": active_filters_as_dicts(lv),
             "api_url": request.app.state.api.base_url,
         },
     )

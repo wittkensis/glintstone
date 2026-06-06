@@ -3,6 +3,8 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import RedirectResponse
 
+from app.list_view import Page, build_filtered_list
+
 router = APIRouter(prefix="/collections")
 
 
@@ -10,9 +12,19 @@ router = APIRouter(prefix="/collections")
 def collection_list(request: Request):
     api = request.app.state.api
     try:
-        collections = api.get("/collections")
+        data = api.get("/collections")
     except Exception:
-        collections = {"items": []}
+        data = {"items": []}
+
+    page_obj = Page.from_dict(data)
+    # Collections list has no search or dimension filters at this stage.
+    lv = build_filtered_list(
+        scope="collections",
+        base_path="/collections",
+        query_args={},
+        filter_dims=[],
+        page_obj=page_obj,
+    )
 
     from app.main import templates
 
@@ -20,7 +32,7 @@ def collection_list(request: Request):
         request,
         "collections/index.html",
         {
-            "collections": collections.get("items", []),
+            "collections": lv.items,
             "api_url": request.app.state.api.base_url,
         },
     )
