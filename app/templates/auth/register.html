@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create account — Glintstone</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Cuneiform&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css?v={{ app_version }}">
+    <style>
+        /* Fallback tokens — matches login.html */
+        :root {
+            --color-text: #e8e6e3;
+            --color-text-muted: #a0a0a0;
+            --color-text-subtle: #707070;
+            --color-accent: #c9a962;
+            --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            background: #0a0a0a;
+            color: var(--color-text);
+            font-family: var(--font-sans);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .gate {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 3rem 1.5rem;
+        }
+
+        .gate-panel {
+            width: 100%;
+            max-width: 420px;
+            animation: panel-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        @keyframes panel-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .gate-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0 auto 3rem;
+            color: var(--color-text);
+            opacity: 0.9;
+            text-decoration: none;
+        }
+
+        .gate-logo-word {
+            font-family: var(--font-sans);
+            font-size: 1.0625rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+
+        .gate-headline {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 500;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .gate-subhead {
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--color-text-subtle);
+            margin-bottom: 2.5rem;
+        }
+
+        /* ── Error banner ── */
+        .gate-error {
+            padding: 0.75rem 1rem;
+            background: rgba(184, 92, 92, 0.12);
+            border: 1px solid rgba(184, 92, 92, 0.35);
+            border-radius: 10px;
+            color: #d47a7a;
+            font-size: 0.8125rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ── Form fields ── */
+        .gate-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 0.375rem;
+        }
+
+        .gate-input {
+            display: block;
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            color: var(--color-text);
+            font-size: 0.9375rem;
+            font-family: inherit;
+            margin-bottom: 1.25rem;
+            transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+            outline: none;
+        }
+
+        .gate-input::placeholder { color: var(--color-text-subtle); }
+
+        .gate-input:focus {
+            border-color: rgba(201, 169, 98, 0.5);
+            background: rgba(255,255,255,0.06);
+            box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.1);
+        }
+
+        /* Invite code field gets accent tint to signal it's special */
+        .gate-input--code {
+            border-color: rgba(201, 169, 98, 0.2);
+            font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+            letter-spacing: 0.05em;
+        }
+
+        .gate-input--code:focus {
+            border-color: rgba(201, 169, 98, 0.6);
+        }
+
+        .btn-submit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.9375rem 1.25rem;
+            background: var(--color-accent);
+            color: #0a0a0a;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            letter-spacing: 0.005em;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: opacity 0.18s ease, transform 0.12s ease;
+            margin-top: 0.5rem;
+        }
+
+        .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-submit:active { transform: translateY(0); }
+        .btn-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+        .gate-hint {
+            font-size: 0.75rem;
+            color: var(--color-text-subtle);
+            margin-top: -0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .gate-footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--color-text-subtle);
+            margin-top: 2rem;
+            line-height: 1.6;
+        }
+
+        .gate-footer a {
+            color: var(--color-text-muted);
+            text-decoration: none;
+        }
+
+        .gate-footer a:hover { color: var(--color-accent); }
+    </style>
+</head>
+<body>
+    <div class="gate">
+        <div class="gate-panel">
+
+            <a href="/" class="gate-logo" aria-label="Glintstone">
+                <svg viewBox="0 0 26 26" width="20" height="20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15.7607 0C15.5023 1.2245 15.1555 2.51143 14.8828 3.75586C14.5595 5.2864 14.2886 6.82851 14.0723 8.37793C13.9999 8.89719 13.862 9.51826 13.8281 10.0244C14.1767 9.77338 14.5722 9.41902 14.9043 9.13477C15.5966 8.54955 16.2748 7.94682 16.9375 7.32812C18.639 5.77884 20.3022 4.18778 21.9248 2.55566C22.1048 2.76727 22.2828 2.93944 22.4863 3.12695C22.0552 3.46834 21.3039 4.30988 20.8857 4.73535C19.4912 6.15339 18.1366 7.61164 16.8242 9.10645C16.2093 9.79897 15.6333 10.5236 15.002 11.1982C15.8992 11.3203 16.894 11.2814 17.8066 11.3545C20.5321 11.5728 23.266 11.5861 26 11.5889C26 11.8698 26.0021 12.1017 25.9717 12.3828C24.6743 12.382 23.3767 12.4031 22.0801 12.4463C20.919 12.4668 19.7577 12.5038 18.5977 12.5576C17.1969 12.6343 15.7032 12.7687 14.293 12.8672C14.6022 13.3346 15.6951 14.5496 16.0938 15.0029C18.0694 17.2497 20.1997 19.6051 22.3555 21.6758C22.1667 21.8567 21.9736 22.0371 21.7969 22.2295C21.3282 21.7829 20.8663 21.2927 20.3945 20.8369C19.1015 19.5889 17.7898 18.3599 16.4609 17.1504C15.738 16.4919 15.0103 15.8675 14.2773 15.2217C13.9772 14.9572 13.6027 14.6663 13.3359 14.3789C13.3204 14.7477 13.2517 15.1808 13.2285 15.5664L12.959 20.4551C12.8819 22.0299 12.8889 23.6992 12.874 25.2793C12.8593 25.4942 12.8631 25.7769 12.8594 25.9971L12.0508 26C12.0602 23.4816 12.01 20.9632 11.9004 18.4473C11.8609 17.4924 11.6547 16.2744 11.6992 15.3516C11.0529 16.0863 10.1847 17.3324 9.62012 18.1465C8.43866 19.8501 7.15094 21.8246 6.14941 23.6396C6.04792 23.3731 5.78334 23.0187 5.61133 22.7773C4.59249 21.3479 2.94695 19.8164 1.45605 18.8945C1.97989 18.6587 2.869 18.0729 3.38379 17.751C4.85425 16.8501 6.29026 15.8937 7.68848 14.8838C8.24548 14.4826 9.22366 13.695 9.75195 13.3984C8.92611 13.4607 8.42643 13.5634 7.61914 13.6816C5.0485 14.0635 2.50394 14.6055 0 15.3027C0.119245 14.9555 0.158617 14.4217 0.210938 14.0596C0.416026 12.6397 0.44861 11.3654 0.222656 9.94434C0.159958 9.55 0.129004 9.10806 0.0273438 8.71289C0.389736 8.76079 0.84458 8.90526 1.20996 8.99609C1.95001 9.18383 2.69294 9.36001 3.43848 9.52441C4.62565 9.77423 5.81659 10.006 7.01074 10.2197C7.43594 10.2926 7.85071 10.3232 8.28223 10.4053C7.94467 10.1826 7.64524 9.94052 7.31836 9.7041C6.85159 9.37342 6.38173 9.04699 5.90918 8.72461C4.4234 7.71509 2.90004 6.76185 1.34277 5.86719C2.47365 5.17475 3.95816 3.86486 4.81641 2.85156C5.01089 2.62165 5.19917 2.38552 5.37988 2.14453C5.53301 1.93626 5.86302 1.36096 6.03418 1.24805C6.13984 1.29204 6.67963 2.28713 6.78027 2.4541C8.08068 4.61151 9.46765 6.63865 10.9609 8.66699C10.8301 7.94625 10.7471 7.26188 10.6279 6.55273C10.4453 5.5197 10.2445 4.48997 10.0264 3.46387C9.88821 2.82121 9.72255 2.15569 9.57227 1.51367C9.45461 1.01111 9.27954 0.519084 9.18262 0.00292969C9.81041 0.0962944 10.5087 0.240564 11.1299 0.302734C12.7215 0.461896 14.1961 0.267307 15.7607 0Z"/>
+                </svg>
+                <span class="gate-logo-word">Glintstone</span>
+            </a>
+
+            <h1 class="gate-headline">Create your account</h1>
+            <p class="gate-subhead">Invitation required. Enter your details below.</p>
+
+            {% if error %}
+            <div class="gate-error" role="alert">
+                {% if error == 'email_taken' %}
+                    An account with this email already exists. <a href="/auth/login" style="color:inherit;text-decoration:underline;">Sign in instead</a>.
+                {% elif error == 'code_used' %}
+                    This invite has already been used. Contact <a href="mailto:eric.wittke@gmail.com" style="color:inherit;text-decoration:underline;">eric.wittke@gmail.com</a> for a new one.
+                {% elif error == 'invalid_code' %}
+                    Invalid invite code. Check the link in your invitation email.
+                {% elif error == 'invalid_credentials' %}
+                    Email or password is incorrect.
+                {% else %}
+                    Something went wrong. Please try again.
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <form method="post" action="/auth/register" novalidate>
+                <label for="name" class="gate-label">Full name</label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    class="gate-input"
+                    placeholder="Dr. Jane Smith"
+                    required
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                >
+
+                <label for="affiliation" class="gate-label">Institution / affiliation <span style="opacity:0.5;font-weight:400;">(optional)</span></label>
+                <input
+                    type="text"
+                    id="affiliation"
+                    name="affiliation"
+                    class="gate-input"
+                    placeholder="University of Chicago"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                >
+
+                <label for="email" class="gate-label">Email address</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    class="gate-input"
+                    placeholder="you@institution.edu"
+                    required
+                    autocomplete="email"
+                >
+
+                <label for="password" class="gate-label">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="gate-input"
+                    placeholder="Minimum 8 characters"
+                    required
+                    autocomplete="new-password"
+                    minlength="8"
+                >
+                <p class="gate-hint">At least 8 characters. No complexity rules.</p>
+
+                <label for="invite_code" class="gate-label">Invite code</label>
+                <input
+                    type="text"
+                    id="invite_code"
+                    name="invite_code"
+                    class="gate-input gate-input--code"
+                    placeholder="XXXX-XXXX-XXXX"
+                    value="{{ invite_code }}"
+                    required
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="characters"
+                >
+
+                <button type="submit" class="btn-submit" id="submit-btn">
+                    Create account
+                </button>
+            </form>
+
+            <p class="gate-footer">
+                Already have an account? <a href="/auth/login">Sign in</a>
+            </p>
+
+        </div>
+    </div>
+
+    <script>
+    // Uppercase invite code as the user types
+    document.getElementById('invite_code').addEventListener('input', function() {
+        const pos = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(pos, pos);
+    });
+
+    // Disable submit button while the form is submitting to prevent double-submit
+    document.querySelector('form').addEventListener('submit', function() {
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Creating account…';
+    });
+    </script>
+</body>
+</html>
