@@ -1,8 +1,8 @@
 """Dictionary route — browse signs, lemmas, and glosses."""
 
-from urllib.parse import quote
-
 from fastapi import APIRouter, Query, Request
+
+from app.list_view import active_filters_as_dicts, build_filtered_list
 
 router = APIRouter(prefix="/dictionary")
 
@@ -57,49 +57,27 @@ def dictionary_index(
 
     filter_options = api.get_dictionary_filter_options(filter_params)
 
-    # Build active filter pills with remove URLs
-    all_params: list[tuple[str, str]] = []
-    if search:
-        all_params.append(("search", search))
-    for lang in language:
-        all_params.append(("language", lang))
-    for p in pos:
-        all_params.append(("pos", p))
-    for s in source:
-        all_params.append(("source", s))
-    if frequency:
-        all_params.append(("frequency", frequency))
-
-    # Find filter option labels for pills
-    _label_cache: dict[tuple[str, str], str] = {}
+    # Build label cache from cross-filter options (coded val \u2192 human label)
+    label_cache: dict[tuple[str, str], str] = {}
     for dim_name in ("language", "pos", "source", "frequency"):
-        opts = filter_options.get(dim_name, [])
-        for opt in opts:
-            _label_cache[(dim_name, opt["val"])] = opt.get("label", opt["val"])
+        for opt in filter_options.get(dim_name, []):
+            label_cache[(dim_name, opt["val"])] = opt.get("label", opt["val"])
 
-    def _pill_label(key: str, val: str) -> str:
-        if key == "search":
-            return f"\u201c{val}\u201d"
-        return _label_cache.get((key, val), val)
-
-    active_filters: list[dict] = []
-    for i, (key, val) in enumerate(all_params):
-        remaining = [
-            f"{k}={quote(v, safe='')}" for j, (k, v) in enumerate(all_params) if j != i
-        ]
-        # Always preserve level and sort
-        remaining.append(f"level={level}")
-        if sort:
-            remaining.append(f"sort={sort}")
-        qs = "&".join(remaining)
-        remove_url = f"/dictionary?{qs}" if qs else "/dictionary"
-        active_filters.append(
-            {
-                "dimension": key,
-                "label": _pill_label(key, val),
-                "remove_url": remove_url,
-            }
-        )
+    lv = build_filtered_list(
+        scope="dictionary",
+        base_path="/dictionary",
+        query_args={
+            "search": search,
+            "language": language,
+            "pos": pos,
+            "source": source,
+            "frequency": frequency,
+        },
+        filter_dims=["language", "pos", "source", "frequency"],
+        page_obj=dict_page,
+        label_cache=label_cache,
+        preserve_params={"level": level, "sort": sort},
+    )
 
     from app.main import templates
 
@@ -108,10 +86,10 @@ def dictionary_index(
         "dictionary/index.html",
         {
             "level": level,
-            "items": dict_page.items,
-            "total": dict_page.total,
-            "page": dict_page.page,
-            "total_pages": dict_page.total_pages,
+            "items": lv.items,
+            "total": lv.total,
+            "page": lv.page,
+            "total_pages": lv.total_pages,
             "search": search,
             "language": language,
             "pos": pos,
@@ -119,7 +97,7 @@ def dictionary_index(
             "frequency": frequency,
             "sort": sort,
             "filter_options": filter_options,
-            "active_filters": active_filters,
+            "active_filters": active_filters_as_dicts(lv),
             "api_url": request.app.state.api.base_url,
         },
     )

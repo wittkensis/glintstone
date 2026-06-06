@@ -3,11 +3,10 @@
 import json
 import logging
 from pathlib import Path
-from urllib.parse import quote
-
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import RedirectResponse
 
+from app.list_view import active_filters_as_dicts, build_filtered_list
 from core.config import get_settings
 
 _DEBUG_TABLETS_PATH = Path(__file__).resolve().parents[2] / "debug-tablets.json"
@@ -51,53 +50,21 @@ def tablet_list(
 
     artifact_page = api.list_artifacts(params)
 
-    filter_options = artifact_page.filter_options or {
-        "period": [],
-        "provenience": [],
-        "genre": [],
-        "language": [],
-    }
-
-    # Build active filter pills with remove-URLs
-    all_params: list[tuple[str, str]] = []
-    if search:
-        all_params.append(("search", search))
-    for p in period:
-        all_params.append(("period", p))
-    for p in provenience:
-        all_params.append(("provenience", p))
-    for g in genre:
-        all_params.append(("genre", g))
-    for lang in language:
-        all_params.append(("language", lang))
-    if has_ocr:
-        all_params.append(("has_ocr", "1"))
-
-    _PILL_LABELS = {"has_ocr": "Has ML/OCR"}
-
-    def _pill_label(key: str, val: str) -> str:
-        if key in _PILL_LABELS:
-            return _PILL_LABELS[key]
-        if key == "search":
-            return f"“{val}”"
-        return val
-
-    active_filters: list[dict] = []
-    for i, (key, val) in enumerate(all_params):
-        remaining = [
-            f"{k}={quote(v, safe='')}" for j, (k, v) in enumerate(all_params) if j != i
-        ]
-        if pipeline:
-            remaining.append(f"pipeline={pipeline}")
-        qs = "&".join(remaining)
-        remove_url = f"/tablets?{qs}" if qs else "/tablets"
-        active_filters.append(
-            {
-                "dimension": key,
-                "label": _pill_label(key, val),
-                "remove_url": remove_url,
-            }
-        )
+    lv = build_filtered_list(
+        scope="tablets",
+        base_path="/tablets",
+        query_args={
+            "search": search,
+            "period": period,
+            "provenience": provenience,
+            "genre": genre,
+            "language": language,
+            "has_ocr": "1" if has_ocr else "",
+        },
+        filter_dims=["period", "provenience", "genre", "language", "has_ocr"],
+        page_obj=artifact_page,
+        preserve_params={"pipeline": pipeline} if pipeline else None,
+    )
 
     from app.main import templates
 
@@ -105,10 +72,10 @@ def tablet_list(
         request,
         "tablets/list.html",
         {
-            "tablets": artifact_page.items,
-            "total": artifact_page.total,
-            "page": artifact_page.page,
-            "total_pages": artifact_page.total_pages,
+            "tablets": lv.items,
+            "total": lv.total,
+            "page": lv.page,
+            "total_pages": lv.total_pages,
             "search": search,
             "pipeline": pipeline,
             "period": period,
@@ -116,8 +83,8 @@ def tablet_list(
             "genre": genre,
             "language": language,
             "has_ocr": has_ocr,
-            "filter_options": filter_options,
-            "active_filters": active_filters,
+            "filter_options": lv.filter_options,
+            "active_filters": active_filters_as_dicts(lv),
             "api_url": request.app.state.api.base_url,
         },
     )
