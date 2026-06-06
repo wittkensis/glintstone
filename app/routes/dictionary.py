@@ -123,6 +123,7 @@ def lemma_detail(request: Request, lemma_id: int):
             "lemma": data.get("lemma", {}),
             "senses": data.get("senses", []),
             "signs": data.get("signs", []),
+            "tablet_count": data.get("tablet_count"),
             "api_url": request.app.state.api.base_url,
         },
     )
