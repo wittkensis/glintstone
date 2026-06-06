@@ -138,6 +138,25 @@ def tablet_detail(request: Request, p_number: str):
 
         return RedirectResponse(url="/tablets", status_code=302)
 
+    # Back navigation — use ?back= param if present, else Referer header, else /tablets.
+    # The ?back= param takes precedence so links can bake in the exact return URL
+    # (e.g. search with filters preserved). Referer is the fallback for direct JS
+    # navigations that don't set the param. We only accept /tablets* paths to
+    # avoid open-redirect abuse.
+    back_param = request.query_params.get("back", "")
+    if back_param.startswith("/tablets"):
+        back_url = back_param
+    else:
+        referer = request.headers.get("referer", "")
+        # request.base_url is a Starlette URL object; .hostname gives the host string.
+        host = request.base_url.hostname or ""
+        # Strip scheme+host to get path — split on host and take everything after.
+        if host and host in referer and "/tablets" in referer:
+            # e.g. "http://localhost:8000/tablets?search=foo" → "/tablets?search=foo"
+            back_url = "/" + referer.split(host, 1)[-1].lstrip("/")
+        else:
+            back_url = "/tablets"
+
     # Auth-aware bookmark state
     current_user = None
     saved_item_id = None
@@ -181,6 +200,8 @@ def tablet_detail(request: Request, p_number: str):
         "tablets/detail.html",
         {
             "tablet": tablet,
+            "p_number": p_number,
+            "back_url": back_url,
             "api_url": request.app.state.api.base_url,
             "current_user": current_user,
             "saved_item_id": saved_item_id,

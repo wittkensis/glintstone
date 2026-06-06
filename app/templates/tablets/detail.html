@@ -8,6 +8,24 @@
 {% endblock %}
 
 {% block content %}
+{# Back navigation + breadcrumb — gives academics a clear path back to their
+   search results with filters preserved, and orients them within the site. #}
+<div class="page-nav">
+    <a href="{{ back_url }}" class="back-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Tablets
+    </a>
+    <nav class="breadcrumb" aria-label="breadcrumb">
+        <a href="/" class="breadcrumb__link">Home</a>
+        <span class="breadcrumb__sep" aria-hidden="true">/</span>
+        <a href="/tablets" class="breadcrumb__link">Tablets</a>
+        <span class="breadcrumb__sep" aria-hidden="true">/</span>
+        <span class="breadcrumb__current" aria-current="page">{{ p_number }}</span>
+    </nav>
+</div>
+
 <header class="page-header tablet-header">
     {% if tablet.composites %}
     {% set primary = tablet.composites[0] %}
@@ -50,6 +68,18 @@
     <div class="page-header-main">
         <div class="page-header-title">
             <h1>{{ tablet.p_number }}</h1>
+            {# Copy button: icon-only, copies P-number to clipboard for citation.
+               data-copied="true" is toggled transiently by JS so CSS can show feedback. #}
+            <button class="btn btn--icon btn-copy-pnum"
+                    id="copy-pnum-btn"
+                    data-pnum="{{ p_number }}"
+                    title="Copy P-number for citation"
+                    aria-label="Copy P-number {{ p_number }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            </button>
         </div>
         <div class="page-header-actions">
                     {% set pipe = tablet.pipeline or {} %}
@@ -213,6 +243,35 @@
                 {% endif %}
             </dl>
             {% endif %}
+
+            {# Publications collapsible — shows artifact_editions when available.
+               editions is a list of dicts with keys: title/citation, author, year, doi, source.
+               We render whatever subset is present; missing keys are silently omitted. #}
+            {% set editions = tablet.editions or tablet.artifact_editions or [] %}
+            {% if editions %}
+            <details class="publications-section tablet-meta__publications">
+                <summary class="publications-header">
+                    Publications
+                    <span class="publications-count">({{ editions | length }})</span>
+                </summary>
+                <ul class="publications-list">
+                    {% for ed in editions %}
+                    <li class="publication-item">
+                        <span class="pub-title">{{ ed.title or ed.citation or ed.designation or '(untitled)' }}</span>
+                        {% if ed.author %}<span class="pub-author">{{ ed.author }}</span>{% endif %}
+                        {% if ed.year %}<span class="pub-year">{{ ed.year }}</span>{% endif %}
+                        {% if ed.doi %}
+                        <a href="https://doi.org/{{ ed.doi }}"
+                           class="pub-doi"
+                           target="_blank"
+                           rel="noopener noreferrer">DOI</a>
+                        {% endif %}
+                        <span class="source-badge">{{ ed.source or 'CDLI' }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </details>
+            {% endif %}
     </div>
 </header>
 
@@ -285,10 +344,16 @@
                 <!-- Summary Tab Content -->
                 <div class="knowledge-tab-content knowledge-tab-content--active" data-content="summary">
                     <div class="artifact-summary" id="artifact-summary">
-                        <!-- Loading state -->
-                        <div class="artifact-summary__loading" id="artifact-summary-loading">
-                            <div class="artifact-summary__spinner" aria-hidden="true"></div>
-                            <p>Generating summary&hellip;</p>
+                        <!-- Loading state: skeleton loaders while summarize_artifact fetches.
+                             artifact-summary.js hides #artifact-summary-loading when content arrives. -->
+                        <div class="artifact-summary__loading" id="artifact-summary-loading" aria-busy="true" aria-label="Loading summary">
+                            <div class="skeleton-wrap" aria-hidden="true">
+                                <div class="skeleton-loader" style="height:13px;width:85%;margin-bottom:10px"></div>
+                                <div class="skeleton-loader" style="height:13px;width:95%;margin-bottom:10px"></div>
+                                <div class="skeleton-loader" style="height:13px;width:72%;margin-bottom:18px"></div>
+                                <div class="skeleton-loader" style="height:13px;width:90%;margin-bottom:10px"></div>
+                                <div class="skeleton-loader" style="height:13px;width:60%"></div>
+                            </div>
                         </div>
                         <!-- Populated by artifact-summary.js -->
                         <div class="artifact-summary__content is-hidden" id="artifact-summary-content">
@@ -355,6 +420,25 @@
 })();
 </script>
 {% endif %}
+<script>
+(function() {
+    // P-number copy button — copies the P-number to clipboard.
+    // Shows transient data-copied="true" so CSS can animate a checkmark/confirmation.
+    const copyBtn = document.getElementById('copy-pnum-btn');
+    if (!copyBtn) return;
+    const pnum = copyBtn.dataset.pnum;
+    copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(pnum)
+            .then(() => {
+                copyBtn.setAttribute('data-copied', 'true');
+                setTimeout(() => copyBtn.removeAttribute('data-copied'), 1500);
+            })
+            .catch(() => {
+                // Clipboard API unavailable (e.g. non-HTTPS). Fallback: no-op.
+            });
+    });
+})();
+</script>
 <script src="/static/js/zoombox.js"></script>
 <script src="/static/js/atf-viewer.js"></script>
 <script src="/static/js/atf-viewer-integration.js"></script>
