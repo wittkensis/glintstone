@@ -31,6 +31,7 @@
 @import url('components/tabs.css');
 @import url('components/composites.css');
 @import url('components/line-suggestions.css');
+@import url('components/design-system.css');
 
 /* Pages */
 @import url('pages/homepage.css');
