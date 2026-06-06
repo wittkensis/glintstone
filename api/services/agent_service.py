@@ -813,9 +813,9 @@ def do_suggest_line_translation(
 
     if raw_json:
         try:
-            import json as _json  # noqa: PLC0415
+            from core.agent.synthesis import extract_json  # noqa: PLC0415
 
-            parsed = _json.loads(raw_json)
+            parsed = extract_json(raw_json)
             for step in parsed.get("token_chain", []):
                 token_chain.append(
                     TokenChainStep(
