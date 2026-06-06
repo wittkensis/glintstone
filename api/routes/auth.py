@@ -252,6 +252,81 @@ def revoke_api_key(
         raise HTTPException(status_code=404, detail="Key not found")
 
 
+# ── Email + invite-code auth (PRD-014) ───────────────────────────────────────
+
+
+class EmailLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class EmailRegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+    affiliation: str = ""
+    invite_code: str
+
+
+@router.post("/email/login")
+def email_login(body: EmailLoginRequest, request: Request, conn=Depends(get_db)):
+    """Authenticate with email + password. Returns session token."""
+    settings = get_settings()
+    user = UserRepository(conn).find_by_email(body.email)
+    if not user or not user.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    if not auth_service.verify_password(body.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    return _create_session_response(user, conn, request, settings)
+
+
+@router.post("/email/register")
+def email_register(body: EmailRegisterRequest, request: Request, conn=Depends(get_db)):
+    """Register with invite code. Creates account and returns session token."""
+    settings = get_settings()
+    with conn.cursor() as cur:
+        # Validate invite code
+        cur.execute(
+            "SELECT id FROM invite_codes WHERE code = %(code)s AND used_at IS NULL",
+            {"code": body.invite_code},
+        )
+        invite = cur.fetchone()
+        if not invite:
+            raise HTTPException(
+                status_code=400, detail="Invalid or already-used invite code"
+            )
+
+        # Check email uniqueness
+        existing = UserRepository(conn).find_by_email(body.email)
+        if existing:
+            raise HTTPException(status_code=409, detail="Email already registered")
+
+        # Create user
+        password_hash = auth_service.hash_password(body.password)
+        cur.execute(
+            """
+            INSERT INTO users (email, display_name, password_hash, invite_code_id)
+            VALUES (%(email)s, %(name)s, %(password_hash)s, %(invite_code_id)s)
+            RETURNING *
+            """,
+            {
+                "email": body.email,
+                "name": body.name,
+                "password_hash": password_hash,
+                "invite_code_id": invite["id"],
+            },
+        )
+        user = cur.fetchone()
+
+        # Mark invite used
+        cur.execute(
+            "UPDATE invite_codes SET used_by_email = %(email)s, used_at = NOW() WHERE id = %(id)s",
+            {"email": body.email, "id": invite["id"]},
+        )
+
+    return _create_session_response(user, conn, request, settings)
+
+
 # ── Internal helper ───────────────────────────────────────────────────────────
 
 
