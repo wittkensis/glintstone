@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lemma.citation_form or 'Lemma' }} — Dictionary — Glintstone{% endblock %}
+
+{% block content %}
+<main class="lemma-detail-page">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/dictionary">Dictionary</a>
+        <span aria-hidden="true">/</span>
+        <span>{{ lemma.citation_form or 'Lemma' }}</span>
+    </nav>
+
+    {# ── Header ─────────────────────────────────────────────────────── #}
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <h1 class="lemma-detail__citation">{{ lemma.citation_form or '—' }}
+                    {% if lemma.guide_word %}
+                    <span class="lemma-detail__guide">[{{ lemma.guide_word }}]</span>
+                    {% endif %}
+                </h1>
+            </div>
+        </div>
+    </div>
+
+    {# ── Metadata badges ─────────────────────────────────────────────── #}
+    <div class="lemma-detail__meta">
+        {% if lemma.pos_label %}
+        <span class="badge badge--sm">{{ lemma.pos_label }}</span>
+        {% endif %}
+        {% if lemma.language_label %}
+        <span class="badge badge--sm badge--language">{{ lemma.language_label }}</span>
+        {% endif %}
+        {% if lemma.source_label %}
+        <span class="source-badge" title="Source: {{ lemma.source_label }}">{{ lemma.source_label }}</span>
+        {% endif %}
+        {% if lemma.attestation_count %}
+        <span class="lemma-detail__attestations">
+            {{ '{:,}'.format(lemma.attestation_count) }} attestation{{ 's' if lemma.attestation_count != 1 }}
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="lemma-detail__body">
+
+        {# ── Senses ──────────────────────────────────────────────────── #}
+        {% if senses %}
+        <section class="dict-detail__section" aria-labelledby="senses-heading">
+            <h3 id="senses-heading">Senses</h3>
+            <ol class="lemma-detail__senses">
+                {% for sense in senses %}
+                <li class="lemma-detail__sense">
+                    {# definition_parts is a Postgres array; display as comma-joined string #}
+                    <span class="lemma-detail__definition">
+                        {% if sense.definition_parts %}
+                            {{ sense.definition_parts | join(', ') }}
+                        {% else %}
+                            <em class="lemma-detail__no-def">No definition recorded</em>
+                        {% endif %}
+                    </span>
+                    {% if sense.usage_notes %}
+                    <span class="lemma-detail__usage-note">{{ sense.usage_notes }}</span>
+                    {% endif %}
+                    {% if sense.semantic_domain %}
+                    <span class="lemma-detail__domain badge badge--sm">{{ sense.semantic_domain }}</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+        </section>
+        {% endif %}
+
+        {# ── Sign associations ───────────────────────────────────────── #}
+        {% if signs %}
+        <section class="dict-detail__section" aria-labelledby="signs-heading">
+            <h3 id="signs-heading">Signs that write this lemma</h3>
+            <ul class="dict-detail__signs">
+                {% for sign in signs %}
+                <li>
+                    {% if sign.unicode_char %}
+                    <span class="dict-detail__sign-glyph">{{ sign.unicode_char }}</span>
+                    {% endif %}
+                    <a href="/dictionary/signs/{{ sign.id }}" class="lemma-detail__sign-link">{{ sign.sign_name }}</a>
+                    {% if sign.value %}
+                    <span class="lemma-detail__reading">{{ sign.value }}</span>
+                    {% endif %}
+                    {% if sign.reading_type %}
+                    <span class="dict-detail__sub">({{ sign.reading_type }})</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        {# ── Tablet occurrences — honest stub until PRD-012 ──────────── #}
+        <section class="dict-detail__section" aria-labelledby="occurrences-heading">
+            <h3 id="occurrences-heading">Tablet occurrences</h3>
+            <p class="dict-detail__note">Not yet indexed</p>
+        </section>
+
+        {# ── Source attribution ───────────────────────────────────────── #}
+        {% if lemma.source_label %}
+        <section class="dict-detail__section" aria-labelledby="attribution-heading">
+            <h3 id="attribution-heading">Source</h3>
+            <p class="lemma-detail__attribution">
+                Data sourced from <strong>{{ lemma.source_label }}</strong>
+                {% if lemma.source and lemma.source.startswith('oracc/') %}
+                via the <a href="https://oracc.museum.upenn.edu/{{ lemma.source[6:] }}" target="_blank" rel="noopener">ORACC {{ lemma.source[6:] | upper }} project</a>.
+                {% elif lemma.source == 'epsd2' %}
+                via the <a href="https://oracc.museum.upenn.edu/epsd2" target="_blank" rel="noopener">Electronic Pennsylvania Sumerian Dictionary (ePSD2)</a>.
+                {% endif %}
+            </p>
+        </section>
+        {% endif %}
+
+    </div>
+</main>
+{% endblock %}
