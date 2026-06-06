@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}{{ sign.sign_name or 'Sign' }} — Signs — Dictionary — Glintstone{% endblock %}
+
+{% block content %}
+<main class="sign-detail-page">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/dictionary">Dictionary</a>
+        <span aria-hidden="true">/</span>
+        <a href="/dictionary?level=signs">Signs</a>
+        <span aria-hidden="true">/</span>
+        <span>{{ sign.sign_name or 'Sign' }}</span>
+    </nav>
+
+    {# ── Header ─────────────────────────────────────────────────────── #}
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                {% if sign.unicode_char %}
+                <div class="dict-detail__big-glyph" aria-hidden="true">{{ sign.unicode_char }}</div>
+                {% endif %}
+                <h1>{{ sign.sign_name or '—' }}</h1>
+            </div>
+        </div>
+    </div>
+
+    {# ── Metadata badges ─────────────────────────────────────────────── #}
+    <div class="lemma-detail__meta">
+        {% if sign.source_label %}
+        <span class="source-badge" title="Source: {{ sign.source_label }}">{{ sign.source_label }}</span>
+        {% endif %}
+        {% if sign.values %}
+        <span class="dict-detail__sub">{{ sign.values | length }} reading{{ 's' if sign.values | length != 1 }}</span>
+        {% endif %}
+    </div>
+
+    <div class="lemma-detail__body">
+
+        {# ── Readings / values ───────────────────────────────────────── #}
+        {% if sign.values %}
+        <section class="dict-detail__section" aria-labelledby="readings-heading">
+            <h3 id="readings-heading">Readings</h3>
+            <ul class="lemma-detail__readings">
+                {% for reading in sign.values %}
+                <li class="lemma-detail__reading-item">{{ reading }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        {# ── Lemma associations ──────────────────────────────────────── #}
+        {% if lemmas %}
+        <section class="dict-detail__section" aria-labelledby="lemmas-heading">
+            <h3 id="lemmas-heading">Lemmas written with this sign</h3>
+            <ul class="sign-detail__lemmas">
+                {% for lem in lemmas %}
+                <li class="sign-detail__lemma-row">
+                    <a href="/dictionary/lemmas/{{ lem.id }}" class="sign-detail__lemma-link">{{ lem.citation_form }}</a>
+                    {% if lem.guide_word %}
+                    <span class="dict-card__guide">[{{ lem.guide_word }}]</span>
+                    {% endif %}
+                    {% if lem.pos_label %}
+                    <span class="dict-card__badge">{{ lem.pos_label }}</span>
+                    {% endif %}
+                    {% if lem.language_label %}
+                    <span class="dict-detail__sub">{{ lem.language_label }}</span>
+                    {% endif %}
+                    {% if lem.value %}
+                    <span class="dict-detail__sub">as {{ lem.value }}</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+
+        {# ── Tablet occurrences — honest stub until PRD-012 ──────────── #}
+        <section class="dict-detail__section" aria-labelledby="occurrences-heading">
+            <h3 id="occurrences-heading">Tablet occurrences</h3>
+            <p class="dict-detail__note">Not yet indexed</p>
+        </section>
+
+        {# ── Source attribution ───────────────────────────────────────── #}
+        {% if sign.source_label %}
+        <section class="dict-detail__section" aria-labelledby="attribution-heading">
+            <h3 id="attribution-heading">Source</h3>
+            <p class="lemma-detail__attribution">
+                Sign data sourced from <strong>{{ sign.source_label }}</strong>.
+                {% if sign.source == 'epsd2-sl' %}
+                The ePSD2 sign list is compiled from the
+                <a href="https://oracc.museum.upenn.edu/epsd2" target="_blank" rel="noopener">Electronic Pennsylvania Sumerian Dictionary</a>.
+                {% elif sign.source == 'ebl-sign-list' %}
+                The eBL sign list is compiled from the
+                <a href="https://www.ebl.lmu.de" target="_blank" rel="noopener">Electronic Babylonian Library</a>.
+                {% endif %}
+            </p>
+        </section>
+        {% endif %}
+
+    </div>
+</main>
+{% endblock %}

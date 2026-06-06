@@ -1,6 +1,7 @@
-"""Dictionary route — browse signs, lemmas, and glosses."""
+"""Dictionary route — browse signs, lemmas, and glosses with detail pages."""
 
 from fastapi import APIRouter, Query, Request
+from fastapi.responses import RedirectResponse
 
 from app.list_view import active_filters_as_dicts, build_filtered_list
 
@@ -98,6 +99,53 @@ def dictionary_index(
             "sort": sort,
             "filter_options": filter_options,
             "active_filters": active_filters_as_dicts(lv),
+            "api_url": request.app.state.api.base_url,
+        },
+    )
+
+
+@router.get("/lemmas/{lemma_id}")
+def lemma_detail(request: Request, lemma_id: int):
+    api = request.app.state.api
+    try:
+        data = api.get(f"/dictionary/lemmas/{lemma_id}")
+    except Exception:
+        data = None
+    if not data:
+        return RedirectResponse(url="/dictionary", status_code=302)
+
+    from app.main import templates
+
+    return templates.TemplateResponse(
+        request,
+        "dictionary/lemma.html",
+        {
+            "lemma": data.get("lemma", {}),
+            "senses": data.get("senses", []),
+            "signs": data.get("signs", []),
+            "api_url": request.app.state.api.base_url,
+        },
+    )
+
+
+@router.get("/signs/{sign_id}")
+def sign_detail(request: Request, sign_id: int):
+    api = request.app.state.api
+    try:
+        data = api.get(f"/dictionary/signs/{sign_id}")
+    except Exception:
+        data = None
+    if not data:
+        return RedirectResponse(url="/dictionary?level=signs", status_code=302)
+
+    from app.main import templates
+
+    return templates.TemplateResponse(
+        request,
+        "dictionary/sign.html",
+        {
+            "sign": data.get("sign", {}),
+            "lemmas": data.get("lemmas", []),
             "api_url": request.app.state.api.base_url,
         },
     )
