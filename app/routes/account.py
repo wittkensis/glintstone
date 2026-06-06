@@ -104,11 +104,11 @@ def me_proxy(request: Request):
     token = request.cookies.get("session_token")
     if not token:
         return Response(status_code=204)
-    try:
-        user = request.app.state.api.get("/auth/me", token=token)
-        return JSONResponse(user)
-    except Exception:
+    # get_me() degrades to {} on any error — return 204 on empty so JS knows no user
+    user = request.app.state.api.get_me(token)
+    if not user:
         return Response(status_code=204)
+    return JSONResponse(user)
 
 
 @router.get("/account")
@@ -125,15 +125,14 @@ def account(request: Request):
         response.delete_cookie("session_token")
         return response
 
+    # api-keys uses passthrough — it's a list response without a Page wrapper
     api_keys = []
-    bookmarks = []
     try:
         api_keys = api.get("/auth/api-keys", token=token)
-        bookmarks = api.get(
-            "/users/me/saved-items", params={"item_type": "artifact"}, token=token
-        )
     except Exception:
         pass
+
+    bookmarks = api.get_saved_items({"item_type": "artifact"}, token)
 
     settings = get_settings()
     from app.main import templates

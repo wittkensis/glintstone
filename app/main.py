@@ -11,7 +11,9 @@ from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api_client import APIClient, AuthRequiredError
+from app.api_client import AuthRequiredError, GlintstoneAPI
+from app.transports import HttpxTransport
+from core.config import get_settings
 from app.routes import (
     account,
     admin,
@@ -38,7 +40,8 @@ APP_VERSION = release_tag()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_pool()
-    app.state.api = APIClient()
+    settings = get_settings()
+    app.state.api = GlintstoneAPI(HttpxTransport(base_url=settings.api_url))
     yield
     app.state.api.close()
     close_pool()

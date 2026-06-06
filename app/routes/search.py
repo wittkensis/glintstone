@@ -58,11 +58,14 @@ def suggest(
     api = request.app.state.api
     t0 = time.monotonic()
     try:
-        envelope = api.get(
-            "/search",
-            params={"q": q, "types": types, "limit": limit, "mode": "hybrid"},
+        # GlintstoneAPI.search() degrades to {} internally; this outer try catches
+        # anything that escapes (e.g. a network error before the transport layer).
+        envelope = api.search(
+            {"q": q, "types": types, "limit": limit, "mode": "hybrid"}
         )
     except Exception:
+        envelope = {}
+    if not envelope:
         envelope = {"data": {"groups": []}, "summary": "Search unavailable."}
     logger.info(
         "suggest scope=%s duration_ms=%d q=%r",

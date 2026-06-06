@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter, Query, Request
+from fastapi.responses import RedirectResponse
 
 from core.config import get_settings
 
@@ -48,12 +49,9 @@ def tablet_list(
     if has_ocr:
         params["has_ocr"] = "true"
 
-    try:
-        data = api.get("/artifacts", params=params)
-    except Exception:
-        data = {"items": [], "total": 0, "page": 1, "per_page": 24, "total_pages": 0}
+    artifact_page = api.list_artifacts(params)
 
-    filter_options = data.get("filter_options") or {
+    filter_options = artifact_page.filter_options or {
         "period": [],
         "provenience": [],
         "genre": [],
@@ -81,7 +79,7 @@ def tablet_list(
         if key in _PILL_LABELS:
             return _PILL_LABELS[key]
         if key == "search":
-            return f"\u201c{val}\u201d"
+            return f"“{val}”"
         return val
 
     active_filters: list[dict] = []
@@ -107,10 +105,10 @@ def tablet_list(
         request,
         "tablets/list.html",
         {
-            "tablets": data.get("items", []),
-            "total": data.get("total", 0),
-            "page": data.get("page", 1),
-            "total_pages": data.get("total_pages", 0),
+            "tablets": artifact_page.items,
+            "total": artifact_page.total,
+            "page": artifact_page.page,
+            "total_pages": artifact_page.total_pages,
             "search": search,
             "pipeline": pipeline,
             "period": period,
@@ -127,15 +125,10 @@ def tablet_list(
 
 @router.get("/{p_number}")
 def tablet_detail(request: Request, p_number: str):
-    import httpx
-
     api = request.app.state.api
 
-    try:
-        tablet = api.get(f"/artifacts/{p_number}")
-    except Exception:
-        from fastapi.responses import RedirectResponse
-
+    tablet = api.get_artifact(p_number)
+    if not tablet:
         return RedirectResponse(url="/tablets", status_code=302)
 
     # Auth-aware bookmark state
@@ -143,30 +136,24 @@ def tablet_detail(request: Request, p_number: str):
     saved_item_id = None
     token = request.cookies.get("session_token")
     if token:
-        try:
-            current_user = api.get("/auth/me", token=token)
-            items = api.get(
-                "/users/me/saved-items",
-                params={"item_type": "artifact"},
-                token=token,
-            )
-            for item in items:
-                if item.get("item_id") == p_number:
-                    saved_item_id = item["id"]
-                    break
-        except httpx.HTTPStatusError:
-            pass
+        # get_me and get_saved_items degrade gracefully — no try/except needed
+        current_user = api.get_me(token) or None
+        items = api.get_saved_items({"item_type": "artifact"}, token)
+        for item in items:
+            if item.get("item_id") == p_number:
+                saved_item_id = item["id"]
+                break
 
     # Debug: full data dump + tablet navigation list
     debug_json = None
     debug_tablets_json = None
     settings = get_settings()
     if settings.app_debug:
-        try:
-            debug_data = api.get(f"/artifacts/{p_number}/debug")
+        debug_data = api.get_artifact_debug(p_number)
+        if debug_data:
             debug_json = json.dumps(debug_data, default=str, ensure_ascii=False)
-        except Exception as e:
-            logger.warning("Debug fetch failed for %s: %s", p_number, e)
+        else:
+            logger.warning("Debug fetch empty for %s", p_number)
             debug_json = None
 
         try:

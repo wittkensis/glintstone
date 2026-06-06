@@ -42,12 +42,9 @@ def dictionary_index(
     if frequency:
         params["frequency"] = frequency
 
-    try:
-        data = api.get("/dictionary/browse", params=params)
-    except Exception:
-        data = {"items": [], "total": 0, "page": 1, "per_page": 50, "total_pages": 0}
+    dict_page = api.browse_dictionary(params)
 
-    # Filter options (cross-filtered)
+    # Filter options (cross-filtered) — separate call, degrades to {}
     filter_params: dict = {"level": level}
     if language:
         filter_params["language"] = language
@@ -58,10 +55,7 @@ def dictionary_index(
     if frequency:
         filter_params["frequency"] = frequency
 
-    try:
-        filter_options = api.get("/dictionary/filter-options", params=filter_params)
-    except Exception:
-        filter_options = {}
+    filter_options = api.get_dictionary_filter_options(filter_params)
 
     # Build active filter pills with remove URLs
     all_params: list[tuple[str, str]] = []
@@ -77,7 +71,7 @@ def dictionary_index(
         all_params.append(("frequency", frequency))
 
     # Find filter option labels for pills
-    _label_cache: dict[tuple[str, str]] = {}
+    _label_cache: dict[tuple[str, str], str] = {}
     for dim_name in ("language", "pos", "source", "frequency"):
         opts = filter_options.get(dim_name, [])
         for opt in opts:
@@ -114,10 +108,10 @@ def dictionary_index(
         "dictionary/index.html",
         {
             "level": level,
-            "items": data.get("items", []),
-            "total": data.get("total", 0),
-            "page": data.get("page", 1),
-            "total_pages": data.get("total_pages", 0),
+            "items": dict_page.items,
+            "total": dict_page.total,
+            "page": dict_page.page,
+            "total_pages": dict_page.total_pages,
             "search": search,
             "language": language,
             "pos": pos,

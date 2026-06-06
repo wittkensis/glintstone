@@ -30,6 +30,8 @@ class _FakeAPI:
         self.base_url = "http://api.test"
         self.raise_on_call = False
 
+    # ── Raw passthrough ───────────────────────────────────────────────────────
+
     def get(self, path, params=None, token=None):
         if "saved-items" in path:
             return []
@@ -41,8 +43,32 @@ class _FakeAPI:
     def post(self, *a, **kw):
         return {}
 
+    def put(self, *a, **kw):
+        return {}
+
+    def delete(self, *a, **kw):
+        return None
+
+    def patch(self, *a, **kw):
+        return None
+
     def close(self):
         pass
+
+    # ── Typed domain methods ──────────────────────────────────────────────────
+
+    def search(self, params):
+        """Typed method now used by the search route; mirrors the old get() contract."""
+        if self.raise_on_call:
+            raise ConnectionError("API unreachable")
+        self.calls.append({"path": "/search", "params": params})
+        return self.envelope
+
+    def get_me(self, token):
+        return {}
+
+    def get_saved_items(self, params, token):
+        return []
 
 
 @pytest.fixture
@@ -53,24 +79,13 @@ def client(monkeypatch):
     monkeypatch.setattr(database, "close_pool", lambda *a, **kw: None)
 
     from app import main as app_main
-    from app.api_client import APIClient
+    from app.transports import HttpxTransport
+
+    # Prevent HttpxTransport from opening a real HTTP connection during lifespan.
+    monkeypatch.setattr(HttpxTransport, "__init__", lambda self, **kw: None)
+    monkeypatch.setattr(HttpxTransport, "close", lambda self: None)
 
     fake = _FakeAPI()
-
-    monkeypatch.setattr(
-        APIClient,
-        "__init__",
-        lambda self: (
-            setattr(self, "base_url", fake.base_url) or setattr(self, "_client", None)
-        ),
-    )
-    monkeypatch.setattr(
-        APIClient, "get", lambda self, path, params=None: fake.get(path, params)
-    )
-    monkeypatch.setattr(APIClient, "post", lambda self, *a, **kw: {})
-    monkeypatch.setattr(APIClient, "put", lambda self, *a, **kw: {})
-    monkeypatch.setattr(APIClient, "delete", lambda self, *a, **kw: {})
-    monkeypatch.setattr(APIClient, "close", lambda self: None)
 
     with TestClient(app_main.app, cookies={"session_token": "test-token"}) as c:
         c.app.state.api = fake
