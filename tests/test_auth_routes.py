@@ -3,6 +3,11 @@
 Requires DATABASE_URL (skipped otherwise).
 Uses respx to intercept outbound httpx calls for ORCID and Resend.
 Covers scenarios from GitHub issue #76.
+
+PRD-014 additions (TestInviteCodes, TestPasswordHashing, TestGenerateInviteScript):
+  - invite_codes table CRUD via raw SQL (validates migration 044 schema)
+  - password hash round-trip (documents expected auth_service interface)
+  - invite code generation utility
 """
 
 import sys
@@ -232,3 +237,217 @@ class TestSavedItemsRepo:
 
         deleted = saved_items_repo.delete(str(uuid.uuid4()), str(test_user["id"]))
         assert deleted is False
+
+
+# ── PRD-014: invite codes ─────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def test_invite_code(db_conn):
+    """Insert a fresh unused invite code; rolled back after each test."""
+    with db_conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO invite_codes (code, label) VALUES (%s, %s) RETURNING *",
+            ("TEST-UNIT-CODE", "pytest fixture"),
+        )
+        row = cur.fetchone()
+    db_conn.commit()
+    return row
+
+
+class TestInviteCodes:
+    """Tests for the invite_codes table added in migration 044.
+
+    Uses raw SQL because no InviteCodeRepository exists yet — the repo
+    lives in api/routes/auth.py (separate worker scope). These tests
+    validate the schema and query patterns the API will use.
+    """
+
+    def test_insert_and_find_code(self, db_conn):
+        with db_conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO invite_codes (code, label) VALUES (%s, %s) RETURNING *",
+                ("ABCD-EFGH-IJKL", "test batch"),
+            )
+            row = cur.fetchone()
+        db_conn.commit()
+
+        assert row is not None
+        assert row["code"] == "ABCD-EFGH-IJKL"
+        assert row["label"] == "test batch"
+        assert row["used_at"] is None
+        assert row["used_by_email"] is None
+
+    def test_code_uniqueness_constraint(self, db_conn):
+        """Duplicate invite codes must be rejected by the DB."""
+        import psycopg
+
+        with db_conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO invite_codes (code) VALUES (%s)",
+                ("DUPL-ICAT-CODE",),
+            )
+        db_conn.commit()
+
+        with pytest.raises(psycopg.errors.UniqueViolation):
+            with db_conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO invite_codes (code) VALUES (%s)",
+                    ("DUPL-ICAT-CODE",),
+                )
+            db_conn.commit()
+
+    def test_mark_code_used(self, test_invite_code, db_conn):
+        """Marking a code used records email and timestamp."""
+        with db_conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE invite_codes
+                   SET used_by_email = %s, used_at = now()
+                 WHERE id = %s
+                """,
+                ("scholar@university.edu", test_invite_code["id"]),
+            )
+        db_conn.commit()
+
+        with db_conn.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM invite_codes WHERE id = %s",
+                (test_invite_code["id"],),
+            )
+            row = cur.fetchone()
+
+        assert row["used_by_email"] == "scholar@university.edu"
+        assert row["used_at"] is not None
+
+    def test_unused_code_query(self, test_invite_code, db_conn):
+        """An unused code can be found by code string with used_at IS NULL guard."""
+        with db_conn.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM invite_codes WHERE code = %s AND used_at IS NULL",
+                (test_invite_code["code"],),
+            )
+            row = cur.fetchone()
+        assert row is not None
+        assert row["id"] == test_invite_code["id"]
+
+    def test_used_code_not_returned_as_available(self, test_invite_code, db_conn):
+        """Once marked used, the code does not appear in available queries."""
+        with db_conn.cursor() as cur:
+            cur.execute(
+                "UPDATE invite_codes SET used_by_email = %s, used_at = now() WHERE id = %s",
+                ("someone@example.com", test_invite_code["id"]),
+            )
+        db_conn.commit()
+
+        with db_conn.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM invite_codes WHERE code = %s AND used_at IS NULL",
+                (test_invite_code["code"],),
+            )
+            row = cur.fetchone()
+        assert row is None
+
+    def test_users_table_has_password_columns(self, user_repo, db_conn):
+        """Migration 044 added password_hash, name, affiliation, invite_code_id to users."""
+        user_repo.create_user(email="pwcol-check@glintstone.example")
+        db_conn.commit()
+        row = user_repo.find_by_email("pwcol-check@glintstone.example")
+        assert row is not None
+        for col in ("password_hash", "name", "affiliation", "invite_code_id"):
+            assert col in row, (
+                f"Column '{col}' missing from users table — run migration 044"
+            )
+
+
+# ── PRD-014: password hashing ─────────────────────────────────────────────────
+
+
+class TestPasswordHashing:
+    """Documents the expected hash_password / verify_password interface.
+
+    These functions must be added to api/services/auth_service.py by the
+    API-side worker. If they don't exist, these tests fail with ImportError —
+    that failure is intentional and serves as the integration gate.
+    """
+
+    def test_hash_is_not_plaintext(self):
+        from api.services.auth_service import hash_password
+
+        h = hash_password("correcthorsebatterystaple")
+        assert h != "correcthorsebatterystaple"
+        assert len(h) > 20
+
+    def test_verify_correct_password(self):
+        from api.services.auth_service import hash_password, verify_password
+
+        pw = "openbarley42"
+        h = hash_password(pw)
+        assert verify_password(pw, h) is True
+
+    def test_verify_wrong_password(self):
+        from api.services.auth_service import hash_password, verify_password
+
+        h = hash_password("rightpassword")
+        assert verify_password("wrongpassword", h) is False
+
+    def test_hashes_are_unique_per_call(self):
+        """Each call to hash_password produces a unique hash (random salt)."""
+        from api.services.auth_service import hash_password
+
+        pw = "samepassword"
+        assert hash_password(pw) != hash_password(pw)
+
+
+# ── PRD-014: invite code generator (pure unit — no DB) ───────────────────────
+
+
+class TestGenerateInviteScript:
+    def test_generate_code_format(self):
+        """Generated codes are in XXXX-XXXX-XXXX format."""
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "generate_invite",
+            str(ROOT / "ops" / "tools" / "generate_invite.py"),
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        code = mod.generate_code()
+        parts = code.split("-")
+        assert len(parts) == 3
+        assert all(len(p) == 4 for p in parts)
+        assert all(c.isalnum() for p in parts for c in p)
+
+    def test_codes_are_unique(self):
+        """10 generated codes should all be distinct."""
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "generate_invite",
+            str(ROOT / "ops" / "tools" / "generate_invite.py"),
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        codes = {mod.generate_code() for _ in range(10)}
+        assert len(codes) == 10
+
+    def test_no_ambiguous_chars(self):
+        """Codes must not contain O, 0, I, or 1 (visually ambiguous)."""
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "generate_invite",
+            str(ROOT / "ops" / "tools" / "generate_invite.py"),
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        for _ in range(50):
+            code = mod.generate_code().replace("-", "")
+            for ambiguous in ("O", "0", "I", "1"):
+                assert ambiguous not in code, (
+                    f"Ambiguous char '{ambiguous}' found in {code}"
+                )
