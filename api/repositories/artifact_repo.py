@@ -65,6 +65,43 @@ class ArtifactRepository(BaseRepository):
                 params.update(p)
         return (" AND ".join(conditions), params) if conditions else ("", {})
 
+    def _get_filter_options_from_view(self) -> dict | None:
+        """Read unfiltered filter counts from the filter_options_cache materialized view.
+
+        Returns a dict keyed by dimension if the view exists, or None if it
+        hasn't been created yet (migration 042 not yet applied). The caller
+        falls back to the four-query path on None.
+
+        The view stores flat (dimension, value, count) rows — not the
+        grouped structures that get_filter_options returns. Grouping by
+        group_name / region requires period_canon and provenience_canon
+        metadata that isn't in the view, so for simplicity the unfiltered
+        fast path returns flat lists (consistent with the filtered path for
+        genre/language). Period and provenience grouping is a UI convenience
+        that the web layer can apply client-side using the existing period_canon
+        and provenience_canon API endpoints.
+        """
+        try:
+            rows = self.fetch_all(
+                "SELECT dimension, value, count FROM filter_options_cache ORDER BY dimension, count DESC",
+                {},
+            )
+        except Exception:
+            # View doesn't exist yet — migration 042 not applied.
+            return None
+
+        result: dict[str, list[dict]] = {
+            "period": [],
+            "provenience": [],
+            "genre": [],
+            "language": [],
+        }
+        for row in rows:
+            dim = row["dimension"]
+            if dim in result:
+                result[dim].append({"val": row["value"], "count": row["count"]})
+        return result
+
     def get_filter_options(
         self, active_filters: dict[str, list[str]] | None = None
     ) -> dict:
@@ -91,6 +128,19 @@ class ArtifactRepository(BaseRepository):
                 payload, ts = cached
                 if time.monotonic() - ts < _FILTER_CACHE_TTL:
                     return payload
+
+        # Fast path: read from the filter_options_cache materialized view when
+        # no cross-filters are active (the view holds unfiltered counts only).
+        # Falls back to the four-query path when the view doesn't exist yet
+        # (i.e. migration 042 hasn't run) or when active filters require
+        # per-dimension cross-filtering.
+        if not af:
+            options = self._get_filter_options_from_view()
+            if options is not None:
+                if _FILTER_CACHE_TTL > 0:
+                    _FILTER_CACHE[_filter_cache_key(af)] = (options, time.monotonic())
+                return options
+            # View unavailable — fall through to the full query path below.
 
         options: dict = {}
 
