@@ -159,11 +159,34 @@ ssh_run "cd $RELEASE_DIR && set -a && . ./.env && set +a && \
 # migration is the risk profile we're trying to eliminate.
 if [ "$APP_ENV" = "production" ]; then
     SNAPSHOT_NAME="pre-deploy-$RELEASE_TAG.dump"
-    echo "Snapshotting production DB → $SNAPSHOT_NAME..."
+    echo "Snapshotting production DB → $SNAPSHOT_NAME (background, polling for completion)..."
+    # Run pg_dump in the background on the server so the SSH session doesn't need
+    # to stay open for the full 5-minute dump. Poll with short reconnects instead.
     # -Fc (custom format) compresses internally — do not pipe through gzip.
     ssh_run "set -a && . $SHARED_DIR/.env && set +a && \
         mkdir -p $SHARED_DIR/backups && \
-        pg_dump -Fc \"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" > $SHARED_DIR/backups/$SNAPSHOT_NAME"
+        nohup bash -c 'pg_dump -Fc \"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" \
+            > $SHARED_DIR/backups/$SNAPSHOT_NAME \
+            && echo done > $SHARED_DIR/backups/$SNAPSHOT_NAME.done \
+            || echo failed > $SHARED_DIR/backups/$SNAPSHOT_NAME.done' \
+            > /tmp/pg_dump_deploy.log 2>&1 &"
+    # Poll until done (max 10 min, 15-second intervals)
+    echo -n "  Waiting for pg_dump"
+    for _ in $(seq 1 40); do
+        sleep 15
+        STATUS=$(ssh_run "cat $SHARED_DIR/backups/$SNAPSHOT_NAME.done 2>/dev/null || echo pending")
+        echo -n "."
+        if [ "$STATUS" = "done" ]; then
+            echo " done."
+            ssh_run "rm -f $SHARED_DIR/backups/$SNAPSHOT_NAME.done"
+            break
+        elif [ "$STATUS" = "failed" ]; then
+            echo " FAILED."
+            ssh_run "rm -f $SHARED_DIR/backups/$SNAPSHOT_NAME.done"
+            echo "::error::Pre-deploy DB snapshot failed — aborting deploy"
+            exit 1
+        fi
+    done
     # Keep the most recent 3 pre-deploy snapshots; daily-cron backups are retained separately.
     ssh_run "cd $SHARED_DIR/backups && ls -1t pre-deploy-*.dump 2>/dev/null | tail -n +4 | xargs -r rm -f"
 fi
