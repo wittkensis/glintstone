@@ -1,0 +1,252 @@
+/**
+ * Design System Component Catalog (PRD-015)
+ * Canonical component classes — no local overrides permitted in page CSS.
+ * These replace ad-hoc badge/card implementations across templates.
+ *
+ * Dependencies: core/tokens.css (elevation, surface, border, confidence, ai-badge tokens)
+ *
+ * Contents:
+ *  1. Skeleton loader (shimmer animation)
+ *  2. Tablet card
+ *  3. Pipeline badges
+ *  4. AI badge
+ *  5. Confidence bands
+ *  6. Source badges
+ *  7. Hypothesis callout
+ *  8. Tactile press states
+ */
+
+
+/* ==========================================================================
+   1. Skeleton loader
+   Width/height set by context (inline style or utility class).
+   Example: <div class="skeleton-loader" style="width:80%;height:16px"></div>
+   ========================================================================== */
+
+@keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+}
+
+.skeleton-loader {
+    background: linear-gradient(
+        90deg,
+        var(--surface-raised) 25%,
+        rgba(255, 255, 255, 0.06) 50%,
+        var(--surface-raised) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite;
+    border-radius: var(--radius-sm);
+}
+
+
+/* ==========================================================================
+   2. Tablet card
+   Primary card treatment for cuneiform tablet search results + lists.
+   Replaces ad-hoc card markup with hardcoded box-shadows.
+   ========================================================================== */
+
+.tablet-card {
+    background: var(--surface-raised);
+    box-shadow: var(--elevation-1);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    transition: box-shadow var(--transition-normal);
+}
+
+.tablet-card:hover {
+    box-shadow: var(--elevation-2);
+}
+
+
+/* ==========================================================================
+   3. Pipeline badges
+   Canonical stage badges for the ingestion/annotation pipeline.
+   Each stage gets a distinct muted color that reads against dark surfaces.
+
+   Stages: physical | reading | linguistic | semantic | translation
+   Usage:  <span class="pipeline-badge pipeline-badge--physical">Physical</span>
+   ========================================================================== */
+
+.pipeline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-2xs);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.03em;
+    box-shadow: var(--elevation-1);
+    /* Default fallback — overridden by modifier below */
+    background: rgba(107, 114, 128, 0.12);
+    color: var(--color-text-muted);
+    border: 1px solid rgba(107, 114, 128, 0.20);
+}
+
+/* Physical capture — clay/terracotta hue */
+.pipeline-badge--physical {
+    background: rgba(193, 154, 107, 0.14);   /* --color-clay base */
+    color: var(--color-clay);
+    border-color: rgba(193, 154, 107, 0.28);
+}
+
+/* Reading / sign recognition — lapis blue */
+.pipeline-badge--reading {
+    background: rgba(74, 111, 165, 0.16);    /* --color-lapis base */
+    color: #7ba4c4;
+    border-color: rgba(74, 111, 165, 0.30);
+}
+
+/* Linguistic / lemmatization — muted teal */
+.pipeline-badge--linguistic {
+    background: rgba(94, 234, 212, 0.10);    /* --color-accent-teal base */
+    color: var(--color-accent-teal);
+    border-color: rgba(94, 234, 212, 0.22);
+}
+
+/* Semantic / interpretation — warm gold */
+.pipeline-badge--semantic {
+    background: var(--color-accent-10);
+    color: var(--color-accent);
+    border-color: var(--color-accent-20);
+}
+
+/* Translation — success green */
+.pipeline-badge--translation {
+    background: var(--color-success-10);
+    color: var(--color-success);
+    border-color: var(--color-success-20);
+}
+
+
+/* ==========================================================================
+   4. AI badge
+   Attribution chip for AI-generated content.
+   Usage: <span class="ai-badge">AI</span>
+          <span class="ai-badge"><svg>...</svg> GPT-4o</span>
+   ========================================================================== */
+
+.ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2);
+    background: var(--ai-badge-bg);
+    color: var(--ai-badge-text);
+    border: var(--ai-badge-border);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.04em;
+}
+
+.ai-badge svg {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+}
+
+
+/* ==========================================================================
+   5. Confidence bands
+   Applied to token chain steps in the ATF viewer and lemma detail.
+   Usage: <div class="confidence-band--high">...</div>
+   ========================================================================== */
+
+.confidence-band--high,
+.confidence-band--medium,
+.confidence-band--low,
+.confidence-band--unknown {
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-xs);
+    font-size: var(--text-xs);
+}
+
+.confidence-band--high {
+    background: var(--confidence-high-bg);
+    color: var(--confidence-high-text);
+}
+
+.confidence-band--medium {
+    background: var(--confidence-medium-bg);
+    color: var(--confidence-medium-text);
+}
+
+.confidence-band--low {
+    background: var(--confidence-low-bg);
+    color: var(--confidence-low-text);
+}
+
+.confidence-band--unknown {
+    background: var(--confidence-unknown-bg);
+    color: var(--confidence-unknown-text);
+}
+
+
+/* ==========================================================================
+   6. Source badges
+   Attribution chips for external sources: ePSD2, CDLI, ORACC, rinap, etc.
+   Usage: <span class="source-badge">ePSD2</span>
+   ========================================================================== */
+
+.source-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px var(--space-1-5);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-muted);
+    border: var(--border-subtle);
+    border-radius: var(--radius-xs);
+    font-size: var(--text-2xs);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.02em;
+    font-family: var(--font-mono);
+}
+
+/* Specific source color accents (optional — apply alongside .source-badge) */
+.source-badge--epsd2  { color: var(--color-accent-teal); border-color: rgba(94, 234, 212, 0.18); }
+.source-badge--cdli   { color: var(--color-info);        border-color: var(--color-info-20); }
+.source-badge--oracc  { color: var(--color-clay);        border-color: rgba(193, 154, 107, 0.22); }
+
+
+/* ==========================================================================
+   7. Hypothesis callout
+   Used when best_guess_flag = true on an AI-generated translation or summary.
+   Amber left border signals "working hypothesis, not scholarly consensus."
+   Usage: <div class="hypothesis-callout">...</div>
+   ========================================================================== */
+
+.hypothesis-callout {
+    border-left: 3px solid var(--confidence-medium-text);
+    background: var(--confidence-medium-bg);
+    padding: var(--space-3) var(--space-4);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-bottom: var(--space-3);
+}
+
+.hypothesis-callout p:last-child {
+    margin-bottom: 0;
+}
+
+
+/* ==========================================================================
+   8. Tactile press states
+   Provides physical depth feedback on interactive elements.
+   The scale + inset shadow combo reads as a real button press.
+   ========================================================================== */
+
+.btn:active {
+    transform: scale(0.97);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.20);
+}
+
+.list-item:active {
+    background: var(--surface-raised);
+}
+
+.tab-btn:active {
+    transform: scale(0.96);
+}
