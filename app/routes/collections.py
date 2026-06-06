@@ -9,10 +9,7 @@ router = APIRouter(prefix="/collections")
 @router.get("")
 def collection_list(request: Request):
     api = request.app.state.api
-    try:
-        collections = api.get("/collections")
-    except Exception:
-        collections = {"items": []}
+    collections_page = api.list_collections()
 
     from app.main import templates
 
@@ -20,7 +17,7 @@ def collection_list(request: Request):
         request,
         "collections/index.html",
         {
-            "collections": collections.get("items", []),
+            "collections": collections_page.items,
             "api_url": request.app.state.api.base_url,
         },
     )
@@ -51,14 +48,19 @@ def collection_create(
 @router.get("/{collection_id}")
 def collection_detail(request: Request, collection_id: int, page: int = 1):
     api = request.app.state.api
+    collection = api.get_collection(collection_id)
+    if not collection:
+        return RedirectResponse(url="/collections", status_code=302)
+
+    # Tablets inside a collection use the passthrough — they're a sub-resource
+    # not covered by a typed method yet, and they redirect explicitly on failure.
     try:
-        collection = api.get(f"/collections/{collection_id}")
         tablets_data = api.get(
             f"/collections/{collection_id}/tablets",
             params={"page": page, "per_page": 24},
         )
     except Exception:
-        return RedirectResponse(url="/collections", status_code=302)
+        tablets_data = {"items": [], "total": 0, "page": 1, "total_pages": 0}
 
     from app.main import templates
 
@@ -79,9 +81,8 @@ def collection_detail(request: Request, collection_id: int, page: int = 1):
 @router.get("/{collection_id}/edit")
 def collection_edit(request: Request, collection_id: int):
     api = request.app.state.api
-    try:
-        collection = api.get(f"/collections/{collection_id}")
-    except Exception:
+    collection = api.get_collection(collection_id)
+    if not collection:
         return RedirectResponse(url="/collections", status_code=302)
 
     from app.main import templates

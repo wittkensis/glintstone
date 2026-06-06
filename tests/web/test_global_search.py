@@ -21,14 +21,17 @@ if str(ROOT) not in sys.path:
 
 
 class _FakeAPI:
-    """Stand-in for app.api_client.APIClient — captures the last request and
-    returns a canned envelope shape."""
+    """Stand-in for GlintstoneAPI — captures the last search request and
+    returns a canned envelope shape. Also implements typed domain methods
+    used by migrated routes."""
 
     def __init__(self, envelope=None):
         self.envelope = envelope or {"data": {"groups": []}, "summary": ""}
         self.last_path = None
         self.last_params = None
         self.base_url = "http://api.test"
+
+    # ── Raw passthrough (used by auth routes, admin, etc.) ────────────────────
 
     def get(self, path, params=None, token=None):
         # saved-items returns a list; all other paths return the search envelope
@@ -41,8 +44,67 @@ class _FakeAPI:
     def post(self, *a, **kw):
         return {}
 
+    def put(self, *a, **kw):
+        return {}
+
+    def delete(self, *a, **kw):
+        return None
+
+    def patch(self, *a, **kw):
+        return None
+
     def close(self):
         pass
+
+    # ── Typed domain methods (used by migrated routes) ────────────────────────
+
+    def search(self, params):
+        """Record params for assertion; return the envelope."""
+        self.last_path = "/search"
+        self.last_params = params
+        return self.envelope
+
+    def list_artifacts(self, params):
+        from app.api_client import Page
+
+        return (
+            Page.from_dict(self.envelope)
+            if isinstance(self.envelope, dict) and "items" in self.envelope
+            else Page.empty()
+        )
+
+    def get_artifact(self, p_number, token=None):
+        return self.envelope if isinstance(self.envelope, dict) else {}
+
+    def get_artifact_debug(self, p_number):
+        return {}
+
+    def get_me(self, token):
+        return {}
+
+    def get_saved_items(self, params, token):
+        return []
+
+    def list_collections(self, params=None):
+        from app.api_client import Page
+
+        return Page.empty()
+
+    def get_collection(self, collection_id):
+        return {}
+
+    def list_scholars(self, params):
+        from app.api_client import Page
+
+        return Page.empty()
+
+    def browse_dictionary(self, params):
+        from app.api_client import Page
+
+        return Page.empty()
+
+    def get_dictionary_filter_options(self, params):
+        return {}
 
 
 @pytest.fixture
@@ -54,24 +116,15 @@ def client(monkeypatch):
     monkeypatch.setattr(database, "close_pool", lambda *a, **kw: None)
 
     from app import main as app_main
-    from app.api_client import APIClient
+    from app.transports import HttpxTransport
 
-    # Patch lifespan-installed APIClient with our fake.
+    # Prevent HttpxTransport from opening a real HTTP connection during lifespan.
+    monkeypatch.setattr(HttpxTransport, "__init__", lambda self, **kw: None)
+    monkeypatch.setattr(HttpxTransport, "close", lambda self: None)
+
+    # Our fake satisfies the GlintstoneAPI interface directly — it gets set on
+    # app.state.api below so routes see it immediately.
     fake = _FakeAPI()
-    original_init = APIClient.__init__
-
-    def _stub_init(self):
-        self.base_url = fake.base_url
-        self._client = None  # never used in tests
-
-    monkeypatch.setattr(APIClient, "__init__", _stub_init)
-    monkeypatch.setattr(
-        APIClient, "get", lambda self, path, params=None: fake.get(path, params)
-    )
-    monkeypatch.setattr(APIClient, "post", lambda self, *a, **kw: {})
-    monkeypatch.setattr(APIClient, "put", lambda self, *a, **kw: {})
-    monkeypatch.setattr(APIClient, "delete", lambda self, *a, **kw: {})
-    monkeypatch.setattr(APIClient, "close", lambda self: None)
 
     with TestClient(app_main.app, cookies={"session_token": "test-token"}) as c:
         # Replace app.state.api with the fake so the route's `request.app.state.api`
@@ -79,9 +132,6 @@ def client(monkeypatch):
         c.app.state.api = fake
         c.fake = fake  # expose for assertions
         yield c
-
-    # Restore (TestClient already exits via context)
-    monkeypatch.setattr(APIClient, "__init__", original_init)
 
 
 # ── /_search/suggest contract ────────────────────────────────────────────────

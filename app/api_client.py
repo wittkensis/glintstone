@@ -1,90 +1,237 @@
-"""HTTP client for App → API communication."""
+"""Typed GlintstoneAPI client for App → API communication.
 
-from typing import Optional
+All domain methods degrade gracefully on failure — they return an empty Page or {}
+rather than raising. This keeps the degrade-to-empty rule in one place instead of
+scattered across 40 route call sites.
 
-import httpx
+The low-level passthrough methods (get/post/put/patch/delete) ARE allowed to raise;
+they are used by auth callbacks, admin routes, and any route that needs explicit
+error propagation (e.g., redirect on 401 via httpx.HTTPStatusError).
+"""
 
-from core.config import get_settings
+from dataclasses import dataclass, field
+from typing import Generic, TypeVar
+
+from app.transports import Transport
+
+T = TypeVar("T")
 
 
 class AuthRequiredError(Exception):
-    """Raised when the API returns 401. The web app gate handles the redirect."""
+    """Raised by transport when the API returns 401.
+
+    The web app exception handler in main.py catches this and redirects to /auth/login.
+    """
 
 
-class APIClient:
-    """Server-side HTTP client for fetching data from the Glintstone API."""
+@dataclass
+class Page(Generic[T]):
+    """Paginated response envelope from the Glintstone API."""
 
-    def __init__(self) -> None:
-        settings = get_settings()
-        self.base_url = settings.api_url
-        self._client = httpx.Client(base_url=self.base_url, timeout=10.0)
+    items: list[T] = field(default_factory=list)
+    total: int = 0
+    page: int = 1
+    per_page: int = 24
+    total_pages: int = 0
+    has_next: bool = False
+    filter_options: dict = field(default_factory=dict)
 
-    def _auth_headers(self, token: Optional[str]) -> dict:
-        if token:
-            return {"Authorization": f"Bearer {token}"}
-        return {}
+    @classmethod
+    def empty(cls) -> "Page":
+        return cls()
 
-    def _check(self, r: httpx.Response) -> httpx.Response:
-        if r.status_code == 401:
-            raise AuthRequiredError()
-        r.raise_for_status()
-        return r
-
-    def get(
-        self,
-        path: str,
-        params: dict | None = None,
-        token: Optional[str] = None,
-    ) -> dict | list:
-        r = self._check(
-            self._client.get(path, params=params, headers=self._auth_headers(token))
+    @classmethod
+    def from_dict(cls, data: dict) -> "Page":
+        return cls(
+            items=data.get("items", []),
+            total=data.get("total", 0),
+            page=data.get("page", 1),
+            per_page=data.get("per_page", 24),
+            total_pages=data.get("total_pages", 0),
+            has_next=data.get("has_next", False),
+            filter_options=data.get("filter_options") or {},
         )
-        return r.json()
 
-    def post(
-        self,
-        path: str,
-        json: dict | None = None,
-        token: Optional[str] = None,
-    ) -> dict:
-        r = self._check(
-            self._client.post(path, json=json, headers=self._auth_headers(token))
-        )
-        return r.json()
 
-    def put(
-        self,
-        path: str,
-        json: dict | None = None,
-        token: Optional[str] = None,
-    ) -> dict:
-        r = self._check(
-            self._client.put(path, json=json, headers=self._auth_headers(token))
-        )
-        return r.json()
+class GlintstoneAPI:
+    """Typed API client — wraps a Transport and exposes domain-level methods.
 
-    def patch(
-        self,
-        path: str,
-        json: dict | None = None,
-        token: Optional[str] = None,
-    ) -> dict | None:
-        r = self._check(
-            self._client.patch(path, json=json, headers=self._auth_headers(token))
-        )
-        if r.status_code == 204:
-            return None
-        return r.json()
+    Domain methods never raise; they return Page.empty() or {} on any error.
+    Passthrough methods (get/post/put/patch/delete) do raise — for routes that
+    need explicit error handling (auth callbacks, admin actions, etc.).
+    """
 
-    def delete(
-        self,
-        path: str,
-        token: Optional[str] = None,
-    ) -> dict | None:
-        r = self._check(self._client.delete(path, headers=self._auth_headers(token)))
-        if r.status_code == 204:
-            return None
-        return r.json()
+    def __init__(self, transport: Transport) -> None:
+        self._t = transport
+
+    @property
+    def base_url(self) -> str:
+        """Expose base_url for templates that need to build API image URLs."""
+        client = getattr(self._t, "_client", None)
+        if client is None:
+            return ""
+        return str(getattr(client, "base_url", ""))
 
     def close(self) -> None:
-        self._client.close()
+        self._t.close()
+
+    # ── Artifacts ──────────────────────────────────────────────────────────────
+
+    def list_artifacts(self, params: dict) -> "Page":
+        try:
+            return Page.from_dict(self._t.get("/artifacts", params=params))  # type: ignore[arg-type]
+        except Exception:
+            return Page.empty()
+
+    def get_artifact(self, p_number: str, token: str | None = None) -> dict:
+        try:
+            return self._t.get(f"/artifacts/{p_number}", token=token)  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    def get_artifact_debug(self, p_number: str) -> dict:
+        try:
+            return self._t.get(f"/artifacts/{p_number}/debug")  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    # ── Auth / User ────────────────────────────────────────────────────────────
+
+    def get_me(self, token: str) -> dict:
+        try:
+            return self._t.get("/auth/me", token=token)  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    def get_saved_items(self, params: dict, token: str) -> list:
+        try:
+            result = self._t.get("/users/me/saved-items", params=params, token=token)
+            return result if isinstance(result, list) else []
+        except Exception:
+            return []
+
+    def save_item(self, body: dict, token: str) -> dict:
+        try:
+            return self._t.post("/users/me/saved-items", json=body, token=token)
+        except Exception:
+            return {}
+
+    def delete_saved_item(self, item_id: str, token: str) -> None:
+        try:
+            self._t.delete(f"/users/me/saved-items/{item_id}", token=token)
+        except Exception:
+            pass
+
+    # ── Dictionary ─────────────────────────────────────────────────────────────
+
+    def browse_dictionary(self, params: dict) -> "Page":
+        try:
+            return Page.from_dict(self._t.get("/dictionary/browse", params=params))  # type: ignore[arg-type]
+        except Exception:
+            return Page.empty()
+
+    def get_dictionary_filter_options(self, params: dict) -> dict:
+        try:
+            result = self._t.get("/dictionary/filter-options", params=params)
+            return result if isinstance(result, dict) else {}  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    def get_lemma(self, lemma_id: int) -> dict:
+        try:
+            return self._t.get(f"/dictionary/lemmas/{lemma_id}")  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    def get_sign(self, sign_id: int) -> dict:
+        try:
+            return self._t.get(f"/dictionary/signs/{sign_id}")  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    # ── Scholars ───────────────────────────────────────────────────────────────
+
+    def list_scholars(self, params: dict) -> "Page":
+        try:
+            return Page.from_dict(self._t.get("/scholars", params=params))  # type: ignore[arg-type]
+        except Exception:
+            return Page.empty()
+
+    def get_scholar(self, scholar_id: int) -> dict:
+        try:
+            return self._t.get(f"/scholars/{scholar_id}")  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    # ── Collections ────────────────────────────────────────────────────────────
+
+    def list_collections(self, params: dict | None = None) -> "Page":
+        try:
+            return Page.from_dict(self._t.get("/collections", params=params))  # type: ignore[arg-type]
+        except Exception:
+            return Page.empty()
+
+    def get_collection(self, collection_id: int) -> dict:
+        try:
+            return self._t.get(f"/collections/{collection_id}")  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    # ── Search ─────────────────────────────────────────────────────────────────
+
+    def search(self, params: dict) -> dict:
+        """Returns the raw search envelope (not a Page — search has nested 'data.groups' shape)."""
+        try:
+            result = self._t.get("/search", params=params)
+            return result if isinstance(result, dict) else {}  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    # ── Compositions ───────────────────────────────────────────────────────────
+
+    def list_compositions(self, params: dict) -> "Page":
+        try:
+            return Page.from_dict(self._t.get("/compositions", params=params))  # type: ignore[arg-type]
+        except Exception:
+            return Page.empty()
+
+    def get_composition(self, q_number: str) -> dict:
+        try:
+            return self._t.get(f"/compositions/{q_number}")  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    # ── Feedback / Agentic ─────────────────────────────────────────────────────
+
+    def post_feedback(self, body: dict, token: str | None = None) -> dict:
+        try:
+            return self._t.post("/agentic/feedback", json=body, token=token)
+        except Exception:
+            return {}
+
+    # ── Low-level passthrough ──────────────────────────────────────────────────
+    # Intentionally raising — used by auth callbacks, admin routes, and any route
+    # that catches specific exception types (httpx.HTTPStatusError, etc.).
+
+    def get(
+        self, path: str, params: dict | None = None, token: str | None = None
+    ) -> dict | list:
+        return self._t.get(path, params=params, token=token)
+
+    def post(
+        self, path: str, json: dict | None = None, token: str | None = None
+    ) -> dict:
+        return self._t.post(path, json=json, token=token)
+
+    def put(
+        self, path: str, json: dict | None = None, token: str | None = None
+    ) -> dict:
+        return self._t.put(path, json=json, token=token)
+
+    def patch(
+        self, path: str, json: dict | None = None, token: str | None = None
+    ) -> dict | None:
+        return self._t.patch(path, json=json, token=token)
+
+    def delete(self, path: str, token: str | None = None) -> dict | None:
+        return self._t.delete(path, token=token)
