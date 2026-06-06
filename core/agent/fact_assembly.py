@@ -127,14 +127,14 @@ def assemble_artifact_facts(
     """Pull every fact about the artifact that the synthesizer can ground on."""
     bundle = ArtifactFactBundle(p_number=p_number)
 
-    # Catalog facts (period, provenience, language, museum, dimensions)
+    # Catalog facts (period, provenience, language, museum)
     with conn.cursor() as cur:
         cur.execute(
             """
             SELECT a.p_number, a.designation,
                    a.period_normalized, a.provenience_normalized,
                    a.language_normalized,
-                   a.museum_no, a.dimensions
+                   a.museum_no
             FROM artifacts a
             WHERE a.p_number = %s
             """,

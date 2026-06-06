@@ -126,6 +126,9 @@ def cmd_summarize(args: argparse.Namespace) -> int:
     for i, p_number in enumerate(candidates, 1):
         print(f"  [{i}/{len(candidates)}] {p_number} … ", end="", flush=True)
         try:
+            # SAVEPOINT per artifact: a failed artifact rolls back to the savepoint
+            # without aborting the entire connection (psycopg rollback trap prevention).
+            conn.execute("SAVEPOINT sp_artifact")
             resp = agent_service.do_summarize_artifact(
                 conn,
                 p_number=p_number,
@@ -133,6 +136,7 @@ def cmd_summarize(args: argparse.Namespace) -> int:
                 interaction_id_int=None,
                 interaction_id_str=f"batch-{p_number}",
             )
+            conn.execute("RELEASE SAVEPOINT sp_artifact")
             if resp.data and resp.data.synthesis:
                 print("ok")
                 ok += 1
@@ -140,6 +144,8 @@ def cmd_summarize(args: argparse.Namespace) -> int:
                 print("skipped (no synthesis)")
                 skipped += 1
         except Exception as exc:
+            conn.execute("ROLLBACK TO SAVEPOINT sp_artifact")
+            conn.execute("RELEASE SAVEPOINT sp_artifact")
             print(f"error: {exc}")
             errors += 1
 
