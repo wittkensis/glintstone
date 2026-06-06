@@ -87,6 +87,16 @@
             {% if item.snippet %}
               <span class="search-row__snippet">{{ item.snippet }}</span>
             {% endif %}
+            {# AI snippet — only rendered when agent_outputs has a non-superseded
+               summary for this artifact. Never generated on-demand from search.
+               The API LEFT JOINs agent_outputs WHERE superseded_at IS NULL
+               AND output_type = 'summary' to populate this field. #}
+            {% if item.summary %}
+              <span class="search-row__ai-snippet">
+                <span class="ai-badge" aria-label="AI-generated summary">AI</span>
+                <span class="search-row__ai-text">{{ item.summary[:150] }}{% if item.summary | length > 150 %}&hellip;{% endif %}</span>
+              </span>
+            {% endif %}
           </span>
           {% if gtype == 'tablets' and item.pipeline_stages %}
             {# First not-yet-complete stage is the "active" (in-progress) gold dot. #}
