@@ -38,31 +38,32 @@ _STUB_TABLET = {
 }
 
 
-class _FakeAPI:
-    """Minimal stand-in for APIClient.
+class _MutableTransport:
+    """InMemoryTransport variant that lets tests override any path's response."""
 
-    .envelope is what get() returns for non-auth paths. Tests can override it
-    to change what the suggest route sees (for search snippet tests) or what
-    the artifact route sees (for tablet detail tests).
-    """
-
-    def __init__(self):
-        # Default envelope is a stub tablet for detail-page tests.
-        self.envelope = _STUB_TABLET
-        self.base_url = "http://api.test"
+    def __init__(self, base_fixtures: dict):
+        self._fixtures = dict(base_fixtures)
+        self.envelope = None  # tests can set this to override all non-auth paths
 
     def get(self, path, params=None, token=None):
-        if "saved-items" in path or "auth/me" in path:
-            return []
-        return self.envelope
+        if (
+            self.envelope is not None
+            and "saved-items" not in path
+            and "auth/me" not in path
+        ):
+            return self.envelope
+        return self._fixtures.get(path, {})
 
-    def post(self, *a, **kw):
+    def post(self, path, json=None, token=None):
         return {}
 
-    def put(self, *a, **kw):
+    def put(self, path, json=None, token=None):
         return {}
 
-    def delete(self, *a, **kw):
+    def patch(self, path, json=None, token=None):
+        return None
+
+    def delete(self, path, token=None):
         return None
 
     def close(self):
@@ -77,36 +78,26 @@ def client(monkeypatch):
     monkeypatch.setattr(database, "close_pool", lambda *a, **kw: None)
 
     from app import main as app_main
-    from app.api_client import APIClient
+    from app.api_client import GlintstoneAPI
+    from app.transports import HttpxTransport
 
-    fake = _FakeAPI()
-    original_init = APIClient.__init__  # type: ignore[attr-defined]
+    monkeypatch.setattr(HttpxTransport, "__init__", lambda self, **kw: None)
+    monkeypatch.setattr(HttpxTransport, "close", lambda self: None)
 
-    def _stub_init(self):
-        self.base_url = fake.base_url
-        self._client = None
-
-    monkeypatch.setattr(APIClient, "__init__", _stub_init)
-    monkeypatch.setattr(
-        APIClient,
-        "get",
-        lambda self, path, params=None, token=None: fake.get(path, params, token),
+    transport = _MutableTransport(
+        {
+            "/artifacts/P001282": _STUB_TABLET,
+            "/auth/me": {},
+            "/users/me/saved-items": [],
+        }
     )
-    monkeypatch.setattr(APIClient, "post", lambda self, *a, **kw: {})
-    monkeypatch.setattr(APIClient, "put", lambda self, *a, **kw: {})
-    monkeypatch.setattr(APIClient, "delete", lambda self, *a, **kw: None)
-    monkeypatch.setattr(APIClient, "close", lambda self: None)
+    fake_api = GlintstoneAPI(transport)
 
     # session_token satisfies AuthGateMiddleware (which only checks cookie presence).
-    # The fake API's get("/auth/me") returns [] which is falsy but doesn't raise,
-    # so current_user ends up None and bookmark logic is skipped — acceptable for
-    # these structural tests.
     with TestClient(app_main.app, cookies={"session_token": "test-token"}) as c:
-        c.app.state.api = fake
-        c.fake = fake
+        c.app.state.api = fake_api
+        c.fake = transport  # tests use client.fake.envelope = {...}
         yield c
-
-    monkeypatch.setattr(APIClient, "__init__", original_init)
 
 
 # ── back_url derivation ───────────────────────────────────────────────────────

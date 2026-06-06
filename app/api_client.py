@@ -48,7 +48,12 @@ class Page(Generic[T]):
             page=data.get("page", 1),
             per_page=data.get("per_page", 24),
             total_pages=data.get("total_pages", 0),
-            has_next=data.get("has_next", False),
+            has_next=data.get(
+                "has_next",
+                (data.get("page", 1) < data.get("total_pages", 0))
+                if data.get("total_pages")
+                else False,
+            ),
             filter_options=data.get("filter_options") or {},
         )
 
@@ -187,17 +192,39 @@ class GlintstoneAPI:
         except Exception:
             return {}
 
-    # ── Compositions ───────────────────────────────────────────────────────────
+    # ── Compositions / Composites ──────────────────────────────────────────────
+    # API uses /composites (canonical texts); app routes use /compositions (UI path).
 
-    def list_compositions(self, params: dict) -> "Page":
+    def list_composites(self, params: dict) -> "Page":
         try:
-            return Page.from_dict(self._t.get("/compositions", params=params))  # type: ignore[arg-type]
+            return Page.from_dict(self._t.get("/composites", params=params))  # type: ignore[arg-type]
         except Exception:
             return Page.empty()
 
-    def get_composition(self, q_number: str) -> dict:
+    def get_composite(self, q_number: str) -> dict:
         try:
-            return self._t.get(f"/compositions/{q_number}")  # type: ignore[return-value]
+            return self._t.get(f"/composites/{q_number}")  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    def get_composite_exemplars(self, q_number: str) -> dict:
+        try:
+            data = self._t.get(f"/composites/{q_number}/exemplars")
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
+    # ── Stats / Homepage ───────────────────────────────────────────────────────
+
+    def get_kpi(self) -> dict:
+        try:
+            return self._t.get("/stats/kpi") or {}  # type: ignore[return-value]
+        except Exception:
+            return {}
+
+    def get_coverage_gaps(self, params: dict) -> dict:
+        try:
+            return self._t.get("/stats/coverage-gaps", params=params) or {}  # type: ignore[return-value]
         except Exception:
             return {}
 

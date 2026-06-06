@@ -33,20 +33,11 @@ def _add_description(composite: dict) -> dict:
 def homepage(request: Request):
     api = request.app.state.api
 
-    try:
-        kpi = api.get("/stats/kpi")
-    except Exception:
-        kpi = None
+    kpi = api.get_kpi() or None
 
-    try:
-        canon_data = api.get(
-            "/composites", params={"limit": 7, "sort": "exemplar_count"}
-        )
-        canon = [_add_description(c) for c in canon_data.get("items", [])]
-        composites_total = canon_data.get("total", 0)
-    except Exception:
-        canon = []
-        composites_total = 0
+    canon_page = api.list_composites({"limit": 7, "sort": "exemplar_count"})
+    canon = [_add_description(c) for c in canon_page.items]
+    composites_total = canon_page.total
 
     # Top browse facets for the Explore section
     top_periods = (kpi or {}).get("top_periods", [])[:5] if kpi else []
@@ -54,11 +45,8 @@ def homepage(request: Request):
     top_languages = (kpi or {}).get("top_languages", [])[:5] if kpi else []
 
     # The Frontier: compositions with large unattested gaps (Phase 2)
-    try:
-        gaps_data = api.get("/stats/coverage-gaps", params={"limit": 4})
-        frontier = gaps_data.get("items", [])
-    except Exception:
-        frontier = []
+    gaps_data = api.get_coverage_gaps({"limit": 4})
+    frontier = gaps_data.get("items", [])
 
     from app.main import templates
 

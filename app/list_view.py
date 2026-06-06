@@ -5,42 +5,10 @@ All four list routes (tablets, dictionary, scholars, collections) share the same
 are fixed in one place and new list pages inherit it for free.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from urllib.parse import quote
 
-
-@dataclass
-class Page:
-    """Thin wrapper around a raw API paginated response dict.
-
-    Routes call `api.get(...)` which returns a plain dict. Wrapping it here
-    gives the assembler a typed contract and keeps the routes simple.
-    """
-
-    items: list[dict]
-    total: int
-    page: int
-    per_page: int
-    total_pages: int
-    has_next: bool
-    filter_options: dict = field(default_factory=dict)
-
-    @classmethod
-    def from_dict(cls, data: dict, *, per_page: int = 24) -> "Page":
-        """Construct a Page from a raw API response dict."""
-        total = data.get("total", 0)
-        page = data.get("page", 1)
-        total_pages = data.get("total_pages", 0)
-        has_next = page < total_pages if total_pages else False
-        return cls(
-            items=data.get("items", []),
-            total=total,
-            page=page,
-            per_page=data.get("per_page", per_page),
-            total_pages=total_pages,
-            has_next=has_next,
-            filter_options=data.get("filter_options") or {},
-        )
+from app.api_client import Page  # single source of truth for Page
 
 
 @dataclass

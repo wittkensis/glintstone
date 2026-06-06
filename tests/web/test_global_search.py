@@ -106,6 +106,17 @@ class _FakeAPI:
     def get_dictionary_filter_options(self, params):
         return {}
 
+    def get_kpi(self):
+        return {}
+
+    def list_composites(self, params):
+        from app.api_client import Page
+
+        return Page.empty()
+
+    def get_coverage_gaps(self, params):
+        return {}
+
 
 @pytest.fixture
 def client(monkeypatch):

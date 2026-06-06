@@ -24,13 +24,9 @@ def compositions_list(
     if sort:
         params["sort"] = sort
 
-    try:
-        data = api.get("/composites", params=params)
-        composites = data.get("items", [])
-        total = data.get("total", 0)
-    except Exception:
-        composites = []
-        total = 0
+    page = api.list_composites(params)
+    composites = page.items
+    total = page.total
 
     # Build filter sets from result data for the facets
     genres = sorted({c.get("genre") for c in composites if c.get("genre")})
@@ -80,23 +76,13 @@ def composition_detail(
     filter_provenience: str = "",
 ):
     api = request.app.state.api
-    try:
-        composite = api.get(f"/composites/{q_number}")
-    except Exception:
+    composite = api.get_composite(q_number)
+    if not composite:
         return RedirectResponse(url="/compositions", status_code=302)
 
-    try:
-        exemplars_data = api.get(f"/composites/{q_number}/exemplars")
-        # API returns {q_number, exemplars: [...], count: N}
-        exemplars = (
-            exemplars_data.get("exemplars", [])
-            if isinstance(exemplars_data, dict)
-            else []
-        )
-        linked_count = len(exemplars)
-    except Exception:
-        exemplars = []
-        linked_count = 0
+    exemplars_data = api.get_composite_exemplars(q_number)
+    exemplars = exemplars_data.get("exemplars", [])
+    linked_count = len(exemplars)
 
     # Build filter option sets from exemplar data
     periods = sorted({e.get("period") for e in exemplars if e.get("period")})

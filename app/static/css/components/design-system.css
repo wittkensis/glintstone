@@ -81,30 +81,30 @@
     letter-spacing: 0.03em;
     box-shadow: var(--elevation-1);
     /* Default fallback — overridden by modifier below */
-    background: rgba(107, 114, 128, 0.12);
+    background: var(--confidence-unknown-bg);
     color: var(--color-text-muted);
-    border: 1px solid rgba(107, 114, 128, 0.20);
+    border: var(--border-subtle);
 }
 
 /* Physical capture — clay/terracotta hue */
 .pipeline-badge--physical {
-    background: rgba(193, 154, 107, 0.14);   /* --color-clay base */
+    background: var(--color-clay-10, rgba(193, 154, 107, 0.14));
     color: var(--color-clay);
-    border-color: rgba(193, 154, 107, 0.28);
+    border-color: var(--color-clay-30, rgba(193, 154, 107, 0.28));
 }
 
 /* Reading / sign recognition — lapis blue */
 .pipeline-badge--reading {
-    background: rgba(74, 111, 165, 0.16);    /* --color-lapis base */
-    color: #7ba4c4;
-    border-color: rgba(74, 111, 165, 0.30);
+    background: var(--color-lapis-10, rgba(74, 111, 165, 0.16));
+    color: var(--color-lapis-light, #7ba4c4);
+    border-color: var(--color-lapis-30, rgba(74, 111, 165, 0.30));
 }
 
 /* Linguistic / lemmatization — muted teal */
 .pipeline-badge--linguistic {
-    background: rgba(94, 234, 212, 0.10);    /* --color-accent-teal base */
+    background: var(--color-teal-10, rgba(94, 234, 212, 0.10));
     color: var(--color-accent-teal);
-    border-color: rgba(94, 234, 212, 0.22);
+    border-color: var(--color-teal-20, rgba(94, 234, 212, 0.22));
 }
 
 /* Semantic / interpretation — warm gold */
@@ -196,7 +196,7 @@
     display: inline-flex;
     align-items: center;
     padding: 2px var(--space-1-5);
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface-glass, rgba(255, 255, 255, 0.05));
     color: var(--color-text-muted);
     border: var(--border-subtle);
     border-radius: var(--radius-xs);
