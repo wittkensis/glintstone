@@ -81,7 +81,8 @@ class TranslationLineMatcher(SourceConnector):
             },
             reason=_reason_for(subcategory),
         )
-        # No row yielded — dead-letters only
+        return  # dead-letters only; yield from [] would also work but this is clearer
+        yield  # makes this a generator function so runner's `yield from` works
 
     def load(self, ctx: RunContext, rows: Iterable[dict]) -> LoadStats:
         # All work happened in transform via dead_letter(); no rows to load.
