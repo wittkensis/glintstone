@@ -446,7 +446,15 @@ class LexicalRepository(BaseRepository):
         lemma["pos_label"] = pos_label(lemma["pos"]) if lemma["pos"] else ""
         lemma["source_label"] = source_label(lemma["source"])
 
-        return {"lemma": lemma, "senses": senses, "signs": signs}
+        occurrence_stats = self.get_lemma_occurrence_stats(lemma_id)
+
+        return {
+            "lemma": lemma,
+            "senses": senses,
+            "signs": signs,
+            "tablet_count": occurrence_stats["tablet_count"],
+            "occurrences_computed_at": occurrence_stats["computed_at"],
+        }
 
     def get_sign_detail(self, sign_id: int) -> dict | None:
         sign = self.fetch_one(
@@ -873,6 +881,37 @@ class LexicalRepository(BaseRepository):
             {"val": r["code"], "label": pos_label(r["code"]), "count": r["count"]}
             for r in rows
         ]
+
+    # ── Tablet occurrence counts ──────────────────────────────
+
+    def get_lemma_occurrence_stats(self, lemma_id: int) -> dict:
+        """Return precomputed tablet occurrence stats for a lemma.
+
+        Reads from ``lexical_tablet_occurrences`` (populated by
+        ``core.jobs.lexical_occurrences``).  Returns a dict with:
+            - ``tablet_count``: number of distinct tablets, or None if not yet
+              computed
+            - ``computed_at``: timestamp of last computation, or None
+
+        Returns None values rather than raising when the table is empty or the
+        lemma has no rows — callers display "Not yet indexed" in that case.
+        """
+        row = self.fetch_one(
+            """
+            SELECT
+                COUNT(DISTINCT p_number)  AS tablet_count,
+                MAX(computed_at)          AS computed_at
+            FROM lexical_tablet_occurrences
+            WHERE lemma_id = %(lemma_id)s
+            """,
+            {"lemma_id": lemma_id},
+        )
+        if not row or row.get("tablet_count") == 0:
+            return {"tablet_count": None, "computed_at": None}
+        return {
+            "tablet_count": row["tablet_count"],
+            "computed_at": row["computed_at"],
+        }
 
     # ── Helpers ───────────────────────────────────────────────
 
