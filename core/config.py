@@ -96,6 +96,10 @@ class Settings(BaseSettings):
     cdli_min_request_interval_seconds: float = 5.0
     cdli_crawl_delay_seconds: float = 60.0
 
+    # AI / LLM
+    anthropic_api_key: Optional[str] = None
+    voyage_api_key: Optional[str] = None
+
     # ORCID OAuth
     orcid_client_id: Optional[str] = None
     orcid_client_secret: Optional[str] = None
