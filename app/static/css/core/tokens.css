@@ -163,6 +163,8 @@
     --line-height-normal: 1.4;
     --line-height-relaxed: 1.5;
     --line-height-loose: 1.6;
+    /* PRD-015: tighter body rhythm for dense academic content */
+    --line-height-body: 1.55;
 
 
     /* ==========================================================================
@@ -270,4 +272,63 @@
 
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+
+    /* ==========================================================================
+       PRD-015 — Elevation system
+       Layered drop shadows for depth + materiality aesthetic
+       ========================================================================== */
+
+    --elevation-0: none;
+    --elevation-1: 0 1px 3px rgba(0,0,0,0.14), 0 1px 2px rgba(0,0,0,0.10);
+    --elevation-2: 0 4px 12px rgba(0,0,0,0.20), 0 2px 4px rgba(0,0,0,0.12);
+    --elevation-3: 0 12px 32px rgba(0,0,0,0.28), 0 4px 8px rgba(0,0,0,0.14);
+
+
+    /* ==========================================================================
+       PRD-015 — Surface layers
+       Semantic surface roles; use these in components, not --color-bg* directly
+       ========================================================================== */
+
+    /* Base page background — matches --color-bg (#1a1a1a) */
+    --surface-base:    #1a1a1a;
+    /* Cards, panels, raised sections — matches --color-bg-elevated (#242424) */
+    --surface-raised:  #242424;
+    /* Modals, tooltips — darkest for maximum contrast, matches --color-bg-deep */
+    --surface-overlay: #141414;
+
+
+    /* ==========================================================================
+       PRD-015 — Border system
+       Replaces ad-hoc 1px rgba borders scattered across components
+       ========================================================================== */
+
+    --border-subtle:  1px solid rgba(255,255,255,0.06);   /* hairline separators */
+    --border-default: 1px solid rgba(255,255,255,0.14);   /* standard card border */
+    --border-strong:  1px solid rgba(255,255,255,0.28);   /* focus, active states */
+
+
+    /* ==========================================================================
+       PRD-015 — Confidence color system
+       For AI token chains, annotation confidence, and pipeline assessment
+       ========================================================================== */
+
+    --confidence-high-bg:      rgba(34, 197, 94, 0.12);
+    --confidence-high-text:    #4ade80;
+    --confidence-medium-bg:    rgba(251, 191, 36, 0.12);
+    --confidence-medium-text:  #fbbf24;
+    --confidence-low-bg:       rgba(239, 68, 68, 0.10);
+    --confidence-low-text:     #f87171;
+    --confidence-unknown-bg:   rgba(107, 114, 128, 0.10);
+    --confidence-unknown-text: var(--color-text-muted);
+
+
+    /* ==========================================================================
+       PRD-015 — AI badge
+       Subtle purple treatment for AI-generated attribution chips
+       ========================================================================== */
+
+    --ai-badge-bg:     rgba(139, 92, 246, 0.14);
+    --ai-badge-text:   #a78bfa;
+    --ai-badge-border: 1px solid rgba(139, 92, 246, 0.28);
 }
