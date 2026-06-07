@@ -366,16 +366,15 @@ def assemble_artifact_facts(
         try:
             cur.execute(
                 """
-                SELECT ll.id, ll.citation_form, ll.guide_word, COUNT(*) AS attestations,
+                SELECT lz.citation_form, lz.guide_word, COUNT(*) AS attestations,
                        bool_or(ar.trust IS NOT NULL AND ar.trust < 0.7) AS any_uncertain
                 FROM tokens t
                 JOIN text_lines tl ON t.line_id = tl.id
                 JOIN surfaces s ON tl.surface_id = s.id
                 JOIN lemmatizations lz ON lz.token_id = t.id
-                JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
                 LEFT JOIN annotation_runs ar ON ar.id = lz.annotation_run_id
-                WHERE s.p_number = %s
-                GROUP BY ll.id, ll.citation_form, ll.guide_word
+                WHERE s.p_number = %s AND lz.citation_form IS NOT NULL
+                GROUP BY lz.citation_form, lz.guide_word
                 ORDER BY attestations DESC
                 LIMIT 5
                 """,
@@ -383,40 +382,41 @@ def assemble_artifact_facts(
             )
             for r in cur.fetchall():
                 uncertain_tag = " (uncertain)" if r.get("any_uncertain") else ""
+                cf = r.get("citation_form", "")
                 _add_fact(
                     bundle.facts,
-                    f'mentions lemma "{r.get("guide_word") or r.get("citation_form")}" '
+                    f'mentions lemma "{r.get("guide_word") or cf}" '
                     f"({r.get('attestations')} attestations){uncertain_tag} (ORACC)",
                     "lexical_lemma",
-                    r["id"],
-                    f"lemma:{r['id']}",
+                    cf,
+                    f"lemma:{cf}",
                 )
         except psycopg.errors.UndefinedColumn:
             # annotation_runs.trust column not yet added (migration pending) — fall back without trust signal
             conn.rollback()
             cur.execute(
                 """
-                SELECT ll.id, ll.citation_form, ll.guide_word, COUNT(*) AS attestations
+                SELECT lz.citation_form, lz.guide_word, COUNT(*) AS attestations
                 FROM tokens t
                 JOIN text_lines tl ON t.line_id = tl.id
                 JOIN surfaces s ON tl.surface_id = s.id
                 JOIN lemmatizations lz ON lz.token_id = t.id
-                JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
-                WHERE s.p_number = %s
-                GROUP BY ll.id, ll.citation_form, ll.guide_word
+                WHERE s.p_number = %s AND lz.citation_form IS NOT NULL
+                GROUP BY lz.citation_form, lz.guide_word
                 ORDER BY attestations DESC
                 LIMIT 5
                 """,
                 (p_number,),
             )
             for r in cur.fetchall():
+                cf = r.get("citation_form", "")
                 _add_fact(
                     bundle.facts,
-                    f'mentions lemma "{r.get("guide_word") or r.get("citation_form")}" '
+                    f'mentions lemma "{r.get("guide_word") or cf}" '
                     f"({r.get('attestations')} attestations) (ORACC)",
                     "lexical_lemma",
-                    r["id"],
-                    f"lemma:{r['id']}",
+                    cf,
+                    f"lemma:{cf}",
                 )
 
     # Competing lemmatizations — tokens where >1 annotation_run offers a different reading.
@@ -425,13 +425,12 @@ def assemble_artifact_facts(
         cur.execute(
             """
             SELECT t.raw_form, COUNT(DISTINCT lz.annotation_run_id) AS run_count,
-                   array_agg(DISTINCT ll.guide_word ORDER BY ll.guide_word) AS readings
+                   array_agg(DISTINCT lz.guide_word ORDER BY lz.guide_word) AS readings
             FROM tokens t
             JOIN text_lines tl ON t.line_id = tl.id
             JOIN surfaces s ON tl.surface_id = s.id
             JOIN lemmatizations lz ON lz.token_id = t.id
-            JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
-            WHERE s.p_number = %s
+            WHERE s.p_number = %s AND lz.citation_form IS NOT NULL
             GROUP BY t.id, t.raw_form
             HAVING COUNT(DISTINCT lz.annotation_run_id) > 1
             ORDER BY run_count DESC
@@ -625,12 +624,11 @@ def assemble_token_facts(
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT lz.id AS lemmatization_id, ll.id AS lemma_id,
-                   ll.citation_form, ll.guide_word, ll.pos,
+            SELECT lz.id AS lemmatization_id, lz.id AS lemma_id,
+                   lz.citation_form, lz.guide_word, lz.pos,
                    lz.annotation_run_id
             FROM lemmatizations lz
-            JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
-            WHERE lz.token_id = %s
+            WHERE lz.token_id = %s AND lz.citation_form IS NOT NULL
             LIMIT 1
             """,
             (token_id,),
@@ -654,10 +652,9 @@ def assemble_token_facts(
         cur.execute(
             """
             SELECT t.id, t.raw_form, t.position,
-                   ll.citation_form, ll.guide_word
+                   lz.citation_form, lz.guide_word
             FROM tokens t
-            LEFT JOIN lemmatizations lz ON lz.token_id = t.id
-            LEFT JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
+            LEFT JOIN lemmatizations lz ON lz.token_id = t.id AND lz.citation_form IS NOT NULL
             WHERE t.line_id = %s
               AND t.id <> %s
               AND ABS(t.position - %s) <= 3
