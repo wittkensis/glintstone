@@ -40,7 +40,14 @@ class AnthropicClient:
     """Lazy-init wrapper around anthropic.Anthropic."""
 
     def __init__(self, api_key: str | None = None, model: str = _DEFAULT_MODEL) -> None:
-        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+        from core.config import get_settings  # noqa: PLC0415
+
+        settings = get_settings()
+        self.api_key = (
+            api_key
+            or os.environ.get("ANTHROPIC_API_KEY")
+            or getattr(settings, "anthropic_api_key", None)
+        )
         if not self.api_key:
             raise RuntimeError("ANTHROPIC_API_KEY is not set")
         self.model = model
