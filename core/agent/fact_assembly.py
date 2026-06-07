@@ -775,21 +775,21 @@ def assemble_line_facts(
         cur.execute(
             """
             SELECT tl.id AS line_id,
-                   tl.atf_text,
-                   tl.position,
+                   tl.raw_atf,
+                   tl.line_number,
                    s.id AS surface_id,
-                   s.name AS surface_name,
+                   s.surface_type AS surface_name,
                    a.language_normalized,
                    a.period_normalized,
                    -- Fix 2a: prefer genre_normalized (canonical form) over raw genre string
-                   COALESCE(a.genre_normalized, a.genre) AS genre
+                   a.genre AS genre
             FROM text_lines tl
             JOIN surfaces s ON s.id = tl.surface_id
             JOIN artifacts a ON a.p_number = s.p_number
             WHERE s.p_number = %s
-              AND s.name ILIKE %s
-              AND (tl.position::text = %s OR tl.atf_text ILIKE %s)
-            ORDER BY tl.position
+              AND s.surface_type ILIKE %s
+              AND (tl.line_number::text = %s OR tl.raw_atf ILIKE %s)
+            ORDER BY tl.line_number
             LIMIT 1
             """,
             (p_number, surface_name, line_number, f"{line_number}.%"),
@@ -806,19 +806,19 @@ def assemble_line_facts(
             cur.execute(
                 """
                 SELECT tl.id AS line_id,
-                       tl.atf_text,
-                       tl.position,
+                       tl.raw_atf,
+                       tl.line_number,
                        s.id AS surface_id,
-                       s.name AS surface_name,
+                       s.surface_type AS surface_name,
                        a.language_normalized,
                        a.period_normalized,
                        -- Fix 2a: prefer genre_normalized (canonical form) over raw genre string
-                       COALESCE(a.genre_normalized, a.genre) AS genre
+                       a.genre AS genre
                 FROM text_lines tl
                 JOIN surfaces s ON s.id = tl.surface_id
                 JOIN artifacts a ON a.p_number = s.p_number
-                WHERE s.p_number = %s AND s.name ILIKE %s
-                ORDER BY ABS(tl.position - %s)
+                WHERE s.p_number = %s AND s.surface_type ILIKE %s
+                ORDER BY ABS(tl.line_number - %s)
                 LIMIT 1
                 """,
                 (p_number, surface_name, pos_int),
@@ -910,12 +910,12 @@ def assemble_line_facts(
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT tl.position, tl.atf_text
+                SELECT tl.line_number, tl.raw_atf
                 FROM text_lines tl
                 WHERE tl.surface_id = %s
-                  AND tl.position BETWEEN %s AND %s
+                  AND tl.line_number BETWEEN %s AND %s
                   AND tl.id != %s
-                ORDER BY tl.position
+                ORDER BY tl.line_number
                 """,
                 (surface_id, position - 2, position + 2, line_id),
             )
@@ -975,12 +975,11 @@ def assemble_line_facts(
                        t.raw_form,
                        lz.id AS lemma_id_on_lz,
                        ll.citation_form,
-                       ll.guide_word,
-                       ll.pos,
+                       lz.guide_word,
+                       lz.pos,
                        lz.language AS lz_language
                 FROM tokens t
-                LEFT JOIN lemmatizations lz ON lz.token_id = t.id
-                LEFT JOIN lexical_lemmas ll ON ll.id = lz.lemma_id
+                LEFT JOIN lemmatizations lz ON lz.token_id = t.id AND lz.citation_form IS NOT NULL
                 WHERE t.line_id = %s
                 ORDER BY t.id
                 """,
