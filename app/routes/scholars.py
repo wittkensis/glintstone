@@ -1,4 +1,4 @@
-"""Scholars listing — stub page for the Browse-Scholars nav chip."""
+"""Scholars listing — search-first directory page."""
 
 from fastapi import APIRouter, Request
 
@@ -6,9 +6,11 @@ router = APIRouter(prefix="/scholars")
 
 
 @router.get("")
-def scholar_list(request: Request, search: str = "", page: int = 1):
+def scholar_list(request: Request):
+    # The page uses client-side search via the /api/v2/scholars endpoint.
+    # We only need the grand total for the subtitle — no results fetched on load.
     api = request.app.state.api
-    scholar_page = api.list_scholars({"search": search, "page": page, "per_page": 24})
+    total_result = api.list_scholars({"per_page": 1})
 
     from app.main import templates
 
@@ -16,11 +18,7 @@ def scholar_list(request: Request, search: str = "", page: int = 1):
         request,
         "scholars/list.html",
         {
-            "scholars": scholar_page.items,
-            "total": scholar_page.total,
-            "page": scholar_page.page,
-            "total_pages": scholar_page.total_pages,
-            "search": search,
+            "total": total_result.total,
             "api_url": request.app.state.api.base_url,
         },
     )

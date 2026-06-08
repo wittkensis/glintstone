@@ -18,29 +18,59 @@ def list_scholars(
     search: str = "",
     page: int = Query(default=1, ge=1),
     per_page: int = Query(default=24, ge=1, le=100),
+    has_artifacts: bool = Query(default=False),
     conn=Depends(get_db),
 ):
     offset = (page - 1) * per_page
     params: list = []
-    where = ""
+    conditions: list[str] = []
+
     if search.strip():
-        where = (
-            "WHERE normalized_name ILIKE %s OR name ILIKE %s OR institution ILIKE %s"
+        conditions.append(
+            "(s.normalized_name ILIKE %s OR s.name ILIKE %s OR s.institution ILIKE %s)"
         )
         like = f"%{search.strip()}%"
         params.extend([like, like, like])
 
+    if has_artifacts:
+        # Restrict to scholars linked to at least one artifact via annotation_runs.
+        # The artifacts table carries annotation_run_id which links to the scholar
+        # who produced that annotation run.
+        conditions.append(
+            "EXISTS ("
+            "  SELECT 1 FROM annotation_runs ar"
+            "  JOIN artifacts a ON a.annotation_run_id = ar.id"
+            "  WHERE ar.scholar_id = s.id"
+            ")"
+        )
+
+    where = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+    # When actively filtering/searching, surface the most productive scholars
+    # first (highest artifact count). Fall back to alphabetical when browsing
+    # without a query so the list is predictable.
+    order_by = (
+        "artifact_count DESC NULLS LAST, s.normalized_name NULLS LAST, s.name"
+        if (search.strip() or has_artifacts)
+        else "s.normalized_name NULLS LAST, s.name"
+    )
+
     with conn.cursor() as cur:
-        cur.execute(f"SELECT COUNT(*) AS n FROM scholars {where}", tuple(params))
+        cur.execute(f"SELECT COUNT(*) AS n FROM scholars s {where}", tuple(params))
         total = int(cur.fetchone()["n"])
 
         cur.execute(
             f"""
-            SELECT id, name, normalized_name, orcid, institution,
-                   expertise_periods, expertise_languages, author_type
-            FROM scholars
+            SELECT s.id, s.name, s.normalized_name, s.orcid, s.institution,
+                   s.expertise_periods, s.expertise_languages, s.author_type,
+                   COUNT(DISTINCT a.p_number) AS artifact_count
+            FROM scholars s
+            LEFT JOIN annotation_runs ar ON ar.scholar_id = s.id
+            LEFT JOIN artifacts a ON a.annotation_run_id = ar.id
             {where}
-            ORDER BY normalized_name NULLS LAST, name
+            GROUP BY s.id, s.name, s.normalized_name, s.orcid, s.institution,
+                     s.expertise_periods, s.expertise_languages, s.author_type
+            ORDER BY {order_by}
             LIMIT %s OFFSET %s
             """,
             (*params, per_page, offset),
