@@ -463,8 +463,8 @@
     let activeIndex = 0;
 
     function getSurfaceLabel(img, idx) {
-        // Prefer surface/view field; fall back to generic label
-        return img.surface || img.view || ('Image ' + (idx + 1));
+        // image_type from API: "obverse", "reverse", "seal", etc.
+        return img.image_type || ('Image ' + (idx + 1));
     }
 
     function renderAttribution(img) {
@@ -474,23 +474,15 @@
             return;
         }
 
+        // API fields: credit_line (display-ready), copyright_holder, license
         let html = '';
-        if (img.license) {
-            const licenseText = img.license_name || 'CC BY 4.0';
-            const sourceText = 'Cuneiform Digital Library Initiative (CDLI)';
-            if (img.source_url) {
-                html = `Image: <a href="${img.source_url}" target="_blank" rel="noopener noreferrer">${sourceText}</a> &middot; ${licenseText}`;
-            } else {
-                html = `Image: ${sourceText} &middot; ${licenseText}`;
-            }
-        } else if (img.source_url) {
-            html = `Source: <a href="${img.source_url}" target="_blank" rel="noopener noreferrer">CDLI</a>`;
+        if (img.credit_line) {
+            html = img.credit_line;
+        } else if (img.copyright_holder) {
+            const licenseText = img.license || '';
+            html = `Image: ${img.copyright_holder}${licenseText ? ' &middot; ' + licenseText : ''}`;
         } else {
             html = 'Source: CDLI';
-        }
-
-        if (img.photographer) {
-            html += ` &middot; Photo: ${img.photographer}`;
         }
 
         attributionEl.innerHTML = html;
@@ -508,8 +500,9 @@
         // Switch zoombox image — TabletPage.zoombox is set by tablet-detail.js
         // We wait for it to be available since scripts load in order
         const zb = window.TabletPage && window.TabletPage.zoombox;
-        if (zb && img.url) {
-            zb.loadImage({ local: img.url });
+        const imgUrl = img.original_url || img.thumbnail_url;
+        if (zb && imgUrl) {
+            zb.loadImage({ local: imgUrl });
         }
 
         renderAttribution(img);
