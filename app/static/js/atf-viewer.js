@@ -33,11 +33,10 @@ class ATFViewer {
         this.translationLines = null;
         this.hasTranslation = false;
 
-        // Multi-language translation state
+        // Translation state
         this.translationData = null;      // {lang: {matched, unmatched}}
         this.normalizedData = null;       // ts normalized readings {matched, unmatched}
-        this.activeTransLang = null;      // Currently selected language code
-        this.availableTransLangs = [];    // Ordered language list
+        this.availableTransLangs = [];    // Ordered language list (first is shown inline)
 
         // Definition cache
         this.definitionCache = new Map();
@@ -170,7 +169,6 @@ class ATFViewer {
                 if (result.has_translation) {
                     this.translationData = result.translations || {};
                     this.availableTransLangs = result.languages || [];
-                    this.activeTransLang = this.availableTransLangs[0] || null;
                     this.hasTranslation = true;
                     this._syncTranslationLines();
                 }
@@ -206,21 +204,13 @@ class ATFViewer {
     }
 
     /**
-     * Sync translationLines from the active language's matched dict
+     * Sync translationLines from the first available language's matched dict.
+     * Only one language is shown at a time (inline beneath each line).
      */
     _syncTranslationLines() {
-        const active = this.translationData?.[this.activeTransLang];
+        const lang = this.availableTransLangs[0] || null;
+        const active = lang ? this.translationData?.[lang] : null;
         this.translationLines = active?.matched || {};
-    }
-
-    /**
-     * Switch translation language and re-render
-     */
-    setTranslationLanguage(lang) {
-        if (!this.translationData?.[lang]) return;
-        this.activeTransLang = lang;
-        this._syncTranslationLines();
-        this.renderContent();
     }
 
     /**
@@ -498,7 +488,8 @@ class ATFViewer {
      */
     setMode(mode) {
         if (mode === this.mode) return;
-        if (mode === 'parallel' && !this.hasTranslation) return;
+        // 'parallel' mode was removed — inline translations replace the side panel
+        if (mode === 'parallel') return;
 
         this.mode = mode;
 
@@ -862,11 +853,6 @@ class ATFViewer {
         // Add composite click handlers
         this.attachCompositeHandlers();
 
-        // Always show translation column when available
-        if (this.hasTranslation) {
-            this.renderTranslationColumn();
-        }
-
         // Add interlinear glosses
         await this.attachWordGlosses();
 
@@ -947,9 +933,15 @@ class ATFViewer {
 
                 // Inline translation from active language
                 let translationHtml = '';
-                const transText = this.translationLines?.[lineKey]?.text;
-                if (transText) {
-                    translationHtml = `<div class="atf-line__translation">${this.escapeHtml(transText)}</div>`;
+                const transEntry = this.translationLines?.[lineKey];
+                if (transEntry?.text) {
+                    const sourceHtml = transEntry.source
+                        ? `<span class="atf-line__translation-source">${this.escapeHtml(transEntry.source)}</span>`
+                        : '';
+                    translationHtml = `<div class="atf-line__translation" data-line="${line.number}">
+                        <span class="atf-line__translation-text">${this.escapeHtml(transEntry.text)}</span>
+                        ${sourceHtml}
+                    </div>`;
                 }
 
                 return `
@@ -1028,97 +1020,25 @@ class ATFViewer {
     }
 
     /**
-     * Language display labels
-     */
-    static LANG_LABELS = {
-        en: 'English', de: 'German', fr: 'French', it: 'Italian',
-        es: 'Spanish', ca: 'Catalan', dk: 'Danish',
-    };
-
-    /**
-     * Render translation side panel — unmatched translations + language tabs.
-     * Matched translations are shown inline beneath each ATF line (renderLines).
-     */
-    renderTranslationColumn() {
-        const body = this.container.querySelector('.atf-viewer__body');
-        body.querySelector('.atf-translation-column')?.remove();
-
-        const activeLang = this.translationData?.[this.activeTransLang];
-        const transUnmatched = activeLang?.unmatched || [];
-        const normUnmatched = this.normalizedData?.unmatched || [];
-        const hasUnmatched = transUnmatched.length > 0 || normUnmatched.length > 0;
-        const hasMultipleLangs = this.availableTransLangs.length > 1;
-
-        // Hide side panel entirely if single-lang with no unmatched
-        if (!hasMultipleLangs && !hasUnmatched) {
-            this.container.classList.remove('atf-viewer--has-translation');
-            return;
-        }
-
-        this.container.classList.add('atf-viewer--has-translation');
-        const transCol = document.createElement('div');
-        transCol.className = 'atf-translation-column';
-
-        // Header with language tabs or static label
-        let html = '<div class="atf-translation-column__header">';
-        if (hasMultipleLangs) {
-            html += '<div class="atf-translation-lang-tabs">';
-            for (const lang of this.availableTransLangs) {
-                const active = lang === this.activeTransLang ? ' is-active' : '';
-                const label = ATFViewer.LANG_LABELS[lang] || lang.toUpperCase();
-                html += `<button class="atf-translation-lang-tab${active}" data-lang="${lang}">${label}</button>`;
-            }
-            html += '</div>';
-        } else {
-            const label = ATFViewer.LANG_LABELS[this.activeTransLang] || this.activeTransLang?.toUpperCase() || 'EN';
-            html += `Translation (${label})`;
-        }
-        html += '</div>';
-
-        // Unmatched translations (in original translator sequence)
-        if (transUnmatched.length > 0) {
-            html += '<div class="atf-translation-unmatched">';
-            html += '<div class="atf-translation-unmatched__header">Unmatched translations</div>';
-            for (const u of transUnmatched) {
-                html += `<div class="atf-translation-unmatched__line">${this.escapeHtml(u.text)}</div>`;
-            }
-            html += '</div>';
-        }
-
-        // Unmatched normalized readings
-        if (normUnmatched.length > 0) {
-            html += '<div class="atf-translation-unmatched">';
-            html += '<div class="atf-translation-unmatched__header">Unmatched normalized readings</div>';
-            for (const u of normUnmatched) {
-                html += `<div class="atf-translation-unmatched__line atf-translation-unmatched__line--normalized">${this.escapeHtml(u.text)}</div>`;
-            }
-            html += '</div>';
-        }
-
-        // Empty state when panel shows but no unmatched
-        if (!hasUnmatched) {
-            html += '<div class="atf-translation-empty">All translations mapped to lines</div>';
-        }
-
-        transCol.innerHTML = html;
-        body.appendChild(transCol);
-
-        // Attach language tab click handlers
-        transCol.querySelectorAll('.atf-translation-lang-tab').forEach(btn => {
-            btn.addEventListener('click', () => this.setTranslationLanguage(btn.dataset.lang));
-        });
-    }
-
-    /**
-     * Attach click handlers to words
+     * Attach click handlers to words.
+     * Token clicks open a lightweight inline popover (TokenPopover) anchored
+     * to the clicked element, replacing the full knowledge sidebar open.
      */
     attachWordHandlers() {
         this.container.querySelectorAll('.atf-word[data-lookup]').forEach(el => {
             el.addEventListener('click', (e) => {
+                // Don't intercept clicks on the competing-readings indicator
+                if (e.target.closest('.atf-competing-indicator')) return;
                 e.preventDefault();
                 const lookup = el.dataset.lookup;
                 const surfaceForm = el.dataset.surfaceForm;
-                if (lookup) {
+                if (lookup && typeof TokenPopover !== 'undefined') {
+                    TokenPopover.show(el, this.pNumber, lookup, surfaceForm, this.options.apiUrl, {
+                        lemmasData: this.lemmasData,
+                        competingData: this.competingData,
+                    });
+                } else if (lookup) {
+                    // Fallback if TokenPopover not loaded
                     this.showDictionary(lookup, surfaceForm);
                 }
             });
