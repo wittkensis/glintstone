@@ -7,9 +7,12 @@ set -e
 EXIT_CODE=0
 
 # Schema YAML validity (BLOCKING)
+# Use venv python if available so pyyaml is reliably present.
 SCHEMA_FILE="data-model/glintstone-schema.yaml"
+PYTHON_BIN="${VIRTUAL_ENV:+$VIRTUAL_ENV/bin/python3}"
+PYTHON_BIN="${PYTHON_BIN:-$(ls venv/bin/python3 2>/dev/null || echo python3)}"
 if [ -f "$SCHEMA_FILE" ]; then
-    if ! python3 -c "import yaml; yaml.safe_load(open('$SCHEMA_FILE'))" 2>/dev/null; then
+    if ! "$PYTHON_BIN" -c "import yaml; yaml.safe_load(open('$SCHEMA_FILE'))" 2>/dev/null; then
         echo "❌ Schema YAML is invalid: $SCHEMA_FILE"
         EXIT_CODE=1
     fi
