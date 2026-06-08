@@ -9,6 +9,54 @@
 {% block content %}
 <main class="homepage">
 
+    {# ── HERO ──────────────────────────────────────────────────────────────── #}
+    <section class="homepage-hero" aria-label="Mission">
+        <div class="homepage-hero__inner">
+
+            <h1 class="hero-headline">
+                Five thousand years of writing.<br>
+                Less than 2% translated.
+            </h1>
+
+            <p class="hero-stats">
+                353,283 artifacts · 43,777 translations · 8,765 compositions
+            </p>
+
+            {# Entry-point cards #}
+            <div class="hero-cards" role="list">
+                <a class="hero-card" href="/tablets" role="listitem">
+                    <span class="hero-card__name">Artifacts</span>
+                    <span class="hero-card__count">353,283</span>
+                </a>
+                <a class="hero-card" href="/compositions" role="listitem">
+                    <span class="hero-card__name">Compositions</span>
+                    <span class="hero-card__count">8,765</span>
+                </a>
+                <a class="hero-card" href="/dictionary" role="listitem">
+                    <span class="hero-card__name">Dictionary</span>
+                    <span class="hero-card__count">346,480</span>
+                </a>
+                <a class="hero-card" href="/scholars" role="listitem">
+                    <span class="hero-card__name">Scholars</span>
+                    <span class="hero-card__count">86,504</span>
+                </a>
+            </div>
+
+            {# Hero search — clicking delegates to the header global search drawer #}
+            <div class="hero-search" role="search" aria-label="Search the corpus">
+                <button class="hero-search__trigger" type="button" aria-label="Open search" data-hero-search>
+                    <svg class="hero-search__icon" width="20" height="20" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                        <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M12 12L16 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span class="hero-search__placeholder">Search artifacts, compositions, lemmas…</span>
+                    <kbd class="hero-search__kbd" aria-hidden="true">⌘ K</kbd>
+                </button>
+            </div>
+
+        </div>
+    </section>
+
     {# ── SECTION 1: THE CORPUS ─────────────────────────────────────────────── #}
     <section class="homepage-section homepage-corpus" aria-labelledby="corpus-heading">
         <div class="homepage-section__inner">
@@ -209,4 +257,19 @@
     </section>
 
 </main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    // Hero search trigger: clicking the hero search bar focuses the header
+    // global search input, which opens the drawer via global-search.js.
+    var trigger = document.querySelector('[data-hero-search]');
+    if (!trigger) return;
+    trigger.addEventListener('click', function () {
+        var headerInput = document.querySelector('.global-search__input');
+        if (headerInput) headerInput.focus();
+    });
+})();
+</script>
 {% endblock %}
