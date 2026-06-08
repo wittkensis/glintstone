@@ -1,24 +1,160 @@
 {% extends "base.html" %}
-{% from "components/_macros.html" import dictionary_filter_sidebar, pagination %}
+{% from "components/_macros.html" import pagination %}
 
 {% block title %}Dictionary - Glintstone{% endblock %}
 
 {% block content %}
 <main class="dictionary-page">
     <div class="dict-layout" data-api-url="{{ api_url }}">
-        {# Filter sidebar #}
-        {{ dictionary_filter_sidebar(
-            level=level,
-            search_value=search or '',
-            language=language or [],
-            pos=pos or [],
-            source=source or [],
-            frequency=frequency or '',
-            filter_options=filter_options,
-            sort=sort or ''
-        ) }}
 
-        {# Main content: results + detail panel #}
+        {# ── Discovery Rail (left column) ──────────────────────────────── #}
+        <aside class="discovery-rail" aria-label="Browse filters">
+
+            {# Search — submits as GET, preserves other active filters #}
+            <div class="discovery-rail__search">
+                <form method="GET" action="/dictionary" id="rail-search-form">
+                    <input type="hidden" name="level" value="{{ level }}">
+                    <input type="hidden" name="sort" value="{{ sort or '' }}">
+                    {% for l in language %}<input type="hidden" name="language" value="{{ l }}">{% endfor %}
+                    {% for p in pos %}<input type="hidden" name="pos" value="{{ p }}">{% endfor %}
+                    {% for s in source %}<input type="hidden" name="source" value="{{ s }}">{% endfor %}
+                    {% if frequency %}<input type="hidden" name="frequency" value="{{ frequency }}">{% endif %}
+                    <input
+                        type="search"
+                        name="search"
+                        id="rail-search-input"
+                        class="discovery-rail__input"
+                        value="{{ search or '' }}"
+                        placeholder="Search {% if level == 'signs' %}signs{% elif level == 'glosses' %}glosses{% else %}lemmas{% endif %}…"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        aria-label="Search dictionary"
+                    >
+                </form>
+            </div>
+
+            <div class="discovery-rail__scroll">
+
+                {# ── Language section ─────────────────────────────────── #}
+                {% if filter_options and filter_options.language %}
+                <div class="rail-section" data-section="language">
+                    <div class="rail-section__heading">Browse by Language</div>
+
+                    {% set lang_threshold = 5 %}
+                    {% for item in filter_options.language %}
+
+                    {# Toggle URL: active → remove; inactive → add #}
+                    {% set is_active = item.val in language %}
+                    {% set fq = namespace(s='level=' ~ level) %}
+                    {% if search %}{% set fq.s = fq.s ~ '&search=' ~ (search|urlencode) %}{% endif %}
+                    {% if sort %}{% set fq.s = fq.s ~ '&sort=' ~ (sort|urlencode) %}{% endif %}
+                    {% for s in source %}{% set fq.s = fq.s ~ '&source=' ~ (s|urlencode) %}{% endfor %}
+                    {% for p in pos %}{% set fq.s = fq.s ~ '&pos=' ~ (p|urlencode) %}{% endfor %}
+                    {% if frequency %}{% set fq.s = fq.s ~ '&frequency=' ~ (frequency|urlencode) %}{% endif %}
+                    {% if is_active %}
+                        {% for l in language %}{% if l != item.val %}{% set fq.s = fq.s ~ '&language=' ~ (l|urlencode) %}{% endif %}{% endfor %}
+                    {% else %}
+                        {% for l in language %}{% set fq.s = fq.s ~ '&language=' ~ (l|urlencode) %}{% endfor %}
+                        {% set fq.s = fq.s ~ '&language=' ~ (item.val|urlencode) %}
+                    {% endif %}
+
+                    <a href="/dictionary?{{ fq.s }}"
+                       class="rail-item{% if is_active %} rail-item--active{% endif %}{% if loop.index > lang_threshold %} rail-item--overflow{% endif %}"
+                       aria-pressed="{{ 'true' if is_active else 'false' }}">
+                        <span class="rail-item__label">{{ item.label }}</span>
+                        <span class="rail-item__count">{{ '{:,}'.format(item.count) }}</span>
+                    </a>
+                    {% endfor %}
+
+                    {% if filter_options.language|length > lang_threshold %}
+                    <button type="button" class="rail-show-more" data-target="language">
+                        Show all {{ filter_options.language|length }}
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {# ── Part of Speech section (lemmas + glosses only) ────── #}
+                {% if filter_options and filter_options.pos and level != 'signs' %}
+                <div class="rail-section" data-section="pos">
+                    <div class="rail-section__heading">Browse by Type</div>
+
+                    {% set pos_threshold = 6 %}
+                    {% for item in filter_options.pos %}
+
+                    {% set is_active = item.val in pos %}
+                    {% set fq = namespace(s='level=' ~ level) %}
+                    {% if search %}{% set fq.s = fq.s ~ '&search=' ~ (search|urlencode) %}{% endif %}
+                    {% if sort %}{% set fq.s = fq.s ~ '&sort=' ~ (sort|urlencode) %}{% endif %}
+                    {% for s in source %}{% set fq.s = fq.s ~ '&source=' ~ (s|urlencode) %}{% endfor %}
+                    {% for l in language %}{% set fq.s = fq.s ~ '&language=' ~ (l|urlencode) %}{% endfor %}
+                    {% if frequency %}{% set fq.s = fq.s ~ '&frequency=' ~ (frequency|urlencode) %}{% endif %}
+                    {% if is_active %}
+                        {% for p in pos %}{% if p != item.val %}{% set fq.s = fq.s ~ '&pos=' ~ (p|urlencode) %}{% endif %}{% endfor %}
+                    {% else %}
+                        {% for p in pos %}{% set fq.s = fq.s ~ '&pos=' ~ (p|urlencode) %}{% endfor %}
+                        {% set fq.s = fq.s ~ '&pos=' ~ (item.val|urlencode) %}
+                    {% endif %}
+
+                    <a href="/dictionary?{{ fq.s }}"
+                       class="rail-item{% if is_active %} rail-item--active{% endif %}{% if loop.index > pos_threshold %} rail-item--overflow{% endif %}"
+                       aria-pressed="{{ 'true' if is_active else 'false' }}">
+                        <span class="rail-item__label">{{ item.label }}</span>
+                        <span class="rail-item__count">{{ '{:,}'.format(item.count) }}</span>
+                    </a>
+                    {% endfor %}
+
+                    {% if filter_options.pos|length > pos_threshold %}
+                    <button type="button" class="rail-show-more" data-target="pos">
+                        Show more
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {# ── Source section (signs + lemmas only) ─────────────── #}
+                {% if filter_options and filter_options.source and level != 'glosses' %}
+                <div class="rail-section" data-section="source">
+                    <div class="rail-section__heading">Browse by Source</div>
+
+                    {% set src_threshold = 4 %}
+                    {% for item in filter_options.source %}
+
+                    {% set is_active = item.val in source %}
+                    {% set fq = namespace(s='level=' ~ level) %}
+                    {% if search %}{% set fq.s = fq.s ~ '&search=' ~ (search|urlencode) %}{% endif %}
+                    {% if sort %}{% set fq.s = fq.s ~ '&sort=' ~ (sort|urlencode) %}{% endif %}
+                    {% for l in language %}{% set fq.s = fq.s ~ '&language=' ~ (l|urlencode) %}{% endfor %}
+                    {% for p in pos %}{% set fq.s = fq.s ~ '&pos=' ~ (p|urlencode) %}{% endfor %}
+                    {% if frequency %}{% set fq.s = fq.s ~ '&frequency=' ~ (frequency|urlencode) %}{% endif %}
+                    {% if is_active %}
+                        {% for s in source %}{% if s != item.val %}{% set fq.s = fq.s ~ '&source=' ~ (s|urlencode) %}{% endif %}{% endfor %}
+                    {% else %}
+                        {% for s in source %}{% set fq.s = fq.s ~ '&source=' ~ (s|urlencode) %}{% endfor %}
+                        {% set fq.s = fq.s ~ '&source=' ~ (item.val|urlencode) %}
+                    {% endif %}
+
+                    <a href="/dictionary?{{ fq.s }}"
+                       class="rail-item{% if is_active %} rail-item--active{% endif %}{% if loop.index > src_threshold %} rail-item--overflow{% endif %}"
+                       aria-pressed="{{ 'true' if is_active else 'false' }}">
+                        <span class="rail-item__label">{{ item.label }}</span>
+                        <span class="rail-item__count">{{ '{:,}'.format(item.count) }}</span>
+                    </a>
+                    {% endfor %}
+
+                    {% if filter_options.source|length > src_threshold %}
+                    <button type="button" class="rail-show-more" data-target="source">
+                        Show all {{ filter_options.source|length }}
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+            </div>{# /discovery-rail__scroll #}
+        </aside>
+
+        {# ── Main content ──────────────────────────────────────────────── #}
         <div class="dict-main">
             <div class="page-header">
                 <div class="page-header-main">
@@ -31,7 +167,7 @@
                 </div>
             </div>
 
-            {# Level switcher #}
+            {# Level switcher + sort #}
             {% set fq = namespace(s='') %}
             {% if search %}{% set fq.s = fq.s ~ 'search=' ~ (search|urlencode) ~ '&' %}{% endif %}
             {% for l in language %}{% set fq.s = fq.s ~ 'language=' ~ (l|urlencode) ~ '&' %}{% endfor %}
@@ -55,7 +191,7 @@
                     <label class="dict-sort__label" for="dict-sort-select">Sort:</label>
                     <select id="dict-sort-select" class="dict-sort__select">
                         {% if level == 'signs' %}
-                        <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                        <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A–Z)</option>
                         <option value="lemmas" {% if sort == 'lemmas' %}selected{% endif %}>Linked Lemmas</option>
                         {% elif level == 'glosses' %}
                         <option value="attestations" {% if sort != 'alpha' %}selected{% endif %}>Attestations</option>
@@ -73,9 +209,9 @@
             <div class="active-filters">
                 <div class="active-filters__pills">
                     {% for f in active_filters %}
-                    <a href="{{ f.remove_url }}" class="filter-pill">
+                    <a href="{{ f.remove_url }}" class="filter-pill" aria-label="Remove {{ f.label }} filter">
                         <span class="filter-pill__label">{{ f.label }}</span>
-                        <span class="filter-pill__remove" aria-label="Remove">&times;</span>
+                        <span class="filter-pill__remove" aria-hidden="true">&times;</span>
                     </a>
                     {% endfor %}
                 </div>
@@ -85,105 +221,122 @@
 
             {# Results + Detail split #}
             <div class="dict-content">
+
                 {# Result list #}
                 <div class="dict-results" id="dict-results">
                     {% if items %}
-                        {% for item in items %}
 
-                            {# ── SIGN CARD ── #}
-                            {% if level == 'signs' %}
-                            <button class="dict-card dict-card--sign" data-id="{{ item.id }}" data-level="signs">
-                                <div class="dict-card__header">
+                        {# ── LEMMA LEVEL: dense one-line rows ── #}
+                        {% if level == 'lemmas' %}
+                        <ul class="dict-list" role="list">
+                            {% for item in items %}
+                            <li>
+                                <button
+                                    class="dict-row"
+                                    data-id="{{ item.id }}"
+                                    data-level="lemmas"
+                                    type="button"
+                                    aria-label="{{ item.citation_form }}{% if item.guide_word %} — {{ item.guide_word }}{% endif %}"
+                                >
+                                    <span class="dict-row__primary">
+                                        <span class="dict-row__form">{{ item.citation_form }}</span>
+                                        {% if item.guide_word %}
+                                        <span class="dict-row__guide">[{{ item.guide_word }}]</span>
+                                        {% endif %}
+                                    </span>
+                                    <span class="dict-row__meta">
+                                        {% if item.pos_label %}
+                                        <span class="dict-row__pos">{{ item.pos_label }}</span>
+                                        <span class="dict-row__sep" aria-hidden="true">·</span>
+                                        {% endif %}
+                                        <span class="dict-row__lang">{{ item.language_label }}</span>
+                                        {% if item.attestation_count %}
+                                        <span class="dict-row__sep" aria-hidden="true">·</span>
+                                        <span class="dict-row__count">{{ '{:,}'.format(item.attestation_count) }}</span>
+                                        {% endif %}
+                                    </span>
+                                </button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+
+                        {# ── SIGN LEVEL: one-line rows with glyph ── #}
+                        {% elif level == 'signs' %}
+                        <ul class="dict-list" role="list">
+                            {% for item in items %}
+                            <li>
+                                <button class="dict-row dict-row--sign" data-id="{{ item.id }}" data-level="signs" type="button">
                                     {% if item.unicode_char %}
-                                    <span class="dict-card__glyph">{{ item.unicode_char }}</span>
+                                    <span class="dict-row__glyph" aria-hidden="true">{{ item.unicode_char }}</span>
                                     {% endif %}
-                                    <span class="dict-card__title">{{ item.sign_name }}</span>
-                                </div>
-                                <div class="dict-card__stats">
-                                    {{ item.reading_count or 0 }} readings
-                                    &middot; {{ item.lemma_count or 0 }} lemmas
-                                </div>
-                                {% if item.glosses %}
-                                <div class="dict-card__glosses">{{ item.glosses[:6]|join(', ') }}{% if item.glosses|length > 6 %}&hellip;{% endif %}</div>
-                                {% endif %}
-                                <div class="dict-card__meta">{{ item.source_label }}</div>
-                            </button>
-
-                            {# ── LEMMA CARD ── #}
-                            {% elif level == 'lemmas' %}
-                            <button class="dict-card dict-card--lemma" data-id="{{ item.id }}" data-level="lemmas">
-                                <div class="dict-card__header">
-                                    <span class="dict-card__title">{{ item.citation_form }}
-                                        {% if item.guide_word %}<span class="dict-card__guide">[{{ item.guide_word }}]</span>{% endif %}
+                                    <span class="dict-row__primary">
+                                        <span class="dict-row__form" style="font-style: normal;">{{ item.sign_name }}</span>
                                     </span>
-                                    {% if item.pos_label %}
-                                    <span class="dict-card__badge">{{ item.pos_label }}</span>
-                                    {% endif %}
-                                </div>
-                                <div class="dict-card__meta">{{ item.language_label }} &middot; {{ item.source_label }}</div>
-                                {% if item.glosses %}
-                                <div class="dict-card__glosses">{{ item.glosses[:6]|join(', ') }}{% if item.glosses|length > 6 %}&hellip;{% endif %}</div>
-                                {% endif %}
-                                <div class="dict-card__stats">{{ '{:,}'.format(item.attestation_count or 0) }} attestations</div>
-                            </button>
-
-                            {# ── GLOSS CARD ── #}
-                            {% elif level == 'glosses' %}
-                            <button class="dict-card dict-card--gloss" data-id="{{ item.guide_word }}" data-level="glosses" data-pos="{{ item.pos or '' }}">
-                                <div class="dict-card__header">
-                                    <span class="dict-card__title">&ldquo;{{ item.guide_word }}&rdquo;</span>
-                                    {% if item.pos_label %}
-                                    <span class="dict-card__badge">{{ item.pos_label }}</span>
-                                    {% endif %}
-                                </div>
-                                <div class="dict-card__stats">
-                                    {{ item.lemma_count }} lemma{{ 's' if item.lemma_count != 1 }}
-                                    across {{ item.language_count }} language{{ 's' if item.language_count != 1 }}
-                                </div>
-                                {% if item.lemmas_grouped %}
-                                <div class="dict-card__langs">
-                                    {% for lang_name, cfs in item.lemmas_grouped.items() %}
-                                    <span class="dict-card__lang-group">
-                                        <span class="dict-card__lang-name">{{ lang_name }}:</span>
-                                        {{ cfs[:4]|join(', ') }}{% if cfs|length > 4 %}&hellip;{% endif %}
+                                    <span class="dict-row__meta">
+                                        <span class="dict-row__lang">{{ item.reading_count or 0 }} readings</span>
+                                        <span class="dict-row__sep" aria-hidden="true">·</span>
+                                        <span class="dict-row__count">{{ item.lemma_count or 0 }} lemmas</span>
                                     </span>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                                <div class="dict-card__stats">{{ '{:,}'.format(item.total_attestations or 0) }} total attestations</div>
-                            </button>
-                            {% endif %}
+                                </button>
+                            </li>
+                            {% endfor %}
+                        </ul>
 
-                        {% endfor %}
+                        {# ── GLOSS LEVEL: one-line rows ── #}
+                        {% elif level == 'glosses' %}
+                        <ul class="dict-list" role="list">
+                            {% for item in items %}
+                            <li>
+                                <button class="dict-row" data-id="{{ item.guide_word }}" data-level="glosses" data-pos="{{ item.pos or '' }}" type="button">
+                                    <span class="dict-row__primary">
+                                        <span class="dict-row__form" style="font-style: normal;">&ldquo;{{ item.guide_word }}&rdquo;</span>
+                                        {% if item.pos_label %}
+                                        <span class="dict-row__guide">{{ item.pos_label }}</span>
+                                        {% endif %}
+                                    </span>
+                                    <span class="dict-row__meta">
+                                        <span class="dict-row__lang">{{ item.lemma_count }} lemma{{ 's' if item.lemma_count != 1 }}</span>
+                                        <span class="dict-row__sep" aria-hidden="true">·</span>
+                                        <span class="dict-row__count">{{ '{:,}'.format(item.total_attestations or 0) }}</span>
+                                    </span>
+                                </button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+
                     {% else %}
                     <div class="empty-state">
-                        <div class="empty-icon">&#x12000;</div>
+                        <div class="empty-icon" aria-hidden="true">&#x12000;</div>
                         <h3>No results found</h3>
                         <p>Try adjusting your search or filters.</p>
                     </div>
                     {% endif %}
-                </div>
+                </div>{# /dict-results #}
 
-                {# Detail panel #}
-                <div class="dict-detail" id="dict-detail">
+                {# Detail panel — populated via JS on row click #}
+                <div class="dict-detail" id="dict-detail" aria-live="polite">
                     <div class="dict-detail__placeholder">
                         <h3>Select an entry</h3>
                         <p>Click a result to view its details</p>
                     </div>
                 </div>
-            </div>
+
+            </div>{# /dict-content #}
 
             {# Pagination #}
             {% set base = '/dictionary?' ~ fq.s ~ 'level=' ~ level ~ '&sort=' ~ sort ~ '&' %}
             {{ pagination(page, total_pages, base) }}
-        </div>
-    </div>
+
+        </div>{# /dict-main #}
+    </div>{# /dict-layout #}
 </main>
 {% endblock %}
 
 {% block scripts %}
 <script>
 (function() {
+    // Sort selector — navigate on change, preserve other params
     var sortSelect = document.getElementById('dict-sort-select');
     if (sortSelect) {
         sortSelect.addEventListener('change', function() {
@@ -193,6 +346,28 @@
             window.location.href = url.href;
         });
     }
+
+    // Rail search — clear on Escape
+    var searchInput = document.getElementById('rail-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                this.value = '';
+                this.form.submit();
+            }
+        });
+    }
+
+    // "Show more / fewer" in discovery rail
+    document.querySelectorAll('.rail-show-more').forEach(function(btn) {
+        var originalText = btn.textContent.trim();
+        btn.addEventListener('click', function() {
+            var section = this.closest('.rail-section');
+            if (!section) return;
+            var expanded = section.classList.toggle('rail-section--expanded');
+            this.textContent = expanded ? 'Show fewer' : originalText;
+        });
+    });
 })();
 </script>
 <script src="/static/js/dictionary-browser.js"></script>
