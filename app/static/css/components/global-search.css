@@ -378,6 +378,14 @@
     color: var(--color-accent);
 }
 
+/* Q-number prefix on composite results — muted so the title reads first */
+.search-row__q-ref {
+    color: var(--color-text-muted);
+    font-size: var(--text-xxs);
+    font-family: var(--font-mono);
+    letter-spacing: 0.02em;
+}
+
 .search-row__secondary {
     font-size: var(--text-xxs);
     color: var(--color-text-muted);

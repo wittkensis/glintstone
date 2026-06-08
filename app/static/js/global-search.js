@@ -18,7 +18,7 @@
     const ROOT_SELECTOR = '.global-search';
     const RECENTS_KEY = 'glintstone:recent_searches';
     const RECENTS_CAP = 12;
-    const DEBOUNCE_MS = 180;
+    const DEBOUNCE_MS = 250;
     const BLUR_CLOSE_DELAY_MS = 150;
 
     function init(root) {
