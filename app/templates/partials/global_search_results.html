@@ -80,7 +80,13 @@
             {% endif %}
           </span>
           <span class="search-row__text">
-            <span class="search-row__primary">{{ item.primary_label }}</span>
+            <span class="search-row__primary">
+              {%- if gtype == 'composites' and item.entity_id -%}
+                <span class="search-row__q-ref">{{ item.entity_id }}</span> &middot; {{ item.primary_label }}
+              {%- else -%}
+                {{ item.primary_label }}
+              {%- endif -%}
+            </span>
             {% if item.secondary_label %}
               <span class="search-row__secondary">{{ item.secondary_label }}</span>
             {% endif %}
