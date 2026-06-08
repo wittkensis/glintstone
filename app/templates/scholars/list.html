@@ -2,62 +2,204 @@
 
 {% block title %}Scholars - Glintstone{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="/static/css/pages/scholars.css?v={{ app_version }}">
+{% endblock %}
+
 {% block content %}
-<main class="scholars-page page-wide">
+<main class="scholars-page" data-api-url="{{ api_url }}">
     <div class="page-header">
         <div class="page-header-main">
             <div class="page-header-title">
                 <h1>Scholars</h1>
-                <p class="page-header-meta">
-                    {{ total }} {{ 'scholar' if total == 1 else 'scholars' }}
-                    {%- if search %} matching "<em>{{ search }}</em>"{% endif %}
-                </p>
+                <p class="page-header-meta">{{ '{:,}'.format(total) }} contributors to the cuneiform record</p>
             </div>
         </div>
     </div>
 
-    {% if scholars %}
-    <ul class="scholar-list">
-        {% for s in scholars %}
-        <li class="scholar-list__row">
-            <div class="scholar-list__avatar">
-                <span class="scholar-list__initials">
-                    {{ (s.normalized_name or s.name)[:2]|upper }}
-                </span>
-            </div>
-            <div class="scholar-list__body">
-                <div class="scholar-list__name">{{ s.name }}</div>
-                {% if s.institution %}
-                <div class="scholar-list__institution">{{ s.institution }}</div>
-                {% endif %}
-                <div class="scholar-list__meta">
-                    {% if s.author_type %}<span class="badge badge--neutral">{{ s.author_type }}</span>{% endif %}
-                    {% if s.expertise_periods %}<span class="scholar-list__expertise">{{ s.expertise_periods }}</span>{% endif %}
-                    {% if s.expertise_languages %}<span class="scholar-list__expertise">{{ s.expertise_languages }}</span>{% endif %}
-                </div>
-            </div>
-            {% if s.orcid %}
-            <a class="scholar-list__orcid" href="https://orcid.org/{{ s.orcid }}" target="_blank" rel="noopener">ORCID</a>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
+    <div class="scholars-controls">
+        <input
+            id="scholars-search"
+            class="scholars-search"
+            type="search"
+            placeholder="Search by name or institution..."
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label="Search scholars"
+        >
 
-    {% if total_pages > 1 %}
-    <nav class="pagination" aria-label="Pagination">
-        {% if page > 1 %}
-        <a class="pagination__link" href="?search={{ search|urlencode }}&page={{ page - 1 }}">Previous</a>
-        {% endif %}
-        <span class="pagination__current">Page {{ page }} of {{ total_pages }}</span>
-        {% if page < total_pages %}
-        <a class="pagination__link" href="?search={{ search|urlencode }}&page={{ page + 1 }}">Next</a>
-        {% endif %}
-    </nav>
-    {% endif %}
-    {% else %}
-    <p class="empty-state">
-        {% if search %}No scholars matched "<em>{{ search }}</em>".{% else %}No scholars yet.{% endif %}
-    </p>
-    {% endif %}
+        <div class="scholars-filter-row" role="group" aria-label="Filter scholars">
+            <button
+                class="btn btn--sm scholars-filter-pill scholars-filter-pill--active"
+                data-filter="all"
+                type="button"
+                aria-pressed="true"
+            >All</button>
+            <button
+                class="btn btn--sm scholars-filter-pill"
+                data-filter="has_artifacts"
+                type="button"
+                aria-pressed="false"
+            >With Artifacts</button>
+        </div>
+    </div>
+
+    <div class="scholars-results" aria-live="polite" aria-atomic="true">
+        <p class="scholars-empty-state" id="scholars-empty-state">
+            Search by name or institution to find contributors.
+        </p>
+
+        <ul class="scholars-list" id="scholars-list" hidden></ul>
+
+        <div class="scholars-loading" id="scholars-loading" hidden aria-label="Loading results">
+            <span class="scholars-loading__dot"></span>
+            <span class="scholars-loading__dot"></span>
+            <span class="scholars-loading__dot"></span>
+        </div>
+
+        <p class="scholars-no-results" id="scholars-no-results" hidden>
+            No scholars matched your search.
+        </p>
+    </div>
 </main>
+
+<script>
+(function () {
+    'use strict';
+
+    const page = document.querySelector('.scholars-page');
+    const API_BASE = (page.dataset.apiUrl || '').replace(/\/$/, '');
+
+    const input = document.getElementById('scholars-search');
+    const list = document.getElementById('scholars-list');
+    const emptyState = document.getElementById('scholars-empty-state');
+    const loadingEl = document.getElementById('scholars-loading');
+    const noResults = document.getElementById('scholars-no-results');
+    const filterPills = document.querySelectorAll('.scholars-filter-pill');
+
+    let debounceTimer = null;
+    let inflight = null;
+    let activeFilter = 'all'; // 'all' | 'has_artifacts'
+
+    // --- helpers -----------------------------------------------------------
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function isQueryActive() {
+        return input.value.trim().length > 0 || activeFilter === 'has_artifacts';
+    }
+
+    function showState(state) {
+        // state: 'empty' | 'loading' | 'results' | 'no-results'
+        emptyState.hidden  = state !== 'empty';
+        list.hidden        = state !== 'results';
+        loadingEl.hidden   = state !== 'loading';
+        noResults.hidden   = state !== 'no-results';
+    }
+
+    function renderRow(scholar) {
+        const li = document.createElement('li');
+        li.className = 'scholars-row';
+
+        const count = scholar.artifact_count || 0;
+        const countText = count === 1 ? '1 artifact' : (count.toLocaleString() + ' artifacts');
+
+        const institutionHtml = scholar.institution
+            ? '<span class="scholars-row__institution">' + escapeHtml(scholar.institution) + '</span>'
+            : '';
+
+        li.innerHTML =
+            '<a class="scholars-row__link" href="/scholars/' + scholar.id + '">' +
+                '<span class="scholars-row__name">' + escapeHtml(scholar.name) + '</span>' +
+                institutionHtml +
+                '<span class="scholars-row__count">' + countText + '</span>' +
+            '</a>';
+
+        return li;
+    }
+
+    // --- search ------------------------------------------------------------
+
+    function doSearch(query) {
+        if (!isQueryActive()) {
+            showState('empty');
+            return;
+        }
+
+        // Cancel any previous in-flight request
+        if (inflight) {
+            inflight.abort();
+            inflight = null;
+        }
+
+        showState('loading');
+
+        const params = new URLSearchParams({ per_page: 50 });
+        if (query) params.set('search', query);
+        if (activeFilter === 'has_artifacts') params.set('has_artifacts', 'true');
+
+        const controller = new AbortController();
+        inflight = controller;
+
+        fetch(API_BASE + '/scholars?' + params.toString(), { signal: controller.signal })
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
+            .then(function (data) {
+                inflight = null;
+                const items = data.items || [];
+
+                if (items.length === 0) {
+                    showState('no-results');
+                    return;
+                }
+
+                list.innerHTML = '';
+                items.forEach(function (scholar) {
+                    list.appendChild(renderRow(scholar));
+                });
+                showState('results');
+            })
+            .catch(function (err) {
+                if (err.name === 'AbortError') return; // superseded by a newer request
+                inflight = null;
+                showState('no-results');
+            });
+    }
+
+    // --- event wiring ------------------------------------------------------
+
+    input.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () {
+            doSearch(input.value.trim());
+        }, 200);
+    });
+
+    filterPills.forEach(function (pill) {
+        pill.addEventListener('click', function () {
+            var filter = pill.dataset.filter;
+            activeFilter = filter;
+
+            filterPills.forEach(function (p) {
+                var active = p.dataset.filter === filter;
+                p.classList.toggle('scholars-filter-pill--active', active);
+                p.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+
+            doSearch(input.value.trim());
+        });
+    });
+}());
+</script>
 {% endblock %}
