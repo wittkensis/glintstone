@@ -19,8 +19,8 @@
     <div class="page-header">
         <div class="page-header-main">
             <div class="page-header-title">
+                <div class="composition-detail__q-number">{{ composite.q_number }}</div>
                 <h1>{{ composite.designation or 'Unnamed Composition' }}</h1>
-                <p class="page-header-subtitle">{{ composite.q_number }}</p>
             </div>
         </div>
     </div>
@@ -45,8 +45,23 @@
         </span>
     </div>
 
-    {% if timeline %}
-    {# ── Transmission History Timeline ──────────────────────────────────────── #}
+    {# ── SVG Transmission Timeline ───────────────────────────────────────────── #}
+    {% if timeline_exemplars %}
+    <section class="composition-timeline" aria-labelledby="timeline-heading">
+        <h2 id="timeline-heading" class="composition-timeline__title">Transmission History</h2>
+        <p class="composition-timeline__sub">
+            How scribes copied this text across the centuries. Each dot is one tablet.
+            Filled dots have ATF transcriptions; hollow dots are physical-only records.
+        </p>
+
+        <div id="transmission-timeline"
+             data-exemplars="{{ timeline_exemplars | tojson | forceescape }}"
+             class="composition-timeline__svg-wrap">
+            {# TransmissionTimeline JS class renders into this container #}
+        </div>
+    </section>
+    {% elif timeline %}
+    {# ── Fallback: row-based timeline (when timeline_exemplars is empty) ─── #}
     <section class="composition-timeline" aria-labelledby="timeline-heading">
         <h2 id="timeline-heading" class="composition-timeline__title">Transmission History</h2>
         <p class="composition-timeline__sub">How this text was copied across the centuries. Each dot is one tablet.</p>
@@ -81,16 +96,9 @@
     <section class="composition-detail__exemplars" aria-labelledby="exemplars-heading">
         <div class="composition-detail__exemplars-header">
             <h2 id="exemplars-heading">Exemplars</h2>
-            {% if periods or proveniences %}
+            {% if proveniences %}
             <form class="exemplar-filters" method="GET" action="/compositions/{{ composite.q_number }}">
-                {% if periods %}
-                <select name="filter_period" class="compositions-filters__select" aria-label="Filter by period" onchange="this.form.submit()">
-                    <option value="">All periods</option>
-                    {% for p in periods %}
-                    <option value="{{ p }}" {% if filter_period == p %}selected{% endif %}>{{ p }}</option>
-                    {% endfor %}
-                </select>
-                {% endif %}
+                {# Period filter is now driven by the SVG timeline; expose provenience filter here #}
                 {% if proveniences %}
                 <select name="filter_provenience" class="compositions-filters__select" aria-label="Filter by provenience" onchange="this.form.submit()">
                     <option value="">All sites</option>
@@ -99,6 +107,10 @@
                     {% endfor %}
                 </select>
                 {% endif %}
+                {# Preserve period filter when set by timeline #}
+                {% if filter_period %}
+                <input type="hidden" name="filter_period" value="{{ filter_period }}">
+                {% endif %}
                 {% if filter_period or filter_provenience %}
                 <a href="/compositions/{{ composite.q_number }}" class="compositions-filters__reset">Clear</a>
                 {% endif %}
@@ -106,8 +118,14 @@
             {% endif %}
         </div>
 
+        {# Active period filter badge (set by SVG timeline click) #}
+        <div id="period-filter-badge" class="period-filter-badge" {% if not filter_period %}hidden{% endif %}>
+            Showing period: <strong id="period-filter-label">{{ filter_period }}</strong>
+            <button type="button" class="period-filter-badge__clear" id="period-filter-clear" aria-label="Clear period filter">×</button>
+        </div>
+
         {% if exemplars %}
-        <table class="exemplars-table">
+        <table class="exemplars-table" id="exemplars-table">
             <thead>
                 <tr>
                     <th>P-Number</th>
@@ -116,9 +134,9 @@
                     <th>Provenience</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="exemplars-tbody">
                 {% for ex in exemplars %}
-                <tr>
+                <tr data-period="{{ ex.period or '' }}">
                     <td><a href="/tablets/{{ ex.p_number }}">{{ ex.p_number }}</a></td>
                     <td>{{ ex.designation or '—' }}</td>
                     <td>{{ ex.period or '—' }}</td>
@@ -128,9 +146,76 @@
             </tbody>
         </table>
         {% else %}
-        <p class="compositions-empty">No exemplars match the current filters.</p>
+        <p class="compositions-empty" id="exemplars-empty">No exemplars match the current filters.</p>
         {% endif %}
     </section>
 
 </main>
+
+{% if timeline_exemplars %}
+<script src="/static/js/transmission-timeline.js?v={{ app_version }}"></script>
+<script>
+(function () {
+    'use strict';
+
+    var container = document.getElementById('transmission-timeline');
+    if (!container) return;
+
+    // Initialise the SVG timeline
+    var timeline = new TransmissionTimeline(container);
+
+    // Listen for period-selected events from the timeline
+    container.addEventListener('period-selected', function (evt) {
+        var period = evt.detail.period;
+        filterExemplarsByPeriod(period);
+    });
+
+    // ── Client-side exemplar list period filter ─────────────────────────────
+    var tbody = document.getElementById('exemplars-tbody');
+    var badge = document.getElementById('period-filter-badge');
+    var badgeLabel = document.getElementById('period-filter-label');
+    var clearBtn = document.getElementById('period-filter-clear');
+    var emptyMsg = document.getElementById('exemplars-empty');
+
+    // Store all rows for reset
+    var allRows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
+
+    function filterExemplarsByPeriod(period) {
+        if (!tbody) return;
+        var shown = 0;
+
+        allRows.forEach(function (row) {
+            var rowPeriod = row.dataset.period || '';
+            var match = !period || rowPeriod === period;
+            row.hidden = !match;
+            if (match) shown++;
+        });
+
+        if (badge) {
+            badge.hidden = !period;
+            if (badgeLabel) badgeLabel.textContent = period;
+        }
+
+        if (emptyMsg) emptyMsg.hidden = shown > 0;
+    }
+
+    // If a server-side period filter is active on load, apply it to the badge
+    var serverPeriod = {{ filter_period | tojson }};
+    if (serverPeriod && badge) {
+        badge.hidden = false;
+        if (badgeLabel) badgeLabel.textContent = serverPeriod;
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            filterExemplarsByPeriod('');
+            // Also reset SVG timeline selection
+            if (timeline && typeof timeline.clearSelection === 'function') {
+                timeline.clearSelection();
+            }
+        });
+    }
+}());
+</script>
+{% endif %}
 {% endblock %}

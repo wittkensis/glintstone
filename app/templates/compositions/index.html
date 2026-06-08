@@ -23,74 +23,197 @@
         </div>
     </div>
 
-    {# Search + facets bar #}
-    <form class="compositions-filters" method="GET" action="/compositions">
-        <div class="compositions-filters__search">
-            <input type="text"
-                   name="search"
-                   value="{{ search }}"
-                   placeholder="Search by name or Q-number…"
-                   class="compositions-filters__input"
-                   aria-label="Search compositions">
-            {% if search %}<button type="button" class="compositions-filters__clear" onclick="this.previousElementSibling.value='';this.form.submit()" aria-label="Clear search">×</button>{% endif %}
+    {# ── Layer 1: The Canon ──────────────────────────────────────────────────── #}
+    {% if canon_top and not search %}
+    <section class="compositions-canon" aria-labelledby="canon-heading">
+        <div class="compositions-canon__header">
+            <div>
+                <h2 class="compositions-canon__title" id="canon-heading">The Canon</h2>
+                <p class="compositions-canon__sub">The most-copied texts of Mesopotamian civilization</p>
+            </div>
         </div>
-        <div class="compositions-filters__facets">
-            {% if languages %}
-            <select name="lang" class="compositions-filters__select" aria-label="Filter by language" onchange="this.form.submit()">
-                <option value="">All languages</option>
-                {% for l in languages %}
-                <option value="{{ l }}" {% if lang == l %}selected{% endif %}>{{ l }}</option>
-                {% endfor %}
-            </select>
-            {% endif %}
-            {% if genres %}
-            <select name="genre" class="compositions-filters__select" aria-label="Filter by genre" onchange="this.form.submit()">
-                <option value="">All genres</option>
-                {% for g in genres %}
-                <option value="{{ g }}" {% if genre == g %}selected{% endif %}>{{ g }}</option>
-                {% endfor %}
-            </select>
-            {% endif %}
-            {% if periods %}
-            <select name="period" class="compositions-filters__select" aria-label="Filter by period" onchange="this.form.submit()">
-                <option value="">All periods</option>
-                {% for p in periods %}
-                <option value="{{ p }}" {% if period == p %}selected{% endif %}>{{ p }}</option>
-                {% endfor %}
-            </select>
-            {% endif %}
-            {% if search or lang or genre or period %}
-            <a href="/compositions" class="compositions-filters__reset">Clear filters</a>
-            {% endif %}
-        </div>
-        <div class="compositions-filters__view">
-            <button type="button" class="view-toggle__btn is-active" data-view="card" aria-pressed="true" title="Card view">
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                    <rect x="1" y="1" width="6" height="6" rx="1"/>
-                    <rect x="9" y="1" width="6" height="6" rx="1"/>
-                    <rect x="1" y="9" width="6" height="6" rx="1"/>
-                    <rect x="9" y="9" width="6" height="6" rx="1"/>
-                </svg>
-            </button>
-            <button type="button" class="view-toggle__btn" data-view="table" aria-pressed="false" title="Table view">
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                    <path d="M1 4h14M1 8h14M1 12h14"/>
-                    <path d="M5 2v12"/>
-                </svg>
-            </button>
-        </div>
-    </form>
 
+        <div class="compositions-canon__list" id="canon-list">
+            {% for c in canon_top %}
+            {% set bar_pct = ([((c.exemplar_count or 0) / canon_max * 100), 0.5] | max) %}
+            <a class="canon-row" href="/compositions/{{ c.q_number }}">
+                <div class="canon-row__rank">{{ loop.index }}</div>
+                <div class="canon-row__info">
+                    <span class="canon-row__title">{{ c.designation or c.q_number }}</span>
+                    <span class="canon-row__meta">
+                        {% if c.genre %}{{ c.genre }}{% endif %}
+                        {% if c.genre and c.language %} · {% endif %}
+                        {% if c.language %}{{ c.language }}{% endif %}
+                    </span>
+                </div>
+                <div class="canon-row__bar-wrap">
+                    <div class="canon-row__bar">
+                        <div class="canon-row__bar-fill" style="width: {{ bar_pct }}%"></div>
+                    </div>
+                </div>
+                <div class="canon-row__count">{{ "{:,}".format(c.exemplar_count or 0) }}</div>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if canon_extended | length > 20 %}
+        <div class="compositions-canon__extended" id="canon-extended" hidden>
+            {% for c in canon_extended[20:] %}
+            {% set bar_pct = ([((c.exemplar_count or 0) / canon_max * 100), 0.5] | max) %}
+            <a class="canon-row" href="/compositions/{{ c.q_number }}">
+                <div class="canon-row__rank">{{ loop.index + 20 }}</div>
+                <div class="canon-row__info">
+                    <span class="canon-row__title">{{ c.designation or c.q_number }}</span>
+                    <span class="canon-row__meta">
+                        {% if c.genre %}{{ c.genre }}{% endif %}
+                        {% if c.genre and c.language %} · {% endif %}
+                        {% if c.language %}{{ c.language }}{% endif %}
+                    </span>
+                </div>
+                <div class="canon-row__bar-wrap">
+                    <div class="canon-row__bar">
+                        <div class="canon-row__bar-fill" style="width: {{ bar_pct }}%"></div>
+                    </div>
+                </div>
+                <div class="canon-row__count">{{ "{:,}".format(c.exemplar_count or 0) }}</div>
+            </a>
+            {% endfor %}
+        </div>
+        <button class="compositions-canon__expand" id="canon-expand-btn" type="button"
+                aria-expanded="false" aria-controls="canon-extended">
+            Show top 50 &rarr;
+        </button>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {# ── Layer 2: Browse by Genre ─────────────────────────────────────────────── #}
+    {% if genre_tiles and not search %}
+    <section class="compositions-genres" aria-labelledby="genres-heading">
+        <h2 class="compositions-genres__title" id="genres-heading">Browse by Genre</h2>
+        <div class="compositions-genres__tiles" role="list">
+            <button class="genre-tile is-active"
+                    data-genre=""
+                    role="listitem"
+                    aria-pressed="true"
+                    type="button">
+                <span class="genre-tile__name">All</span>
+                <span class="genre-tile__count">{{ "{:,}".format(composites | length) }}</span>
+            </button>
+            {% for g, count in genre_tiles %}
+            <button class="genre-tile{% if genre == g %} is-active{% endif %}"
+                    data-genre="{{ g }}"
+                    role="listitem"
+                    aria-pressed="{{ 'true' if genre == g else 'false' }}"
+                    type="button">
+                <span class="genre-tile__name">{{ g }}</span>
+                <span class="genre-tile__count">{{ "{:,}".format(count) }}</span>
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {# ── Search + pill filters ──────────────────────────────────────────────── #}
+    <div class="compositions-filters-bar">
+        <form class="compositions-filters" id="compositions-filter-form" method="GET" action="/compositions">
+            <div class="compositions-filters__search">
+                <input type="text"
+                       name="search"
+                       value="{{ search }}"
+                       placeholder="Search by name or Q-number…"
+                       class="compositions-filters__input"
+                       aria-label="Search compositions"
+                       autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off">
+                {% if search %}<button type="button" class="compositions-filters__clear" onclick="this.previousElementSibling.value='';this.form.submit()" aria-label="Clear search">×</button>{% endif %}
+            </div>
+
+            {# Hidden genre field updated by genre tiles #}
+            <input type="hidden" name="genre" id="genre-hidden" value="{{ genre }}">
+
+            {# Language pills #}
+            {% if languages %}
+            <div class="pill-group" role="group" aria-label="Filter by language">
+                <span class="pill-group__label">Language:</span>
+                <button type="button"
+                        class="pill{% if not lang %} is-active{% endif %}"
+                        data-pill-group="lang"
+                        data-pill-value=""
+                        aria-pressed="{{ 'true' if not lang else 'false' }}">All</button>
+                {% for l in languages %}
+                <button type="button"
+                        class="pill{% if lang == l %} is-active{% endif %}"
+                        data-pill-group="lang"
+                        data-pill-value="{{ l }}"
+                        aria-pressed="{{ 'true' if lang == l else 'false' }}">{{ l }}</button>
+                {% endfor %}
+                <input type="hidden" name="lang" id="lang-hidden" value="{{ lang }}">
+            </div>
+            {% endif %}
+
+            {# Period pills #}
+            {% if periods %}
+            <div class="pill-group" role="group" aria-label="Filter by period">
+                <span class="pill-group__label">Period:</span>
+                <button type="button"
+                        class="pill{% if not period %} is-active{% endif %}"
+                        data-pill-group="period"
+                        data-pill-value=""
+                        aria-pressed="{{ 'true' if not period else 'false' }}">All</button>
+                {% for p in periods %}
+                <button type="button"
+                        class="pill{% if period == p %} is-active{% endif %}"
+                        data-pill-group="period"
+                        data-pill-value="{{ p }}"
+                        aria-pressed="{{ 'true' if period == p else 'false' }}">{{ p }}</button>
+                {% endfor %}
+                <input type="hidden" name="period" id="period-hidden" value="{{ period }}">
+            </div>
+            {% endif %}
+
+            {% if search or lang or genre or period %}
+            <div class="compositions-filters__actions">
+                <a href="/compositions" class="compositions-filters__reset">Clear filters</a>
+            </div>
+            {% endif %}
+
+            <div class="compositions-filters__view">
+                <button type="button" class="view-toggle__btn is-active" data-view="card" aria-pressed="true" title="Card view">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <rect x="1" y="1" width="6" height="6" rx="1"/>
+                        <rect x="9" y="1" width="6" height="6" rx="1"/>
+                        <rect x="1" y="9" width="6" height="6" rx="1"/>
+                        <rect x="9" y="9" width="6" height="6" rx="1"/>
+                    </svg>
+                </button>
+                <button type="button" class="view-toggle__btn" data-view="table" aria-pressed="false" title="Table view">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                        <path d="M1 4h14M1 8h14M1 12h14"/>
+                        <path d="M5 2v12"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {# ── Layer 3: Filtered list ───────────────────────────────────────────────── #}
     {% if composites %}
 
-    {% set max_count = composites[0].exemplar_count or 1 %}
+    {% set max_count = (composites | map(attribute='exemplar_count') | select | max) or 1 %}
 
-    {# Card view #}
     <div class="compositions-grid" id="compositions-view" data-view="card">
-        <div class="compositions-cards" role="list">
+
+        {# Card view #}
+        <div class="compositions-cards" role="list" id="compositions-cards-list">
             {% for c in composites %}
-            {% set bar_pct = ([((c.exemplar_count or 0) / max_count * 100) | int, 2] | max) %}
-            <article class="composite-card" role="listitem">
+            {% set bar_pct = ([((c.exemplar_count or 0) / max_count * 100), 0.5] | max) %}
+            <article class="composite-card"
+                     role="listitem"
+                     data-genre="{{ c.genre or '' }}"
+                     data-lang="{{ c.language or '' }}"
+                     data-period="{{ c.period or '' }}">
                 <a class="composite-card__link" href="/compositions/{{ c.q_number }}">
                     <div class="composite-card__eyebrow">{{ c.q_number }}</div>
                     <div class="composite-card__title{% if not c.designation %} is-unnamed{% endif %}">
@@ -111,7 +234,7 @@
                     {% endif %}
                     <div class="composite-card__footer">
                         <div class="composite-card__exemplars">
-                            <span class="composite-card__exemplar-count">{{ c.exemplar_count or 0 }}</span>
+                            <span class="composite-card__exemplar-count">{{ "{:,}".format(c.exemplar_count or 0) }}</span>
                             <span class="composite-card__exemplar-label">{{ 'exemplar' if c.exemplar_count == 1 else 'exemplars' }}</span>
                             <div class="composite-card__exemplar-bar">
                                 <div class="composite-card__exemplar-bar-fill" style="width: {{ bar_pct }}%"></div>
@@ -125,20 +248,26 @@
 
         {# Table view — hidden initially #}
         <div class="composites-table">
-            <table>
+            <table id="composites-table-el">
                 <thead>
                     <tr>
                         <th class="col-q-number">Q-Number</th>
-                        <th class="col-designation">Designation</th>
+                        <th class="col-designation sortable" data-col="designation">Title</th>
                         <th>Language</th>
                         <th>Period</th>
                         <th>Genre</th>
-                        <th class="col-exemplars">Exemplars</th>
+                        <th class="col-exemplars sortable is-sort-active" data-col="exemplar_count" data-dir="desc">
+                            Exemplars <span class="sort-indicator" aria-hidden="true">↓</span>
+                        </th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="composites-table-body">
                     {% for c in composites %}
-                    <tr>
+                    <tr data-genre="{{ c.genre or '' }}"
+                        data-lang="{{ c.language or '' }}"
+                        data-period="{{ c.period or '' }}"
+                        data-exemplar-count="{{ c.exemplar_count or 0 }}"
+                        data-designation="{{ c.designation or '' }}">
                         <td class="col-q-number"><a href="/compositions/{{ c.q_number }}">{{ c.q_number }}</a></td>
                         <td class="col-designation{% if not c.designation %} col-empty{% endif %}">
                             <a href="/compositions/{{ c.q_number }}">{{ c.designation or '—' }}</a>
@@ -146,7 +275,7 @@
                         <td>{{ c.language or '—' }}</td>
                         <td>{{ c.period or '—' }}</td>
                         <td>{{ c.genre or '—' }}</td>
-                        <td class="col-exemplars">{{ c.exemplar_count or 0 }}</td>
+                        <td class="col-exemplars">{{ "{:,}".format(c.exemplar_count or 0) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -171,29 +300,133 @@
 
 <script>
 (function () {
+    'use strict';
+
+    // ── View toggle (card/table) ─────────────────────────────────────────────
     var STORAGE_KEY = 'compositions-view';
     var grid = document.getElementById('compositions-view');
-    var btns = document.querySelectorAll('.view-toggle__btn');
-    if (!grid) return;
+    var viewBtns = document.querySelectorAll('.view-toggle__btn');
+    if (grid) {
+        function setView(view) {
+            grid.setAttribute('data-view', view);
+            viewBtns.forEach(function (btn) {
+                var active = btn.dataset.view === view;
+                btn.classList.toggle('is-active', active);
+                btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+            try { localStorage.setItem(STORAGE_KEY, view); } catch (_) {}
+        }
 
-    function setView(view) {
-        grid.setAttribute('data-view', view);
-        btns.forEach(function (btn) {
-            var active = btn.dataset.view === view;
+        try {
+            var saved = localStorage.getItem(STORAGE_KEY);
+            if (saved === 'table' || saved === 'card') { setView(saved); }
+        } catch (_) {}
+
+        viewBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () { setView(btn.dataset.view); });
+        });
+    }
+
+    // ── Canon expand button ──────────────────────────────────────────────────
+    var expandBtn = document.getElementById('canon-expand-btn');
+    var canonExtended = document.getElementById('canon-extended');
+    if (expandBtn && canonExtended) {
+        expandBtn.addEventListener('click', function () {
+            var isHidden = canonExtended.hidden;
+            canonExtended.hidden = !isHidden;
+            expandBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+            expandBtn.textContent = isHidden ? 'Show less ↑' : 'Show top 50 →';
+        });
+    }
+
+    // ── Pill filter buttons ──────────────────────────────────────────────────
+    // Pills update hidden form inputs and submit, giving server-rendered filtering.
+    // Genre tiles also work this way via the genre-hidden field.
+    var form = document.getElementById('compositions-filter-form');
+
+    function updatePillGroup(groupName, value) {
+        var hiddenInput = document.getElementById(groupName + '-hidden');
+        if (hiddenInput) hiddenInput.value = value;
+
+        document.querySelectorAll('[data-pill-group="' + groupName + '"]').forEach(function (btn) {
+            var active = btn.dataset.pillValue === value;
             btn.classList.toggle('is-active', active);
             btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
-        try { localStorage.setItem(STORAGE_KEY, view); } catch (_) {}
     }
 
-    try {
-        var saved = localStorage.getItem(STORAGE_KEY);
-        if (saved === 'table' || saved === 'card') { setView(saved); }
-    } catch (_) {}
-
-    btns.forEach(function (btn) {
-        btn.addEventListener('click', function () { setView(btn.dataset.view); });
+    document.querySelectorAll('[data-pill-group]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            updatePillGroup(btn.dataset.pillGroup, btn.dataset.pillValue);
+            if (form) form.submit();
+        });
     });
+
+    // ── Genre tiles ──────────────────────────────────────────────────────────
+    document.querySelectorAll('.genre-tile').forEach(function (tile) {
+        tile.addEventListener('click', function () {
+            document.querySelectorAll('.genre-tile').forEach(function (t) {
+                t.classList.remove('is-active');
+                t.setAttribute('aria-pressed', 'false');
+            });
+            tile.classList.add('is-active');
+            tile.setAttribute('aria-pressed', 'true');
+
+            var genreHidden = document.getElementById('genre-hidden');
+            if (genreHidden) genreHidden.value = tile.dataset.genre;
+            if (form) form.submit();
+        });
+    });
+
+    // ── Table sort ───────────────────────────────────────────────────────────
+    var tableBody = document.getElementById('composites-table-body');
+    var sortableHeaders = document.querySelectorAll('th.sortable');
+
+    sortableHeaders.forEach(function (th) {
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', function () {
+            var col = th.dataset.col;
+            var dir = th.dataset.dir === 'asc' ? 'desc' : 'asc';
+
+            // Reset all sort headers
+            sortableHeaders.forEach(function (h) {
+                h.classList.remove('is-sort-active');
+                h.dataset.dir = '';
+                var ind = h.querySelector('.sort-indicator');
+                if (ind) ind.textContent = '';
+            });
+
+            th.classList.add('is-sort-active');
+            th.dataset.dir = dir;
+            var indicator = th.querySelector('.sort-indicator');
+            if (!indicator) {
+                indicator = document.createElement('span');
+                indicator.className = 'sort-indicator';
+                indicator.setAttribute('aria-hidden', 'true');
+                th.appendChild(indicator);
+            }
+            indicator.textContent = dir === 'asc' ? ' ↑' : ' ↓';
+
+            if (!tableBody) return;
+            var rows = Array.from(tableBody.querySelectorAll('tr'));
+            rows.sort(function (a, b) {
+                var aVal, bVal;
+                if (col === 'exemplar_count') {
+                    aVal = parseInt(a.dataset.exemplarCount || '0', 10);
+                    bVal = parseInt(b.dataset.exemplarCount || '0', 10);
+                    return dir === 'asc' ? aVal - bVal : bVal - aVal;
+                } else {
+                    aVal = (a.dataset.designation || '').toLowerCase();
+                    bVal = (b.dataset.designation || '').toLowerCase();
+                    if (aVal < bVal) return dir === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return dir === 'asc' ? 1 : -1;
+                    return 0;
+                }
+            });
+            rows.forEach(function (row) { tableBody.appendChild(row); });
+        });
+    });
+
 }());
 </script>
 {% endblock %}

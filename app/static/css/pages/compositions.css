@@ -2,6 +2,9 @@
  * Compositions page — /compositions list and /compositions/{q} detail.
  * Component-level styles (composite-card, view-toggle, composites-table)
  * live in components/composites.css and are loaded via main.css.
+ *
+ * PRD-017 Task 7: three-layer browse (Canon, Genre tiles, pill filters)
+ * and SVG transmission timeline on composition detail.
  */
 
 /* ==========================================================================
@@ -25,17 +28,243 @@
 }
 
 /* ==========================================================================
-   Filter bar
+   Layer 1 — The Canon
    ========================================================================== */
 
-.compositions-filters {
+.compositions-canon {
+    margin-bottom: var(--space-8);
+    padding: var(--space-6);
+    background: var(--surface-raised);
+    border: var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--elevation-1);
+}
+
+.compositions-canon__header {
     display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.compositions-canon__title {
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-1);
+}
+
+.compositions-canon__sub {
+    font-size: var(--text-sm);
+    color: var(--color-text-subtle);
+    margin: 0;
+}
+
+/* Canon ranked rows */
+.canon-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 180px 68px;
     align-items: center;
     gap: var(--space-3);
+    padding: var(--space-2) var(--space-1);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: background var(--transition-fast);
+    min-width: 0;
+}
+
+.canon-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.canon-row:hover .canon-row__title {
+    color: var(--color-accent);
+}
+
+.canon-row__rank {
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+.canon-row__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.canon-row__title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color var(--transition-fast);
+}
+
+.canon-row__meta {
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.canon-row__bar-wrap {
+    min-width: 0;
+}
+
+.canon-row__bar {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.canon-row__bar-fill {
+    height: 100%;
+    background: var(--color-accent-muted);
+    border-radius: var(--radius-full);
+    min-width: 2px;
+    transition: background var(--transition-fast);
+}
+
+.canon-row:hover .canon-row__bar-fill {
+    background: var(--color-accent);
+}
+
+.canon-row__count {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-accent);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Expand button */
+.compositions-canon__expand {
+    display: block;
+    margin-top: var(--space-4);
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--color-accent);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: color var(--transition-fast);
+}
+
+.compositions-canon__expand:hover {
+    color: var(--color-accent-hover);
+}
+
+@media (max-width: 640px) {
+    .canon-row {
+        grid-template-columns: 20px 1fr 60px;
+    }
+    .canon-row__bar-wrap {
+        display: none;
+    }
+    .compositions-canon {
+        padding: var(--space-4);
+    }
+}
+
+/* ==========================================================================
+   Layer 2 — Browse by Genre tiles
+   ========================================================================== */
+
+.compositions-genres {
+    margin-bottom: var(--space-6);
+}
+
+.compositions-genres__title {
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-3);
+}
+
+.compositions-genres__tiles {
+    display: flex;
     flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.genre-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-raised);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    min-width: 100px;
+    text-align: left;
+}
+
+.genre-tile:hover {
+    border: var(--border-default);
+    box-shadow: var(--elevation-2);
+}
+
+.genre-tile.is-active {
+    border: var(--border-strong);
+    box-shadow: var(--elevation-1);
+    background: rgba(201, 169, 98, 0.06);
+}
+
+.genre-tile__name {
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.genre-tile.is-active .genre-tile__name {
+    color: var(--color-accent);
+}
+
+.genre-tile__count {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Layer 3 — Filter bar with pill buttons
+   ========================================================================== */
+
+.compositions-filters-bar {
     margin-bottom: var(--space-5);
     padding-bottom: var(--space-4);
     border-bottom: 1px solid var(--color-border);
+}
+
+.compositions-filters {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    flex-wrap: wrap;
 }
 
 .compositions-filters__search {
@@ -73,22 +302,50 @@
     padding: 0;
 }
 
-.compositions-filters__facets {
+/* Pill groups */
+.pill-group {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    flex: 1;
+    gap: var(--space-1-5);
     flex-wrap: wrap;
 }
 
-.compositions-filters__select {
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-bg-inset);
+.pill-group__label {
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.pill {
+    padding: var(--space-1) var(--space-3);
+    background: transparent;
     border: 1px solid var(--color-border-subtle);
-    border-radius: var(--radius-sm);
-    color: var(--color-text);
-    font-size: var(--text-sm);
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
     cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+    white-space: nowrap;
+}
+
+.pill:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.pill.is-active {
+    background: var(--color-accent-20);
+    border-color: var(--color-accent-muted);
+    color: var(--color-accent);
+    font-weight: var(--font-weight-medium);
+}
+
+.compositions-filters__actions {
+    display: flex;
+    align-items: center;
 }
 
 .compositions-filters__reset {
@@ -107,6 +364,18 @@
     margin-left: auto;
     display: flex;
     gap: var(--space-1);
+    align-self: flex-start;
+}
+
+/* Keep legacy select style for provenience filter on detail page */
+.compositions-filters__select {
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    cursor: pointer;
 }
 
 /* ==========================================================================
@@ -125,6 +394,19 @@
     gap: var(--space-4);
 }
 
+/* Card redesign — surface-raised bg, elevation-2 hover */
+.compositions-grid .composite-card {
+    background: var(--surface-raised);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+    transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.compositions-grid .composite-card:hover {
+    box-shadow: var(--elevation-2);
+    border: var(--border-default);
+}
+
 /* Make the whole card clickable */
 .composite-card__link {
     display: flex;
@@ -136,6 +418,24 @@
 
 .composite-card__link:hover .composite-card__title {
     color: var(--color-accent);
+}
+
+/* Title: 2 lines max */
+.compositions-grid .composite-card__title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Sort indicator in table header
+   ========================================================================== */
+
+.sort-indicator {
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    margin-left: var(--space-1);
 }
 
 /* ==========================================================================
@@ -150,8 +450,16 @@
 }
 
 /* ==========================================================================
-   Composition detail page
+   Composition detail — Q-number in title
    ========================================================================== */
+
+.composition-detail__q-number {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    letter-spacing: 0.08em;
+    margin-bottom: var(--space-1);
+}
 
 .composition-detail__meta {
     display: flex;
@@ -189,7 +497,7 @@
 }
 
 /* ==========================================================================
-   Transmission History Timeline
+   Transmission History Timeline — SVG container
    ========================================================================== */
 
 .composition-timeline {
@@ -201,8 +509,11 @@
 }
 
 .composition-timeline__title {
-    font-size: var(--text-base);
-    font-weight: 600;
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
     margin: 0 0 var(--space-1);
 }
 
@@ -212,6 +523,19 @@
     margin: 0 0 var(--space-5);
 }
 
+/* SVG wrapper fills width */
+.composition-timeline__svg-wrap {
+    width: 100%;
+    overflow: hidden;
+}
+
+.timeline-empty {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    padding: var(--space-4) 0;
+}
+
+/* Row-based fallback timeline (kept for backward compat) */
 .composition-timeline__rows {
     display: flex;
     flex-direction: column;
@@ -284,6 +608,46 @@
     margin-left: var(--space-1);
 }
 
+/* ==========================================================================
+   Period filter badge (above exemplar table, updated by SVG timeline clicks)
+   ========================================================================== */
+
+.period-filter-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-accent-10);
+    border: 1px solid var(--color-accent-20);
+    border-radius: var(--radius-sm);
+}
+
+.period-filter-badge strong {
+    color: var(--color-accent);
+}
+
+.period-filter-badge__clear {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+
+.period-filter-badge__clear:hover {
+    color: var(--color-text);
+}
+
+/* ==========================================================================
+   Exemplars table
+   ========================================================================== */
+
 .exemplars-table {
     width: 100%;
     border-collapse: collapse;
@@ -318,6 +682,44 @@
 
 .exemplars-table td a:hover {
     text-decoration: underline;
+}
+
+/* ==========================================================================
+   Mobile: timeline compact list
+   ========================================================================== */
+
+.tl-mobile-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.tl-mobile-list__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    border: var(--border-subtle);
+    font-size: var(--text-sm);
+    transition: background var(--transition-fast);
+}
+
+.tl-mobile-list__item:hover {
+    background: var(--color-bg-elevated);
+}
+
+.tl-mobile-list__period {
+    color: var(--color-text-muted);
+}
+
+.tl-mobile-list__count {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-accent);
+    font-weight: var(--font-weight-semibold);
 }
 
 /* ==========================================================================
