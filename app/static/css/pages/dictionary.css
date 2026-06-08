@@ -1,7 +1,7 @@
 /**
  * Dictionary Page Styles
- * Layout: filter sidebar | results list | detail panel
- * Reuses .filter-sidebar, .filter-checkbox, etc. from components/filters.css
+ * Layout: discovery rail | dense lemma list | detail panel
+ * Three-column: rail is fixed-width, results and detail split the remainder.
  */
 
 /* ==========================================================================
@@ -15,7 +15,7 @@
 
 .dict-layout {
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: 220px 1fr;
     height: 100%;
     overflow: hidden;
 }
@@ -25,6 +25,149 @@
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+}
+
+/* ==========================================================================
+   Discovery Rail (left column — replaces checkbox sidebar)
+   ========================================================================== */
+
+.discovery-rail {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--color-bg-deep);
+    border-right: 1px solid var(--color-border);
+}
+
+.discovery-rail__search {
+    padding: var(--space-3);
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.discovery-rail__input {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.discovery-rail__input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.discovery-rail__input::placeholder {
+    color: var(--color-text-subtle);
+}
+
+.discovery-rail__scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-2) 0 var(--space-4);
+}
+
+/* Section */
+.rail-section {
+    margin-bottom: var(--space-1);
+}
+
+.rail-section__heading {
+    padding: var(--space-3) var(--space-3) var(--space-1);
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-subtle);
+    user-select: none;
+}
+
+/* Filter row — rendered as <a> links for server-side navigation */
+.rail-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-1-5) var(--space-3);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    text-align: left;
+    text-decoration: none;
+    transition: background var(--transition-fast), color var(--transition-fast);
+    min-width: 0;
+    line-height: 1.4;
+    /* Reserve space for active left border to avoid layout shift */
+    border-left: 2px solid transparent;
+    box-sizing: border-box;
+}
+
+.rail-item:hover {
+    background: var(--color-bg-subtle);
+    color: var(--color-text);
+}
+
+.rail-item--active {
+    color: var(--color-text);
+    background: var(--color-bg-subtle);
+    border-left-color: var(--color-accent);
+}
+
+.rail-item__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.rail-item__count {
+    flex-shrink: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    margin-left: var(--space-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.rail-item--active .rail-item__count {
+    color: var(--color-text-muted);
+}
+
+/* "Show all" / "Show more" toggle */
+.rail-show-more {
+    display: flex;
+    width: 100%;
+    padding: var(--space-1-5) var(--space-3);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    text-align: left;
+    transition: color var(--transition-fast);
+}
+
+.rail-show-more:hover {
+    color: var(--color-accent-hover);
+}
+
+/* Items hidden behind "show more" — JS toggles the section class */
+.rail-item--overflow {
+    display: none;
+}
+
+.rail-section--expanded .rail-item--overflow {
+    display: flex;
 }
 
 /* ==========================================================================
@@ -61,12 +204,66 @@
 }
 
 /* ==========================================================================
+   Active Filter Pills (above result list)
+   ========================================================================== */
+
+.active-filters {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.active-filters__pills {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2);
+    background: var(--color-accent-15);
+    border: 1px solid var(--color-accent-30);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: background var(--transition-fast);
+}
+
+.filter-pill:hover {
+    background: var(--color-accent-20);
+}
+
+.filter-pill__remove {
+    font-size: var(--text-sm);
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.active-filters__clear {
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--transition-fast);
+}
+
+.active-filters__clear:hover {
+    color: var(--color-text-muted);
+}
+
+/* ==========================================================================
    Results + Detail Split
    ========================================================================== */
 
 .dict-content {
     display: grid;
-    grid-template-columns: minmax(300px, 420px) 1fr;
+    grid-template-columns: minmax(280px, 380px) 1fr;
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -75,10 +272,8 @@
 .dict-results {
     overflow-y: auto;
     border-right: 1px solid var(--color-border);
-    padding: var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
 }
 
 .dict-detail {
@@ -87,122 +282,153 @@
 }
 
 /* ==========================================================================
-   Result Cards (shared)
+   Dense Lemma List (one row per entry, hairline dividers)
    ========================================================================== */
 
-.dict-card {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: var(--space-3) var(--space-4);
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: border-color var(--transition-fast),
-                background var(--transition-fast);
-    color: var(--color-text);
-    font-family: inherit;
-    font-size: inherit;
+.dict-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
-.dict-card:hover {
-    border-color: var(--color-accent);
-    background: var(--color-bg-elevated);
-}
-
-.dict-card--active {
-    border-color: var(--color-accent);
-    background: var(--color-bg-elevated);
-    box-shadow: inset 3px 0 0 var(--color-accent);
-}
-
-.dict-card__header {
+/* Each row is a <button> so it's keyboard-accessible */
+.dict-row {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-2);
-    margin-bottom: var(--space-1);
-}
-
-.dict-card__title {
-    font-weight: var(--font-weight-medium);
-    font-size: var(--text-base);
+    width: 100%;
+    padding: var(--space-2) var(--space-4);
+    background: none;
+    border: none;
+    /* hairline bottom divider */
+    border-bottom: 1px solid var(--color-border-subtle);
+    /* left accent — 2px reserved to prevent layout shift on activation */
+    border-left: 2px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--text-sm);
     color: var(--color-text);
+    text-align: left;
+    gap: var(--space-3);
     min-width: 0;
+    transition: background var(--transition-fast);
+    box-sizing: border-box;
 }
 
-.dict-card__guide {
-    font-weight: normal;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
+.dict-row:hover {
+    background: var(--color-bg-subtle);
 }
 
-.dict-card__badge {
-    flex-shrink: 0;
-    font-size: var(--text-xs);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text-muted);
-    background: var(--color-surface);
-    padding: 1px var(--space-2);
-    border-radius: var(--radius-full);
-    border: 1px solid var(--color-border);
+.dict-row--active {
+    background: var(--color-bg-elevated);
+    border-left-color: var(--color-accent);
 }
 
-.dict-card__meta {
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-1);
-}
-
-.dict-card__glosses {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary, var(--color-text-muted));
-    line-height: 1.4;
-    margin-bottom: var(--space-1);
-    /* Truncate to 2 lines */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+/* Left half: citation form + guide word */
+.dict-row__primary {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+    flex: 1;
     overflow: hidden;
 }
 
-.dict-card__stats {
+/* Citation form — italic per Assyriology typographic convention */
+.dict-row__form {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-style: italic;
+}
+
+.dict-row__guide {
+    color: var(--color-text-muted);
+    font-style: normal;
     font-size: var(--text-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Right half: POS · language · count */
+.dict-row__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1-5);
+    flex-shrink: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    white-space: nowrap;
+}
+
+.dict-row__pos {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-muted);
+}
+
+.dict-row__lang {
     color: var(--color-text-subtle);
 }
 
-/* ==========================================================================
-   Sign Card Specifics
-   ========================================================================== */
+.dict-row__count {
+    color: var(--color-text-subtle);
+    font-variant-numeric: tabular-nums;
+    min-width: 5ch;
+    text-align: right;
+}
 
-.dict-card__glyph {
-    font-size: var(--text-2xl);
-    line-height: 1;
-    margin-right: var(--space-2);
-    font-family: "Noto Sans Cuneiform", serif;
+.dict-row__sep {
+    color: var(--color-border);
+    user-select: none;
 }
 
 /* ==========================================================================
-   Gloss Card Specifics
+   Sign row variant (shows cuneiform glyph)
    ========================================================================== */
 
-.dict-card__langs {
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-1);
+.dict-row--sign .dict-row__glyph {
+    font-size: var(--text-lg);
+    font-family: "Noto Sans Cuneiform", serif;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Empty State
+   ========================================================================== */
+
+.empty-state {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-12) var(--space-5);
+    text-align: center;
+    color: var(--color-text-muted);
 }
 
-.dict-card__lang-name {
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text-secondary, var(--color-text-muted));
+.empty-icon {
+    font-size: 3rem;
+    font-family: "Noto Sans Cuneiform", serif;
+    margin-bottom: var(--space-3);
+    opacity: 0.4;
+}
+
+.empty-state h3 {
+    font-size: var(--text-lg);
+    margin: 0 0 var(--space-2);
+    color: var(--color-text);
+}
+
+.empty-state p {
+    font-size: var(--text-sm);
+    margin: 0;
 }
 
 /* ==========================================================================
-   Detail Panel
+   Detail Panel — right column
    ========================================================================== */
 
 .dict-detail__placeholder {
@@ -250,7 +476,7 @@
     font-family: var(--font-serif);
     font-size: var(--text-xl);
     font-weight: 400;
-    margin: 0 0 var(--space-2);
+    margin: 0 0 var(--space-1);
     color: var(--color-text);
 }
 
@@ -266,7 +492,19 @@
     flex-wrap: wrap;
     font-size: var(--text-sm);
     color: var(--color-text-muted);
+    margin-bottom: var(--space-3);
+}
+
+/* Attestation summary line beneath metadata */
+.dict-detail__attestation-count {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
     margin-bottom: var(--space-5);
+}
+
+.dict-detail__attestation-count strong {
+    color: var(--color-text);
+    font-weight: var(--font-weight-medium);
 }
 
 .dict-detail__section {
@@ -274,11 +512,11 @@
 }
 
 .dict-detail__section h3 {
-    font-size: var(--text-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-semibold);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    color: var(--color-text-subtle);
     margin: 0 0 var(--space-2);
     padding-bottom: var(--space-1);
     border-bottom: 1px solid var(--color-border);
@@ -322,11 +560,104 @@
     gap: var(--space-2);
 }
 
+/* Definition variant rows (source chip + definition text) */
+.detail-variant {
+    display: flex;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-2);
+    align-items: flex-start;
+}
+
+.detail-variant__source {
+    flex-shrink: 0;
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-subtle);
+    background: var(--color-surface);
+    padding: 1px var(--space-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    white-space: nowrap;
+    margin-top: 2px;
+}
+
+.detail-variant__text {
+    color: var(--color-text);
+    line-height: 1.5;
+}
+
+/* Written form chips */
+.detail-forms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1-5);
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.detail-forms__chip {
+    font-size: var(--text-xs);
+    font-style: italic;
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 1px var(--space-2);
+    color: var(--color-text-muted);
+}
+
+/* Top attested artifact rows */
+.detail-artifacts {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.detail-artifact-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-3);
+    padding: var(--space-1-5) 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+    font-size: var(--text-sm);
+}
+
+.detail-artifact-row:last-child {
+    border-bottom: none;
+}
+
+.detail-artifact-row__id {
+    color: var(--color-accent);
+    font-weight: var(--font-weight-medium);
+    flex-shrink: 0;
+}
+
+.detail-artifact-row__desc {
+    color: var(--color-text-muted);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.detail-artifact-row__count {
+    flex-shrink: 0;
+    color: var(--color-text-subtle);
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+}
+
 /* ==========================================================================
    Responsive
    ========================================================================== */
 
 @media (max-width: 1024px) {
+    .dict-layout {
+        grid-template-columns: 200px 1fr;
+    }
+
     .dict-content {
         grid-template-columns: 1fr;
     }
@@ -350,6 +681,10 @@
         overflow: auto;
     }
 
+    .discovery-rail {
+        display: none;
+    }
+
     .dict-level-bar {
         flex-wrap: wrap;
         gap: var(--space-2);
@@ -358,7 +693,7 @@
 }
 
 /* ==========================================================================
-   Source badge — attribution chip used on detail pages
+   Source badge — attribution chip
    ========================================================================== */
 
 .source-badge {
@@ -375,7 +710,7 @@
 }
 
 /* ==========================================================================
-   Lemma detail page
+   Standalone lemma detail page (/dictionary/lemma/...)
    ========================================================================== */
 
 .lemma-detail-page,
