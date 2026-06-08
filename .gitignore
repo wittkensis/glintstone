@@ -129,3 +129,6 @@ www/docs/
 
 # Local design ideation and mockups (not tracked — use wiki for persistent design docs)
 planning/
+
+# Claude Code agent worktrees (created by swarm builds; ephemeral)
+.claude/worktrees/
