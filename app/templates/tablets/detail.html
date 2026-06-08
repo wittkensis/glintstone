@@ -8,8 +8,7 @@
 {% endblock %}
 
 {% block content %}
-{# Back navigation + breadcrumb — gives academics a clear path back to their
-   search results with filters preserved, and orients them within the site. #}
+{# Back navigation — arrow is the affordance; no breadcrumb needed on detail pages. #}
 <div class="page-nav">
     <a href="{{ back_url }}" class="back-link">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -17,13 +16,6 @@
         </svg>
         Tablets
     </a>
-    <nav class="breadcrumb" aria-label="breadcrumb">
-        <a href="/" class="breadcrumb__link">Home</a>
-        <span class="breadcrumb__sep" aria-hidden="true">/</span>
-        <a href="/tablets" class="breadcrumb__link">Tablets</a>
-        <span class="breadcrumb__sep" aria-hidden="true">/</span>
-        <span class="breadcrumb__current" aria-current="page">{{ p_number }}</span>
-    </nav>
 </div>
 
 <header class="page-header tablet-header">
@@ -65,93 +57,115 @@
     </div>
     {% endif %}
 
+    {# Header main row: P-number (h1) + pipeline indicator right-aligned #}
     <div class="page-header-main">
-        <div class="page-header-title">
-            <h1>{{ tablet.p_number }}</h1>
-            {# Copy button: icon-only, copies P-number to clipboard for citation.
-               data-copied="true" is toggled transiently by JS so CSS can show feedback. #}
-            <button class="btn btn--icon btn-copy-pnum"
-                    id="copy-pnum-btn"
-                    data-pnum="{{ p_number }}"
-                    title="Copy P-number for citation"
-                    aria-label="Copy P-number {{ p_number }}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        <div class="page-header-title tablet-header__title-row">
+            <h1 class="tablet-header__pnumber">{{ tablet.p_number }}</h1>
+            <div class="tablet-header__pipeline-inline">
+                {% set pipe = tablet.pipeline or {} %}
+                {{ pipeline(pipe, 'inline') }}
+                {{ ocr_badge(tablet.graphemic_complete) }}
+            </div>
+        </div>
+        <div class="page-header-actions tablet-header__actions">
+            {% if current_user %}
+            <button class="btn btn--icon bookmark-btn {% if saved_item_id %}is-saved{% endif %}"
+                    id="bookmark-btn"
+                    data-p-number="{{ tablet.p_number }}"
+                    data-saved-id="{{ saved_item_id or '' }}"
+                    title="{{ 'Remove bookmark' if saved_item_id else 'Bookmark this artifact' }}"
+                    aria-pressed="{{ 'true' if saved_item_id else 'false' }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="{% if saved_item_id %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                 </svg>
             </button>
-        </div>
-        <div class="page-header-actions">
-                    {% set pipe = tablet.pipeline or {} %}
-                    {{ pipeline(pipe, 'inline') }}
-                    {{ ocr_badge(tablet.graphemic_complete) }}
+            {% endif %}
 
-                    {% if current_user %}
-                    <button class="btn btn--icon bookmark-btn {% if saved_item_id %}is-saved{% endif %}"
-                            id="bookmark-btn"
-                            data-p-number="{{ tablet.p_number }}"
-                            data-saved-id="{{ saved_item_id or '' }}"
-                            title="{{ 'Remove bookmark' if saved_item_id else 'Bookmark this artifact' }}"
-                            aria-pressed="{{ 'true' if saved_item_id else 'false' }}">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="{% if saved_item_id %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2">
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            {% if tablet.composites %}
+            {% set _c0 = tablet.composites[0] %}
+            {% set _extra = (tablet.composites | length) - 1 %}
+            <button class="btn btn--icon-left btn--toggle" id="composite-toggle"
+                    aria-expanded="false" aria-controls="composite-panel"
+                    title="View composition">
+                <span>{{ _c0.designation or _c0.q_number }}{% if _extra > 0 %} + {{ _extra }} more{% endif %}</span>
+            </button>
+            {% endif %}
+
+            <div class="actions-menu">
+                <button class="btn btn--icon actions-menu__trigger" aria-haspopup="true" aria-expanded="false">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+                    </svg>
+                </button>
+                <div class="actions-menu__dropdown">
+                    {# Copy P-number moved into overflow menu #}
+                    <button class="actions-menu__item actions-menu__item--btn"
+                            id="copy-pnum-btn"
+                            data-pnum="{{ p_number }}"
+                            aria-label="Copy P-number {{ p_number }}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
+                        Copy P-number
                     </button>
-                    {% endif %}
-
-                    {% if tablet.composites %}
-                    {% set _c0 = tablet.composites[0] %}
-                    {% set _extra = (tablet.composites | length) - 1 %}
-                    <button class="btn btn--icon-left btn--toggle" id="composite-toggle"
-                            aria-expanded="false" aria-controls="composite-panel"
-                            title="View composition">
-                        <span>{{ _c0.designation or _c0.q_number }}{% if _extra > 0 %} + {{ _extra }} more{% endif %}</span>
-                    </button>
-                    {% endif %}
-
-                    <div class="actions-menu">
-                        <button class="btn btn--icon actions-menu__trigger" aria-haspopup="true" aria-expanded="false">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
-                            </svg>
-                        </button>
-                        <div class="actions-menu__dropdown">
-                            <a href="https://cdli.earth/artifacts/{{ tablet.p_number[1:] | int }}"
-                               target="_blank" class="actions-menu__item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                                </svg>
-                                View on CDLI
-                            </a>
-                            <a href="https://cdli.earth/artifacts/{{ tablet.p_number[1:] | int }}/history"
-                               target="_blank" class="actions-menu__item">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                                </svg>
-                                View history on CDLI
-                            </a>
-                        </div>
+                    <a href="https://cdli.earth/artifacts/{{ tablet.p_number[1:] | int }}"
+                       target="_blank" class="actions-menu__item">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                        View on CDLI
+                    </a>
+                    <a href="https://cdli.earth/artifacts/{{ tablet.p_number[1:] | int }}/history"
+                       target="_blank" class="actions-menu__item">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        View history on CDLI
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    {# Primary Metadata #}
+    {# Identity line: designation + museum number, muted, below P-number #}
+    {% if tablet.designation or tablet.museum_no %}
+    <p class="tablet-header__identity">
+        {% if tablet.designation %}{{ tablet.designation }}{% endif %}
+        {% if tablet.designation and tablet.museum_no %} &middot; {% endif %}
+        {% if tablet.museum_no %}{{ tablet.museum_no }}{% endif %}
+    </p>
+    {% endif %}
+
+    {# Metadata line: period · genre · composition (linked) #}
+    {% set meta_parts = [] %}
+    {% if tablet.period %}{% set _ = meta_parts.append(tablet.period) %}{% endif %}
+    {% if tablet.genre %}{% set _ = meta_parts.append(tablet.genre) %}{% endif %}
+    {% if tablet.composites %}
+    {% set primary_comp = tablet.composites[0] %}
+    {% set comp_name = primary_comp.designation or primary_comp.q_number %}
+    {% endif %}
+    {% if meta_parts or tablet.composites %}
+    <p class="tablet-header__meta-line">
+        {{ meta_parts | join(' &middot; ') | safe }}
+        {% if tablet.composites %}
+        {% if meta_parts %} &middot; {% endif %}
+        <a class="tablet-header__comp-link" href="/compositions/{{ tablet.composites[0].q_number }}">{{ tablet.composites[0].designation or tablet.composites[0].q_number }}</a>
+        {% endif %}
+    </p>
+    {% endif %}
+
+    {# Primary Metadata (expandable secondary details) #}
     {% set has_attribution = tablet.atf_source or tablet.translation_source or tablet.publication_author %}
     {% set has_oracc_credits = tablet.oracc_credits and tablet.oracc_credits | length > 0 %}
-    {% set has_secondary = tablet.designation or tablet.museum_no or tablet.genre or (tablet.width and tablet.height) or has_attribution or has_oracc_credits %}
+    {% set has_secondary = (tablet.width and tablet.height) or has_attribution or has_oracc_credits %}
     <div class="page-header-metadata tablet-meta">
             <dl class="tablet-meta__row">
                 {% if tablet.language %}
                 <div class="meta-item">
                     <dt>Language</dt>
                     <dd>{{ tablet.language }}</dd>
-                </div>
-                {% endif %}
-                {% if tablet.period %}
-                <div class="meta-item">
-                    <dt>Period</dt>
-                    <dd>{{ tablet.period }}</dd>
                 </div>
                 {% endif %}
                 {% if tablet.provenience %}
@@ -187,24 +201,6 @@
 
             {% if has_secondary %}
             <dl class="tablet-meta__secondary" id="meta-secondary">
-                {% if tablet.designation %}
-                <div class="meta-item">
-                    <dt>Designation</dt>
-                    <dd>{{ tablet.designation }}</dd>
-                </div>
-                {% endif %}
-                {% if tablet.museum_no %}
-                <div class="meta-item">
-                    <dt>Museum</dt>
-                    <dd>{{ tablet.museum_no }}</dd>
-                </div>
-                {% endif %}
-                {% if tablet.genre %}
-                <div class="meta-item">
-                    <dt>Genre</dt>
-                    <dd>{{ tablet.genre }}</dd>
-                </div>
-                {% endif %}
                 {% if tablet.width and tablet.height %}
                 <div class="meta-item">
                     <dt>Dimensions</dt>
@@ -281,6 +277,9 @@
 
         <div class="viewer-panel">
             <section class="tablet-image">
+                {# Surface selector — rendered by JS when images API returns multiple images #}
+                <div class="image-surface-selector" id="image-surface-selector" hidden></div>
+
                 <div class="zoombox" id="tablet-zoombox"
                      data-p-number="{{ tablet.p_number }}"
                      data-api-url="{{ api_url }}">
@@ -310,6 +309,9 @@
                         </div>
                     </div>
                 </div>
+
+                {# Image attribution — populated by JS from images API response #}
+                <div class="image-attribution" id="image-attribution"></div>
 
                 <div class="image-controls">
                     <p class="image-source" id="image-source"></p>
@@ -423,8 +425,8 @@
 {% endif %}
 <script>
 (function() {
-    // P-number copy button — copies the P-number to clipboard.
-    // Shows transient data-copied="true" so CSS can animate a checkmark/confirmation.
+    // P-number copy button (now inside overflow menu).
+    // Shows transient data-copied="true" so CSS can show feedback.
     const copyBtn = document.getElementById('copy-pnum-btn');
     if (!copyBtn) return;
     const pnum = copyBtn.dataset.pnum;
@@ -438,6 +440,121 @@
                 // Clipboard API unavailable (e.g. non-HTTPS). Fallback: no-op.
             });
     });
+})();
+</script>
+<script>
+// Image surface selector + attribution.
+// Fetches /api/v2/artifacts/{p}/images to get the image list with metadata.
+// If multiple images exist, renders surface-selector tabs above the zoombox.
+// Populates #image-attribution with license/source info.
+(function() {
+    const zoomboxEl = document.getElementById('tablet-zoombox');
+    if (!zoomboxEl) return;
+
+    const pNumber = zoomboxEl.dataset.pNumber;
+    const apiUrl = zoomboxEl.dataset.apiUrl;
+    if (!pNumber || !apiUrl) return;
+
+    const selectorEl = document.getElementById('image-surface-selector');
+    const attributionEl = document.getElementById('image-attribution');
+
+    // State: current image list from API
+    let imageList = [];
+    let activeIndex = 0;
+
+    function getSurfaceLabel(img, idx) {
+        // Prefer surface/view field; fall back to generic label
+        return img.surface || img.view || ('Image ' + (idx + 1));
+    }
+
+    function renderAttribution(img) {
+        if (!attributionEl) return;
+        if (!img) {
+            attributionEl.textContent = '';
+            return;
+        }
+
+        let html = '';
+        if (img.license) {
+            const licenseText = img.license_name || 'CC BY 4.0';
+            const sourceText = 'Cuneiform Digital Library Initiative (CDLI)';
+            if (img.source_url) {
+                html = `Image: <a href="${img.source_url}" target="_blank" rel="noopener noreferrer">${sourceText}</a> &middot; ${licenseText}`;
+            } else {
+                html = `Image: ${sourceText} &middot; ${licenseText}`;
+            }
+        } else if (img.source_url) {
+            html = `Source: <a href="${img.source_url}" target="_blank" rel="noopener noreferrer">CDLI</a>`;
+        } else {
+            html = 'Source: CDLI';
+        }
+
+        if (img.photographer) {
+            html += ` &middot; Photo: ${img.photographer}`;
+        }
+
+        attributionEl.innerHTML = html;
+    }
+
+    function switchToImage(idx) {
+        activeIndex = idx;
+        const img = imageList[idx];
+        if (!img) return;
+
+        // Update active tab
+        const tabs = selectorEl ? selectorEl.querySelectorAll('.surface-tab') : [];
+        tabs.forEach((tab, i) => tab.classList.toggle('active', i === idx));
+
+        // Switch zoombox image — TabletPage.zoombox is set by tablet-detail.js
+        // We wait for it to be available since scripts load in order
+        const zb = window.TabletPage && window.TabletPage.zoombox;
+        if (zb && img.url) {
+            zb.loadImage({ local: img.url });
+        }
+
+        renderAttribution(img);
+    }
+
+    function renderSurfaceSelector(images) {
+        if (!selectorEl) return;
+
+        if (images.length <= 1) {
+            selectorEl.hidden = true;
+            return;
+        }
+
+        selectorEl.hidden = false;
+        selectorEl.innerHTML = images.map((img, idx) => {
+            const label = getSurfaceLabel(img, idx);
+            return `<button class="surface-tab${idx === 0 ? ' active' : ''}" data-index="${idx}">${label}</button>`;
+        }).join('');
+
+        selectorEl.querySelectorAll('.surface-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.dataset.index, 10);
+                switchToImage(idx);
+            });
+        });
+    }
+
+    // Fetch images API — note: fields (source, license, photographer) may not
+    // be populated yet if the API worker hasn't added them. We degrade gracefully.
+    fetch(`${apiUrl}/artifacts/${pNumber}/images`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+            if (!data) return;
+            // API may return { images: [...] } or a bare array
+            imageList = Array.isArray(data) ? data : (data.images || []);
+
+            if (imageList.length === 0) return;
+
+            renderSurfaceSelector(imageList);
+            // Show attribution for first image (zoombox loads first image via tablet-detail.js)
+            renderAttribution(imageList[0]);
+        })
+        .catch(() => {
+            // Images API not available or errored — attribution stays empty, no selector shown
+        });
 })();
 </script>
 <script src="/static/js/zoombox.js"></script>
