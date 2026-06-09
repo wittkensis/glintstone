@@ -34,6 +34,7 @@ Open `gs-orient-project/SKILL.md` for the routing map. That skill auto-loads at 
 | `gs-curator-docs` | Before any `git commit` or `git push` (freshness check) |
 | `gs-audit-hardening` | Hardening pass, audit, "review the deployment", "run the audit" |
 | `gs-audit-frontend` | Frontend/design audit, "design system", "css audit", "clean up the frontend", "frontend entropy" |
+| `giddyup` | Backlog triage — "what's next?", "what should I work on?", "prioritize", "sequence the backlog" |
 
 ## Tech stack (quick)
 
@@ -51,7 +52,7 @@ CLAUDE.md                       This file
 data-model/                     Schema YAMLs + migrate.py + migrations/ (NNN_*.sql)
 ingestion/                      ETL framework
 ops/                            Deployment, local dev, hooks
-.claude/skills/gs-*/            Project-local knowledge skills
+.claude/skills/                 Project-local knowledge skills (gs-*, giddyup)
 docs/                           Persona HTML pages + interactive prototypes (no markdown — see wiki)
 ```
 
