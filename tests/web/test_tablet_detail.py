@@ -184,13 +184,17 @@ def test_p_number_present_in_rendered_page(client):
     assert "P001282" in r.text
 
 
-def test_breadcrumb_renders(client):
-    """Breadcrumb shows Home / Tablets / P-number."""
+def test_back_nav_renders(client):
+    """Detail pages use a back-link affordance, not a breadcrumb.
+
+    The header redesign (commit fc6d115) replaced the breadcrumb with an
+    arrow back-link to /tablets — see the comment in tablets/detail.html.
+    """
     r = client.get("/tablets/P001282")
     if r.status_code != 200:
         pytest.skip(f"detail page returned {r.status_code}")
-    assert 'aria-label="breadcrumb"' in r.text
-    assert "breadcrumb__current" in r.text
+    assert 'class="back-link"' in r.text
+    assert "Tablets" in r.text
     assert "P001282" in r.text
 
 
