@@ -137,6 +137,15 @@ done
 # Migrations ship as part of data-model/ (already synced above).
 rsync_to "$PROJECT_DIR/requirements.txt" "$REMOTE:$RELEASE_DIR/requirements.txt" >/dev/null
 
+# The agentic summary/interpretation agents load their prompt templates at runtime
+# from <release>/.claude/skills/gs-expert-agentic/prompts/ (core/agent/synthesis.py
+# resolves the path relative to the release root). The broader .claude/ skill tree is
+# dev-only and stays excluded above — but these prompt files are production runtime data.
+echo "Syncing agentic prompt templates..."
+ssh_run "mkdir -p $RELEASE_DIR/.claude/skills/gs-expert-agentic/prompts"
+rsync_to "$PROJECT_DIR/.claude/skills/gs-expert-agentic/prompts/" \
+    "$REMOTE:$RELEASE_DIR/.claude/skills/gs-expert-agentic/prompts/" >/dev/null
+
 # --- Install dependencies inside the release's venv ---
 echo "Installing dependencies into release venv..."
 ssh_run "cd $RELEASE_DIR && python3 -m venv venv && venv/bin/pip install --quiet --upgrade pip && venv/bin/pip install --quiet -r requirements.txt"
