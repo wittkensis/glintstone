@@ -769,6 +769,249 @@ class ArtifactRepository(BaseRepository):
 
         return {"p_number": p_number, "competing": result}
 
+    def get_surfaces(self, p_number: str) -> list[dict]:
+        """List surfaces that actually have content lines, in canonical order.
+
+        Returns one row per surface_type present in text_lines for this
+        artifact, with a human label and line count. Surfaces with no
+        content lines are excluded (PRD FR-6: only show tabs with content).
+        """
+        rows = self.fetch_all(
+            """
+            SELECT
+                COALESCE(s.surface_type, 'obverse') AS surface_type,
+                COUNT(tl.id) FILTER (
+                    WHERE tl.is_ruling = 0 AND tl.is_blank = 0
+                ) AS line_count
+            FROM text_lines tl
+            LEFT JOIN surfaces s ON tl.surface_id = s.id
+            WHERE tl.p_number = %(p_number)s
+            GROUP BY COALESCE(s.surface_type, 'obverse')
+            """,
+            {"p_number": p_number},
+        )
+        # Canonical surface ordering for tabs
+        order = {
+            "obverse": 0,
+            "reverse": 1,
+            "top_edge": 2,
+            "bottom_edge": 3,
+            "left_edge": 4,
+            "right_edge": 5,
+            "seal": 6,
+        }
+        labels = {
+            "obverse": "Obverse",
+            "reverse": "Reverse",
+            "top_edge": "Top Edge",
+            "bottom_edge": "Bottom Edge",
+            "left_edge": "Left Edge",
+            "right_edge": "Right Edge",
+            "seal": "Seal",
+        }
+        result = [
+            {
+                "surface_type": r["surface_type"],
+                "label": labels.get(r["surface_type"], r["surface_type"].title()),
+                "line_count": r["line_count"] or 0,
+            }
+            for r in rows
+            if (r["line_count"] or 0) > 0
+        ]
+        result.sort(key=lambda s: order.get(s["surface_type"], 99))
+        return result
+
+    def get_lines(
+        self,
+        p_number: str,
+        surface: str | None = None,
+        translation_lang: str = "en",
+    ) -> dict:
+        """Structured Surface → Column → Line → Token bundle for the builder.
+
+        Joins the full translation chain (token readings, lemmatizations,
+        normalization, and line-level translations) into the nested shape the
+        Translation Builder consumes. Picks the consensus token reading when
+        one exists, otherwise the first reading. One lemmatization per token
+        (consensus first). Translations are matched per text_line in the
+        requested language, falling back to whatever language is available.
+        """
+        params: dict = {"p_number": p_number}
+        surface_clause = ""
+        if surface:
+            surface_clause = "AND COALESCE(s.surface_type, 'obverse') = %(surface)s"
+            params["surface"] = surface
+
+        # One row per (line, token). DISTINCT ON collapses multiple readings /
+        # lemmatizations to the consensus (or first) per token.
+        rows = self.fetch_all(
+            f"""
+            SELECT DISTINCT ON (tl.id, t.id)
+                tl.id              AS line_id,
+                tl.line_number,
+                tl.column_number,
+                tl.is_ruling,
+                tl.is_blank,
+                COALESCE(s.surface_type, 'obverse') AS surface_type,
+                t.id               AS token_id,
+                t.position,
+                t.raw_form,
+                t.lang             AS token_lang,
+                tr.form            AS reading_form,
+                tr.reading,
+                tr.sign_function,
+                tr.damage,
+                l.citation_form,
+                l.guide_word,
+                l.sense,
+                l.pos,
+                l.epos,
+                l.norm,
+                l.language         AS lemma_language
+            FROM text_lines tl
+            LEFT JOIN surfaces s ON tl.surface_id = s.id
+            LEFT JOIN tokens t ON t.line_id = tl.id
+            LEFT JOIN token_readings tr ON tr.token_id = t.id
+            LEFT JOIN lemmatizations l ON l.token_id = t.id
+            WHERE tl.p_number = %(p_number)s
+              {surface_clause}
+            ORDER BY tl.id, t.id,
+                     tr.is_consensus DESC NULLS LAST, tr.id,
+                     l.is_consensus DESC NULLS LAST, l.id
+            """,
+            params,
+        )
+
+        # Line-level translations, indexed by line_id, preferring the
+        # requested language. Exclude 'ts' (normalization) — that rides on
+        # the line itself below.
+        trans_rows = self.fetch_all(
+            """
+            SELECT t.line_id, t.translation, t.language, t.source
+            FROM translations t
+            WHERE t.p_number = %(p_number)s
+              AND t.line_id IS NOT NULL
+              AND t.language != 'ts'
+            ORDER BY t.line_id, t.id
+            """,
+            {"p_number": p_number},
+        )
+        trans_by_line: dict[int, dict[str, dict]] = {}
+        for tr in trans_rows:
+            trans_by_line.setdefault(tr["line_id"], {})[tr["language"] or "en"] = {
+                "text": tr["translation"],
+                "source": tr["source"],
+            }
+
+        # Normalization (ts) text, indexed by line_id.
+        norm_rows = self.fetch_all(
+            """
+            SELECT t.line_id, t.translation
+            FROM translations t
+            WHERE t.p_number = %(p_number)s
+              AND t.line_id IS NOT NULL
+              AND t.language = 'ts'
+            ORDER BY t.line_id, t.id
+            """,
+            {"p_number": p_number},
+        )
+        norm_by_line = {nr["line_id"]: nr["translation"] for nr in norm_rows}
+
+        # All languages present, for the language selector.
+        languages = sorted(
+            {tr["language"] or "en" for tr in trans_rows},
+            key=lambda lng: (lng != "en", lng),
+        )
+
+        def pick_translation(line_id: int) -> dict | None:
+            langs = trans_by_line.get(line_id)
+            if not langs:
+                return None
+            if translation_lang in langs:
+                chosen_lang = translation_lang
+            elif "en" in langs:
+                chosen_lang = "en"
+            else:
+                chosen_lang = next(iter(langs))
+            entry = langs[chosen_lang]
+            return {
+                "text": entry["text"],
+                "language": chosen_lang,
+                "source": entry["source"],
+            }
+
+        # Group rows: column_number → line_id → line dict (with token list).
+        columns: dict[int, dict] = {}
+        line_seen: dict[int, dict] = {}
+
+        for r in rows:
+            col_no = r["column_number"] or 0
+            col = columns.setdefault(
+                col_no, {"column": col_no, "_lines": {}, "_order": []}
+            )
+
+            line_id = r["line_id"]
+            line = line_seen.get(line_id)
+            if line is None:
+                is_structural = bool(r["is_ruling"]) or bool(r["is_blank"])
+                line = {
+                    "line_id": line_id,
+                    "line_number": (r["line_number"] or "").rstrip("."),
+                    "is_structural": is_structural,
+                    "tokens": [],
+                    "normalization": norm_by_line.get(line_id),
+                    "translation": pick_translation(line_id),
+                }
+                line_seen[line_id] = line
+                col["_lines"][line_id] = line
+                col["_order"].append(line_id)
+
+            # A line with no tokens yields a single all-NULL token row.
+            if r["token_id"] is None:
+                continue
+
+            sign_function = r["sign_function"]
+            reading = r["reading"] or r["reading_form"]
+            line["tokens"].append(
+                {
+                    "position": r["position"],
+                    "token_id": r["token_id"],
+                    "raw_form": r["raw_form"] or r["reading_form"],
+                    "reading": reading,
+                    "sign_function": sign_function,
+                    "damage": r["damage"] or "intact",
+                    "language": r["token_lang"] or r["lemma_language"],
+                    "lemma": (
+                        {
+                            "citation_form": r["citation_form"],
+                            "guide_word": r["guide_word"],
+                            "sense": r["sense"],
+                            "pos": r["pos"],
+                            "epos": r["epos"],
+                            "language": r["lemma_language"],
+                            "norm": r["norm"],
+                        }
+                        if r["citation_form"] or r["guide_word"]
+                        else None
+                    ),
+                }
+            )
+
+        # Flatten to ordered structure.
+        out_columns = []
+        for col_no in sorted(columns.keys()):
+            col = columns[col_no]
+            lines = [col["_lines"][lid] for lid in col["_order"]]
+            out_columns.append({"column": col_no, "lines": lines})
+
+        return {
+            "p_number": p_number,
+            "surface": surface,
+            "languages": languages,
+            "translation_lang": translation_lang,
+            "columns": out_columns,
+        }
+
     def debug_all(self, p_number: str) -> dict | None:
         """Aggregate every data layer for a single artifact."""
         artifact = self.find_by_p_number(p_number)

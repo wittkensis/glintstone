@@ -1,0 +1,435 @@
+/**
+ * Translation Builder
+ * Purpose: Unified Surface → Column → Line → Token panel on the tablet detail
+ *          page. Composes lemmatization, normalization, and translation layers.
+ * Used on: Tablet detail pages.
+ * Dependencies: core/tokens.css
+ * JavaScript: static/js/translation-builder.js
+ * Required classes for JS: .translation-builder, .tb-tabs, .tb-body,
+ *   .tb-details-toggle, .tb-langswitch-toggle, .tb-lang__select
+ */
+
+.translation-builder {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-top: var(--space-6);
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+
+.tb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+}
+
+.tb-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.tb-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.tb-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.tb-toggle__input {
+    accent-color: var(--color-accent);
+    cursor: pointer;
+}
+
+.tb-lang {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.tb-lang__select {
+    background: var(--color-bg-inset);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2);
+    font-size: 0.8rem;
+}
+
+/* ── Surface tabs ────────────────────────────────────────── */
+
+.tb-tabs {
+    display: flex;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-4) 0;
+    border-bottom: 1px solid var(--color-border);
+    overflow-x: auto;
+}
+
+.tb-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.tb-tab:hover {
+    color: var(--color-text);
+}
+
+.tb-tab[aria-selected="true"] {
+    color: var(--color-text);
+    border-bottom-color: var(--color-accent);
+}
+
+.tb-tab__count {
+    font-size: 0.7rem;
+    color: var(--color-text-subtle);
+    background: var(--color-bg-inset);
+    border-radius: var(--radius-full);
+    padding: 0 var(--space-2);
+    min-width: 1.4em;
+    text-align: center;
+}
+
+/* ── Body ────────────────────────────────────────────────── */
+
+.tb-body {
+    position: relative;
+    padding: var(--space-3) var(--space-4);
+    overflow-x: auto;
+}
+
+.tb-loading,
+.tb-empty {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.tb-column + .tb-column {
+    margin-top: var(--space-5);
+}
+
+.tb-column__header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-2);
+}
+
+/* ── Line row ────────────────────────────────────────────── */
+
+.tb-line {
+    display: grid;
+    grid-template-columns: 2.75rem 1fr minmax(0, 18rem);
+    gap: var(--space-3);
+    align-items: start;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.tb-line__gutter {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding-top: 2px;
+}
+
+.tb-line__number {
+    font-size: 0.7rem;
+    color: var(--color-text-subtle);
+    font-variant-numeric: tabular-nums;
+    min-width: 1.2em;
+}
+
+.tb-line__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: var(--color-text-subtle);
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+    transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.tb-line__toggle:hover {
+    color: var(--color-text);
+    background: var(--color-bg-inset);
+}
+
+.tb-line--details .tb-line__toggle,
+.tb-body--details .tb-line__toggle {
+    transform: rotate(180deg);
+    color: var(--color-accent);
+}
+
+.tb-line__main {
+    min-width: 0;
+}
+
+.tb-line__tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: flex-end;
+}
+
+/* Horizontal ruling between sections of a tablet */
+.tb-rule {
+    height: 1px;
+    background: var(--color-border);
+    margin: var(--space-2) 0;
+}
+
+/* ── Token card ──────────────────────────────────────────── */
+
+.tb-token {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.tb-token:hover,
+.tb-token:focus-visible {
+    background: var(--color-bg-inset);
+    border-color: var(--color-border);
+    outline: none;
+}
+
+.tb-token__form {
+    font-size: 0.9rem;
+    color: var(--color-text);
+    line-height: 1.2;
+}
+
+/* Logograms render uppercase per ATF convention */
+.tb-token--logographic .tb-token__form {
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.tb-token--determinative .tb-token__form {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    vertical-align: super;
+}
+
+.tb-token__reading {
+    font-size: 0.65rem;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: none;
+}
+
+/* Lemma block — hidden until Show Details (global or per-line) */
+.tb-token__lemma {
+    display: none;
+    flex-direction: column;
+    margin-top: 2px;
+    padding-top: 2px;
+    border-top: 1px dashed var(--color-border);
+}
+
+.tb-token__cf {
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+.tb-token__gw {
+    font-size: 0.7rem;
+    color: var(--color-accent);
+}
+
+.tb-token__pos {
+    font-size: 0.6rem;
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.tb-body--details .tb-token__reading,
+.tb-line--details .tb-token__reading,
+.tb-body--details .tb-token__lemma,
+.tb-line--details .tb-token__lemma {
+    display: flex;
+}
+
+.tb-body--details .tb-token,
+.tb-line--details .tb-token {
+    background: var(--color-bg-inset);
+    border-color: var(--color-border-subtle);
+}
+
+/* ── Damage states ───────────────────────────────────────── */
+
+.tb-token--damage-damaged .tb-token__form {
+    color: var(--color-warning);
+}
+
+.tb-token--damage-missing .tb-token__form,
+.tb-token--damage-illegible .tb-token__form {
+    color: var(--color-text-subtle);
+    font-style: italic;
+}
+
+.tb-token--damage-missing {
+    opacity: 0.7;
+}
+
+/* ── Language switch highlight ───────────────────────────── */
+
+.tb-token--lang-sux .tb-token__form {
+    color: var(--color-lang-sux, var(--color-lapis));
+}
+
+.tb-token--lang-akk .tb-token__form {
+    color: var(--color-lang-akk, var(--color-clay));
+}
+
+.tb-body--lang-switches .tb-token--lang-switch {
+    border-left: 2px solid var(--color-accent);
+    background: var(--color-accent-muted, var(--color-bg-inset));
+}
+
+/* ── Normalization + translation columns ─────────────────── */
+
+.tb-line__norm {
+    margin-top: var(--space-1);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+    display: none;
+}
+
+.tb-body--details .tb-line__norm,
+.tb-line--details .tb-line__norm {
+    display: block;
+}
+
+.tb-line__trans-col {
+    min-width: 0;
+}
+
+.tb-line__translation {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.tb-line__trans-source {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.65rem;
+    color: var(--color-text-subtle);
+}
+
+/* ── Token popover ───────────────────────────────────────── */
+
+.tb-pop {
+    position: absolute;
+    z-index: 40;
+    min-width: 11rem;
+    max-width: 18rem;
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-bg-deep, var(--color-surface));
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast);
+}
+
+.tb-pop--visible {
+    opacity: 1;
+}
+
+.tb-pop__list {
+    margin: 0;
+    display: grid;
+    gap: var(--space-1);
+}
+
+.tb-pop__row {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    gap: var(--space-2);
+    font-size: 0.72rem;
+}
+
+.tb-pop__row dt {
+    color: var(--color-text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.62rem;
+    align-self: center;
+}
+
+.tb-pop__row dd {
+    margin: 0;
+    color: var(--color-text);
+}
+
+/* ── Utility ─────────────────────────────────────────────── */
+
+.translation-builder .is-hidden {
+    display: none !important;
+}
+
+@media (max-width: 720px) {
+    .tb-line {
+        grid-template-columns: 2.25rem 1fr;
+    }
+    .tb-line__trans-col {
+        grid-column: 1 / -1;
+        padding-left: 2.25rem;
+    }
+}

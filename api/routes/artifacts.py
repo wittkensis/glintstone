@@ -241,6 +241,31 @@ def get_artifact_lemmas(p_number: str, conn=Depends(get_db)):
     return {"p_number": result["p_number"], "lemmas": indexed, "total": result["total"]}
 
 
+@router.get("/{p_number}/surfaces")
+def get_artifact_surfaces(p_number: str, conn=Depends(get_db)):
+    """List surfaces that have content lines (for Translation Builder tabs)."""
+    repo = ArtifactRepository(conn)
+    surfaces = repo.get_surfaces(p_number)
+    return {"p_number": p_number, "surfaces": surfaces}
+
+
+@router.get("/{p_number}/lines")
+def get_artifact_lines(
+    p_number: str,
+    surface: str | None = None,
+    translation_lang: str = "en",
+    conn=Depends(get_db),
+):
+    """Structured Surface → Column → Line → Token bundle for the Translation Builder.
+
+    Composes token readings, lemmatizations, normalization, and line-level
+    translations into a single nested payload. When ``surface`` is omitted,
+    all surfaces are returned in one response (grouped by column number).
+    """
+    repo = ArtifactRepository(conn)
+    return repo.get_lines(p_number, surface=surface, translation_lang=translation_lang)
+
+
 @router.get("/{p_number}/competing-lemmas")
 def get_competing_lemmas(p_number: str, conn=Depends(get_db)):
     """Return tokens where multiple annotation runs disagree on the citation form.

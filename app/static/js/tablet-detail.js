@@ -127,6 +127,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Initialize Translation Builder (composes on top of the ATF data layers)
+    const tbContainer = document.getElementById('translation-builder');
+    if (tbContainer && typeof TranslationBuilder !== 'undefined') {
+        const tbApiUrl = tbContainer.dataset.apiUrl || TabletPage.apiUrl || '';
+        const tbPNumber = tbContainer.dataset.pNumber || TabletPage.pNumber;
+        TabletPage.translationBuilder = new TranslationBuilder(tbContainer, {
+            apiUrl: tbApiUrl,
+        });
+        if (tbPNumber) {
+            TabletPage.translationBuilder.load(tbPNumber);
+        }
+    }
+
     // Actions menu toggle
     const actionsMenu = document.querySelector('.actions-menu');
     const actionsDropdown = document.querySelector('.actions-menu__dropdown');

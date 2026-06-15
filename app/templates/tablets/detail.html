@@ -378,6 +378,14 @@
             </div>
         </aside>
 </div>
+
+{# Translation Builder — unified Surface → Column → Line → Token panel.
+   Composes lemmatization + normalization + translation layers on top of the
+   ATF data. Populated by translation-builder.js from /artifacts/{p}/lines. #}
+<section class="translation-builder"
+         id="translation-builder"
+         data-p-number="{{ tablet.p_number }}"
+         data-api-url="{{ api_url }}"></section>
 {% endblock %}
 
 {% block scripts %}
@@ -554,6 +562,7 @@
 <script src="/static/js/token-popover.js"></script>
 <script src="/static/js/atf-viewer.js"></script>
 <script src="/static/js/atf-viewer-integration.js"></script>
+<script src="/static/js/translation-builder.js"></script>
 <script src="/static/js/tablet-detail.js"></script>
 <script src="/static/js/artifact-summary.js"></script>
 <script src="/static/js/line-suggestions.js"></script>
