@@ -6,8 +6,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from api.middleware.auth import AuthMiddleware
+from api.ratelimit import limiter
 from api.routes import (
     agent,
     artifacts,
@@ -46,6 +49,12 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
+
+# Rate limiting (slowapi) — caps the Claude-backed agentic routes per user/IP.
+# The @limiter.limit decorators live on the individual routes; slowapi reads
+# app.state.limiter and the exception handler to enforce them. See issue #120.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @app.middleware("http")

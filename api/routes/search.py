@@ -9,8 +9,10 @@ from __future__ import annotations
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
+from api.dependencies import require_user
+from api.ratelimit import limiter, user_or_ip_key
 from api.services import agent_service
 from core.agent.interactions import log_interaction
 from core.database import get_db
@@ -25,7 +27,9 @@ router = APIRouter(tags=["agentic"])
     response_model=ToolResponse[GroupedTablePayload],
     summary="Hybrid semantic + lexical search across tablets, lemmas, signs, scholars, entities",
 )
+@limiter.limit("10/minute", key_func=user_or_ip_key)
 def semantic_search(
+    request: Request,
     # max_length caps a single query at 500 characters — anything longer is
     # either a corrupted client or abuse. See issue #52.
     q: Annotated[str, Query(description="Free-text query", max_length=500)],
@@ -41,6 +45,7 @@ def semantic_search(
     mode: Annotated[
         SearchMode, Query(description="lexical | semantic | hybrid")
     ] = "hybrid",
+    user: dict = Depends(require_user),
     conn=Depends(get_db),
 ) -> ToolResponse[GroupedTablePayload]:
     params = SearchParams(q=q, types=types, limit=limit, cursor=cursor, mode=mode)

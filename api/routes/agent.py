@@ -14,9 +14,12 @@ import json
 import uuid
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path, Request
 from pydantic import BaseModel
 
+from api.ratelimit import limiter, user_or_ip_key
+
+from api.dependencies import require_admin, require_user
 from api.services import agent_service
 from core.agent.interactions import log_interaction
 from core.database import get_db
@@ -41,9 +44,12 @@ router = APIRouter(prefix="/artifacts", tags=["agentic"])
     response_model=ToolResponse[CardPayload],
     summary="Grounded summary of an artifact with citations + best-guess for sparse tablets",
 )
+@limiter.limit("10/minute", key_func=user_or_ip_key)
 def summarize_artifact(
+    request: Request,
     p_number: Annotated[str, Path()],
     focus: SummaryFocus = "general",
+    user: dict = Depends(require_user),
     conn=Depends(get_db),
 ) -> ToolResponse[CardPayload]:
     params = ArtifactSummaryParams(p_number=p_number, focus=focus)
@@ -79,9 +85,12 @@ def summarize_artifact(
     response_model=ToolResponse[ChainPayload],
     summary="Grounded token interpretation — chain when lemmatized, hypotheses when not",
 )
+@limiter.limit("10/minute", key_func=user_or_ip_key)
 def interpret_token(
+    request: Request,
     p_number: Annotated[str, Path()],
     token_id: Annotated[int, Path()],
+    user: dict = Depends(require_user),
     conn=Depends(get_db),
 ) -> ToolResponse[ChainPayload]:
     params = TokenInterpretParams(p_number=p_number, token_id=token_id)
@@ -117,11 +126,14 @@ def interpret_token(
     response_model=ToolResponse[LineSuggestionPayload],
     summary="Ranked translation proposals for a single cuneiform line",
 )
+@limiter.limit("10/minute", key_func=user_or_ip_key)
 def suggest_line(
+    request: Request,
     p_number: Annotated[str, Path()],
     surface: str = "obverse",
     line: str = "1",
     variant: str | None = None,
+    user: dict = Depends(require_user),
     conn=Depends(get_db),
 ) -> ToolResponse[LineSuggestionPayload]:
     interaction_id_str = str(uuid.uuid4())
@@ -172,6 +184,7 @@ class FeedbackResponse(BaseModel):
 )
 def submit_feedback(
     body: FeedbackParams,
+    user: dict = Depends(require_user),
     conn=Depends(get_db),
 ) -> FeedbackResponse:
     with conn.cursor() as cur:
@@ -209,6 +222,7 @@ class CorrectionResponse(BaseModel):
 )
 def submit_correction(
     body: CorrectionParams,
+    user: dict = Depends(require_user),
     conn=Depends(get_db),
 ) -> CorrectionResponse:
     """Corrections flow into the existing trust infrastructure as a new
@@ -327,6 +341,7 @@ def _run_batch(
 def batch_summarize(
     body: BatchSummarizeParams,
     background_tasks: BackgroundTasks,
+    user: dict = Depends(require_admin),
     conn=Depends(get_db),
 ) -> BatchSummarizeResponse:
     """Enqueues a background pass. Returns immediately with the candidate count.

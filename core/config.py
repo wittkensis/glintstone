@@ -159,6 +159,27 @@ class Settings(BaseSettings):
                     break
         return self
 
+    @model_validator(mode="after")
+    def _enforce_session_secret(self) -> "Settings":
+        """Refuse to boot outside local/test with the insecure default key.
+
+        The default `dev-insecure-key` is fine for local dev and the test
+        suite, but shipping it to staging/production would let anyone forge a
+        session cookie. Fail fast at startup instead. See issue #121.
+        """
+        safe_envs = {"local", "test"}
+        if (
+            self.session_secret_key == "dev-insecure-key"
+            and self.app_env.strip().lower() not in safe_envs
+        ):
+            raise ValueError(
+                "SESSION_SECRET_KEY is set to the insecure default "
+                "'dev-insecure-key' but APP_ENV is "
+                f"{self.app_env!r} (not local/test). Set a real secret: "
+                'python3 -c "import secrets; print(secrets.token_hex(32))"'
+            )
+        return self
+
     def effective_database_url(self) -> str:
         """Return a DATABASE_URL string, building one from discrete fields if needed."""
         if self.database_url:
