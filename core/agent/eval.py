@@ -139,7 +139,11 @@ def _judge_synthesis(
             messages=[{"role": "user", "content": prompt}],
         )
         raw = msg.content[0].text.strip()
-        data = json.loads(raw)
+        # Haiku wraps its JSON in a markdown ``` fence / preamble, so a bare
+        # json.loads chokes at char 0. Reuse the shared fence-stripping helper.
+        from core.agent.synthesis import extract_json  # noqa: PLC0415
+
+        data = extract_json(raw)
         return float(data["score"]), str(data.get("reason", ""))
     except Exception as exc:
         logger.warning("Judge failed for %s: %s", p_number, exc)
