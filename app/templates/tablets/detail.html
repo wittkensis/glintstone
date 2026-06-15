@@ -82,12 +82,14 @@
             {% endif %}
 
             {% if tablet.composites %}
-            {% set _c0 = tablet.composites[0] %}
+            {# Primary composite = first; "+ N more" surfaces the multi-composite count
+               so the toggle aligns with the multi-composite panel loop above. #}
+            {% set _primary = tablet.composites[0] %}
             {% set _extra = (tablet.composites | length) - 1 %}
             <button class="btn btn--icon-left btn--toggle" id="composite-toggle"
                     aria-expanded="false" aria-controls="composite-panel"
-                    title="View composition">
-                <span>{{ _c0.designation or _c0.q_number }}{% if _extra > 0 %} + {{ _extra }} more{% endif %}</span>
+                    title="View composition{% if _extra > 0 %}s{% endif %}">
+                <span>{{ _primary.designation or _primary.q_number }}{% if _extra > 0 %} + {{ _extra }} more{% endif %}</span>
             </button>
             {% endif %}
 
@@ -138,20 +140,20 @@
     </p>
     {% endif %}
 
-    {# Metadata line: period · genre · composition (linked) #}
+    {# Metadata line: period · genre · composition(s) (linked).
+       All composites are linked here, matching the multi-composite panel loop —
+       no longer hardcoded to composites[0]. #}
     {% set meta_parts = [] %}
     {% if tablet.period %}{% set _ = meta_parts.append(tablet.period) %}{% endif %}
     {% if tablet.genre %}{% set _ = meta_parts.append(tablet.genre) %}{% endif %}
-    {% if tablet.composites %}
-    {% set primary_comp = tablet.composites[0] %}
-    {% set comp_name = primary_comp.designation or primary_comp.q_number %}
-    {% endif %}
     {% if meta_parts or tablet.composites %}
     <p class="tablet-header__meta-line">
         {{ meta_parts | join(' &middot; ') | safe }}
         {% if tablet.composites %}
         {% if meta_parts %} &middot; {% endif %}
-        <a class="tablet-header__comp-link" href="/compositions/{{ tablet.composites[0].q_number }}">{{ tablet.composites[0].designation or tablet.composites[0].q_number }}</a>
+        {% for c in tablet.composites %}
+        <a class="tablet-header__comp-link" href="/compositions/{{ c.q_number }}">{{ c.designation or c.q_number }}</a>{% if not loop.last %} &middot; {% endif %}
+        {% endfor %}
         {% endif %}
     </p>
     {% endif %}
@@ -512,6 +514,13 @@
         if (zb && imgUrl) {
             zb.loadImage({ local: imgUrl });
         }
+
+        // PRD-005: tell TabletViewer which surface is now showing so it can
+        // re-target the sign-annotation overlay to the matching surface group.
+        // image_type carries the surface label ("obverse"/"reverse"/...).
+        document.dispatchEvent(new CustomEvent('surface:changed', {
+            detail: { surface: img.image_type || getSurfaceLabel(img, idx) }
+        }));
 
         renderAttribution(img);
     }

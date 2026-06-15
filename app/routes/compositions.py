@@ -103,7 +103,14 @@ def composition_detail(
         return RedirectResponse(url="/compositions", status_code=302)
 
     # get_composite returns {"composite": {...}, "exemplars": [...]}
-    # Handle both flat and nested response shapes gracefully
+    # Handle both flat and nested response shapes gracefully.
+    #
+    # We always fetch the *full* exemplar set first — it drives the filter
+    # option lists, the transmission timeline, and the honest total count for
+    # the count-transparency label.  When filters are active we additionally
+    # request a pre-filtered set from the API (server-side filtering); the
+    # client-side filter below remains as a fallback for shapes the API can't
+    # pre-filter and so the rendered table always matches the active filters.
     if isinstance(composite, dict) and "composite" in composite:
         composite_meta = composite.get("composite") or {}
         all_exemplars = composite.get("exemplars", [])
@@ -114,18 +121,38 @@ def composition_detail(
 
     linked_count = len(all_exemplars)
 
-    # Build filter option sets from exemplar data
+    # Build filter option sets from the full exemplar data
     periods = sorted({e.get("period") for e in all_exemplars if e.get("period")})
     proveniences = sorted(
         {e.get("provenience") for e in all_exemplars if e.get("provenience")}
     )
 
-    # Apply client-side filters for exemplar table
-    filtered = all_exemplars
+    # ── API-side (server) filtering ─────────────────────────────────────────
+    # When a filter is active, ask the API for the pre-filtered exemplar set so
+    # the server does the work.  Fall back to the full set if the call returns
+    # nothing (older API / nested-only response).
+    if filter_period or filter_provenience:
+        api_filter_params: dict = {}
+        if filter_period:
+            api_filter_params["period"] = filter_period
+        if filter_provenience:
+            api_filter_params["provenience"] = filter_provenience
+        server_filtered = api.get_composite_exemplars(
+            q_number, api_filter_params
+        ).get("exemplars")
+        filtered = server_filtered if server_filtered else all_exemplars
+    else:
+        filtered = all_exemplars
+
+    # Client-side filter (fallback / safety net): guarantees the rendered table
+    # matches the active filters even if the API ignored the params.
     if filter_period:
         filtered = [e for e in filtered if e.get("period") == filter_period]
     if filter_provenience:
         filtered = [e for e in filtered if e.get("provenience") == filter_provenience]
+
+    displayed_count = len(filtered)
+    filters_active = bool(filter_period or filter_provenience)
 
     # Build transmission history: group exemplars by period for the old row-based
     # timeline (kept for fallback; SVG timeline uses raw exemplars client-side)
@@ -189,6 +216,8 @@ def composition_detail(
             "exemplars": filtered,
             "timeline_exemplars": timeline_exemplars,
             "linked_count": linked_count,
+            "displayed_count": displayed_count,
+            "filters_active": filters_active,
             "oracc_count": oracc_count,
             "timeline": timeline_sorted,
             "periods": periods,

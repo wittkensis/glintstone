@@ -489,6 +489,14 @@
     margin: 0;
 }
 
+/* Count transparency — "Showing X of Y exemplars" when filters are active. */
+.composition-detail__exemplar-count {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
 .exemplar-filters {
     display: flex;
     align-items: center;

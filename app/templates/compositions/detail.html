@@ -96,6 +96,13 @@
     <section class="composition-detail__exemplars" aria-labelledby="exemplars-heading">
         <div class="composition-detail__exemplars-header">
             <h2 id="exemplars-heading">Exemplars</h2>
+            {# Count transparency: when filters narrow the list, state how many
+               of the full linked set are showing. #}
+            {% if filters_active %}
+            <p class="composition-detail__exemplar-count" id="exemplar-count-label">
+                Showing {{ "{:,}".format(displayed_count) }} of {{ "{:,}".format(linked_count) }} exemplars
+            </p>
+            {% endif %}
             {% if proveniences %}
             <form class="exemplar-filters" method="GET" action="/compositions/{{ composite.q_number }}">
                 {# Period filter is now driven by the SVG timeline; expose provenience filter here #}

@@ -207,9 +207,19 @@ class GlintstoneAPI:
         except Exception:
             return {}
 
-    def get_composite_exemplars(self, q_number: str) -> dict:
+    def get_composite_exemplars(
+        self, q_number: str, params: dict | None = None
+    ) -> dict:
+        """Fetch exemplars for a composite.
+
+        Optional ``params`` (e.g. ``{"period": ..., "provenience": ...}``) are
+        passed through to the API so the server can return pre-filtered data
+        instead of relying solely on client-side filtering.
+        """
         try:
-            data = self._t.get(f"/composites/{q_number}/exemplars")
+            data = self._t.get(
+                f"/composites/{q_number}/exemplars", params=params or None
+            )
             return data if isinstance(data, dict) else {}
         except Exception:
             return {}
