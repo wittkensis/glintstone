@@ -10,9 +10,9 @@ Provides functions for:
 """
 
 import unicodedata
-from typing import List, Dict, Optional
+from typing import Any, List, Dict, Optional
 import psycopg
-from psycopg.rows import dict_row
+from psycopg.rows import DictRow, dict_row
 from core.config import get_settings
 
 
@@ -21,7 +21,7 @@ from core.config import get_settings
 # ============================================================================
 
 
-def get_connection() -> psycopg.Connection:
+def get_connection() -> psycopg.Connection[DictRow]:
     """Get database connection with dict_row factory."""
     settings = get_settings()
     return psycopg.connect(
@@ -483,7 +483,7 @@ def search_lemmas(
         WHERE (l.citation_form ILIKE %s OR l.guide_word ILIKE %s)
     """
 
-    params = [f"%{query}%", f"%{query}%"]
+    params: list[Any] = [f"%{query}%", f"%{query}%"]
 
     if language:
         sql += " AND l.language_code = %s"
@@ -540,7 +540,7 @@ def search_signs(
         )
     """
 
-    params = [f"%{query}%", query.lower()]
+    params: list[Any] = [f"%{query}%", query.lower()]
 
     if language:
         sql += " AND %s = ANY(s.language_codes)"

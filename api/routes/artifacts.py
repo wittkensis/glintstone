@@ -218,7 +218,7 @@ def get_artifact_lemmas(p_number: str, conn=Depends(get_db)):
 
     # Index flat list into {lineNo: {wordNo: {...}}} for the ATF viewer.
     # line_number "1." → index 0, position 0 → key "0"
-    indexed = {}
+    indexed: dict = {}
     for row in result["lemmas"]:
         ln = row.get("line_number", "")
         # Parse "1." → 0, "2." → 1, "1'." → 0

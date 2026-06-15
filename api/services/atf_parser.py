@@ -6,6 +6,7 @@ for the ATF viewer. Port of the PHP ATFParser.
 
 import re
 from collections import OrderedDict
+from typing import Any
 
 # Surface display labels
 SURFACE_LABELS: dict[str, str] = {
@@ -87,7 +88,7 @@ def parse_atf_response(lines: list[dict]) -> dict:
             surface_columns[st][col] = []
         surface_columns[st][col].append(line)
 
-    surfaces = []
+    surfaces: list[dict[str, Any]] = []
     for surface_type, col_groups in surface_columns.items():
         label = SURFACE_LABELS.get(surface_type, surface_type.replace("_", " ").title())
 

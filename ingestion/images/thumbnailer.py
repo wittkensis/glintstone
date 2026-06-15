@@ -37,9 +37,11 @@ def generate_thumbnail(original_bytes: bytes) -> Thumbnail:
     don't end up sideways.
     """
     with Image.open(io.BytesIO(original_bytes)) as im:
-        im = ImageOps.exif_transpose(im)
+        # exif_transpose/convert return Image; the loop var was inferred as
+        # ImageFile from Image.open. Same object family, harmless at runtime.
+        im = ImageOps.exif_transpose(im)  # type: ignore[assignment]
         if im.mode not in ("RGB", "L"):
-            im = im.convert("RGB")
+            im = im.convert("RGB")  # type: ignore[assignment]
         im.thumbnail(
             (THUMBNAIL_LONG_EDGE_PX, THUMBNAIL_LONG_EDGE_PX),
             Image.Resampling.LANCZOS,

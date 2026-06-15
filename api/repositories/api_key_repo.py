@@ -1,6 +1,6 @@
 """Repository for API keys."""
 
-from typing import Optional
+from typing import Optional, cast
 
 from core.repository import BaseRepository
 
@@ -9,7 +9,8 @@ class ApiKeyRepository(BaseRepository):
     def create(
         self, user_id: str, key_hash: str, label: str, tier: str = "free"
     ) -> dict:
-        return self.fetch_one(
+        # INSERT ... RETURNING always yields exactly one row.
+        row = self.fetch_one(
             """
             INSERT INTO api_keys (user_id, key_hash, label, tier)
             VALUES (%(user_id)s, %(key_hash)s, %(label)s, %(tier)s)
@@ -17,6 +18,7 @@ class ApiKeyRepository(BaseRepository):
             """,
             {"user_id": user_id, "key_hash": key_hash, "label": label, "tier": tier},
         )
+        return cast(dict, row)
 
     def find_by_hash(self, key_hash: str) -> Optional[dict]:
         """Return active key row, or None if not found or revoked."""

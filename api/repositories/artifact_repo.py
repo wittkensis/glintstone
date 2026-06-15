@@ -135,11 +135,14 @@ class ArtifactRepository(BaseRepository):
         # (i.e. migration 042 hasn't run) or when active filters require
         # per-dimension cross-filtering.
         if not af:
-            options = self._get_filter_options_from_view()
-            if options is not None:
+            cached_options = self._get_filter_options_from_view()
+            if cached_options is not None:
                 if _FILTER_CACHE_TTL > 0:
-                    _FILTER_CACHE[_filter_cache_key(af)] = (options, time.monotonic())
-                return options
+                    _FILTER_CACHE[_filter_cache_key(af)] = (
+                        cached_options,
+                        time.monotonic(),
+                    )
+                return cached_options
             # View unavailable — fall through to the full query path below.
 
         options: dict = {}

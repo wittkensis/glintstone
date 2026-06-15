@@ -1,6 +1,6 @@
 """Repository for user saved items (bookmarks)."""
 
-from typing import Optional
+from typing import Optional, cast
 
 from core.repository import BaseRepository
 
@@ -55,8 +55,10 @@ class SavedItemsRepository(BaseRepository):
             {"user_id": user_id, "item_type": item_type, "item_id": item_id},
         )
         if row is None:
+            # DO NOTHING suppressed the RETURNING row, so the item already
+            # existed — find_for_item is guaranteed to retrieve it.
             row = self.find_for_item(user_id, item_type, item_id)
-        return row
+        return cast(dict, row)
 
     def delete(self, item_id: str, user_id: str) -> bool:
         """Returns False if not found or not owned by user."""

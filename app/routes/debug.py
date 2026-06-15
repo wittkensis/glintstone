@@ -57,6 +57,7 @@ def debug_search(request: Request, q: str | None = None, mode: str = "hybrid"):
             error = str(exc)
 
     return templates.TemplateResponse(
+        request,
         "_debug/agentic.html",
         {
             "request": request,
@@ -92,6 +93,7 @@ def debug_summary(
             error = str(exc)
 
     return templates.TemplateResponse(
+        request,
         "_debug/agentic.html",
         {
             "request": request,
@@ -154,6 +156,7 @@ def debug_interpret(
             error = (error + " | " if error else "") + f"token list: {exc}"
 
     return templates.TemplateResponse(
+        request,
         "_debug/agentic.html",
         {
             "request": request,
@@ -212,6 +215,7 @@ def debug_interactions(request: Request, limit: int = 50):
         error = str(exc)
 
     return templates.TemplateResponse(
+        request,
         "_debug/agentic.html",
         {
             "request": request,

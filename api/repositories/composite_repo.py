@@ -3,6 +3,8 @@ Repository for composite text data.
 Composites are scholarly reconstructions combining multiple fragmentary tablets.
 """
 
+from typing import Any
+
 from core.repository import BaseRepository
 
 
@@ -122,7 +124,7 @@ class CompositeRepository(BaseRepository):
             List of matching composites
         """
         conditions = []
-        params = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {"limit": limit, "offset": offset}
 
         if language:
             conditions.append("language = %(language)s")

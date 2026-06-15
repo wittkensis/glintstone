@@ -14,14 +14,17 @@ from __future__ import annotations
 import json
 import logging
 import re
+from typing import cast
 
 import psycopg
+from psycopg.rows import DictRow
 
 from core.agent import agent_outputs, fact_assembly
 from core.agent.anthropic_client import AnthropicClient
 from core.agent.citation_parser import SynthesisGroundingError
 from core.agent.fact_assembly import (
     ArtifactFactBundle,
+    ArtifactFocus,
     TokenFactBundle,
 )
 from core.agent.search_engine import SearchEngine
@@ -47,7 +50,7 @@ from core.schemas.envelope import (
     TokenChainStep,
     ToolResponse,
 )
-from core.schemas.search import SearchParams
+from core.schemas.search import EntityType, SearchParams
 from core.schemas.sources import SourceRef
 
 logger = logging.getLogger(__name__)
@@ -139,7 +142,7 @@ def _facts_to_fields(bundle: ArtifactFactBundle) -> list[Field]:
 
 
 def do_search(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     params: SearchParams,
     interaction_id: str,
 ) -> ToolResponse[GroupedTablePayload]:
@@ -147,7 +150,11 @@ def do_search(
     engine = _get_search_engine()
     results = engine.search(conn, params)
 
-    types_requested = params.types or list(results.groups.keys())
+    # results.groups is keyed by EntityType values (built from the requested
+    # types), so the fallback key list is the same literal type as params.types.
+    types_requested = params.types or cast(
+        list[EntityType], list(results.groups.keys())
+    )
     groups: list[Group] = []
 
     # Pre-fetch cached summaries for any tablet hits so we can show snippets.
@@ -258,7 +265,7 @@ def do_search(
 
 
 def do_summarize_artifact(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     p_number: str,
     focus: str,
     interaction_id_int: int | None,
@@ -287,7 +294,9 @@ def do_summarize_artifact(
         )
 
     # 2. Assemble facts
-    bundle = fact_assembly.assemble_artifact_facts(conn, p_number, focus=focus)
+    bundle = fact_assembly.assemble_artifact_facts(
+        conn, p_number, focus=cast(ArtifactFocus, focus)
+    )
     if bundle is None:
         return _not_found_response(p_number, interaction_id_str)
 
@@ -372,13 +381,15 @@ def do_summarize_artifact(
 
 
 def _card_response_from_persisted(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     p_number: str,
     focus: str,
     persisted: agent_outputs.PersistedOutput,
     interaction_id_str: str,
 ) -> ToolResponse[CardPayload]:
-    bundle = fact_assembly.assemble_artifact_facts(conn, p_number, focus=focus)
+    bundle = fact_assembly.assemble_artifact_facts(
+        conn, p_number, focus=cast(ArtifactFocus, focus)
+    )
     if bundle is None:
         bundle = ArtifactFactBundle(p_number=p_number)
     best_guess = (
@@ -509,7 +520,7 @@ def _summarize_follow_ups(p_number: str, bundle: ArtifactFactBundle) -> list[Fol
 
 
 def do_interpret_token(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     p_number: str,
     token_id: int,
     interaction_id_int: int | None,
@@ -728,7 +739,7 @@ def _degraded_token_response(
 
 
 def do_suggest_line_translation(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     *,
     p_number: str,
     surface_name: str,

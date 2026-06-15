@@ -21,6 +21,7 @@ import sys
 import time
 
 import psycopg
+from psycopg.rows import DictRow
 
 from core.config import get_settings
 from core.database import connect_one_shot
@@ -33,7 +34,7 @@ _DEFAULT_FOCUS = "general"
 
 
 def _fetch_candidates(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     *,
     limit: int,
     focus: str,

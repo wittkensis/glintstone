@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import psycopg
+from psycopg.rows import DictRow
 
 from core.schemas.citation import Citation
 
@@ -47,7 +48,7 @@ class PersistedOutput:
 
 
 def find_fresh(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     *,
     output_type: str,
     target_type: str,
@@ -110,7 +111,7 @@ def find_fresh(
 
 
 def insert(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     *,
     interaction_id: int | None,
     output_type: str,
@@ -166,13 +167,16 @@ def insert(
                 best_guess_flag,
             ),
         )
-        new_id = cur.fetchone()["id"]
+        # INSERT ... RETURNING id always yields exactly one row.
+        new_row = cur.fetchone()
+        assert new_row is not None
+        new_id = new_row["id"]
     conn.commit()
     return new_id
 
 
 def _has_newer_annotation_run(
-    conn: psycopg.Connection, source_run_ids: list[int]
+    conn: psycopg.Connection[DictRow], source_run_ids: list[int]
 ) -> bool:
     if not source_run_ids:
         return False
@@ -193,7 +197,7 @@ def _has_newer_annotation_run(
         return cur.fetchone() is not None
 
 
-def _mark_superseded(conn: psycopg.Connection, row_id: int) -> None:
+def _mark_superseded(conn: psycopg.Connection[DictRow], row_id: int) -> None:
     with conn.cursor() as cur:
         cur.execute(
             "UPDATE agent_outputs SET superseded_at = now() WHERE id = %s",

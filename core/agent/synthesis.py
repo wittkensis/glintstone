@@ -356,6 +356,8 @@ def _run_loop(
             + "\n\nRe-write following the GROUNDING RULES exactly."
         )
 
+    # The loop above always runs (range(2)), so result is set by this point.
+    assert result is not None
     raise SynthesisGroundingError(
         last_complaint=result.complaint,
         last_text=completion.text,

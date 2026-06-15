@@ -6,12 +6,13 @@ Ported from v0.1 PHP BaseRepository — same patterns, Python idioms.
 from typing import Any
 
 import psycopg
+from psycopg.rows import DictRow
 
 
 class BaseRepository:
     """Provides common query utilities. Subclass for each domain."""
 
-    def __init__(self, conn: psycopg.Connection) -> None:
+    def __init__(self, conn: psycopg.Connection[DictRow]) -> None:
         self.conn = conn
 
     def fetch_all(self, sql: str, params: dict | tuple = ()) -> list[dict]:

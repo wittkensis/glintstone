@@ -26,10 +26,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
             key_hash = hash_token(auth)
             try:
                 with get_connection() as conn:
-                    repo = ApiKeyRepository(conn)
-                    key_row = repo.find_by_hash(key_hash)
+                    api_key_repo = ApiKeyRepository(conn)
+                    key_row = api_key_repo.find_by_hash(key_hash)
                     if key_row:
-                        repo.touch(key_row["id"])
+                        api_key_repo.touch(key_row["id"])
                         from api.repositories.user_repo import UserRepository
 
                         user_repo = UserRepository(conn)
@@ -46,10 +46,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
             token_hash = hash_token(raw)
             try:
                 with get_connection() as conn:
-                    repo = SessionRepository(conn)
-                    row = repo.find_by_token_hash(token_hash)
+                    session_repo = SessionRepository(conn)
+                    row = session_repo.find_by_token_hash(token_hash)
                     if row:
-                        repo.touch(row["session_id"])
+                        session_repo.touch(row["session_id"])
                         request.state.user = dict(row)
                         request.state.session_id = row["session_id"]
             except Exception:
@@ -62,10 +62,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 token_hash = hash_token(cookie_token)
                 try:
                     with get_connection() as conn:
-                        repo = SessionRepository(conn)
-                        row = repo.find_by_token_hash(token_hash)
+                        session_repo = SessionRepository(conn)
+                        row = session_repo.find_by_token_hash(token_hash)
                         if row:
-                            repo.touch(row["session_id"])
+                            session_repo.touch(row["session_id"])
                             request.state.user = dict(row)
                             request.state.session_id = row["session_id"]
                 except Exception:
