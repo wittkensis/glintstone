@@ -91,6 +91,13 @@ class OraccCompositeCatalogConnector(SourceConnector):
                         "language": None,
                         "period": None,
                         "genre": None,
+                        # Migration 046 (#89 Tier 1): five high-coverage ORACC
+                        # catalogue fields. Same first-non-null-wins merge.
+                        "primary_publication": None,
+                        "popular_name": None,
+                        "ruler": None,
+                        "dynastic_seat": None,
+                        "publication_history": None,
                     }
 
                 rec = seen[key]
@@ -106,6 +113,21 @@ class OraccCompositeCatalogConnector(SourceConnector):
                     rec["genre"] = _clean(entry.get("genre")) or _clean(
                         entry.get("supergenre")
                     )
+                # ── Migration 046 fields ─────────────────────────────────────
+                if rec["primary_publication"] is None:
+                    rec["primary_publication"] = _clean(
+                        entry.get("primary_publication")
+                    )
+                if rec["popular_name"] is None:
+                    rec["popular_name"] = _clean(entry.get("popular_name"))
+                if rec["ruler"] is None:
+                    rec["ruler"] = _clean(entry.get("ruler"))
+                if rec["dynastic_seat"] is None:
+                    rec["dynastic_seat"] = _clean(entry.get("dynastic_seat"))
+                if rec["publication_history"] is None:
+                    rec["publication_history"] = _clean(
+                        entry.get("publication_history")
+                    )
 
         ctx.info("oracc_composite_catalog.merged", unique_q_numbers=len(seen))
         yield from seen.values()
@@ -119,13 +141,22 @@ class OraccCompositeCatalogConnector(SourceConnector):
                 return
             cur.executemany(
                 """
-                INSERT INTO composites (q_number, designation, language, period, genre, exemplar_count)
-                VALUES (%s, %s, %s, %s, %s, 0)
+                INSERT INTO composites (
+                    q_number, designation, language, period, genre,
+                    primary_publication, popular_name, ruler, dynastic_seat,
+                    publication_history, exemplar_count
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 0)
                 ON CONFLICT (q_number) DO UPDATE SET
-                    designation = COALESCE(composites.designation, EXCLUDED.designation),
-                    language    = COALESCE(composites.language,    EXCLUDED.language),
-                    period      = COALESCE(composites.period,      EXCLUDED.period),
-                    genre       = COALESCE(composites.genre,       EXCLUDED.genre)
+                    designation         = COALESCE(composites.designation,         EXCLUDED.designation),
+                    language            = COALESCE(composites.language,            EXCLUDED.language),
+                    period              = COALESCE(composites.period,              EXCLUDED.period),
+                    genre               = COALESCE(composites.genre,               EXCLUDED.genre),
+                    primary_publication = COALESCE(composites.primary_publication, EXCLUDED.primary_publication),
+                    popular_name        = COALESCE(composites.popular_name,        EXCLUDED.popular_name),
+                    ruler               = COALESCE(composites.ruler,               EXCLUDED.ruler),
+                    dynastic_seat       = COALESCE(composites.dynastic_seat,       EXCLUDED.dynastic_seat),
+                    publication_history = COALESCE(composites.publication_history, EXCLUDED.publication_history)
                 """,
                 batch,
             )
@@ -141,6 +172,11 @@ class OraccCompositeCatalogConnector(SourceConnector):
                         row["language"],
                         row["period"],
                         row["genre"],
+                        row["primary_publication"],
+                        row["popular_name"],
+                        row["ruler"],
+                        row["dynastic_seat"],
+                        row["publication_history"],
                     )
                 )
                 if len(batch) >= 500:
