@@ -8,6 +8,14 @@
 repos:
   - repo: local
     hooks:
+      - id: check-root-layout
+        name: Repo Root Layout Guard
+        entry: ops/scripts/check-root-layout.py
+        language: python
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
       - id: documentation-validation
         name: Documentation Validation
         entry: ops/hooks/pre-commit-docs.sh
