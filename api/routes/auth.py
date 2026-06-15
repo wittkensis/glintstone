@@ -3,6 +3,7 @@
 import json
 import subprocess
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from pydantic import BaseModel
@@ -16,6 +17,36 @@ from core.config import get_settings
 from core.database import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# Avatar upload hardening: extension allowlist + magic-byte signatures.
+# Content-Type is spoofable, so the actual file bytes are validated below.
+ALLOWED_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+
+# Map allowed extensions to a predicate over the first bytes of the file.
+# Signatures: JPEG FF D8 FF · PNG 89 50 4E 47 0D 0A 1A 0A · GIF "GIF87a"/"GIF89a"
+# · WEBP "RIFF"...."WEBP" (RIFF container with WEBP fourCC at offset 8).
+def _is_jpeg(b: bytes) -> bool:
+    return b[:3] == b"\xff\xd8\xff"
+
+
+def _is_png(b: bytes) -> bool:
+    return b[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def _is_gif(b: bytes) -> bool:
+    return b[:6] in (b"GIF87a", b"GIF89a")
+
+
+def _is_webp(b: bytes) -> bool:
+    return b[:4] == b"RIFF" and b[8:12] == b"WEBP"
+
+
+_IMAGE_MAGIC_CHECKS = (_is_jpeg, _is_png, _is_gif, _is_webp)
+
+
+def _has_image_magic_bytes(header: bytes) -> bool:
+    return any(check(header) for check in _IMAGE_MAGIC_CHECKS)
 
 
 # ── Pydantic request/response models ─────────────────────────────────────────
@@ -199,16 +230,27 @@ def upload_avatar(
 ):
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
+
+    # Validate the extension against an allowlist (Content-Type is spoofable).
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in ALLOWED_IMAGE_EXTS:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported image type (allowed: jpg, jpeg, png, gif, webp)",
+        )
+
     data = file.file.read()
     if len(data) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image too large (max 5 MB)")
 
+    # Validate magic bytes so a spoofed Content-Type/extension can't smuggle
+    # a non-image (or wrong-format) payload through.
+    if not _has_image_magic_bytes(data[:12]):
+        raise HTTPException(status_code=400, detail="File content is not a valid image")
+
     from core.storage import get_storage
 
-    ext = "jpg"
-    if file.filename and "." in file.filename:
-        ext = file.filename.rsplit(".", 1)[-1].lower()
-
+    ext = suffix.lstrip(".")
     storage = get_storage()
     key = f"avatars/{user['id']}.{ext}"
     storage.put(key, data, content_type=file.content_type or "image/jpeg")
