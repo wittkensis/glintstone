@@ -265,7 +265,12 @@ def do_summarize_artifact(
     interaction_id_str: str,
 ) -> ToolResponse[CardPayload]:
     """Hero scenario 2: summarize_artifact with lazy-persist."""
-    prompt_version = "synthesis.v1"
+    # PRD-018 Bug 1: wire the v2 synthesis prompt (dialect mapping, mixed-language
+    # enforcement, scholarly-disagreement qualification). v2 also activates the
+    # _validate_v2_semantics checks via prompt_version.startswith("synthesis.v2").
+    # prompt_version is the find_fresh cache key, so v1 cached outputs won't be
+    # returned — summaries regenerate on next request.
+    prompt_version = "synthesis.v2"
 
     # 1. Lazy-load
     persisted = agent_outputs.find_fresh(

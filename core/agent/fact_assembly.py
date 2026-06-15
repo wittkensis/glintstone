@@ -180,7 +180,9 @@ def assemble_artifact_facts(
         )
 
     # Genre facts (canonical genres via junction table, primary first).
-    # genre_normalized is the canonical form; fall back to raw genre if absent.
+    # PRD-018 Bug 2a: artifacts has no genre_normalized column (see migration 043).
+    # The canonical genre name comes from canonical_genres.name joined through the
+    # artifact_genres junction on genre_id (migration 015), ordered primary-first.
     with conn.cursor() as cur:
         cur.execute(
             """
