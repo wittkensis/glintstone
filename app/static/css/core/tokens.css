@@ -141,6 +141,7 @@
     --text-3xl: 1.75rem;    /* 28px - Large headings */
     --text-4xl: 2.5rem;     /* 40px - Display headings */
     --text-display: 3rem;   /* 48px - Hero display text */
+    --text-display-lg: 4rem; /* 64px - Large display (e.g. cuneiform sign glyphs) */
 
 
     /* ==========================================================================

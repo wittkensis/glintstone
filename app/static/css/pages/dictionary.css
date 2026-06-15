@@ -343,6 +343,11 @@
     font-style: italic;
 }
 
+/* Upright variant for sign names / guide words (not lemma forms). */
+.dict-row__form--upright {
+    font-style: normal;
+}
+
 .dict-row__guide {
     color: var(--color-text-muted);
     font-style: normal;
@@ -410,7 +415,7 @@
 }
 
 .empty-icon {
-    font-size: 3rem;
+    font-size: var(--text-display);
     font-family: "Noto Sans Cuneiform", serif;
     margin-bottom: var(--space-3);
     opacity: 0.4;
@@ -466,7 +471,7 @@
 }
 
 .dict-detail__big-glyph {
-    font-size: 4rem;
+    font-size: var(--text-display-lg);
     font-family: "Noto Sans Cuneiform", serif;
     line-height: 1.2;
     margin-bottom: var(--space-3);

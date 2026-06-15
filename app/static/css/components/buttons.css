@@ -199,8 +199,18 @@
    ========================================================================== */
 
 .btn-group {
+    /* gap: -1px is invalid CSS (resolves to 0); collapse adjacent borders
+       with negative margin so the group reads as one unified control. */
     display: flex;
-    gap: -1px;
+}
+
+.btn-group .btn-group-item:not(:first-child) {
+    margin-left: -1px;
+}
+.btn-group .btn-group-item:not(:first-child):focus,
+.btn-group .btn-group-item:not(:first-child):hover {
+    position: relative; /* surface the active border over the overlapping edge */
+    z-index: 1;
 }
 
 .btn-group .btn-group-item:not(:first-child):not(:last-child) {

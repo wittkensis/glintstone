@@ -96,7 +96,7 @@
 .canon-row__info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-0-5);
     min-width: 0;
     overflow: hidden;
 }
@@ -297,7 +297,7 @@
     border: none;
     color: var(--color-text-muted);
     cursor: pointer;
-    font-size: 1rem;
+    font-size: var(--text-base);
     line-height: 1;
     padding: 0;
 }
@@ -575,7 +575,7 @@
 .timeline-row__dots {
     display: flex;
     flex-wrap: wrap;
-    gap: 3px;
+    gap: var(--space-1); /* was 3px; rounded to 4px token */
     align-items: center;
 }
 
@@ -634,7 +634,7 @@
     background: none;
     border: none;
     color: var(--color-text-muted);
-    font-size: 1rem;
+    font-size: var(--text-base);
     line-height: 1;
     cursor: pointer;
     padding: 0;

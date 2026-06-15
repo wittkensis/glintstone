@@ -270,7 +270,7 @@
                                     <span class="dict-row__glyph" aria-hidden="true">{{ item.unicode_char }}</span>
                                     {% endif %}
                                     <span class="dict-row__primary">
-                                        <span class="dict-row__form" style="font-style: normal;">{{ item.sign_name }}</span>
+                                        <span class="dict-row__form dict-row__form--upright">{{ item.sign_name }}</span>
                                     </span>
                                     <span class="dict-row__meta">
                                         <span class="dict-row__lang">{{ item.reading_count or 0 }} readings</span>
@@ -289,7 +289,7 @@
                             <li>
                                 <button class="dict-row" data-id="{{ item.guide_word }}" data-level="glosses" data-pos="{{ item.pos or '' }}" type="button">
                                     <span class="dict-row__primary">
-                                        <span class="dict-row__form" style="font-style: normal;">&ldquo;{{ item.guide_word }}&rdquo;</span>
+                                        <span class="dict-row__form dict-row__form--upright">&ldquo;{{ item.guide_word }}&rdquo;</span>
                                         {% if item.pos_label %}
                                         <span class="dict-row__guide">{{ item.pos_label }}</span>
                                         {% endif %}
