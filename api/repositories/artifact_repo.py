@@ -135,11 +135,14 @@ class ArtifactRepository(BaseRepository):
         # (i.e. migration 042 hasn't run) or when active filters require
         # per-dimension cross-filtering.
         if not af:
-            options = self._get_filter_options_from_view()
-            if options is not None:
+            cached_options = self._get_filter_options_from_view()
+            if cached_options is not None:
                 if _FILTER_CACHE_TTL > 0:
-                    _FILTER_CACHE[_filter_cache_key(af)] = (options, time.monotonic())
-                return options
+                    _FILTER_CACHE[_filter_cache_key(af)] = (
+                        cached_options,
+                        time.monotonic(),
+                    )
+                return cached_options
             # View unavailable — fall through to the full query path below.
 
         options: dict = {}
@@ -847,7 +850,7 @@ class ArtifactRepository(BaseRepository):
         """Return sign annotations for the overlay viewer."""
         rows = self.fetch_all(
             """
-            SELECT sa.sign_id, sa.bbox_x, sa.bbox_y, sa.bbox_w, sa.bbox_h,
+            SELECT sa.sign_id, sa.token_id, sa.bbox_x, sa.bbox_y, sa.bbox_w, sa.bbox_h,
                    sa.confidence, s.surface_type
             FROM sign_annotations sa
             JOIN surface_images si ON sa.surface_image_id = si.id

@@ -100,6 +100,29 @@ document.addEventListener('DOMContentLoaded', function() {
             onImageLoad: () => {
                 updateImageSource('Loaded');
                 loadSignAnnotations();
+            },
+            onOverlayClick: (anno, box) => {
+                // Toggle selection: clicking the active box deselects it.
+                const wasActive = box.classList.contains('is-selected');
+                document.querySelectorAll('.zoombox__overlay-box.is-selected')
+                    .forEach(b => b.classList.remove('is-selected'));
+
+                if (wasActive) {
+                    document.dispatchEvent(new CustomEvent('sign:selected', {
+                        detail: { tokenId: null, sign: anno.sign || null }
+                    }));
+                    return;
+                }
+
+                box.classList.add('is-selected');
+                // tokenId is null when the sign annotation has no matched token
+                // (legacy rows / no token mapping); the listener tolerates that.
+                document.dispatchEvent(new CustomEvent('sign:selected', {
+                    detail: {
+                        tokenId: anno.tokenId != null ? anno.tokenId : null,
+                        sign: anno.sign || null
+                    }
+                }));
             }
         });
 
@@ -213,7 +236,8 @@ function loadSignAnnotations() {
                 height: (a.bbox_h / natH) * 100,
                 sign: a.sign_id || '',
                 surface: a.surface_type || '',
-                confidence: a.confidence || 0
+                confidence: a.confidence || 0,
+                tokenId: a.token_id != null ? a.token_id : null
             }));
 
             zoombox.setOverlays(overlays);
