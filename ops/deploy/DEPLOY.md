@@ -168,6 +168,38 @@ its URL from `/var/www/glintstone/shared/.env` at runtime; staging from
 | Disk fills | `KEEP_RELEASES=5` + snapshot cap (3) | Trim is automatic; older nightly backups need a manual prune |
 | SSH key rotated | First deploy fails at `ssh-keyscan` / auth | `gh secret set HOSTINGER_SSH_KEY` |
 | VPS unreachable | `ssh-keyscan -T 8` non-zero | Deploy fails fast with the exact error (no `2>/dev/null` swallow) |
+| GH Actions blocked by Hostinger firewall | `ssh-keyscan failed against *** — VPS may be unreachable from GitHub Actions` (issue #92) | **Provider-level fix** (see below) or deploy from laptop |
+
+## GitHub Actions cannot SSH to the VPS (issue #92)
+
+**Symptom:** the `deploy` job fails in the **Configure SSH** step with
+`::error::ssh-keyscan failed against *** — VPS may be unreachable from GitHub
+Actions`. The job aborts in ~80s (fast-fail since the 2026-06-07 hardening; it
+used to hang ~6 min).
+
+**This is not a code or secret problem.** Verified: `ssh glintstone` works from
+the laptop, port 22 is open from local, both `HOSTINGER_HOST` and
+`HOSTINGER_SSH_KEY` secrets are set, no OS-level firewall on the VPS, sshd is
+listening on `0.0.0.0:22`. The workflow (`deploy.yml`) and `deploy.sh` are
+correct.
+
+**Root cause:** the Hostinger **provider-level cloud firewall** blocks GitHub
+Actions' Azure runner IP ranges. There is no code fix — it must be resolved in
+the Hostinger control panel.
+
+**Fix A — open the firewall (preferred, permanent):** in the Hostinger panel,
+allow port 22 from GitHub Actions IP ranges (the `actions` key of
+`https://api.github.com/meta`), or from all if the security model allows. Then
+re-trigger: `gh workflow run deploy.yml`.
+
+**Fix B — deploy from the laptop (works now, bypasses Actions entirely):**
+```bash
+APP_ENV=production SSH_KEY_PATH=~/.ssh/glintstone_deploy ./ops/deploy/deploy.sh
+```
+CI (`test.yml`) still gates merges to `main`; only the *deploy leg* is run
+locally. This is safe — `deploy.sh` takes a pre-deploy DB snapshot, runs the
+import check, smoke-tests, and auto-rolls-back on failure regardless of where
+it's invoked from.
 
 ## One-time VPS prerequisites
 
