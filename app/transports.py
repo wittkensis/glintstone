@@ -27,7 +27,15 @@ class HttpxTransport:
     """Production transport using httpx."""
 
     def __init__(self, base_url: str, timeout: float = 10.0) -> None:
-        self._client = httpx.Client(base_url=base_url, timeout=timeout)
+        # A single scalar timeout caps the *read* phase too. AI endpoints
+        # (e.g. GET /artifacts/{p}/summary) call Claude — cold-cache synthesis
+        # takes 10-30s, so a 10s read timeout surfaces a spurious 500 on any
+        # server-side route that pre-fetches a summary. Keep connect snappy but
+        # give reads room. Callers can still pass a larger scalar `timeout`.
+        self._client = httpx.Client(
+            base_url=base_url,
+            timeout=httpx.Timeout(timeout, connect=5.0, read=max(timeout, 60.0)),
+        )
 
     def _auth_headers(self, token: str | None) -> dict:
         return {"Authorization": f"Bearer {token}"} if token else {}

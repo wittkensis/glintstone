@@ -127,6 +127,32 @@ stderr_logfile=/var/log/glintstone-mcp.err.log
 stdout_logfile=/var/log/glintstone-mcp.out.log
 SUPERVISOR
 
+# --- CDLI image crawler (long-running background process, ~245d backfill) ---
+# Mirrors ops/deploy/supervisor/glintstone-crawler.ini (keep in sync). Without
+# this stanza the crawler silently never autostarts after a reprovision and the
+# image backfill stalls. autostart=true is intentional: startretries caps the
+# respawn attempts so it fails gracefully on a bare box (before the first deploy
+# populates current/venv), then comes up on its own once code is present.
+cat > /etc/supervisor.d/glintstone-crawler.ini << 'SUPERVISOR'
+[program:glintstone-crawler]
+command=/var/www/glintstone/current/venv/bin/python -m ops.scripts.cdli_image_crawler
+directory=/var/www/glintstone/current
+user=deploy
+autostart=true
+autorestart=true
+startsecs=30
+startretries=10
+stopsignal=TERM
+stopwaitsecs=120
+stderr_logfile=/var/log/glintstone-crawler.err.log
+stdout_logfile=/var/log/glintstone-crawler.out.log
+stdout_logfile_maxbytes=50MB
+stdout_logfile_backups=5
+stderr_logfile_maxbytes=50MB
+stderr_logfile_backups=5
+environment=HOME="/home/deploy",CRAWLER_CHECKPOINT_DIR="/var/www/glintstone/shared/source-data/checkpoints"
+SUPERVISOR
+
 # --- Staging services (ports 8003/8004, separate deploy dir) ---
 mkdir -p /var/www/glintstone-staging
 chown "$DEPLOY_USER:$DEPLOY_USER" /var/www/glintstone-staging

@@ -31,20 +31,25 @@ jobs:
     if: github.event_name == 'schedule' && github.event.schedule == '0 4 * * 0'
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    # Same secrets as deploy.yml — DEPLOY_SSH_KEY was never registered, so the
+    # old workflow silently failed. Use HOSTINGER_* and stop hardcoding the IP.
+    env:
+      DEPLOY_SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+      DEPLOY_HOST: ${{ secrets.HOSTINGER_HOST }}
     steps:
       - uses: actions/checkout@v4
       - name: Install SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H 76.13.208.149 >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
       - name: Run ORACC connectors
         run: |
           set -e
           for connector in oracc-norms oracc-glossaries oracc-lemmatizations oracc-enrichment oracc-credits; do
             echo "::group::$connector"
-            ssh deploy@76.13.208.149 "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run $connector --mode incremental"
+            ssh deploy@"$DEPLOY_HOST" "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run $connector --mode incremental"
             echo "::endgroup::"
           done
 
@@ -52,20 +57,23 @@ jobs:
     if: github.event_name == 'schedule' && github.event.schedule == '0 5 5 * *'
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    env:
+      DEPLOY_SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+      DEPLOY_HOST: ${{ secrets.HOSTINGER_HOST }}
     steps:
       - uses: actions/checkout@v4
       - name: Install SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H 76.13.208.149 >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
       - name: Run CDLI connectors
         run: |
           set -e
           for connector in cdli-catalog atf-parser artifact-identifiers genre-language-junctions; do
             echo "::group::$connector"
-            ssh deploy@76.13.208.149 "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run $connector --mode incremental"
+            ssh deploy@"$DEPLOY_HOST" "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run $connector --mode incremental"
             echo "::endgroup::"
           done
 
@@ -73,14 +81,17 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    env:
+      DEPLOY_SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+      DEPLOY_HOST: ${{ secrets.HOSTINGER_HOST }}
     steps:
       - uses: actions/checkout@v4
       - name: Install SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H 76.13.208.149 >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
       - name: Run ${{ inputs.connector }}
         run: |
-          ssh deploy@76.13.208.149 "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run ${{ inputs.connector }} --mode ${{ inputs.mode }}"
+          ssh deploy@"$DEPLOY_HOST" "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run ${{ inputs.connector }} --mode ${{ inputs.mode }}"
