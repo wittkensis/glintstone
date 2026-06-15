@@ -12,6 +12,12 @@
 #   ./ops/deploy/deploy.sh                      # deploy everything
 #   ./ops/deploy/deploy.sh api                  # API only
 #   ./ops/deploy/deploy.sh app www               # web app + marketing site
+#   ./ops/deploy/deploy.sh api --force-no-snapshot  # skip pre-deploy DB snapshot
+#
+# Safety: a real deploy (DEPLOY_HOST set) aborts unless APP_ENV is 'production'
+# or 'staging', because the pre-deploy pg_dump snapshot is gated on that label —
+# deploying with APP_ENV=local would hit prod with NO backup. Pass
+# --force-no-snapshot to override deliberately.
 #
 # Env vars (all optional unless noted):
 #   DEPLOY_HOST       — VPS IP or hostname (REQUIRED; loaded from .env if unset)
@@ -69,21 +75,66 @@ fi
 ssh_run() { ssh "${SSH_OPTS[@]}" "$REMOTE" "$@"; }
 rsync_to() { rsync -avz --delete -e "ssh ${SSH_OPTS[*]}" "$@"; }
 
-# --- Parse deploy targets ---
+# --- Parse deploy targets (and the optional --force-no-snapshot flag) ---
 TARGETS=("$@")
-if [ ${#TARGETS[@]} -eq 0 ]; then
-    TARGETS=(api app www)
-fi
 deploy_api=false; deploy_app=false; deploy_www=false; deploy_mcp=false
+force_no_snapshot=false
+KEPT_TARGETS=()
 for target in "${TARGETS[@]}"; do
     case "$target" in
-        api) deploy_api=true ;;
-        app) deploy_app=true ;;
-        www) deploy_www=true ;;
-        mcp) deploy_mcp=true ;;
+        api) deploy_api=true; KEPT_TARGETS+=("$target") ;;
+        app) deploy_app=true; KEPT_TARGETS+=("$target") ;;
+        www) deploy_www=true; KEPT_TARGETS+=("$target") ;;
+        mcp) deploy_mcp=true; KEPT_TARGETS+=("$target") ;;
+        --force-no-snapshot) force_no_snapshot=true ;;
         *) echo "Unknown target: $target (use: api, app, www, mcp)" >&2; exit 1 ;;
     esac
 done
+# Re-derive the target list without the flag tokens, defaulting to the full set.
+if [ ${#KEPT_TARGETS[@]} -eq 0 ]; then
+    TARGETS=(api app www)
+    deploy_api=true; deploy_app=true; deploy_www=true
+else
+    TARGETS=("${KEPT_TARGETS[@]}")
+fi
+
+# --- Guard: a real deploy MUST run against a known environment label ---
+# DEPLOY_HOST is always set by this point (the :? check above), i.e. this is a
+# real deploy that writes to the production/staging release dir and restarts
+# prod services. The pre-deploy pg_dump snapshot is gated on APP_ENV; if APP_ENV
+# is something other than production/staging (e.g. a laptop .env with
+# APP_ENV=local), the snapshot is silently skipped while the deploy still hits
+# production. Refuse to proceed unless the operator explicitly opts out.
+if [ "$APP_ENV" != "production" ] && [ "$APP_ENV" != "staging" ]; then
+    if $force_no_snapshot; then
+        echo "::warning::APP_ENV='$APP_ENV' is not production/staging — proceeding"
+        echo "::warning::WITHOUT a pre-deploy DB snapshot (--force-no-snapshot given)."
+    else
+        cat >&2 <<EOF
+============================================================================
+ABORTING DEPLOY — unsafe environment label
+============================================================================
+  APP_ENV     = '$APP_ENV'  (expected 'production' or 'staging')
+  DEPLOY_HOST = '$DEPLOY_HOST'
+  REMOTE_DIR  = '$REMOTE_DIR'
+
+This is a real deploy: it writes to the release dir above and restarts
+production services. But the pre-deploy pg_dump snapshot is only taken when
+APP_ENV is 'production' or 'staging'. With APP_ENV='$APP_ENV' the snapshot would
+be SKIPPED — running migrations against production with no backup.
+
+This usually means you deployed from a laptop whose .env has APP_ENV=local.
+
+Fix one of:
+  • Set APP_ENV=production (or staging) for this deploy:
+        APP_ENV=production ./ops/deploy/deploy.sh ${TARGETS[*]}
+  • If you genuinely want to skip the snapshot, pass --force-no-snapshot:
+        APP_ENV=$APP_ENV ./ops/deploy/deploy.sh ${TARGETS[*]} --force-no-snapshot
+============================================================================
+EOF
+        exit 1
+    fi
+fi
 
 echo "=== Glintstone deploy ==="
 echo "  Host:        $REMOTE"
