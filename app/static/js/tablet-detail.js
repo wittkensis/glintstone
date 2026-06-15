@@ -5,6 +5,7 @@
 
 const TabletPage = {
     zoombox: null,
+    tabletViewer: null,
     pNumber: null,
     apiUrl: null,
     viewerExpanded: true
@@ -43,6 +44,8 @@ function collapseViewer() {
     viewerContainer.dataset.viewerState = 'collapsed';
     TabletPage.viewerExpanded = false;
     updateViewerToggleButton();
+    // PRD-005 FR13: persist collapsed state.
+    if (TabletPage.tabletViewer) TabletPage.tabletViewer.setStoredCollapsed(true);
 }
 
 /**
@@ -56,6 +59,8 @@ function expandViewer() {
     viewerContainer.dataset.viewerState = 'expanded';
     TabletPage.viewerExpanded = true;
     updateViewerToggleButton();
+    // PRD-005 FR13: persist expanded state.
+    if (TabletPage.tabletViewer) TabletPage.tabletViewer.setStoredCollapsed(false);
 
     // Notify ATFViewer to collapse knowledge sidebar (mutual exclusivity)
     document.dispatchEvent(new CustomEvent('tablet-viewer-state', {
@@ -99,9 +104,31 @@ document.addEventListener('DOMContentLoaded', function() {
             hoverThreshold: 2,
             onImageLoad: () => {
                 updateImageSource('Loaded');
-                loadSignAnnotations();
+                // PRD-005: TabletViewer owns the sign-annotation overlay layer.
+                // Re-render the active surface now that natural dimensions exist.
+                if (TabletPage.tabletViewer) {
+                    if (TabletPage.tabletViewer._loaded) {
+                        TabletPage.tabletViewer.refresh();
+                    } else {
+                        TabletPage.tabletViewer.load();
+                    }
+                }
             }
         });
+
+        // PRD-005: create the sign-annotation overlay controller.
+        if (typeof TabletViewer !== 'undefined') {
+            TabletPage.tabletViewer = new TabletViewer({
+                zoombox: TabletPage.zoombox,
+                apiUrl: TabletPage.apiUrl,
+                pNumber: TabletPage.pNumber
+            });
+            // Restore persisted collapsed state (FR13).
+            if (TabletPage.tabletViewer.getStoredCollapsed()) {
+                // Defer to end of init so the DOM toggle handlers exist.
+                requestAnimationFrame(() => collapseViewer());
+            }
+        }
 
         // Load image from API
         const apiUrl = TabletPage.apiUrl;
@@ -192,6 +219,17 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleViewer();
     });
 
+    // PRD-005: surface carousel switched the visible image — re-target overlays.
+    // The surface selector (in detail.html) emits this with the image_type label
+    // (e.g. "obverse"/"reverse") which TabletViewer matches to annotation
+    // surface_type groups.
+    document.addEventListener('surface:changed', (e) => {
+        const surface = e.detail && e.detail.surface;
+        if (TabletPage.tabletViewer && surface) {
+            TabletPage.tabletViewer.showSurface(surface);
+        }
+    });
+
     // Make collapsed viewer clickable to expand
     const viewerPanel = document.querySelector('.viewer-panel');
     if (viewerPanel) {
@@ -205,36 +243,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
-// Load sign annotations (OCR overlay) after image loads
-function loadSignAnnotations() {
-    const zoombox = TabletPage.zoombox;
-    if (!zoombox || !zoombox.imageLoaded || !TabletPage.apiUrl || !TabletPage.pNumber) return;
-
-    fetch(`${TabletPage.apiUrl}/artifacts/${TabletPage.pNumber}/sign-annotations`)
-        .then(r => r.json())
-        .then(data => {
-            if (!data.annotations || data.annotations.length === 0) return;
-
-            const natW = zoombox.naturalWidth;
-            const natH = zoombox.naturalHeight;
-            if (!natW || !natH) return;
-
-            const overlays = data.annotations.map(a => ({
-                x: (a.bbox_x / natW) * 100,
-                y: (a.bbox_y / natH) * 100,
-                width: (a.bbox_w / natW) * 100,
-                height: (a.bbox_h / natH) * 100,
-                sign: a.sign_id || '',
-                surface: a.surface_type || '',
-                confidence: a.confidence || 0
-            }));
-
-            zoombox.setOverlays(overlays);
-        })
-        .catch(err => {
-            console.log('Sign annotations not available:', err.message);
-        });
-}
+// NOTE: sign-annotation loading moved to tablet-viewer.js (TabletViewer) in
+// PRD-005 (#58). The previous inline loadSignAnnotations() drew every surface's
+// boxes onto one image and mis-scaled the pixel coordinates; TabletViewer now
+// groups by surface and normalises correctly. See onImageLoad above.
 
 // Load composite tablets from API
 function loadCompositeTablets(qNumber) {

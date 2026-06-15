@@ -1,0 +1,52 @@
+/* ==========================================================================
+   Tablet Viewer — sign-annotation overlay enhancements (PRD-005, #58)
+
+   The base overlay box / tooltip styling lives in pages/tablets.css
+   (.zoombox__overlay-box, .zoombox__overlay-tooltip). This file layers the
+   PRD-005 additions on top:
+     - the "selected" state emitted on overlay click (sign:selected)
+     - per-surface empty affordance
+   It deliberately reuses the existing design tokens and the --zoombox-scale
+   custom property so borders/labels stay visually constant at any zoom.
+   ========================================================================== */
+
+/* Selected sign (clicked) — distinct from :hover and .is-highlighted so a
+   click-selected sign stays marked after the pointer leaves. */
+.zoombox__overlay-box.is-selected {
+    border-color: var(--color-accent);
+    border-width: calc(2.5px / var(--zoombox-scale, 1));
+    background: rgba(201, 169, 98, 0.32);
+    box-shadow: 0 0 0 calc(1px / var(--zoombox-scale, 1)) var(--color-accent);
+}
+
+/* Keep the selected sign's tooltip visible without hover. */
+.zoombox__overlay-box.is-selected .zoombox__overlay-tooltip {
+    opacity: 1;
+}
+
+/* Low-confidence annotations render with a dashed border so users can tell
+   uncertain OCR detections from confident ones. Applied by JS when present. */
+.zoombox__overlay-box.is-low-confidence {
+    border-style: dashed;
+}
+
+/* When the active surface has no annotations, the overlay container collapses;
+   this hint sits in the viewer chrome rather than over the image. */
+.tablet-viewer-surface-hint {
+    position: absolute;
+    bottom: var(--space-2, 8px);
+    left: var(--space-2, 8px);
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    color: var(--color-text-muted, var(--color-text));
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 50;
+}
+
+.tablet-viewer-surface-hint.is-visible {
+    opacity: 1;
+}

@@ -1087,16 +1087,29 @@ class ArtifactRepository(BaseRepository):
     # ── Sign annotations (OCR overlay) ───────────────────────
 
     def get_sign_annotations(self, p_number: str) -> dict:
-        """Return sign annotations for the overlay viewer."""
+        """Return sign annotations for the overlay viewer (PRD-005).
+
+        bbox_x/y/w/h are stored as ABSOLUTE PIXELS in the CompVis source
+        (despite the schema yaml describing them as 0-100%); the frontend
+        TabletViewer normalises them against the image's natural dimensions.
+        Annotations are per surface_image — the viewer groups by surface_type
+        so each surface only shows its own boxes.
+
+        sign_id is the resolved OGSL sign name (e.g. "BA", "EN"). mzl_number is
+        joined from signs for the hover tooltip (FR5/FR6); it may be NULL when
+        the MZL→OGSL concordance has no entry for that sign.
+        """
         rows = self.fetch_all(
             """
             SELECT sa.sign_id, sa.bbox_x, sa.bbox_y, sa.bbox_w, sa.bbox_h,
-                   sa.confidence, s.surface_type
+                   sa.confidence, sa.line_number, sa.position_in_line,
+                   sa.damage_status, s.surface_type, sg.mzl_number
             FROM sign_annotations sa
             JOIN surface_images si ON sa.surface_image_id = si.id
             JOIN surfaces s ON si.surface_id = s.id
+            LEFT JOIN signs sg ON sg.sign_id = sa.sign_id
             WHERE s.p_number = %(p_number)s
-            ORDER BY sa.bbox_y, sa.bbox_x
+            ORDER BY s.surface_type, sa.bbox_y, sa.bbox_x
             """,
             {"p_number": p_number},
         )
