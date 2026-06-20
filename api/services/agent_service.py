@@ -772,7 +772,7 @@ def do_suggest_line_translation(
     if persisted:
         import json as _json
 
-        _cached = _json.loads(persisted.raw_output)
+        _cached = _json.loads(persisted.output_text)
         _payload = LineSuggestionPayload(**_cached["data"])
         return ToolResponse[LineSuggestionPayload](
             summary=_cached.get("summary", ""),
@@ -915,14 +915,17 @@ def do_suggest_line_translation(
     try:
         agent_outputs.insert(
             conn,
+            interaction_id=None,
             output_type="line_suggestion",
             target_type="line",
             target_id=_cache_key,
             focus="suggest",
+            model=model_name,
             prompt_version=prompt_version,
-            raw_output=_json.dumps({"summary": summary, "data": payload.__dict__}),
+            output_text=_json.dumps({"summary": summary, "data": payload.__dict__}),
+            citations=[],
+            source_run_ids=[],
             best_guess_flag=not bool(suggestions),
-            annotation_run_id=None,
         )
     except Exception as _exc:
         logger.warning("agent_outputs insert failed for line suggestion: %s", _exc)
