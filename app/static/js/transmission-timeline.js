@@ -1,10 +1,11 @@
 /**
  * TransmissionTimeline
  * Renders a horizontal SVG timeline of exemplar tablets positioned on a real,
- * proportional BCE axis. Period date ranges are fetched live from the API
- * (/api/v2/periods, backed by the period_canon table) rather than hardcoded,
- * so the axis stays in sync with the canonical chronology the rest of the app
- * uses for filtering.
+ * proportional BCE axis. Period date ranges are fetched live from the app's
+ * /_periods proxy (which calls the API's /api/v2/periods, backed by the
+ * period_canon table) rather than hardcoded, so the axis stays in sync with
+ * the canonical chronology the rest of the app uses for filtering. Per the
+ * two-tier rule the browser must hit the app, never the API host directly.
  *
  * Usage:
  *   <div id="transmission-timeline" data-exemplars="[...]"></div>
@@ -23,14 +24,14 @@
 'use strict';
 
 var SVG_NS = 'http://www.w3.org/2000/svg';
-var PERIODS_ENDPOINT = '/api/v2/periods';
+var PERIODS_ENDPOINT = '/_periods';
 
 // Shared promise so the constructor and the mobile fallback fetch the period
 // canon at most once per page load.
 var _periodsPromise = null;
 
 /**
- * Fetch canonical periods from the API and reshape into the structures the
+ * Fetch canonical periods from the app's /_periods proxy and reshape into the structures the
  * timeline needs: a {canonical -> [start, end]} range map (BCE = negative,
  * null when a period has no agreed range) and a chronological display order.
  * Resolves to { ranges, order } even on failure (empty structures), so callers

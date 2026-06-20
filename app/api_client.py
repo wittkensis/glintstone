@@ -248,6 +248,24 @@ class GlintstoneAPI:
         except Exception:
             return {}
 
+    # ── Periods ────────────────────────────────────────────────────────────────
+
+    def get_periods(self) -> dict:
+        """Canonical historical periods with BCE date ranges.
+
+        Returns the raw ``{"items": [...]}`` envelope from the API so the
+        transmission-timeline JS can read ``items[].canonical /
+        date_start_bce / date_end_bce / sort_order / group_name`` directly.
+        Degrades to an empty envelope on any error so the browser-side fetch
+        gets valid JSON (and the timeline falls back gracefully) rather than
+        a 502.
+        """
+        try:
+            result = self._t.get("/periods")
+            return result if isinstance(result, dict) else {"items": []}  # type: ignore[return-value]
+        except Exception:
+            return {"items": []}
+
     # ── Compositions / Composites ──────────────────────────────────────────────
     # API uses /composites (canonical texts); app routes use /compositions (UI path).
 

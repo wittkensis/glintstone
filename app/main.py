@@ -23,6 +23,7 @@ from app.routes import (
     debug,
     dictionary,
     home,
+    periods,
     scholars,
     search,
     tablets,
@@ -150,5 +151,6 @@ app.include_router(collections.router)
 app.include_router(dictionary.router)
 app.include_router(scholars.router)
 app.include_router(search.router)
+app.include_router(periods.router)
 app.include_router(admin.router)
 app.include_router(debug.router)
