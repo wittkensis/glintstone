@@ -49,6 +49,52 @@
   Expertise parsing (build-note 4): split free-text on , or ; trim, drop empties.
   If it doesn't split, the single trimmed value is one tag. Never crash on null.
 #}
+{#
+  Publication-type humanization (#206 build-note 2). Map the 15-value enum to
+  Title-Case chip text. Anything unmapped falls back to underscores→spaces +
+  capitalize, so a new enum value still renders sensibly rather than raw.
+#}
+{% set _pub_type_labels = {
+  'monograph': 'Monograph',
+  'edited_volume': 'Edited volume',
+  'journal_article': 'Journal article',
+  'series_volume': 'Series volume',
+  'digital_edition': 'Digital edition',
+  'museum_catalog': 'Museum catalog',
+  'dissertation': 'Dissertation',
+  'conference_paper': 'Conference paper',
+  'hand_copy_publication': 'Hand copy',
+  'chapter': 'Chapter',
+  'proceedings': 'Proceedings',
+  'thesis': 'Thesis',
+  'report': 'Report',
+  'unpublished': 'Unpublished',
+  'other': 'Other'
+} %}
+
+{% macro pub_type_label(value) %}
+  {%- set key = (value or '') | lower -%}
+  {{- _pub_type_labels.get(key, (value or 'Other') | replace('_', ' ') | capitalize) -}}
+{% endmacro %}
+
+{#
+  Role chip (#206 build-note 2). Only rendered when role != 'author' (author is
+  the silent default — no chip, per Tufte noise-reduction). Editor → blue chip,
+  Translator → purple chip; any other non-author role gets a plain chip.
+#}
+{% macro role_chip(role) %}
+  {%- set key = (role or '') | lower -%}
+  {%- if key and key != 'author' -%}
+    {%- if key == 'editor' -%}
+      <span class="work-chip work-chip--editor">Editor</span>
+    {%- elif key == 'translator' -%}
+      <span class="work-chip work-chip--translator">Translator</span>
+    {%- else -%}
+      <span class="work-chip">{{ key | capitalize }}</span>
+    {%- endif -%}
+  {%- endif -%}
+{% endmacro %}
+
 {% macro expertise_tags(value, variant) %}
   {% set cleaned = (value or '') | replace(';', ',') %}
   {% set parts = [] %}
@@ -131,7 +177,139 @@
       {% endif %}
     </div>
     {% endif %}
+
+    {# Publications stat strip — five pre-computed aggregates (#206). Only shown
+       when the scholar has at least one publication; an empty body of work goes
+       straight to the #189 panel below without a row of zeros. #}
+    {% if pub_summary and pub_summary.get('works') %}
+    {% set _fy = pub_summary.get('first_year') %}
+    {% set _ly = pub_summary.get('last_year') %}
+    {% set _top = pub_summary.get('top_cites') %}
+    <div class="works-stats">
+      <div class="works-stat">
+        <span class="works-stat__value">{{ '{:,}'.format(pub_summary.get('works', 0)) }}</span>
+        <span class="works-stat__label">Publications</span>
+      </div>
+      <div class="works-stat">
+        <span class="works-stat__value">{{ '{:,}'.format(pub_summary.get('total_cites', 0)) }}</span>
+        <span class="works-stat__label">Citations (&Sigma; cited-by)</span>
+      </div>
+      <div class="works-stat">
+        {% if _top is not none %}
+        <span class="works-stat__value">{{ '{:,}'.format(_top) }}</span>
+        {% else %}
+        <span class="works-stat__value field-empty">No citation data</span>
+        {% endif %}
+        <span class="works-stat__label">Most-cited work</span>
+      </div>
+      <div class="works-stat">
+        {% if _fy and _ly %}
+        <span class="works-stat__value">{{ _fy }}{% if _fy != _ly %}&ndash;{{ _ly }}{% endif %}</span>
+        {% elif _fy or _ly %}
+        <span class="works-stat__value">{{ _fy or _ly }}</span>
+        {% else %}
+        <span class="works-stat__value field-empty">n.d.</span>
+        {% endif %}
+        <span class="works-stat__label">Active span</span>
+      </div>
+      <div class="works-stat">
+        <span class="works-stat__value">{{ '{:,}'.format(pub_summary.get('tablets_edited', 0)) }}</span>
+        <span class="works-stat__label">Tablets edited</span>
+      </div>
+    </div>
+    {% endif %}
   </header>
+
+  {# Publications & works ledger (#206) — most-cited-first, the richer surface,
+     rendered before contributions per the spec default. #}
+  <section class="scholar-section">
+    <div class="scholar-section__head">
+      <h2 class="scholar-section__title">Publications &amp; works</h2>
+      {% set _works = pub_summary.get('works', 0) if pub_summary else 0 %}
+      {% if _works %}
+      <span class="scholar-section__count">
+        {{ '{:,}'.format(_works) }} work{{ '' if _works == 1 else 's' }}
+        · {{ pub_summary.get('type_count', 0) }} type{{ '' if pub_summary.get('type_count', 0) == 1 else 's' }}
+        · most cited first
+      </span>
+      {% else %}
+      <span class="scholar-section__count">0 works</span>
+      {% endif %}
+    </div>
+
+    {% if _works %}
+    {# Type filter pills — real per-type counts. "All" is active unless a type
+       is selected. Each pill is a server GET (?type=…) for shareable URLs and
+       working back-button, per the index-search-pattern contract. #}
+    {% if pub_type_counts %}
+    <div class="works-typebar">
+      <a class="works-typebar__pill" href="/scholars/{{ scholar.id }}"
+         {% if not pub_active_type %}data-state="active"{% endif %}>All {{ '{:,}'.format(_works) }}</a>
+      {% for t in pub_type_counts %}
+      <a class="works-typebar__pill" href="/scholars/{{ scholar.id }}?type={{ t.type }}"
+         {% if pub_active_type == t.type %}data-state="active"{% endif %}>{{ pub_type_label(t.type) }} {{ '{:,}'.format(t.count) }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <ul class="works-list">
+      {% for w in publications %}
+      {# Title link: prefer DOI, else url, else plain text (#206 build-note 3). #}
+      {% set link = ('https://doi.org/' ~ w.doi) if w.doi else (w.url or '') %}
+      <li class="works-row">
+        <div class="works-row__inner">
+          <span class="works-row__year">
+            {% if w.year %}{{ w.year }}{% else %}<span class="field-empty">n.d.</span>{% endif %}
+          </span>
+          <div class="works-row__main">
+            <p class="works-row__title">
+              {% if link %}
+              <a href="{{ link }}" target="_blank" rel="noopener">{{ w.title or w.short_title or 'Untitled work' }}</a>
+              {% else %}
+              {{ w.title or w.short_title or 'Untitled work' }}
+              {% endif %}
+            </p>
+            <div class="works-row__meta">
+              <span class="work-chip">{{ pub_type_label(w.publication_type) }}</span>
+              {{ role_chip(w.role) }}
+              {% if w.doi %}
+              <a class="works-row__doi" href="https://doi.org/{{ w.doi }}" target="_blank" rel="noopener">doi:{{ w.doi }}</a>
+              {% endif %}
+              {% if w.publisher %}<span class="works-row__pub">{{ w.publisher }}</span>{% endif %}
+            </div>
+          </div>
+          <span class="works-row__cites">
+            {% if w.cited_by_count is not none %}
+            <strong>{{ '{:,}'.format(w.cited_by_count) }}</strong> cited&nbsp;by
+            {% else %}
+            <span class="field-empty">No citation data</span>
+            {% endif %}
+          </span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+
+    {% if pub_total_pages and pub_page < pub_total_pages %}
+    {# Server-rendered pagination (50/page). The button advances to the next
+       page, preserving the active type filter so the URL stays shareable. #}
+    {% set _next = pub_page + 1 %}
+    {% set _qs = ('type=' ~ pub_active_type ~ '&') if pub_active_type else '' %}
+    <div class="works-more">
+      <a class="works-more__btn" href="/scholars/{{ scholar.id }}?{{ _qs }}pub_page={{ _next }}">
+        Show more — {{ '{:,}'.format(pub_total) }} publications total
+      </a>
+    </div>
+    {% endif %}
+
+    {% else %}
+    {# #189 section-level empty — never blank. #}
+    <div class="works-empty">
+      <p class="works-empty__title">No publications on record</p>
+      <p class="works-empty__hint">This scholar has no linked publications in the bibliography. Nothing is hidden &mdash; there is simply nothing here yet. Works are matched from CDLI/ORACC bibliography and, where an ORCID is present, can be enriched from the ORCID public record.</p>
+    </div>
+    {% endif %}
+  </section>
 
   {# Contributions ledger #}
   <section class="scholar-section">

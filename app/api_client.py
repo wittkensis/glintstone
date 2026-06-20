@@ -62,6 +62,32 @@ class Page(Generic[T]):
         )
 
 
+def _empty_publications() -> dict:
+    """The publications envelope shape when there's nothing (or a fetch failed).
+
+    Mirrors the API's keys so the template's #189 empty path is uniform whether
+    the scholar genuinely has zero works or the API call errored.
+    """
+    return {
+        "items": [],
+        "total": 0,
+        "page": 1,
+        "per_page": 50,
+        "total_pages": 0,
+        "summary": {
+            "works": 0,
+            "total_cites": 0,
+            "top_cites": None,
+            "first_year": None,
+            "last_year": None,
+            "type_count": 0,
+            "tablets_edited": 0,
+        },
+        "type_counts": [],
+        "type": "",
+    }
+
+
 class GlintstoneAPI:
     """Typed API client — wraps a Transport and exposes domain-level methods.
 
@@ -179,6 +205,24 @@ class GlintstoneAPI:
             )
         except Exception:
             return Page.empty()
+
+    def get_scholar_publications(self, scholar_id: int, params: dict) -> dict:
+        """Publications & works for a scholar.
+
+        Unlike the other paginated endpoints this returns the raw envelope, not
+        a ``Page``: the publications response carries a richer shape — a
+        ``summary`` (five stat-strip aggregates) and a ``type_counts`` breakdown
+        (for the filter pills) alongside the paginated ``items``. Wrapping it in
+        the flat ``Page`` would drop those, so the template consumes the dict
+        directly. On any error we degrade to an explicit empty envelope so the
+        detail page renders the #189 "No publications on record" panel rather
+        than 500-ing — a works-fetch failure must never blank the whole page.
+        """
+        try:
+            result = self._t.get(f"/scholars/{scholar_id}/publications", params=params)
+            return result if isinstance(result, dict) else _empty_publications()  # type: ignore[return-value]
+        except Exception:
+            return _empty_publications()
 
     # ── Collections ────────────────────────────────────────────────────────────
 
