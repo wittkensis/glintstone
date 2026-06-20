@@ -35,6 +35,9 @@ class Page(Generic[T]):
     total_pages: int = 0
     has_next: bool = False
     filter_options: dict = field(default_factory=dict)
+    # Distinct annotation-run count for the scholar contributions ledger. 0 for
+    # endpoints that don't report it (the field is simply absent in their JSON).
+    run_count: int = 0
 
     @classmethod
     def empty(cls) -> "Page":
@@ -55,6 +58,7 @@ class Page(Generic[T]):
                 else False,
             ),
             filter_options=data.get("filter_options") or {},
+            run_count=data.get("run_count", 0),
         )
 
 
@@ -167,6 +171,14 @@ class GlintstoneAPI:
             return self._t.get(f"/scholars/{scholar_id}")  # type: ignore[return-value]
         except Exception:
             return {}
+
+    def get_scholar_contributions(self, scholar_id: int, params: dict) -> "Page":
+        try:
+            return Page.from_dict(
+                self._t.get(f"/scholars/{scholar_id}/contributions", params=params)  # type: ignore[arg-type]
+            )
+        except Exception:
+            return Page.empty()
 
     # ── Collections ────────────────────────────────────────────────────────────
 

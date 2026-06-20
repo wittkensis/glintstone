@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}{{ scholar.name }} - Glintstone{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/pages/scholars.css?v={{ app_version }}">
+{% endblock %}
+
+{#
+  Macros are defined at template top level (not inside a block) so they're
+  callable from {% block content %}. A macro defined inside another block is
+  only visible within that block.
+
+  Method → chip-class + human label.
+  Per spec build-note 2: human/collation/autopsy/hand_copy/RTI/3D_scan/photograph
+  → --human; model/ML_model → --model; import/api_fetch/web_scrape → --import;
+  manual → base chip. Label is the humanized method, falling back to source_type.
+  We key off `method` first; if absent, fall back to `source_type` (human/model/
+  import/hybrid) so a run with only a source_type still gets a sensible chip.
+#}
+{% set _human_methods = ['human', 'collation', 'autopsy', 'hand_copy', 'rti', '3d_scan', 'photograph'] %}
+{% set _model_methods = ['model', 'ml_model'] %}
+{% set _import_methods = ['import', 'api_fetch', 'web_scrape'] %}
+
+{% macro method_chip(method, source_type) %}
+  {% set raw = (method or source_type or '') %}
+  {% set key = raw | lower %}
+  {% if key in _model_methods or source_type == 'model' %}
+    {% set cls = 'method-chip--model' %}
+  {% elif key in _human_methods or source_type == 'human' %}
+    {% set cls = 'method-chip--human' %}
+  {% elif key in _import_methods or source_type == 'import' %}
+    {% set cls = 'method-chip--import' %}
+  {% else %}
+    {% set cls = '' %}
+  {% endif %}
+  {# Humanize: underscores → spaces, title-case; ML_model reads as "ML model". #}
+  {% if key == 'ml_model' or key == 'model' %}
+    {% set label = 'ML model' %}
+  {% elif raw %}
+    {% set label = raw | replace('_', ' ') | title %}
+  {% else %}
+    {% set label = 'Manual' %}
+  {% endif %}
+  <span class="method-chip {{ cls }}">{{ label }}</span>
+{% endmacro %}
+
+{#
+  Expertise parsing (build-note 4): split free-text on , or ; trim, drop empties.
+  If it doesn't split, the single trimmed value is one tag. Never crash on null.
+#}
+{% macro expertise_tags(value, variant) %}
+  {% set cleaned = (value or '') | replace(';', ',') %}
+  {% set parts = [] %}
+  {% for p in cleaned.split(',') %}
+    {% if p.strip() %}{% set _ = parts.append(p.strip()) %}{% endif %}
+  {% endfor %}
+  {% for tag in parts %}
+    <span class="badge {{ variant }}">{{ tag }}</span>
+  {% endfor %}
+{% endmacro %}
+
+{% block content %}
+<main class="scholar-detail">
+
+  {# Back nav — arrow is the affordance (mirrors tablets/detail). #}
+  <div class="page-nav">
+    <a href="/scholars" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Scholars
+    </a>
+  </div>
+
+  {# Pre-compute whether any expertise exists so we can omit the block entirely. #}
+  {% set has_periods = (scholar.expertise_periods or '') | trim %}
+  {% set has_languages = (scholar.expertise_languages or '') | trim %}
+
+  {# Identity header #}
+  <header class="page-header">
+    <div class="page-header-main">
+      <div class="page-header-title">
+        <div class="scholar-id__namerow">
+          <h1>{{ scholar.name }}</h1>
+          {% if scholar.author_type %}
+          <span class="scholar-id__type">{{ scholar.author_type }}</span>
+          {% endif %}
+        </div>
+        <div class="scholar-id__meta">
+          {% if scholar.institution %}
+          <span><strong>{{ scholar.institution }}</strong></span>
+          {% endif %}
+          {% if scholar.active_since %}
+          <span>Active since <strong>{{ scholar.active_since }}</strong></span>
+          {% endif %}
+          {% if scholar.orcid %}
+          <a class="scholar-id__orcid" href="https://orcid.org/{{ scholar.orcid }}" target="_blank" rel="noopener">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="12" cy="12" r="11" fill="currentColor" opacity="0.18"/>
+              <path d="M12 5.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zm-1 3h1.2v6.5H11V8.5zm.6-2.1a.8.8 0 110 1.6.8.8 0 010-1.6z"/>
+            </svg>
+            {{ scholar.orcid }}
+          </a>
+          {% endif %}
+          {% if not scholar.institution and not scholar.active_since %}
+          <span>No institution or active-since on record</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# Expertise — omitted entirely when both lists are empty (per empty.png). #}
+    {% if has_periods or has_languages %}
+    <div class="scholar-expertise">
+      {% if has_periods %}
+      <div class="scholar-expertise__row">
+        <span class="scholar-expertise__label">Periods</span>
+        <div class="scholar-expertise__tags">
+          {{ expertise_tags(scholar.expertise_periods, 'badge--pos') }}
+        </div>
+      </div>
+      {% endif %}
+      {% if has_languages %}
+      <div class="scholar-expertise__row">
+        <span class="scholar-expertise__label">Languages</span>
+        <div class="scholar-expertise__tags">
+          {{ expertise_tags(scholar.expertise_languages, 'badge--language') }}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </header>
+
+  {# Contributions ledger #}
+  <section class="scholar-section">
+    <div class="scholar-section__head">
+      <h2 class="scholar-section__title">Contributions</h2>
+      {% if contrib_total %}
+      <span class="scholar-section__count">
+        {{ '{:,}'.format(contrib_total) }} artifact{{ '' if contrib_total == 1 else 's' }}
+        across {{ '{:,}'.format(run_count) }} annotation run{{ '' if run_count == 1 else 's' }}
+      </span>
+      {% else %}
+      <span class="scholar-section__count">No artifacts yet</span>
+      {% endif %}
+    </div>
+
+    {% if contributions %}
+    <ul class="contrib-list">
+      {% for c in contributions %}
+      {# Title: server-truncate at ~90 chars to keep the mobile clamp tidy (build-note edge). #}
+      {% set title = c.designation or c.p_number %}
+      {% if title and title | length > 90 %}{% set title = title[:90] ~ '…' %}{% endif %}
+      <li class="contrib-row">
+        <a class="contrib-row__link" href="/tablets/{{ c.p_number }}">
+          <span class="contrib-row__pnum">{{ c.p_number }}</span>
+          <span class="contrib-row__main">
+            <span class="contrib-row__name">{{ title }}</span>
+            {# Facets: object_type · period · genre · language; null tokens omitted. #}
+            {% set facets = [] %}
+            {% if c.object_type %}{% set _ = facets.append(c.object_type) %}{% endif %}
+            {% if c.period_normalized %}{% set _ = facets.append(c.period_normalized) %}{% endif %}
+            {% if c.genre %}{% set _ = facets.append(c.genre) %}{% endif %}
+            {% if c.language_normalized %}{% set _ = facets.append(c.language_normalized) %}{% endif %}
+            {% if facets %}
+            <span class="contrib-row__tags">
+              {% for f in facets %}
+              <span class="contrib-row__facet">{{ f }}</span>
+              {% endfor %}
+            </span>
+            {% endif %}
+          </span>
+          <span class="contrib-row__provenance">
+            {# Date: created_at as YYYY-MM-DD, or — if null. created_at is an ISO
+               timestamp string from the API; the first 10 chars are the date. #}
+            <span class="contrib-row__date">{{ (c.created_at | string)[:10] if c.created_at else '—' }}</span>
+            {{ method_chip(c.method, c.source_type) }}
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="scholar-empty">
+      No artifacts are attributed to this scholar yet. Contributions appear here once an annotation run is linked.
+    </div>
+    {% endif %}
+  </section>
+
+</main>
+{% endblock %}
