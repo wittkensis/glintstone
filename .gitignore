@@ -4,8 +4,11 @@ PLAN/Engineer Onboarding Guide.md
 PLAN/PROCESS/
 PLAN/PRDs/
 
-# Local harness templates (Eric-only, not for contributors)
-TEMPLATES/
+# Local harness templates (Eric-only, not for contributors).
+# Anchored to repo root: a bare `TEMPLATES/` also matches `app/templates/`
+# on case-insensitive filesystems (macOS), which would silently ignore real
+# tracked app templates. The leading slash scopes it to the top level only.
+/TEMPLATES/
 
 # PRDs (icebox — managed locally, not tracked in git)
 PRDs/
@@ -130,9 +133,11 @@ www/docs/
 # Local design ideation and mockups (not tracked — use wiki for persistent design docs)
 planning/
 
-# Private planning material — PRDs, audits, personas, research, archives.
-# Kept out of the public repo; loose root planning docs are relocated here.
-PERSONAL/
+# Private planning & process material — design specs, research, execution
+# artifacts (PRDs/plans/issues), audits, personas, archives. Internal-only:
+# kept out of the public repo entirely. Organized under PERSONAL/{design,
+# research,execution,archive}/ — see PERSONAL/README.md. Anchored to root.
+/PERSONAL/
 
 # Claude Code agent worktrees (created by swarm builds; ephemeral)
 .claude/worktrees/
