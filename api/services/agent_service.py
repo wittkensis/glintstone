@@ -771,6 +771,7 @@ def do_suggest_line_translation(
     )
     if persisted:
         import json as _json
+
         _cached = _json.loads(persisted.raw_output)
         _payload = LineSuggestionPayload(**_cached["data"])
         return ToolResponse[LineSuggestionPayload](
@@ -910,6 +911,7 @@ def do_suggest_line_translation(
 
     # Persist for reuse
     import json as _json
+
     try:
         agent_outputs.insert(
             conn,

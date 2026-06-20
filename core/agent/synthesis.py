@@ -315,7 +315,9 @@ def _complete_with_retry(
     last_exc: Exception | None = None
     for delay in (None, *_API_RETRY_DELAYS):
         if delay is not None:
-            logger.warning("Anthropic API error, retrying in %.0fs: %s", delay, last_exc)
+            logger.warning(
+                "Anthropic API error, retrying in %.0fs: %s", delay, last_exc
+            )
             time.sleep(delay)
         try:
             return client.complete(
