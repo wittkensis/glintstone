@@ -17,6 +17,7 @@ from api.routes import (
     dictionary,
     health,
     image,
+    periods,
     scholars,
     search,
     stats,
@@ -96,6 +97,7 @@ app.include_router(artifacts.router)
 app.include_router(collections.router)
 app.include_router(composites.router)
 app.include_router(dictionary.router)
+app.include_router(periods.router)
 app.include_router(scholars.router)
 app.include_router(search.router)
 app.include_router(agent.router)

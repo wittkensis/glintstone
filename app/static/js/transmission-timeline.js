@@ -1,6 +1,10 @@
 /**
  * TransmissionTimeline
- * Renders a horizontal SVG timeline of exemplar tablets grouped by historical period.
+ * Renders a horizontal SVG timeline of exemplar tablets positioned on a real,
+ * proportional BCE axis. Period date ranges are fetched live from the API
+ * (/api/v2/periods, backed by the period_canon table) rather than hardcoded,
+ * so the axis stays in sync with the canonical chronology the rest of the app
+ * uses for filtering.
  *
  * Usage:
  *   <div id="transmission-timeline" data-exemplars="[...]"></div>
@@ -9,8 +13,8 @@
  * The container's data-exemplars attribute must be a JSON array of:
  *   { p_number, period, pipeline_status, designation, provenience, museum }
  *
- * Emits a 'period-selected' CustomEvent on the container when a period label is clicked.
- * The event detail is: { period: string } — empty string means "all periods".
+ * Emits a 'period-selected' CustomEvent on the container when a period label is
+ * clicked. The event detail is: { period: string } — empty string means "all".
  *
  * Public methods:
  *   clearSelection() — deselects the active period
@@ -18,59 +22,54 @@
 
 'use strict';
 
-// Scholarly consensus date ranges for cuneiform periods (BCE = negative years)
-var PERIOD_RANGES = {
-    'Archaic': [-3200, -2900],
-    'Early Dynastic I-II': [-2900, -2700],
-    'Early Dynastic III': [-2700, -2500],
-    'Early Dynastic': [-2900, -2500],           // catch-all for unlabelled ED
-    'Old Akkadian': [-2340, -2200],
-    'Sargonic': [-2340, -2200],                 // synonym
-    'Lagash II': [-2200, -2100],
-    'Ur III': [-2112, -2004],
-    'Early Old Babylonian': [-2000, -1900],
-    'Old Babylonian': [-1900, -1600],
-    'Middle Babylonian': [-1600, -1000],
-    'Middle Assyrian': [-1400, -1000],
-    'Old Assyrian': [-1950, -1750],
-    'Middle Hittite': [-1500, -1200],
-    'Neo-Assyrian': [-900, -612],
-    'Neo-Babylonian': [-626, -539],
-    'Achaemenid': [-547, -331],
-    'Hellenistic': [-330, -64],
-    'Seleucid': [-312, -64],
-    'Parthian': [-247, 224],
-    'Late Babylonian': [-626, -64],
-    'Uncertain': null,
-};
-
-// Display order for period bands on the timeline (chronological)
-var PERIOD_DISPLAY_ORDER = [
-    'Archaic',
-    'Early Dynastic I-II',
-    'Early Dynastic III',
-    'Early Dynastic',
-    'Old Akkadian',
-    'Sargonic',
-    'Lagash II',
-    'Ur III',
-    'Early Old Babylonian',
-    'Old Assyrian',
-    'Old Babylonian',
-    'Middle Babylonian',
-    'Middle Assyrian',
-    'Middle Hittite',
-    'Neo-Assyrian',
-    'Neo-Babylonian',
-    'Achaemenid',
-    'Hellenistic',
-    'Seleucid',
-    'Parthian',
-    'Late Babylonian',
-    'Uncertain',
-];
-
 var SVG_NS = 'http://www.w3.org/2000/svg';
+var PERIODS_ENDPOINT = '/api/v2/periods';
+
+// Shared promise so the constructor and the mobile fallback fetch the period
+// canon at most once per page load.
+var _periodsPromise = null;
+
+/**
+ * Fetch canonical periods from the API and reshape into the structures the
+ * timeline needs: a {canonical -> [start, end]} range map (BCE = negative,
+ * null when a period has no agreed range) and a chronological display order.
+ * Resolves to { ranges, order } even on failure (empty structures), so callers
+ * can fall back gracefully rather than throwing.
+ */
+function fetchPeriods() {
+    if (_periodsPromise) return _periodsPromise;
+
+    _periodsPromise = fetch(PERIODS_ENDPOINT, { credentials: 'same-origin' })
+        .then(function (resp) {
+            if (!resp.ok) throw new Error('periods HTTP ' + resp.status);
+            return resp.json();
+        })
+        .then(function (data) {
+            var rows = (data && data.items) || [];
+            var ranges = {};
+            var order = [];
+            rows.forEach(function (row) {
+                var name = row.canonical;
+                if (!name) return;
+                order.push(name);
+                var start = row.date_start_bce;
+                var end = row.date_end_bce;
+                // A usable range needs both endpoints; otherwise treat the
+                // period as undated (e.g. "Uncertain") and render no band.
+                if (typeof start === 'number' && typeof end === 'number') {
+                    ranges[name] = [start, end];
+                } else {
+                    ranges[name] = null;
+                }
+            });
+            return { ranges: ranges, order: order };
+        })
+        .catch(function () {
+            return { ranges: {}, order: [] };
+        });
+
+    return _periodsPromise;
+}
 
 /**
  * @param {Element} container - The host element with data-exemplars JSON
@@ -78,10 +77,13 @@ var SVG_NS = 'http://www.w3.org/2000/svg';
 function TransmissionTimeline(container) {
     this._container = container;
     this._selectedPeriod = '';
+    this._ranges = {};
+    this._order = [];
     this._init();
 }
 
 TransmissionTimeline.prototype._init = function () {
+    var self = this;
     var raw;
     try {
         raw = JSON.parse(this._container.dataset.exemplars || '[]');
@@ -95,16 +97,21 @@ TransmissionTimeline.prototype._init = function () {
         return;
     }
 
-    this._render();
+    // Show a lightweight placeholder while the period canon loads.
+    this._container.innerHTML = '<p class="timeline-empty">Loading timeline…</p>';
+
+    fetchPeriods().then(function (periods) {
+        self._ranges = periods.ranges;
+        self._order = periods.order;
+        self._render();
+    });
 };
 
 /**
- * Group exemplars by period, filtering out unknown/missing periods for the
- * main SVG track and collecting stragglers into "Uncertain".
+ * Group exemplars by period.
  */
 TransmissionTimeline.prototype._groupByPeriod = function () {
     var groups = {};
-    var self = this;
 
     this._exemplars.forEach(function (ex) {
         var period = ex.period || 'Uncertain';
@@ -116,53 +123,97 @@ TransmissionTimeline.prototype._groupByPeriod = function () {
 };
 
 /**
- * Determine the overall date range to display, based on which periods appear.
+ * Determine the overall BCE date range to display, based on which dated
+ * periods actually appear in the data.
  */
 TransmissionTimeline.prototype._dateRange = function (presentPeriods) {
+    var self = this;
     var min = Infinity;
     var max = -Infinity;
 
     presentPeriods.forEach(function (p) {
-        var range = PERIOD_RANGES[p];
+        var range = self._ranges[p];
         if (!range) return;
         if (range[0] < min) min = range[0];
         if (range[1] > max) max = range[1];
     });
 
-    // Fallback if nothing mapped
+    // Fallback if nothing mapped (no dated periods present, or API failed).
     if (min === Infinity) { min = -3200; max = -64; }
 
     return [min, max];
 };
+
+/**
+ * Build "nice" axis tick years across a BCE span. Picks a round step so the
+ * axis shows ~6-9 labels regardless of how wide the span is.
+ */
+TransmissionTimeline.prototype._axisTicks = function (dateRange) {
+    var min = dateRange[0];
+    var max = dateRange[1];
+    var span = max - min;
+    if (span <= 0) return [min];
+
+    var rawStep = span / 7;
+    var steps = [100, 200, 250, 500, 1000];
+    var step = steps[steps.length - 1];
+    for (var i = 0; i < steps.length; i++) {
+        if (rawStep <= steps[i]) { step = steps[i]; break; }
+    }
+
+    var ticks = [];
+    var first = Math.ceil(min / step) * step;
+    for (var y = first; y <= max; y += step) {
+        ticks.push(y);
+    }
+    // Always anchor the visible extremes.
+    if (ticks[0] !== min) ticks.unshift(min);
+    if (ticks[ticks.length - 1] !== max) ticks.push(max);
+    return ticks;
+};
+
+/**
+ * Format a BCE year (negative integer) as a human label, e.g. -2000 -> "2000".
+ * Positive years (rare, e.g. Parthian end) are suffixed CE.
+ */
+function formatYear(year) {
+    if (year < 0) return String(-year);
+    if (year === 0) return '0';
+    return year + ' CE';
+}
 
 TransmissionTimeline.prototype._render = function () {
     var self = this;
     var groups = this._groupByPeriod();
     var presentPeriods = Object.keys(groups);
 
-    // Ordered list of periods that actually appear in the data
-    var orderedPeriods = PERIOD_DISPLAY_ORDER.filter(function (p) {
+    // Ordered list of periods that actually appear in the data, using the
+    // chronological order returned by the API.
+    var orderedPeriods = this._order.filter(function (p) {
         return groups[p] && groups[p].length > 0;
     });
-    // Any periods in data not in our display order list go at end
+    // Any periods in data not present in the canon order go at the end.
     presentPeriods.forEach(function (p) {
         if (orderedPeriods.indexOf(p) === -1) orderedPeriods.push(p);
     });
 
     var dateRange = this._dateRange(orderedPeriods);
-    var totalSpan = dateRange[1] - dateRange[0]; // negative values, but diff is positive
+    var totalSpan = dateRange[1] - dateRange[0]; // positive diff
 
     // Layout constants
     var paddingLeft = 16;
     var paddingRight = 16;
     var paddingTop = 12;
     var trackHeight = 80;      // dot area height
-    var labelHeight = 28;      // period label area below track
-    var svgHeight = paddingTop + trackHeight + labelHeight + 8;
+    var axisHeight = 18;       // BCE tick axis below the track
+    var labelHeight = 28;      // period label area below the axis
+    var svgHeight = paddingTop + trackHeight + axisHeight + labelHeight + 8;
 
-    // We use a viewBox approach so it scales with container width
+    // viewBox approach so it scales with container width
     var viewBoxWidth = 1000;
     var trackWidth = viewBoxWidth - paddingLeft - paddingRight;
+
+    var axisY = paddingTop + trackHeight;
 
     // Convert a year (BCE = negative) to an x position within the track
     function yearToX(year) {
@@ -175,7 +226,7 @@ TransmissionTimeline.prototype._render = function () {
     svg.setAttribute('viewBox', '0 0 ' + viewBoxWidth + ' ' + svgHeight);
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     svg.setAttribute('role', 'img');
-    svg.setAttribute('aria-label', 'Transmission timeline showing ' + this._exemplars.length + ' exemplars across ' + orderedPeriods.length + ' periods');
+    svg.setAttribute('aria-label', 'Transmission timeline showing ' + this._exemplars.length + ' exemplars across ' + orderedPeriods.length + ' periods, on a proportional BCE axis');
     svg.style.width = '100%';
     svg.style.height = 'auto';
     svg.style.display = 'block';
@@ -186,8 +237,8 @@ TransmissionTimeline.prototype._render = function () {
     bandsG.setAttribute('class', 'tl-bands');
 
     orderedPeriods.forEach(function (period, idx) {
-        var range = PERIOD_RANGES[period];
-        if (!range) return; // Uncertain — no band
+        var range = self._ranges[period];
+        if (!range) return; // undated period — no band
 
         var x1 = yearToX(range[0]);
         var x2 = yearToX(range[1]);
@@ -208,11 +259,57 @@ TransmissionTimeline.prototype._render = function () {
     // ── Baseline ────────────────────────────────────────────────────────────
     var baseline = document.createElementNS(SVG_NS, 'line');
     baseline.setAttribute('x1', paddingLeft);
-    baseline.setAttribute('y1', paddingTop + trackHeight);
+    baseline.setAttribute('y1', axisY);
     baseline.setAttribute('x2', paddingLeft + trackWidth);
-    baseline.setAttribute('y2', paddingTop + trackHeight);
+    baseline.setAttribute('y2', axisY);
     baseline.setAttribute('class', 'tl-baseline');
     svg.appendChild(baseline);
+
+    // ── Proportional BCE axis: ticks + year labels ───────────────────────────
+    var axisG = document.createElementNS(SVG_NS, 'g');
+    axisG.setAttribute('class', 'tl-axis');
+
+    // Axis caption — make the "BCE" framing explicit for the reader. Sits in
+    // the left padding gutter, below the baseline, on the year-label row. The
+    // tick loop reserves space for it so year labels never collide with it.
+    var axisCaption = document.createElementNS(SVG_NS, 'text');
+    axisCaption.setAttribute('x', paddingLeft - 2);
+    axisCaption.setAttribute('y', axisY + axisHeight - 2);
+    axisCaption.setAttribute('text-anchor', 'start');
+    axisCaption.setAttribute('class', 'tl-axis__caption');
+    axisCaption.textContent = 'BCE';
+    axisG.appendChild(axisCaption);
+
+    var ticks = this._axisTicks(dateRange);
+    // Reserve the caption's footprint so the first year label is dropped only
+    // if it would overlap "BCE"; later labels still render normally.
+    var lastTickX = paddingLeft + 16;
+    ticks.forEach(function (year) {
+        var tx = yearToX(year);
+        // Skip labels that would overlap the previous one.
+        var crowded = (tx - lastTickX) < 48;
+
+        var tick = document.createElementNS(SVG_NS, 'line');
+        tick.setAttribute('x1', tx);
+        tick.setAttribute('y1', axisY);
+        tick.setAttribute('x2', tx);
+        tick.setAttribute('y2', axisY + 5);
+        tick.setAttribute('class', 'tl-axis__tick');
+        axisG.appendChild(tick);
+
+        if (!crowded) {
+            var lbl = document.createElementNS(SVG_NS, 'text');
+            lbl.setAttribute('x', tx);
+            lbl.setAttribute('y', axisY + axisHeight - 2);
+            lbl.setAttribute('text-anchor', 'middle');
+            lbl.setAttribute('class', 'tl-axis__year');
+            lbl.textContent = formatYear(year);
+            axisG.appendChild(lbl);
+            lastTickX = tx;
+        }
+    });
+
+    svg.appendChild(axisG);
 
     // ── Dots per period ──────────────────────────────────────────────────────
     // For each period, spread dots horizontally across its date range,
@@ -243,13 +340,13 @@ TransmissionTimeline.prototype._render = function () {
         var exs = groups[period];
         if (!exs || !exs.length) return;
 
-        var range = PERIOD_RANGES[period];
+        var range = self._ranges[period];
         var x1, x2;
         if (range) {
             x1 = yearToX(range[0]);
             x2 = yearToX(range[1]);
         } else {
-            // Uncertain: place at far right
+            // Undated period: place at far right of the track.
             x1 = paddingLeft + trackWidth - 40;
             x2 = paddingLeft + trackWidth;
         }
@@ -257,7 +354,7 @@ TransmissionTimeline.prototype._render = function () {
         var bandW = Math.max(x2 - x1, COL_STEP);
         var maxCols = Math.max(1, Math.floor(bandW / COL_STEP));
         var maxRows = Math.floor(trackHeight / COL_STEP) - 1;
-        var baseY = paddingTop + trackHeight - DOT_R - DOT_GAP;
+        var baseY = axisY - DOT_R - DOT_GAP;
 
         exs.forEach(function (ex, i) {
             var col = i % maxCols;
@@ -306,7 +403,7 @@ TransmissionTimeline.prototype._render = function () {
                     tooltipText.textContent = label;
                     tooltip.setAttribute('display', 'block');
 
-                    // Measure text (approximate: 7px per char in viewBox units)
+                    // Measure text (approximate: 6.5px per char in viewBox units)
                     var textW = Math.min(label.length * 6.5, 300);
                     var textH = 16;
                     var pad = 5;
@@ -341,7 +438,7 @@ TransmissionTimeline.prototype._render = function () {
     labelsG.setAttribute('class', 'tl-labels');
 
     orderedPeriods.forEach(function (period) {
-        var range = PERIOD_RANGES[period];
+        var range = self._ranges[period];
         var midX;
         if (range) {
             midX = (yearToX(range[0]) + yearToX(range[1])) / 2;
@@ -349,7 +446,7 @@ TransmissionTimeline.prototype._render = function () {
             midX = paddingLeft + trackWidth - 20;
         }
 
-        var labelY = paddingTop + trackHeight + labelHeight - 6;
+        var labelY = axisY + axisHeight + labelHeight - 6;
 
         var text = document.createElementNS(SVG_NS, 'text');
         text.setAttribute('x', midX);
@@ -406,22 +503,27 @@ TransmissionTimeline.prototype._render = function () {
 
     svg.appendChild(labelsG);
 
-    // Inject styles into the SVG
+    // Inject styles into the SVG. Colors reference the app's design tokens
+    // (CSS custom properties cascade into inline SVG) with literal fallbacks
+    // for the rare case the timeline renders outside the tokenized document.
     var style = document.createElementNS(SVG_NS, 'style');
     style.textContent = [
         '.tl-band { fill: rgba(255,255,255,0.02); }',
         '.tl-band--alt { fill: rgba(255,255,255,0.05); }',
-        '.tl-baseline { stroke: rgba(255,255,255,0.14); stroke-width: 1; }',
+        '.tl-baseline { stroke: var(--color-border, #404040); stroke-width: 1; }',
+        '.tl-axis__tick { stroke: var(--color-border, #404040); stroke-width: 1; }',
+        '.tl-axis__year { font-size: 8px; fill: var(--color-text-subtle, #707070); font-family: var(--font-sans, system-ui, sans-serif); }',
+        '.tl-axis__caption { font-size: 8px; fill: var(--color-text-secondary, #888888); font-family: var(--font-sans, system-ui, sans-serif); letter-spacing: 0.05em; }',
         '.tl-dot { transition: r 0.1s ease, opacity 0.1s ease; }',
-        '.tl-dot--filled { fill: #c9a962; stroke: #c9a962; }',
-        '.tl-dot--hollow { fill: none; stroke: #c9a962; stroke-width: 1.2; }',
+        '.tl-dot--filled { fill: var(--color-accent, #c9a962); stroke: var(--color-accent, #c9a962); }',
+        '.tl-dot--hollow { fill: none; stroke: var(--color-accent, #c9a962); stroke-width: 1.2; }',
         '.tl-dot:hover, .tl-dot:focus { r: 6; outline: none; }',
         '.tl-dot--dimmed { opacity: 0.2; }',
-        '.tl-label { font-size: 9px; fill: #a0a0a0; font-family: system-ui, sans-serif; user-select: none; }',
-        '.tl-label:hover { fill: #c9a962; }',
-        '.tl-label--active { fill: #c9a962; font-weight: 600; }',
-        '.tl-tooltip__bg { fill: #141414; stroke: rgba(255,255,255,0.14); stroke-width: 0.5; }',
-        '.tl-tooltip__text { font-size: 9px; fill: #e8e6e3; font-family: system-ui, sans-serif; }',
+        '.tl-label { font-size: 9px; fill: var(--color-text-muted, #a0a0a0); font-family: var(--font-sans, system-ui, sans-serif); user-select: none; }',
+        '.tl-label:hover { fill: var(--color-accent, #c9a962); }',
+        '.tl-label--active { fill: var(--color-accent, #c9a962); font-weight: 600; }',
+        '.tl-tooltip__bg { fill: var(--color-bg-deep, #141414); stroke: var(--color-border, #404040); stroke-width: 0.5; }',
+        '.tl-tooltip__text { font-size: 9px; fill: var(--color-text, #e8e6e3); font-family: var(--font-sans, system-ui, sans-serif); }',
     ].join('\n');
     svg.insertBefore(style, svg.firstChild);
 
@@ -456,25 +558,31 @@ TransmissionTimeline.prototype.clearSelection = function () {
 
 // ── Mobile fallback: collapse timeline on very narrow screens ────────────────
 // On screens < 480px, we replace the SVG with a compact period-count list.
-// The SVG is still rendered (for screen readers / wider screens) but visually
-// swapped for an accessible list on narrow viewports.
+// Ordering uses the same canonical chronology fetched from the API; on fetch
+// failure we fall back to whatever order the exemplar groups appear in.
 (function () {
     function isMobile() {
         return window.innerWidth < 480;
     }
 
-    function buildMobileList(container, exemplars) {
+    function buildMobileList(container, exemplars, order) {
         var groups = {};
         exemplars.forEach(function (ex) {
             var period = ex.period || 'Uncertain';
             groups[period] = (groups[period] || 0) + 1;
         });
 
+        // Order periods chronologically per the canon, then append any
+        // leftover periods that weren't in the canon list.
+        var ordered = (order || []).filter(function (p) { return groups[p]; });
+        Object.keys(groups).forEach(function (p) {
+            if (ordered.indexOf(p) === -1) ordered.push(p);
+        });
+
         var list = document.createElement('ul');
         list.className = 'tl-mobile-list';
 
-        PERIOD_DISPLAY_ORDER.forEach(function (period) {
-            if (!groups[period]) return;
+        ordered.forEach(function (period) {
             var li = document.createElement('li');
             li.className = 'tl-mobile-list__item';
             li.innerHTML =
@@ -502,7 +610,9 @@ TransmissionTimeline.prototype.clearSelection = function () {
         try { raw = JSON.parse(container.dataset.exemplars || '[]'); } catch (_) { raw = []; }
         if (!raw.length) return;
 
-        container.innerHTML = '';
-        container.appendChild(buildMobileList(container, raw));
+        fetchPeriods().then(function (periods) {
+            container.innerHTML = '';
+            container.appendChild(buildMobileList(container, raw, periods.order));
+        });
     });
 }());
