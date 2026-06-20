@@ -6,7 +6,7 @@ Usage:
 Options:
     --n N           Total tablets to evaluate (default: 30)
     --strata        Split: sumerian,akkadian,sparse (default auto)
-    --judge-model   Haiku model for LLM-as-judge (default: claude-haiku-4-5-20251001)
+    --judge-model   Haiku model for LLM-as-judge (default: claude-haiku-4-5)
     --out FILE      JSON output path (default: /tmp/gs-eval-baseline.json)
 
 Metrics:
@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
-_JUDGE_MODEL = "claude-haiku-4-5-20251001"
+_JUDGE_MODEL = "claude-haiku-4-5"
 _JUDGE_PROMPT = """You are evaluating an AI-generated summary of a cuneiform tablet for a scholarly database.
 
 Rate the summary on these criteria (score 1–5):
@@ -274,6 +274,35 @@ def run_baseline(args: argparse.Namespace) -> int:
 
     with open(args.out, "w") as f:
         json.dump(summary, f, indent=2)
+
+    # Persist to DB so results survive restarts and can be trended.
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO eval_runs
+                    (run_at, n_total, synthesis_rate, citation_rate,
+                     best_guess_rate, judge_mean, judge_p25, judge_p75,
+                     judge_model, per_stratum, results)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    summary["run_at"],
+                    summary["n_total"],
+                    summary["synthesis_rate"],
+                    summary["citation_rate"],
+                    summary["best_guess_rate"],
+                    summary["judge_mean"],
+                    summary["judge_p25"],
+                    summary["judge_p75"],
+                    summary["judge_model"],
+                    json.dumps(summary["per_stratum"]),
+                    json.dumps(summary["results"]),
+                ),
+            )
+        conn.commit()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not persist eval run to DB: %s", exc)
 
     print()
     print("── Baseline Results ──────────────────────────────────")

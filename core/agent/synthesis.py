@@ -15,8 +15,11 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
+
+import anthropic
 
 from core.agent.anthropic_client import AnthropicClient, CompletionResult
 from core.agent.citation_parser import (
@@ -297,6 +300,34 @@ def _validate_v2_semantics(text: str, facts: list[Fact]) -> ValidationResult:
     return ValidationResult(ok=True)
 
 
+# ── API call with network/5xx retry ──────────────────────────────────────────
+
+_API_RETRYABLE = (anthropic.APIConnectionError, anthropic.InternalServerError)
+_API_RETRY_DELAYS = (2.0, 8.0)  # two retries: 2 s then 8 s
+
+
+def _complete_with_retry(
+    client: AnthropicClient,
+    system_prompt: str,
+    user_message: str,
+    max_tokens: int,
+) -> CompletionResult:
+    last_exc: Exception | None = None
+    for delay in (None, *_API_RETRY_DELAYS):
+        if delay is not None:
+            logger.warning("Anthropic API error, retrying in %.0fs: %s", delay, last_exc)
+            time.sleep(delay)
+        try:
+            return client.complete(
+                system_prompt=system_prompt,
+                user_message=user_message,
+                max_tokens=max_tokens,
+            )
+        except _API_RETRYABLE as exc:
+            last_exc = exc
+    raise last_exc  # type: ignore[misc]
+
+
 # ── Inner loop ────────────────────────────────────────────────────────────────
 
 
@@ -315,7 +346,8 @@ def _run_loop(
     result: ValidationResult | None = None
 
     for attempt in range(2):
-        completion = client.complete(
+        completion = _complete_with_retry(
+            client=client,
             system_prompt=system_prompt,
             user_message=user_message,
             max_tokens=max_tokens,
