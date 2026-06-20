@@ -114,6 +114,15 @@ def lemma_detail(request: Request, lemma_id: int):
     if not data:
         return RedirectResponse(url="/dictionary", status_code=302)
 
+    # Morphology sidebar — second, non-fatal call. The page must never 500
+    # because the norm/form chain is unavailable; on any failure we render
+    # the page with an empty sidebar (treated as the empty/unindexed state).
+    try:
+        norms_data = api.get(f"/dictionary/lemmas/{lemma_id}/norms")
+        norms = (norms_data or {}).get("norms", [])
+    except Exception:
+        norms = []
+
     from app.main import templates
 
     return templates.TemplateResponse(
@@ -123,6 +132,7 @@ def lemma_detail(request: Request, lemma_id: int):
             "lemma": data.get("lemma", {}),
             "senses": data.get("senses", []),
             "signs": data.get("signs", []),
+            "norms": norms,
             "tablet_count": data.get("tablet_count"),
             "api_url": request.app.state.api.base_url,
         },
