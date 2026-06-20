@@ -193,6 +193,11 @@ def do_search(
                 "score": round(h.score, 4),
                 "p_number": h.p_number_ref,
                 "sources": h.sources,
+                # Which retrieval signals matched this hit. A "semantic" key means
+                # the hit was (also) recalled by the Voyage vector search; the UI
+                # renders a "≈ semantic" badge on these. The key survives RRF
+                # fusion, which merges the source hit's rank_components.
+                "rank_components": list(h.rank_components.keys()),
             }
             # Tablet-only display extras for the global-search drawer.
             if entity_type == "tablets":

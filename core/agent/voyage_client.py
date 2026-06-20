@@ -43,10 +43,20 @@ class VoyageClient:
     in environments that don't run embeddings."""
 
     def __init__(self, api_key: str | None = None) -> None:
+        # Mirror AnthropicClient: fall back to the canonical Settings object,
+        # not just os.environ. Under systemd/uvicorn the .env is parsed by
+        # pydantic-settings into Settings but is NOT exported into os.environ,
+        # so reading os.environ alone left semantic search silently degrading
+        # to lexical in production.
+        from core.config import get_settings  # noqa: PLC0415
+
+        settings = get_settings()
         self.api_key = (
             api_key
             or os.environ.get("VOYAGE_API_KEY")
+            or getattr(settings, "voyage_api_key", None)
             or os.environ.get("ANTHROPIC_API_KEY")
+            or getattr(settings, "anthropic_api_key", None)
         )
         if not self.api_key:
             raise RuntimeError(

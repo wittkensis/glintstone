@@ -86,6 +86,11 @@
               {%- else -%}
                 {{ item.primary_label }}
               {%- endif -%}
+              {# Marks a hit that the Voyage vector search recalled (hybrid/semantic
+                 retrieval), as opposed to a purely lexical match. #}
+              {% if item.rank_components and 'semantic' in item.rank_components %}
+                <span class="badge-semantic" title="Matched by semantic (meaning-based) search" aria-label="semantic match">&#8776;</span>
+              {% endif %}
             </span>
             {% if item.secondary_label %}
               <span class="search-row__secondary">{{ item.secondary_label }}</span>
