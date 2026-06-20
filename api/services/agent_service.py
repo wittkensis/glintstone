@@ -272,7 +272,7 @@ def do_summarize_artifact(
     interaction_id_str: str,
 ) -> ToolResponse[CardPayload]:
     """Hero scenario 2: summarize_artifact with lazy-persist."""
-    prompt_version = "synthesis.v1"
+    prompt_version = "synthesis.v2"
 
     # 1. Lazy-load
     persisted = agent_outputs.find_fresh(
