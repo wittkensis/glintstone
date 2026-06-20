@@ -18,13 +18,20 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, cast
 
 import psycopg
+from psycopg.rows import DictRow
 
-from core.schemas.citation import Citation
+from core.schemas.citation import Citation, SourceKind
 
 logger = logging.getLogger(__name__)
+
+# Focus modes accepted by assemble_artifact_facts / summarize_artifact.
+ArtifactFocus = Literal["general", "research", "translation_status"]
+
+# Line-context rendering variant: "a" = neighbor window, "b" = full surface.
+ContextVariant = Literal["a", "b"]
 
 
 @dataclass
@@ -73,7 +80,7 @@ class LineFactBundle:
     is_mixed_language: bool
     language_shift_position: int | None
     language_supported: bool
-    context_variant: str  # "a" | "b"
+    context_variant: ContextVariant  # "a" | "b"
     facts: list[Fact] = field(default_factory=list)
     token_rows: list[dict] = field(default_factory=list)  # raw DB token rows
     missing_layers: list[str] = field(default_factory=list)
@@ -90,7 +97,7 @@ def _next_n(facts: list[Fact]) -> int:
 def _add_fact(
     facts: list[Fact],
     text: str,
-    source_kind: str,
+    source_kind: SourceKind,
     source_id: int | str,
     retrieval_field: str,
     annotation_run_id: int | None = None,
@@ -118,9 +125,9 @@ def _add_fact(
 
 
 def assemble_artifact_facts(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     p_number: str,
-    focus: Literal["general", "research", "translation_status"] = "general",
+    focus: ArtifactFocus = "general",
     similar_tablet_min_cosine: float = 0.72,
     similar_tablet_count: int = 5,
 ) -> ArtifactFactBundle | None:
@@ -529,7 +536,9 @@ def assemble_artifact_facts(
         LIMIT %s
     """
 
-    def _load_similar(cur: psycopg.Cursor, entity_type: str, min_cosine: float) -> None:
+    def _load_similar(
+        cur: psycopg.Cursor[DictRow], entity_type: str, min_cosine: float
+    ) -> None:
         cur.execute(
             _embedding_query,
             (entity_type, p_number, entity_type, p_number, similar_tablet_count),
@@ -585,7 +594,7 @@ def assemble_artifact_facts(
 
 
 def assemble_token_facts(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     p_number: str,
     token_id: int,
 ) -> TokenFactBundle | None:
@@ -754,7 +763,7 @@ def _should_use_variant_b(genre: str | None) -> bool:
 
 
 def assemble_line_facts(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     p_number: str,
     surface_name: str,
     line_number: str,
@@ -869,8 +878,12 @@ def assemble_line_facts(
         )
 
     # 3. Determine context variant
-    auto_variant = "b" if _should_use_variant_b(genre) else "a"
-    context_variant = session_variant if session_variant in ("a", "b") else auto_variant
+    auto_variant: ContextVariant = "b" if _should_use_variant_b(genre) else "a"
+    context_variant: ContextVariant = (
+        cast(ContextVariant, session_variant)
+        if session_variant in ("a", "b")
+        else auto_variant
+    )
 
     # 4. Catalog facts (period, language, genre)
     if period:

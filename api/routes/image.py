@@ -47,9 +47,13 @@ def _get_thumbnail(source: Path, size: int) -> Path:
         return thumb_path
 
     with Image.open(source) as img:
-        img.thumbnail((size, size), Image.LANCZOS)
+        # Image.LANCZOS is a runtime-valid alias for Image.Resampling.LANCZOS;
+        # the Pillow stubs only expose it on the Resampling enum.
+        img.thumbnail((size, size), Image.LANCZOS)  # type: ignore[attr-defined]
         if img.mode != "RGB":
-            img = img.convert("RGB")
+            # convert() returns Image; the loop var was inferred as ImageFile
+            # from Image.open. Same object family, harmless at runtime.
+            img = img.convert("RGB")  # type: ignore[assignment]
         img.save(thumb_path, "JPEG", quality=85)
 
     return thumb_path

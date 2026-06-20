@@ -31,11 +31,20 @@ jobs:
           pip install pytest pytest-asyncio "ruff==0.15.2" mypy pip-audit
 
       - name: Dependency audit (pip-audit)
-        # Non-blocking: surfaces CVEs without gating CI until the fix lands.
-        # Flip to required once the backlog is clear. See issue #52.
-        continue-on-error: true
+        # Blocking: a new CVE in a shipped dependency fails CI (audit finding 3a).
+        # The five ignored advisories are all in `pip` itself — the build tool,
+        # not a runtime/shipped dependency — and this job upgrades pip to the
+        # latest release at install time anyway. There are zero outstanding CVEs
+        # in requirements.txt. Re-audit and drop ignores once the runner image
+        # ships a pip past these advisories.
+        #   PYSEC-2026-196 / CVE-2026-1703 / CVE-2026-3219 / CVE-2026-6357 / CVE-2025-8869 — pip
         run: |
-          pip-audit --strict --progress-spinner off
+          pip-audit --strict --progress-spinner off \
+            --ignore-vuln PYSEC-2026-196 \
+            --ignore-vuln CVE-2025-8869 \
+            --ignore-vuln CVE-2026-1703 \
+            --ignore-vuln CVE-2026-3219 \
+            --ignore-vuln CVE-2026-6357
 
       - name: Lint (ruff)
         run: |
@@ -43,10 +52,8 @@ jobs:
           ruff format --check .
 
       - name: Type-check (mypy)
-        # Non-blocking: the codebase has no prior type-checking discipline, so
-        # mypy reports rather than gates. Flip to required once the backlog is
-        # cleared (see issue #83 phase 3a).
-        continue-on-error: true
+        # Blocking: the codebase is now clean under mypy across these packages
+        # (audit finding 3a). New type errors fail CI.
         run: |
           mypy api/ app/ core/ mcp/ --ignore-missing-imports
 

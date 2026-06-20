@@ -1,6 +1,7 @@
 """Collection repository — CRUD and member management."""
 
 import math
+from typing import cast
 
 from core.repository import BaseRepository
 
@@ -108,26 +109,34 @@ class CollectionRepository(BaseRepository):
         )
 
     def create(self, name: str, description: str | None = None) -> dict:
-        return self.fetch_one(
-            """
+        # INSERT ... RETURNING always yields the created row.
+        return cast(
+            dict,
+            self.fetch_one(
+                """
             INSERT INTO collections (name, description, created_at, updated_at)
             VALUES (%(name)s, %(desc)s, NOW(), NOW())
             RETURNING collection_id, name, description, image_path, created_at, updated_at
         """,
-            {"name": name, "desc": description or ""},
+                {"name": name, "desc": description or ""},
+            ),
         )
 
     def update(
         self, collection_id: int, name: str, description: str | None = None
     ) -> dict:
-        return self.fetch_one(
-            """
+        # Callers update an existing collection, so RETURNING yields a row.
+        return cast(
+            dict,
+            self.fetch_one(
+                """
             UPDATE collections
             SET name = %(name)s, description = %(desc)s, updated_at = NOW()
             WHERE collection_id = %(id)s
             RETURNING collection_id, name, description, image_path, created_at, updated_at
         """,
-            {"id": collection_id, "name": name, "desc": description or ""},
+                {"id": collection_id, "name": name, "desc": description or ""},
+            ),
         )
 
     def delete(self, collection_id: int) -> bool:

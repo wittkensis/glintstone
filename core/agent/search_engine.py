@@ -28,6 +28,7 @@ import time
 from dataclasses import dataclass, field
 
 import psycopg
+from psycopg.rows import DictRow
 
 from core.agent.voyage_client import VoyageClient
 from core.database import get_connection
@@ -101,7 +102,7 @@ class SearchEngine:
 
     def search(
         self,
-        conn: psycopg.Connection,
+        conn: psycopg.Connection[DictRow],
         params: SearchParams,
     ) -> SearchResults:
         t_start = time.monotonic()
@@ -231,7 +232,7 @@ class SearchEngine:
 
     def _hydrate_tablet_extras(
         self,
-        conn: psycopg.Connection,
+        conn: psycopg.Connection[DictRow],
         hits: list[SearchHit],
     ) -> None:
         """Attach r2_thumbnail_key and pipeline stage flags to tablet hits.
@@ -312,7 +313,9 @@ class SearchEngine:
 
     # ── Implementation ───────────────────────────────────────────────────────
 
-    def _exact_match(self, conn: psycopg.Connection, q: str) -> SearchHit | None:
+    def _exact_match(
+        self, conn: psycopg.Connection[DictRow], q: str
+    ) -> SearchHit | None:
         q_stripped = q.strip()
         if not q_stripped:
             return None
@@ -349,7 +352,7 @@ class SearchEngine:
 
     def _lexical_search(
         self,
-        conn: psycopg.Connection,
+        conn: psycopg.Connection[DictRow],
         q: str,
         types: list[EntityType],
         limit: int,
@@ -393,7 +396,7 @@ class SearchEngine:
 
     def _semantic_search(
         self,
-        conn: psycopg.Connection,
+        conn: psycopg.Connection[DictRow],
         q: str,
         types: list[EntityType],
         limit: int,
@@ -543,7 +546,7 @@ class SearchEngine:
 
     def _count_per_type(
         self,
-        conn: psycopg.Connection,
+        conn: psycopg.Connection[DictRow],
         q: str,
         types: list[EntityType],
         filters: SearchFilters | None,

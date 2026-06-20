@@ -24,6 +24,7 @@ from contextlib import contextmanager
 from typing import Iterator
 
 import psycopg
+from psycopg.rows import DictRow
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,7 @@ def _client_label_from_env() -> str | None:
 
 @contextmanager
 def log_interaction(
-    conn: psycopg.Connection,
+    conn: psycopg.Connection[DictRow],
     *,
     surface: str,
     request: dict,
@@ -142,7 +143,10 @@ def log_interaction(
                         interaction.client_label,
                     ),
                 )
-                interaction.id = cur.fetchone()["id"]
+                # INSERT ... RETURNING id always yields exactly one row.
+                inserted = cur.fetchone()
+                assert inserted is not None
+                interaction.id = inserted["id"]
             conn.commit()
         except Exception as log_exc:
             # Logging must not break the actual response. Just warn.

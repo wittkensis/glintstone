@@ -219,6 +219,9 @@ def get_storage(settings: Optional[Settings] = None) -> Storage:
             raise RuntimeError(
                 f"STORAGE_BACKEND=r2 but missing required env vars: {', '.join(missing)}"
             )
+        # The `missing` guard above guarantees these are populated.
+        assert s.r2_access_key_id is not None
+        assert s.r2_secret_access_key is not None
         return R2Storage(
             access_key_id=s.r2_access_key_id,
             secret_access_key=s.r2_secret_access_key,

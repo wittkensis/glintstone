@@ -1,7 +1,7 @@
 """Repository for user sessions."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, cast
 
 from core.repository import BaseRepository
 
@@ -15,19 +15,24 @@ class SessionRepository(BaseRepository):
         ip: Optional[str] = None,
         user_agent: Optional[str] = None,
     ) -> dict:
-        return self.fetch_one(
-            """
+        # INSERT ... RETURNING * always yields exactly one row, so the
+        # Optional from fetch_one is never None here.
+        return cast(
+            dict,
+            self.fetch_one(
+                """
             INSERT INTO user_sessions (user_id, token_hash, expires_at, ip, user_agent)
             VALUES (%(user_id)s, %(token_hash)s, %(expires_at)s, %(ip)s, %(user_agent)s)
             RETURNING *
             """,
-            {
-                "user_id": user_id,
-                "token_hash": token_hash,
-                "expires_at": expires_at,
-                "ip": ip,
-                "user_agent": user_agent,
-            },
+                {
+                    "user_id": user_id,
+                    "token_hash": token_hash,
+                    "expires_at": expires_at,
+                    "ip": ip,
+                    "user_agent": user_agent,
+                },
+            ),
         )
 
     def find_by_token_hash(self, token_hash: str) -> Optional[dict]:

@@ -1,6 +1,6 @@
 """Repository for users and their auth method links."""
 
-from typing import Optional
+from typing import Optional, cast
 
 from core.repository import BaseRepository
 
@@ -35,7 +35,8 @@ class UserRepository(BaseRepository):
         display_name: Optional[str] = None,
         orcid_id: Optional[str] = None,
     ) -> dict:
-        return self.fetch_one(
+        # INSERT ... ON CONFLICT DO UPDATE ... RETURNING always yields a row.
+        row = self.fetch_one(
             """
             INSERT INTO users (email, display_name, orcid_id)
             VALUES (%(email)s, %(display_name)s, %(orcid_id)s)
@@ -46,6 +47,7 @@ class UserRepository(BaseRepository):
             """,
             {"email": email, "display_name": display_name, "orcid_id": orcid_id},
         )
+        return cast(dict, row)
 
     def link_auth_method(self, user_id: str, provider: str, provider_id: str) -> None:
         with self.conn.cursor() as cur:

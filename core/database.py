@@ -15,12 +15,20 @@ from contextlib import contextmanager
 from typing import Generator
 
 import psycopg
-from psycopg.rows import dict_row
+from psycopg.rows import DictRow, dict_row
 from psycopg_pool import ConnectionPool
 
 from core.config import get_settings
 
-_pool: ConnectionPool | None = None
+# Every connection in this codebase is opened with `row_factory=dict_row`, so
+# rows are mappings (`row["col"]`, `row.get(...)`) rather than the psycopg
+# default tuples. Parameterising the connection type with the row type teaches
+# mypy that fact, which is what keeps the type-checker honest about row access
+# across the repository and agent layers. `DictRow` is psycopg's alias for the
+# `dict_row` factory's output.
+DictConnection = psycopg.Connection[DictRow]
+
+_pool: ConnectionPool[DictConnection] | None = None
 
 
 def _pool_conninfo() -> str:
@@ -80,7 +88,7 @@ def is_pool_initialized() -> bool:
 
 
 @contextmanager
-def get_connection() -> Generator[psycopg.Connection, None, None]:
+def get_connection() -> Generator[DictConnection, None, None]:
     """Get a connection from the pool."""
     if _pool is None:
         raise RuntimeError("Database pool not initialized. Call init_pool() first.")
@@ -88,13 +96,13 @@ def get_connection() -> Generator[psycopg.Connection, None, None]:
         yield conn
 
 
-def get_db() -> Generator[psycopg.Connection, None, None]:
+def get_db() -> Generator[DictConnection, None, None]:
     """FastAPI dependency that yields a database connection."""
     with get_connection() as conn:
         yield conn
 
 
-def connect_one_shot() -> psycopg.Connection:
+def connect_one_shot() -> DictConnection:
     """Open a single connection without the pool.
 
     Used by CLI tools, migration scripts, and standalone connectors where
