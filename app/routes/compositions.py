@@ -127,6 +127,28 @@ def composition_detail(
     if filter_provenience:
         filtered = [e for e in filtered if e.get("provenience") == filter_provenience]
 
+    # Derive translation-coverage label per exemplar from pipeline_status.
+    # semantic_complete is the canonical "has a translation" signal (pipeline
+    # stage 4 = at least one non-empty translation). It is written 1.0/0.0
+    # today (effectively binary), so in practice only Translated/Untranslated
+    # appear; the "partial" band is future-proofing for fractional values.
+    #   >= 0.99            -> Translated   (green)
+    #   > 0 and < 0.99     -> Partial      (amber)
+    #   0 / NULL / no row  -> Untranslated (neutral gray)
+    def _coverage(e: dict) -> str:
+        raw = e.get("semantic_complete")
+        try:
+            score = float(raw) if raw is not None else 0.0
+        except (TypeError, ValueError):
+            score = 1.0 if e.get("has_translation") else 0.0
+        if score >= 0.99:
+            return "translated"
+        if score > 0:
+            return "partial"
+        return "untranslated"
+
+    filtered = [{**e, "coverage": _coverage(e)} for e in filtered]
+
     # Build transmission history: group exemplars by period for the old row-based
     # timeline (kept for fallback; SVG timeline uses raw exemplars client-side)
     timeline: dict[str, list[dict]] = {}

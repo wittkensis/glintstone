@@ -111,6 +111,11 @@
     --color-badge-brown-text: #d9c5a9;
     --color-badge-brown-border: #5f5242;
 
+    /* Badge: Amber (partial coverage / in-progress states) */
+    --color-badge-amber-bg: #4a3a1f;
+    --color-badge-amber-text: #f0d28a;
+    --color-badge-amber-border: #6b5430;
+
 
     /* ==========================================================================
        Typography - Font Families
