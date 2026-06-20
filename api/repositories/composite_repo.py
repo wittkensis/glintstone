@@ -81,9 +81,12 @@ class CompositeRepository(BaseRepository):
                 a.period,
                 a.provenience,
                 a.genre,
-                ac.line_ref
+                ac.line_ref,
+                ps.semantic_complete,
+                ps.has_translation
             FROM artifacts a
             JOIN artifact_composites ac ON a.p_number = ac.p_number
+            LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
             WHERE ac.q_number = %(q_number)s
             ORDER BY a.p_number
         """,

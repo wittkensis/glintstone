@@ -132,15 +132,25 @@
                     <th>Designation</th>
                     <th>Period</th>
                     <th>Provenience</th>
+                    <th>Coverage</th>
                 </tr>
             </thead>
             <tbody id="exemplars-tbody">
+                {% set coverage_labels = {
+                    'translated': 'Translated',
+                    'partial': 'Partial',
+                    'untranslated': 'Untranslated',
+                } %}
                 {% for ex in exemplars %}
+                {% set cov = ex.coverage or 'untranslated' %}
                 <tr data-period="{{ ex.period or '' }}">
                     <td><a href="/tablets/{{ ex.p_number }}">{{ ex.p_number }}</a></td>
                     <td>{{ ex.designation or '—' }}</td>
                     <td>{{ ex.period or '—' }}</td>
                     <td>{{ ex.provenience or '—' }}</td>
+                    <td>
+                        <span class="badge badge--coverage-{{ cov }}">{{ coverage_labels[cov] }}</span>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

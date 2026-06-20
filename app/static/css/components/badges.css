@@ -59,6 +59,32 @@
 }
 
 /* ==========================================================================
+   Translation Coverage (composition exemplar table)
+   Always paired with a text label — never color alone (a11y).
+   ========================================================================== */
+
+/* Translated - Green */
+.badge--coverage-translated {
+    background: var(--color-badge-green-bg);
+    color: var(--color-badge-green-text);
+    border-color: var(--color-badge-green-border);
+}
+
+/* Partial - Amber (future-proofing; fractional semantic_complete) */
+.badge--coverage-partial {
+    background: var(--color-badge-amber-bg);
+    color: var(--color-badge-amber-text);
+    border-color: var(--color-badge-amber-border);
+}
+
+/* Untranslated - Neutral gray (inherits base .badge surface) */
+.badge--coverage-untranslated {
+    background: var(--color-bg-elevated);
+    color: var(--color-text-secondary);
+    border-color: var(--color-border);
+}
+
+/* ==========================================================================
    OCR Badge (standalone, outside card context)
    ========================================================================== */
 
