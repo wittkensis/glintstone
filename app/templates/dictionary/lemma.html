@@ -42,11 +42,34 @@
         {% endif %}
     </div>
 
-    <div class="lemma-detail__body">
+    <div class="lemma-detail__columns">
+
+        {# ── Main column ─────────────────────────────────────────────── #}
+        <div class="lemma-detail__main">
+
+        {# ── Attestation jump — primary next action, top of main ─────── #}
+        {% if tablet_count %}
+        <a class="attestation-jump" href="/tablets?search={{ lemma.citation_form | urlencode }}">
+            <span class="attestation-jump__text">
+                <span class="attestation-jump__label">See {{ lemma.citation_form }} in tablets</span>
+                <span class="attestation-jump__sub">Browse indexed tablets where this lemma occurs</span>
+            </span>
+            <span class="attestation-jump__count">{{ '{:,}'.format(tablet_count) }}</span>
+            <span class="attestation-jump__arrow" aria-hidden="true">›</span>
+        </a>
+        {% else %}
+        <span class="attestation-jump attestation-jump--unindexed">
+            <span class="attestation-jump__text">
+                <span class="attestation-jump__label">Tablet occurrences</span>
+                <span class="attestation-jump__sub">Not yet indexed in the Glintstone corpus</span>
+            </span>
+            <span class="attestation-jump__count">—</span>
+        </span>
+        {% endif %}
 
         {# ── Senses ──────────────────────────────────────────────────── #}
         {% if senses %}
-        <section class="dict-detail__section" aria-labelledby="senses-heading">
+        <section class="dict-detail__section" aria-labelledby="senses-heading" style="margin-top: var(--space-6);">
             <h3 id="senses-heading">Senses</h3>
             <ol class="lemma-detail__senses">
                 {% for sense in senses %}
@@ -94,12 +117,6 @@
         </section>
         {% endif %}
 
-        {# ── Tablet occurrences — honest stub until PRD-012 ──────────── #}
-        <section class="dict-detail__section" aria-labelledby="occurrences-heading">
-            <h3 id="occurrences-heading">Tablet occurrences</h3>
-            <p class="dict-detail__note">Not yet indexed</p>
-        </section>
-
         {# ── Source attribution ───────────────────────────────────────── #}
         {% if lemma.source_label %}
         <section class="dict-detail__section" aria-labelledby="attribution-heading">
@@ -115,6 +132,37 @@
         </section>
         {% endif %}
 
-    </div>
+        </div>{# /.lemma-detail__main #}
+
+        {# ── Morphology sidebar (norm → written-form chain) ──────────── #}
+        <aside class="lemma-detail__aside" aria-labelledby="morph-heading">
+            <div class="morphology">
+                <h3 class="morphology__title" id="morph-heading">Morphology</h3>
+                {% if norms %}
+                <p class="morphology__hint">Normalized forms and the spellings that write them, most frequent first.</p>
+                {% for norm in norms %}
+                <div class="norm-group">
+                    <div class="norm-group__head">
+                        <span class="norm-group__norm">{{ norm.norm }}</span>
+                        {% if norm.attestation_pct is not none %}
+                        <span class="norm-group__pct">{{ norm.attestation_pct | round | int }}%</span>
+                        {% endif %}
+                    </div>
+                    {% if norm.forms %}
+                    <ul class="norm-group__forms">
+                        {% for f in norm.forms[:12] %}
+                        <li class="form-chip">{{ f.form }}{% if f.count %}<span class="form-chip__count">{{ '{:,}'.format(f.count) }}</span>{% endif %}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="morphology__empty">Normalization is minimal for Sumerian — this lemma is written logographically, so its spellings track the sign rather than an inflected form.</p>
+                {% endif %}
+            </div>
+        </aside>
+
+    </div>{# /.lemma-detail__columns #}
 </main>
 {% endblock %}
