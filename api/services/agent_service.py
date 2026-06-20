@@ -759,6 +759,28 @@ def do_suggest_line_translation(
     """
     prompt_version = "suggest-line.v1"
 
+    # 1. Lazy-load — same pattern as summarize_artifact and interpret_token
+    _cache_key = f"{p_number}:{surface_name}:{line_number}:{session_variant or ''}"
+    persisted = agent_outputs.find_fresh(
+        conn,
+        output_type="line_suggestion",
+        target_type="line",
+        target_id=_cache_key,
+        focus="suggest",
+        prompt_version=prompt_version,
+    )
+    if persisted:
+        import json as _json
+        _cached = _json.loads(persisted.raw_output)
+        _payload = LineSuggestionPayload(**_cached["data"])
+        return ToolResponse[LineSuggestionPayload](
+            summary=_cached.get("summary", ""),
+            data=_payload,
+            sources=[SourceRef.computed(method="cached-synthesis", label="cached")],
+            interaction_id=interaction_id_str,
+            render_hint="chain",
+        )
+
     bundle = fact_assembly.assemble_line_facts(
         conn,
         p_number=p_number,
@@ -885,6 +907,23 @@ def do_suggest_line_translation(
         suggestions[0].translation if suggestions else "No suggestion generated"
     )
     summary = f"Line {line_number}: {top_suggestion}"
+
+    # Persist for reuse
+    import json as _json
+    try:
+        agent_outputs.insert(
+            conn,
+            output_type="line_suggestion",
+            target_type="line",
+            target_id=_cache_key,
+            focus="suggest",
+            prompt_version=prompt_version,
+            raw_output=_json.dumps({"summary": summary, "data": payload.__dict__}),
+            best_guess_flag=not bool(suggestions),
+            annotation_run_id=None,
+        )
+    except Exception as _exc:
+        logger.warning("agent_outputs insert failed for line suggestion: %s", _exc)
 
     return ToolResponse[LineSuggestionPayload](
         summary=summary,

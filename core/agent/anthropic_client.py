@@ -66,6 +66,7 @@ class AnthropicClient:
         user_message: str,
         max_tokens: int = _DEFAULT_MAX_TOKENS,
         effort: str = "medium",
+        timeout: float = 120.0,
     ) -> CompletionResult:
         """Single Claude call with prompt caching on the system prompt.
 
@@ -74,7 +75,7 @@ class AnthropicClient:
         the 5-minute TTL pay only ~0.1× for the system tokens.
         """
         client = self._ensure()
-        response = client.messages.create(
+        response = client.messages.with_options(timeout=timeout).create(
             model=self.model,
             max_tokens=max_tokens,
             system=[
