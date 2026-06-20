@@ -215,13 +215,34 @@ ssh_run "cd $RELEASE_DIR && set -a && . ./.env && set +a && \
     venv/bin/python -c 'import api.main; import app.main; import core.version; print(\"imports ok:\", core.version.release_tag())'"
 
 # --- Pre-deploy DB snapshot (production only — staging restores from prod nightly) ---
-# A failed pg_dump aborts the deploy: deploying without a backup right before a
-# migration is the risk profile we're trying to eliminate.
+# A failed OR timed-out pg_dump aborts the deploy: deploying without a complete
+# backup right before a migration is the risk profile we're eliminating. The
+# wait below is bounded AND fails hard — it must never fall through to migrations
+# with a partial dump on disk (see the #7 deploy-hang post-mortem, 2026-06-20).
 if [ "$APP_ENV" = "production" ]; then
     SNAPSHOT_NAME="pre-deploy-$RELEASE_TAG.dump"
+
+    # --- Pre-flight: make room and verify the dump can fit ---
+    # The dump is written to the same filesystem as everything else. A 19 GB DB
+    # produces a ~6 GB -Fc dump; with the disk at ~91% used this can fail
+    # mid-write (leaving a truncated "backup"). Rotate OLD dumps BEFORE the new
+    # one runs (we previously trimmed afterward, so peak usage held 4 dumps at
+    # once), then refuse to start if free space is implausibly low.
+    echo "Rotating old snapshots before dump (keep newest 2)..."
+    ssh_run "cd $SHARED_DIR/backups && ls -1t pre-deploy-*.dump 2>/dev/null | tail -n +3 | xargs -r rm -f; \
+             rm -f pre-deploy-*.dump.done 2>/dev/null || true"
+    AVAIL_KB=$(ssh_run "df -P $SHARED_DIR/backups | awk 'NR==2{print \$4}'")
+    MIN_FREE_KB=$((10 * 1024 * 1024))   # require ~10 GB headroom for the dump
+    if [ "${AVAIL_KB:-0}" -lt "$MIN_FREE_KB" ]; then
+        echo "::error::Only ${AVAIL_KB}KB free on the backups volume — need ~${MIN_FREE_KB}KB."
+        echo "::error::Refusing to start pg_dump (a truncated backup is worse than no deploy)."
+        echo "::error::Free space on the VPS or move backups off-box, then re-run."
+        exit 1
+    fi
+
     echo "Snapshotting production DB → $SNAPSHOT_NAME (background, polling for completion)..."
     # Run pg_dump in the background on the server so the SSH session doesn't need
-    # to stay open for the full 5-minute dump. Poll with short reconnects instead.
+    # to stay open for the full dump. Poll with short reconnects instead.
     # -Fc (custom format) compresses internally — do not pipe through gzip.
     ssh_run "set -a && . $SHARED_DIR/.env && set +a && \
         mkdir -p $SHARED_DIR/backups && \
@@ -230,25 +251,45 @@ if [ "$APP_ENV" = "production" ]; then
             && echo done > $SHARED_DIR/backups/$SNAPSHOT_NAME.done \
             || echo failed > $SHARED_DIR/backups/$SNAPSHOT_NAME.done' \
             > /tmp/pg_dump_deploy.log 2>&1 &"
-    # Poll until done (max 10 min, 15-second intervals)
-    echo -n "  Waiting for pg_dump"
-    for _ in $(seq 1 40); do
-        sleep 15
-        STATUS=$(ssh_run "cat $SHARED_DIR/backups/$SNAPSHOT_NAME.done 2>/dev/null || echo pending")
-        echo -n "."
-        if [ "$STATUS" = "done" ]; then
-            echo " done."
-            ssh_run "rm -f $SHARED_DIR/backups/$SNAPSHOT_NAME.done"
-            break
-        elif [ "$STATUS" = "failed" ]; then
-            echo " FAILED."
-            ssh_run "rm -f $SHARED_DIR/backups/$SNAPSHOT_NAME.done"
-            echo "::error::Pre-deploy DB snapshot failed — aborting deploy"
-            exit 1
-        fi
+
+    # --- Bounded wait with a HARD failure on timeout ---
+    # The DB grows over time; the previous 10-min budget was already being
+    # blown by a ~12-min dump (19 GB DB → ~6 GB -Fc). When the loop ran out it
+    # silently FELL THROUGH and ran migrations against prod with only a
+    # partial backup on disk. That is the exact failure we are eliminating:
+    # a slow dump must ABORT, not proceed. Budget = 30 min, with a timestamped
+    # progress line every minute so a future stall is diagnosable from the log.
+    SNAPSHOT_MAX_MIN="${SNAPSHOT_MAX_MIN:-30}"
+    snapshot_done=false
+    echo "  Waiting for pg_dump (timeout ${SNAPSHOT_MAX_MIN}m)..."
+    for _ in $(seq 1 "$SNAPSHOT_MAX_MIN"); do
+        for _ in $(seq 1 6); do        # 6 × 10s = 1 min between progress lines
+            sleep 10
+            STATUS=$(ssh_run "cat $SHARED_DIR/backups/$SNAPSHOT_NAME.done 2>/dev/null || echo pending")
+            if [ "$STATUS" = "done" ]; then
+                snapshot_done=true; break 2
+            elif [ "$STATUS" = "failed" ]; then
+                echo "  pg_dump FAILED — see /tmp/pg_dump_deploy.log on the VPS"
+                ssh_run "rm -f $SHARED_DIR/backups/$SNAPSHOT_NAME.done"
+                echo "::error::Pre-deploy DB snapshot failed — aborting deploy (no migrations run)"
+                exit 1
+            fi
+        done
+        SZ=$(ssh_run "du -h $SHARED_DIR/backups/$SNAPSHOT_NAME 2>/dev/null | cut -f1 || echo 0")
+        echo "  [$(date -u +%H:%M:%S)] pg_dump still running (dump size: ${SZ})..."
     done
-    # Keep the most recent 3 pre-deploy snapshots; daily-cron backups are retained separately.
-    ssh_run "cd $SHARED_DIR/backups && ls -1t pre-deploy-*.dump 2>/dev/null | tail -n +4 | xargs -r rm -f"
+
+    if ! $snapshot_done; then
+        echo "::error::pg_dump did not finish within ${SNAPSHOT_MAX_MIN} min — aborting deploy."
+        echo "::error::The previous release stays live; NO migrations were run."
+        echo "::error::The background pg_dump may still be running on the VPS; check"
+        echo "::error::/tmp/pg_dump_deploy.log and $SHARED_DIR/backups/. If the DB has"
+        echo "::error::simply outgrown the window, raise SNAPSHOT_MAX_MIN and re-run."
+        ssh_run "rm -f $SHARED_DIR/backups/$SNAPSHOT_NAME.done" || true
+        exit 1
+    fi
+    echo "  pg_dump done."
+    ssh_run "rm -f $SHARED_DIR/backups/$SNAPSHOT_NAME.done"
 fi
 
 # --- Run migrations against the target database ---
