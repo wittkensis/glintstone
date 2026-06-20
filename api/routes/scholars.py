@@ -174,3 +174,158 @@ def get_scholar_contributions(
         "per_page": per_page,
         "total_pages": total_pages,
     }
+
+
+@router.get("/{scholar_id}/publications")
+def get_scholar_publications(
+    scholar_id: int,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=50, ge=1, le=50),
+    type: str = "",
+    conn=Depends(get_db),
+):
+    """Publications authored/edited by this scholar, joined through
+    publication_authors (the populated scholar↔publication junction).
+
+    Each row is one publication this scholar is linked to, carrying their
+    `role` (author/editor/translator/contributor) on that work. The default
+    sort is most-cited first (``cited_by_count DESC NULLS LAST``) then newest
+    year, so the reader sees impact before chronology — the Tufte data-ledger
+    the detail page renders.
+
+    Pagination is mandatory, not optional: the most prolific scholar in the
+    corpus (#1595 "Unknown") carries 6,268 publications. We cap at 50 rows per
+    page and report ``total`` / ``total_pages`` so the web layer can offer a
+    "show all" affordance.
+
+    Alongside the page of rows we return a one-shot **summary** (five aggregates
+    for the stat strip) and a **type breakdown** (real per-type counts for the
+    filter pills), so the detail page needs a single API round-trip. The
+    optional ``type`` filter narrows the row list to one ``publication_type``;
+    the summary and breakdown always describe the whole body of work so the
+    pills keep their full counts while a filter is active.
+    """
+    offset = (page - 1) * per_page
+
+    # Whitelist the type filter against the enum so a bad value is ignored
+    # rather than silently returning nothing (and never reaches SQL untrusted).
+    valid_types = {
+        "monograph",
+        "edited_volume",
+        "journal_article",
+        "series_volume",
+        "digital_edition",
+        "museum_catalog",
+        "dissertation",
+        "conference_paper",
+        "hand_copy_publication",
+        "chapter",
+        "proceedings",
+        "thesis",
+        "report",
+        "unpublished",
+        "other",
+    }
+    type_filter = type.strip().lower() if type.strip().lower() in valid_types else ""
+
+    with conn.cursor() as cur:
+        # Confirm the scholar exists so a bad id is a 404, not a silent empty.
+        cur.execute("SELECT 1 FROM scholars WHERE id = %s", (scholar_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Scholar not found")
+
+        # Stat strip — five pre-computed aggregates over the whole body of work.
+        cur.execute(
+            """
+            SELECT count(*)                              AS works,
+                   coalesce(sum(p.cited_by_count), 0)    AS total_cites,
+                   max(p.cited_by_count)                 AS top_cites,
+                   min(p.year)                           AS first_year,
+                   max(p.year)                           AS last_year,
+                   count(DISTINCT p.publication_type)    AS type_count
+            FROM publication_authors pa
+            JOIN publications p ON p.id = pa.publication_id
+            WHERE pa.scholar_id = %s
+            """,
+            (scholar_id,),
+        )
+        s = cur.fetchone()
+        summary = {
+            "works": int(s["works"]),
+            "total_cites": int(s["total_cites"]),
+            "top_cites": s["top_cites"],
+            "first_year": s["first_year"],
+            "last_year": s["last_year"],
+            "type_count": int(s["type_count"]),
+        }
+
+        # Tablets edited — distinct artifacts edited via this scholar's pubs.
+        cur.execute(
+            """
+            SELECT count(DISTINCT ae.p_number) AS tablets_edited
+            FROM artifact_editions ae
+            JOIN publication_authors pa ON pa.publication_id = ae.publication_id
+            WHERE pa.scholar_id = %s
+            """,
+            (scholar_id,),
+        )
+        summary["tablets_edited"] = int(cur.fetchone()["tablets_edited"])
+
+        # Type breakdown — real per-type counts for the filter pills.
+        cur.execute(
+            """
+            SELECT p.publication_type AS type, count(*) AS n
+            FROM publication_authors pa
+            JOIN publications p ON p.id = pa.publication_id
+            WHERE pa.scholar_id = %s
+            GROUP BY p.publication_type
+            ORDER BY n DESC
+            """,
+            (scholar_id,),
+        )
+        type_counts = [
+            {"type": r["type"], "count": int(r["n"])} for r in cur.fetchall()
+        ]
+
+        # Paginated row list (optionally narrowed to one type).
+        type_clause = "AND p.publication_type = %s" if type_filter else ""
+        list_params: list = [scholar_id]
+        if type_filter:
+            list_params.append(type_filter)
+        list_params.extend([per_page, offset])
+
+        cur.execute(
+            f"""
+            SELECT p.id, p.title, p.short_title, p.publication_type, p.year,
+                   p.publisher, p.doi, p.url, p.cited_by_count,
+                   pa.role, pa.position
+            FROM publication_authors pa
+            JOIN publications p ON p.id = pa.publication_id
+            WHERE pa.scholar_id = %s
+              {type_clause}
+            ORDER BY p.cited_by_count DESC NULLS LAST, p.year DESC NULLS LAST
+            LIMIT %s OFFSET %s
+            """,
+            tuple(list_params),
+        )
+        rows = cur.fetchall()
+
+    # `total` reflects the active filter so pagination is correct; the summary
+    # and type breakdown stay whole-corpus (the pills keep their real counts).
+    if type_filter:
+        total = next((t["count"] for t in type_counts if t["type"] == type_filter), 0)
+    else:
+        total = summary["works"]
+
+    items = [dict(r) for r in rows]
+    total_pages = (total + per_page - 1) // per_page if total else 0
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": total_pages,
+        "summary": summary,
+        "type_counts": type_counts,
+        "type": type_filter,
+    }

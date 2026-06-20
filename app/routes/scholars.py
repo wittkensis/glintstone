@@ -25,7 +25,9 @@ def scholar_list(request: Request):
 
 
 @router.get("/{scholar_id}")
-def scholar_detail(scholar_id: int, request: Request):
+def scholar_detail(
+    scholar_id: int, request: Request, type: str = "", pub_page: int = 1
+):
     # Registered after the list route so it doesn't shadow GET "" — FastAPI
     # matches by registration order and "" is declared first.
     api = request.app.state.api
@@ -36,6 +38,17 @@ def scholar_detail(scholar_id: int, request: Request):
         # A missing scholar is a genuine not-found; raise so the global
         # exception handler serves the standard errors/404 page.
         raise HTTPException(status_code=404, detail="Scholar not found")
+
+    # Publications & works (#206) — the richer surface, rendered first per the
+    # spec default. First 50 rows, most-cited first. The ?type= query narrows
+    # the row list to one publication_type (shareable URL, back-button works);
+    # the stat strip and pill counts stay whole-corpus. The client degrades to
+    # an explicit-empty envelope on failure, so a works-fetch error renders the
+    # #189 "No publications on record" panel rather than blanking the page.
+    pub_params: dict = {"per_page": 50, "page": max(1, pub_page)}
+    if type.strip():
+        pub_params["type"] = type.strip()
+    publications = api.get_scholar_publications(scholar_id, pub_params)
 
     # First 50 contributions, newest annotation run first. Pagination beyond
     # the first page is a deliberate fast-follow (#157), not built here.
@@ -48,6 +61,13 @@ def scholar_detail(scholar_id: int, request: Request):
         "scholars/detail.html",
         {
             "scholar": scholar,
+            "publications": publications.get("items", []),
+            "pub_total": publications.get("total", 0),
+            "pub_summary": publications.get("summary", {}),
+            "pub_type_counts": publications.get("type_counts", []),
+            "pub_active_type": publications.get("type", ""),
+            "pub_page": publications.get("page", 1),
+            "pub_total_pages": publications.get("total_pages", 0),
             "contributions": contributions.items,
             "contrib_total": contributions.total,
             "run_count": contributions.run_count,
