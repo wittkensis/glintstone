@@ -55,10 +55,10 @@ gh run list --repo wittkensis/glintstone --limit 8
 gh secret list --repo wittkensis/glintstone
 git log --oneline -15
 git status --short
-ls AUDIT-*.md PRD-*.md 2>/dev/null | sort
+ls PERSONAL/AUDIT-*.md PERSONAL/PRD-*.md 2>/dev/null | sort
 ```
 
-Also read (if present): `AUDIT-2026-06-07-hardening.md`, `AUDIT-2026-06-07-frontend.md`.
+Also read (if present): `PERSONAL/AUDIT-2026-06-07-hardening.md`, `PERSONAL/AUDIT-2026-06-07-frontend.md`.
 
 Tie-breaker: `~/.claude/goals.md` — north star is "Ship Helpful Tools" for Assyriologists.
 
@@ -130,7 +130,7 @@ Synthesis endpoint uses `synthesis.v1` prompt; `v2` adds dialect translation, sc
 Search engine infrastructure is complete (hybrid lexical + semantic + RRF). `entity_embeddings` table is likely empty — semantic results return nothing. `VOYAGE_API_KEY` may not be set on VPS (falls back to Anthropic key, which fails silently against Voyage API).
 **Fix:** (1) SSH to VPS; check `entity_embeddings` count; (2) Verify `VOYAGE_API_KEY` in `.env`; (3) Write `backfill_embeddings.py` with `--entity-type` and `--limit` flags; (4) Run initial backfill.
 
-🟡 **PRD-020: Token Interpretation — decision gate** `PRD-020-token-interpretation-wiring.md` `10m`
+🟡 **PRD-020: Token Interpretation — decision gate** `PERSONAL/PRD-020-token-interpretation-wiring.md` `10m`
 Backend complete; frontend disconnected (no `data-token-id` on `.atf-word` elements). Recommended: Option B (descope from MVP — popover already shows lexical data; AI layer adds 2-5s latency per click with no confirmed user demand).
 **Fix:** Document Option B decision in the PRD, close the decision gate, file a backlog issue for post-beta revisit.
 

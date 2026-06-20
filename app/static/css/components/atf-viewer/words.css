@@ -155,6 +155,13 @@
     color: var(--color-bg);
 }
 
+/* Token highlighted via a Tablet Viewer sign:selected event (PRD-005 FR11/12) */
+.atf-word--sign-selected {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    box-shadow: 0 0 0 2px var(--color-accent);
+}
+
 .atf-word.atf-word--has-definition .atf-word__text,
 .atf-word.atf-word--no-definition {
     text-decoration: underline;

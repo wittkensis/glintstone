@@ -78,6 +78,45 @@ class ATFViewer {
 
         // Build initial structure
         this.render();
+
+        // Listen for sign selections from the Tablet Viewer overlay (PRD-005
+        // FR11/12): highlight the token matched to the clicked sign.
+        this._onSignSelected = this.handleSignSelected.bind(this);
+        document.addEventListener('sign:selected', this._onSignSelected);
+    }
+
+    /**
+     * Handle a `sign:selected` event from the Tablet Viewer. Highlights the
+     * token element whose data-token-id matches detail.tokenId, and clears any
+     * prior highlight. A null tokenId (no match / deselect) just clears.
+     * @param {CustomEvent} e - { detail: { tokenId, sign } }
+     */
+    handleSignSelected(e) {
+        const tokenId = e?.detail?.tokenId;
+
+        // Clear any existing highlight first.
+        this.container
+            .querySelectorAll('.atf-word--sign-selected')
+            .forEach(el => el.classList.remove('atf-word--sign-selected'));
+
+        if (tokenId == null) return;
+
+        const target = this.container.querySelector(
+            `[data-token-id="${CSS.escape(String(tokenId))}"]`
+        );
+        if (target) {
+            target.classList.add('atf-word--sign-selected');
+            target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+    }
+
+    /**
+     * Detach document-level listeners. Call when tearing down the viewer.
+     */
+    destroy() {
+        if (this._onSignSelected) {
+            document.removeEventListener('sign:selected', this._onSignSelected);
+        }
     }
 
     /**
@@ -999,6 +1038,11 @@ class ATFViewer {
 
                 const lookup = word.lookup ? `data-lookup="${this.escapeHtml(word.lookup)}"` : '';
                 const surfaceForm = `data-surface-form="${this.escapeHtml(word.text)}"`;
+                // token_id wires a token span to its sign annotation overlay
+                // (PRD-005 FR11/12). Absent on payloads that predate the join.
+                const tokenId = (word.token_id != null)
+                    ? `data-token-id="${this.escapeHtml(String(word.token_id))}"`
+                    : '';
 
                 // Extract damage markers from end of text
                 const markerMatch = word.text.match(/([#?!]+)$/);
@@ -1006,7 +1050,7 @@ class ATFViewer {
                 const displayText = word.text.replace(/[#?!]+$/, '');
 
                 // Build HTML with markers as superscript
-                let html = `<span class="${classes.join(' ')}" ${lookup} ${surfaceForm}>${this.escapeHtml(displayText)}`;
+                let html = `<span class="${classes.join(' ')}" ${lookup} ${surfaceForm} ${tokenId}>${this.escapeHtml(displayText)}`;
                 if (markers) {
                     html += `<sup class="atf-markers">${this.escapeHtml(markers)}</sup>`;
                 }

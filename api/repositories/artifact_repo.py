@@ -850,7 +850,7 @@ class ArtifactRepository(BaseRepository):
         """Return sign annotations for the overlay viewer."""
         rows = self.fetch_all(
             """
-            SELECT sa.sign_id, sa.bbox_x, sa.bbox_y, sa.bbox_w, sa.bbox_h,
+            SELECT sa.sign_id, sa.token_id, sa.bbox_x, sa.bbox_y, sa.bbox_w, sa.bbox_h,
                    sa.confidence, s.surface_type
             FROM sign_annotations sa
             JOIN surface_images si ON sa.surface_image_id = si.id
