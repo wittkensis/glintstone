@@ -492,7 +492,18 @@ if $smoke_failed; then
 fi
 
 # --- Trim old releases ---
-ssh_run "cd $RELEASES_DIR && ls -1t | tail -n +$((KEEP_RELEASES + 1)) | xargs -r rm -rf"
+# Pure housekeeping — it runs AFTER the symlink swap and a passing smoke test, so
+# the new release is already live and healthy. A hiccup here must NEVER fail the
+# deploy. Old releases can contain root-owned __pycache__/*.pyc (bytecode written
+# while prod services run as root), which the `deploy` user can't rm; `xargs` then
+# returns 123 and, under `set -e`, that previously failed the WHOLE deploy job
+# even though everything that matters already succeeded (the false-failure that
+# surfaced on the 2026-06-21 CI deploy once the run finally reached this step).
+# Make it best-effort: `rm -f` swallows per-file permission errors, and the whole
+# block is guarded with `|| true` so trim can never flip a good deploy to failed.
+echo "Trimming old releases (keep newest $KEEP_RELEASES; best-effort)..."
+ssh_run "cd $RELEASES_DIR && ls -1t | tail -n +$((KEEP_RELEASES + 1)) | xargs -r rm -rf 2>/dev/null" \
+    || echo "::warning::Old-release trim hit permission/other errors and was skipped — deploy is unaffected (release is live)."
 
 echo
 echo "=== Deploy complete ==="
