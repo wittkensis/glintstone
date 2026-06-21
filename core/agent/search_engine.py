@@ -152,7 +152,13 @@ class SearchEngine:
                         params.q, types, params.limit * 3
                     )
                 except Exception as exc:
-                    logger.warning("semantic search degraded: %s", exc)
+                    # #256: log repr(exc) + context (str(exc) was often empty).
+                    logger.warning(
+                        "semantic search degraded: %r (mode=%s q=%r)",
+                        exc,
+                        params.mode,
+                        params.q[:80],
+                    )
                     lexical_hits = self._lexical_search(
                         conn, params.q, types, params.limit * 3
                     )
@@ -175,11 +181,24 @@ class SearchEngine:
                     try:
                         lexical_hits = lex_future.result(timeout=8.0)
                     except Exception as exc:
-                        logger.warning("lexical search failed: %s", exc)
+                        logger.warning(
+                            "lexical search failed: %r (mode=%s q=%r)",
+                            exc,
+                            params.mode,
+                            params.q[:80],
+                        )
                     try:
                         semantic_hits = sem_future.result(timeout=15.0)
                     except Exception as exc:
-                        logger.warning("semantic search degraded: %s", exc)
+                        # #256: log repr(exc) + context — str(exc) was empty for
+                        # several exception types (e.g. timeout), so the warning
+                        # gave no clue why semantic search degraded.
+                        logger.warning(
+                            "semantic search degraded: %r (mode=%s q=%r)",
+                            exc,
+                            params.mode,
+                            params.q[:80],
+                        )
             else:
                 lexical_hits = self._lexical_search(
                     conn, params.q, types, params.limit * 3
@@ -251,9 +270,29 @@ class SearchEngine:
     ) -> None:
         """Attach r2_thumbnail_key and pipeline stage flags to tablet hits.
 
-        Joins artifact_images (display_order=0) and pipeline_completeness on
-        p_number in a single query. Updates `hits` in place. Stays silent on
-        failure so the search still returns results if a join misses.
+        Updates `hits` in place. Stays silent on failure so the search still
+        returns results if a join misses.
+
+        Perf (issue #255): the previous implementation read the five pipeline
+        flags from the `pipeline_completeness` VIEW. That view is built from
+        CTEs that each aggregate the whole corpus (text_lines / tokens /
+        lemmatizations / translations / entity_mentions — millions of rows),
+        and the `p_number = ANY(...)` predicate cannot push through the CTE
+        boundary, so every hero search recomputed corpus-wide completeness —
+        ~10 s — just to badge the ~5 tablets on screen.
+
+        We instead derive the same five flags scoped to the specific p_numbers
+        with per-p_number EXISTS / ratio subqueries that filter at the base
+        tables. The flag definitions are kept identical to the view so the
+        5-dot completeness badge is unchanged:
+          has_atf            : the tablet has any text line
+          has_tokens         : it has any token
+          has_lemmatization  : lemmatized-token ratio >= 0.5
+          has_translation    : it has any line translation
+          has_entities       : it has any entity mention
+          completeness_score : sum of the five flags (0-5)
+        With idx_tokens_line_id (migration 048) these subqueries are
+        index-driven; the stage drops from ~10 s to ~0.2 s for 5 tablets.
         """
         if not hits:
             return
@@ -264,30 +303,67 @@ class SearchEngine:
             with conn.cursor() as cur:
                 cur.execute(
                     """
+                    WITH ps AS (
+                        SELECT unnest(%s::text[]) AS p_number
+                    )
                     SELECT
-                        a.p_number,
+                        ps.p_number,
                         img.r2_thumbnail_key,
-                        pc.has_atf,
-                        pc.has_tokens,
-                        pc.has_lemmatization,
-                        pc.has_translation,
-                        pc.has_entities,
-                        pc.completeness_score
-                    FROM artifacts a
+                        EXISTS (
+                            SELECT 1 FROM text_lines tl
+                            WHERE tl.p_number = ps.p_number
+                        )::int AS has_atf,
+                        EXISTS (
+                            SELECT 1 FROM text_lines tl
+                            JOIN tokens t ON t.line_id = tl.id
+                            WHERE tl.p_number = ps.p_number
+                        )::int AS has_tokens,
+                        EXISTS (
+                            SELECT 1 FROM text_lines tl
+                            JOIN translations tn ON tn.line_id = tl.id
+                            WHERE tl.p_number = ps.p_number
+                        )::int AS has_translation,
+                        EXISTS (
+                            SELECT 1 FROM entity_mentions em
+                            LEFT JOIN tokens t ON em.token_id = t.id
+                            LEFT JOIN text_lines tl_t ON t.line_id = tl_t.id
+                            LEFT JOIN text_lines tl_l ON em.line_id = tl_l.id
+                            WHERE COALESCE(tl_t.p_number, tl_l.p_number)
+                                  = ps.p_number
+                        )::int AS has_entities,
+                        (COALESCE((
+                            SELECT count(*) FILTER (WHERE lz.id IS NOT NULL)::float
+                                   / NULLIF(count(*), 0)::float
+                            FROM text_lines tl
+                            JOIN tokens t ON t.line_id = tl.id
+                            LEFT JOIN lemmatizations lz ON lz.token_id = t.id
+                            WHERE tl.p_number = ps.p_number
+                        ), 0.0) >= 0.5)::int AS has_lemmatization
+                    FROM ps
                     LEFT JOIN LATERAL (
                         SELECT r2_thumbnail_key
                         FROM artifact_images
-                        WHERE p_number = a.p_number
+                        WHERE p_number = ps.p_number
                           AND r2_thumbnail_key IS NOT NULL
                         ORDER BY display_order ASC, id ASC
                         LIMIT 1
                     ) img ON TRUE
-                    LEFT JOIN pipeline_completeness pc ON pc.p_number = a.p_number
-                    WHERE a.p_number = ANY(%s)
                     """,
                     (p_numbers,),
                 )
-                by_p: dict[str, dict] = {r["p_number"]: r for r in cur.fetchall()}
+                rows = cur.fetchall()
+                # completeness_score is the sum of the five flags, matching the
+                # pipeline_completeness view's definition.
+                by_p: dict[str, dict] = {}
+                for r in rows:
+                    completeness = (
+                        int(r["has_atf"])
+                        + int(r["has_tokens"])
+                        + int(r["has_lemmatization"])
+                        + int(r["has_translation"])
+                        + int(r["has_entities"])
+                    )
+                    by_p[r["p_number"]] = {**r, "completeness_score": completeness}
         except Exception as exc:
             logger.warning("tablet extras hydrate failed: %s", exc)
             return
@@ -309,7 +385,7 @@ class SearchEngine:
                 int(row.get("has_entities") or 0),
             ]
             score = row.get("completeness_score")
-            hit.pipeline_completeness = int(score) if score is not None else None
+            hit.pipeline_completeness = None if score is None else int(score)
 
     # ── Parallel wrappers (each acquires its own pool connection) ────────────
 
