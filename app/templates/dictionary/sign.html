@@ -2,6 +2,8 @@
 
 {% block title %}{{ sign.sign_name or 'Sign' }} — Signs — Dictionary — Glintstone{% endblock %}
 
+{% from "components/_macros.html" import data_empty %}
+
 {% block content %}
 <main class="sign-detail-page">
 
@@ -38,21 +40,23 @@
     <div class="lemma-detail__body">
 
         {# ── Readings / values ───────────────────────────────────────── #}
-        {% if sign.values %}
         <section class="dict-detail__section" aria-labelledby="readings-heading">
             <h3 id="readings-heading">Readings</h3>
+            {% if sign.values %}
             <ul class="lemma-detail__readings">
                 {% for reading in sign.values %}
                 <li class="lemma-detail__reading-item">{{ reading }}</li>
                 {% endfor %}
             </ul>
+            {% else %}
+            {{ data_empty('No readings on record', 'No syllabic or logographic readings are recorded for this sign yet.') }}
+            {% endif %}
         </section>
-        {% endif %}
 
         {# ── Lemma associations ──────────────────────────────────────── #}
-        {% if lemmas %}
         <section class="dict-detail__section" aria-labelledby="lemmas-heading">
             <h3 id="lemmas-heading">Lemmas written with this sign</h3>
+            {% if lemmas %}
             <ul class="sign-detail__lemmas">
                 {% for lem in lemmas %}
                 <li class="sign-detail__lemma-row">
@@ -72,13 +76,15 @@
                 </li>
                 {% endfor %}
             </ul>
+            {% else %}
+            {{ data_empty('No lemmas on record', 'No dictionary entries are linked to this sign yet.') }}
+            {% endif %}
         </section>
-        {% endif %}
 
         {# ── Tablet occurrences — honest stub until PRD-012 ──────────── #}
         <section class="dict-detail__section" aria-labelledby="occurrences-heading">
             <h3 id="occurrences-heading">Tablet occurrences</h3>
-            <p class="dict-detail__note">Not yet indexed</p>
+            {{ data_empty('Not yet indexed', 'Sign-level tablet occurrences are not yet indexed in the Glintstone corpus.') }}
         </section>
 
         {# ── Source attribution ───────────────────────────────────────── #}

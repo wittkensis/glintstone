@@ -2,6 +2,8 @@
 
 {% block title %}{{ scholar.name }} - Glintstone{% endblock %}
 
+{% from "components/_macros.html" import data_empty %}
+
 {% block head %}
 <link rel="stylesheet" href="/static/css/pages/scholars.css?v={{ app_version }}">
 {% endblock %}
@@ -150,7 +152,7 @@
           </a>
           {% endif %}
           {% if not scholar.institution and not scholar.active_since %}
-          <span>No institution or active-since on record</span>
+          <span class="field-empty">No institution or active-since on record</span>
           {% endif %}
         </div>
       </div>
@@ -305,11 +307,9 @@
     {% endif %}
 
     {% else %}
-    {# #189 section-level empty — never blank. #}
-    <div class="works-empty">
-      <p class="works-empty__title">No publications on record</p>
-      <p class="works-empty__hint">This scholar has no linked publications in the bibliography. Nothing is hidden &mdash; there is simply nothing here yet. Works are matched from CDLI/ORACC bibliography and, where an ORCID is present, can be enriched from the ORCID public record.</p>
-    </div>
+    {# #189 section-level empty — never blank. Standard data_empty component. #}
+    {{ data_empty('No publications on record',
+                  'This scholar has no linked publications in the bibliography. Nothing is hidden — there is simply nothing here yet. Works are matched from CDLI/ORACC bibliography and, where an ORCID is present, can be enriched from the ORCID public record.') }}
     {% endif %}
   </section>
 
@@ -383,9 +383,8 @@
     {% endif %}
 
     {% else %}
-    <div class="scholar-empty">
-      No artifacts are attributed to this scholar yet. Contributions appear here once an annotation run is linked.
-    </div>
+    {{ data_empty('No contributions on record',
+                  'No artifacts are attributed to this scholar yet. Contributions appear here once an annotation run is linked.') }}
     {% endif %}
   </section>
 
