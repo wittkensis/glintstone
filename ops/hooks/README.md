@@ -1,12 +1,12 @@
 ---
-question: "TODO: one sentence — what question does README.md answer?"
+question: "What git hooks does Glintstone run, what do they check, and how do I enable them?"
 created: 2026-05-11
-modified: 2026-05-11
-context: "TODO: why was this file created?"
-status: draft
+modified: 2026-06-21
+context: "Documents the pre-commit-framework hooks (commit/push/merge) that gate code quality, docs, and schema integrity."
+status: active
 audience: [engineers]
 owners: [eric]
-related_issues: []
+related_issues: [214]
 related_skills: []
 supersedes: null
 superseded_by: null
@@ -49,10 +49,28 @@ This directory contains custom git hooks that enforce code quality, documentatio
 
 ### Pre-Push Hooks (Run Before Push)
 
-#### 4. **Database Schema Validation** (`pre-push.sh`)
-- **What it does:** Validates schema YAML and checks for uncommitted migrations
-- **Prevents:** Pushing invalid schema changes or forgetting migration files
-- **Fix:** Ensure `data-model/glintstone-schema.yaml` is valid YAML and commit all migrations
+#### 4. **CI-Parity Gates + Schema Validation** (`pre-push.sh`)
+- **What it does:** Runs the exact lint/type gates that `.github/workflows/test.yml`
+  runs in CI, plus schema/migration checks — so format/type drift fails at **push**
+  time locally instead of going red on `main` after the push.
+- **Gates (all BLOCKING):**
+  - `ruff format --check .` — formatting drift
+  - `ruff check .` — lint errors
+  - `mypy api/ app/ core/ mcp/ --ignore-missing-imports` — type errors
+  - Schema YAML validity (`data-model/glintstone-schema.yaml`)
+  - Uncommitted migration files in `data-model/migrations/`
+- **Not run here:** `pytest` — too slow for every push. CI still runs the full
+  suite. The three gates above are the ones that historically went red on `main`.
+- **Prevents:** Red-on-`main` from format/type drift; pushing invalid schema or
+  forgetting migration files.
+- **Fix:** `ruff format .` then `ruff check --fix .`; resolve mypy errors; ensure
+  schema YAML is valid and all migrations are committed.
+- **Tool resolution:** prefers the project venv (`venv/bin/`) so local ruff matches
+  the CI pin (`ruff==0.15.2`). If a tool isn't installed the gate is skipped with a
+  warning (CI still enforces it) — a fresh clone without the venv can still push,
+  but a configured dev machine gets the guardrail.
+- **Activation:** `pre-commit install --hook-type pre-push` (see Installation).
+- **Emergency bypass:** `git push --no-verify` (discouraged — CLAUDE.md: never push red).
 
 ### Post-Merge Hooks (Run After Merge)
 
