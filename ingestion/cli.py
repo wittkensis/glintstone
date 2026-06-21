@@ -6,6 +6,7 @@ Commands:
     glintstone-ingest run-all                 # run every connector in dep order
     glintstone-ingest status [<id>]           # show recent runs (optionally filtered)
     glintstone-ingest dead-letters <id>       # show open dead letters for a connector
+    glintstone-ingest dlq-replay <id>         # replay open dead letters through current logic
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from typing import Optional
 from core.config import get_settings
 from core.database import connect_one_shot
 from ingestion.base import RunMode
+from ingestion.dlq_replay import REPLAY_HANDLERS, replay
 from ingestion.registry import ConnectorRegistry
 from ingestion.runner import run_connector
 
@@ -155,6 +157,65 @@ def cmd_dead_letters(args) -> int:
         db.close()
 
 
+def cmd_dlq_replay(args) -> int:
+    if args.connector_id not in REPLAY_HANDLERS:
+        print(
+            f"No DLQ replay handler for {args.connector_id}. "
+            f"Known: {sorted(REPLAY_HANDLERS)}",
+            file=sys.stderr,
+        )
+        return 1
+    db = connect_one_shot()
+    try:
+
+        def _progress(p: dict) -> None:
+            print(
+                f"  ... examined {p['examined']:,}  "
+                f"{'would-fix' if args.dry_run else 'fixed'} {p['fixed']:,}",
+                flush=True,
+            )
+
+        before = _open_count(db, args.connector_id, args.category, args.subcategory)
+        summary = replay(
+            db,
+            args.connector_id,
+            category=args.category,
+            subcategory=args.subcategory,
+            limit=args.limit,
+            dry_run=args.dry_run,
+            progress=_progress,
+        )
+        after = _open_count(db, args.connector_id, args.category, args.subcategory)
+        mode = "DRY-RUN" if args.dry_run else "REPLAY"
+        print()
+        print(f"{mode} — {args.connector_id}")
+        print(f"  examined          {summary['examined']:,}")
+        label = "would resolve" if args.dry_run else "resolved (fixed)"
+        print(f"  {label:17s} {summary['fixed']:,}")
+        print(f"  still open        {summary['still_open']:,}")
+        print(f"  open before       {before:,}")
+        print(f"  open after        {after:,}")
+        return 0
+    finally:
+        db.close()
+
+
+def _open_count(db, connector_id, category, subcategory) -> int:
+    clauses = ["connector_id = %s", "resolution_status = 'open'"]
+    params: list = [connector_id]
+    if category:
+        clauses.append("category = %s")
+        params.append(category)
+    if subcategory:
+        clauses.append("subcategory = %s")
+        params.append(subcategory)
+    row = db.execute(
+        f"SELECT COUNT(*) AS n FROM import_dead_letters WHERE {' AND '.join(clauses)}",
+        tuple(params),
+    ).fetchone()
+    return row["n"] if isinstance(row, dict) else row[0]
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(prog="glintstone-ingest")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -194,6 +255,27 @@ def main(argv: Optional[list[str]] = None) -> int:
     )
     p_dl.add_argument("--limit", type=int, default=25)
 
+    p_rp = sub.add_parser(
+        "dlq-replay",
+        help="replay open dead letters through the current connector logic",
+    )
+    p_rp.add_argument("connector_id")
+    p_rp.add_argument("--category", default=None, help="filter by dead-letter category")
+    p_rp.add_argument(
+        "--subcategory", default=None, help="filter by dead-letter subcategory"
+    )
+    p_rp.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="cap how many dead letters are examined (default: all open)",
+    )
+    p_rp.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="report counts without writing lemmatizations or marking rows fixed",
+    )
+
     args = parser.parse_args(argv)
 
     handlers = {
@@ -202,6 +284,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         "run-all": cmd_run_all,
         "status": cmd_status,
         "dead-letters": cmd_dead_letters,
+        "dlq-replay": cmd_dlq_replay,
     }
     return handlers[args.cmd](args)
 
