@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 import psycopg
 from psycopg.rows import DictRow
 
+from core.agent.pipeline_completeness import flag_columns
 from core.agent.voyage_client import VoyageClient
 from core.database import get_connection
 from core.schemas.search import EntityType, SearchFilters, SearchParams
@@ -301,44 +302,21 @@ class SearchEngine:
             return
         try:
             with conn.cursor() as cur:
+                # Issue #255/#257: the five badge flags are derived from the
+                # shared per-artifact definitions in core.agent.pipeline_completeness
+                # (byte-identical to the pipeline_completeness VIEW) scoped to the
+                # handful of on-screen p_numbers, so the badge never triggers a
+                # corpus-wide completeness recompute. Centralizing the SQL there
+                # is what keeps this path and fact_assembly from drifting apart.
                 cur.execute(
-                    """
+                    f"""
                     WITH ps AS (
                         SELECT unnest(%s::text[]) AS p_number
                     )
                     SELECT
                         ps.p_number,
                         img.r2_thumbnail_key,
-                        EXISTS (
-                            SELECT 1 FROM text_lines tl
-                            WHERE tl.p_number = ps.p_number
-                        )::int AS has_atf,
-                        EXISTS (
-                            SELECT 1 FROM text_lines tl
-                            JOIN tokens t ON t.line_id = tl.id
-                            WHERE tl.p_number = ps.p_number
-                        )::int AS has_tokens,
-                        EXISTS (
-                            SELECT 1 FROM text_lines tl
-                            JOIN translations tn ON tn.line_id = tl.id
-                            WHERE tl.p_number = ps.p_number
-                        )::int AS has_translation,
-                        EXISTS (
-                            SELECT 1 FROM entity_mentions em
-                            LEFT JOIN tokens t ON em.token_id = t.id
-                            LEFT JOIN text_lines tl_t ON t.line_id = tl_t.id
-                            LEFT JOIN text_lines tl_l ON em.line_id = tl_l.id
-                            WHERE COALESCE(tl_t.p_number, tl_l.p_number)
-                                  = ps.p_number
-                        )::int AS has_entities,
-                        (COALESCE((
-                            SELECT count(*) FILTER (WHERE lz.id IS NOT NULL)::float
-                                   / NULLIF(count(*), 0)::float
-                            FROM text_lines tl
-                            JOIN tokens t ON t.line_id = tl.id
-                            LEFT JOIN lemmatizations lz ON lz.token_id = t.id
-                            WHERE tl.p_number = ps.p_number
-                        ), 0.0) >= 0.5)::int AS has_lemmatization
+                        {flag_columns("ps.p_number", with_score=True)}
                     FROM ps
                     LEFT JOIN LATERAL (
                         SELECT r2_thumbnail_key
@@ -352,18 +330,10 @@ class SearchEngine:
                     (p_numbers,),
                 )
                 rows = cur.fetchall()
-                # completeness_score is the sum of the five flags, matching the
-                # pipeline_completeness view's definition.
-                by_p: dict[str, dict] = {}
-                for r in rows:
-                    completeness = (
-                        int(r["has_atf"])
-                        + int(r["has_tokens"])
-                        + int(r["has_lemmatization"])
-                        + int(r["has_translation"])
-                        + int(r["has_entities"])
-                    )
-                    by_p[r["p_number"]] = {**r, "completeness_score": completeness}
+                # completeness_score is computed in SQL as the sum of the five
+                # flags (see flag_columns), matching the pipeline_completeness
+                # view's definition.
+                by_p: dict[str, dict] = {r["p_number"]: r for r in rows}
         except Exception as exc:
             logger.warning("tablet extras hydrate failed: %s", exc)
             return

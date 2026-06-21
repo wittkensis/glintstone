@@ -23,6 +23,7 @@ from typing import Literal, cast
 import psycopg
 from psycopg.rows import DictRow
 
+from core.agent.pipeline_completeness import _FLAGS, fetch_completeness
 from core.schemas.citation import Citation, SourceKind
 
 logger = logging.getLogger(__name__)
@@ -304,17 +305,27 @@ def assemble_artifact_facts(
             "cdli_catalog",
             f"composite:{composite['q_number']}",
         )
-        # Best-attested sibling (highest pipeline completeness among exemplars)
+        # Best-attested sibling (highest pipeline completeness among exemplars).
+        # Issue #257: score the exemplars with the scoped per-artifact flag
+        # subqueries (byte-identical to the pipeline_completeness VIEW) instead
+        # of JOINing the corpus-aggregating VIEW, which recomputed completeness
+        # over millions of rows just to rank a composite's handful of siblings.
+        # The sibling set is bounded by the composite's exemplar_count, so the
+        # subqueries run only per-exemplar and stay index-driven.
+        sibling_score = " + ".join(
+            f"({expr.format(p='ac2.p_number')})::int" for _, expr in _FLAGS
+        )
         with conn.cursor() as cur:
             cur.execute(
-                """
-                SELECT ac2.p_number, pc.completeness_score, a.designation
+                f"""
+                SELECT ac2.p_number,
+                       ({sibling_score}) AS completeness_score,
+                       a.designation
                 FROM artifact_composites ac2
-                JOIN pipeline_completeness pc ON pc.p_number = ac2.p_number
                 JOIN artifacts a ON a.p_number = ac2.p_number
                 WHERE ac2.q_number = %s
                   AND ac2.p_number <> %s
-                ORDER BY pc.completeness_score DESC
+                ORDER BY completeness_score DESC
                 LIMIT 1
                 """,
                 (composite["q_number"], p_number),
@@ -331,18 +342,12 @@ def assemble_artifact_facts(
                 f"sibling:{best_sibling['p_number']}",
             )
 
-    # Pipeline completeness
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT completeness_score, has_atf, has_tokens, has_lemmatization,
-                   has_translation, has_entities, has_image, token_count, lemma_ratio
-            FROM pipeline_completeness
-            WHERE p_number = %s
-            """,
-            (p_number,),
-        )
-        pc = cur.fetchone() or {}
+    # Pipeline completeness.
+    # Issue #257: read the five badge flags via the scoped per-artifact helper
+    # instead of the corpus-aggregating `pipeline_completeness` VIEW (which
+    # recomputed completeness over millions of rows — ~9 s — for this single
+    # artifact). The helper's flag definitions are byte-identical to the view.
+    pc = fetch_completeness(conn, p_number)
 
     completeness = int(pc.get("completeness_score", 0))
     bundle.completeness_score = completeness
