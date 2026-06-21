@@ -95,6 +95,37 @@ def test_doi_found_in_secondary_summary_of_group():
     assert works[0]["doi"] == "10.9/xyz"
 
 
+def test_doi_at_group_level_with_bare_string_value():
+    # Live ORCID payloads put the DOI in group.external-ids with a BARE STRING
+    # external-id-value (not the {"value": ...} wrapper), and the work-summary
+    # may carry none. The parser must still find it.
+    payload = {
+        "group": [
+            {
+                "external-ids": {
+                    "external-id": [
+                        {
+                            "external-id-type": "doi",
+                            "external-id-value": "10.1080/00015458.2024.2437271",
+                        }
+                    ]
+                },
+                "work-summary": [
+                    {
+                        "title": {"title": {"value": "Al-Tasrif Surgical Instruments"}},
+                        "type": "journal-article",
+                        "publication-date": {"year": {"value": "2025"}},
+                    }
+                ],
+            }
+        ]
+    }
+    works = parse_works("0000-0003-3746-774X", payload)
+    assert len(works) == 1
+    assert works[0]["doi"] == "10.1080/00015458.2024.2437271"
+    assert works[0]["year"] == 2025
+
+
 def test_unknown_type_falls_back_to_other():
     payload = {"group": [_work_group(title="X", work_type="magic-scroll")]}
     works = parse_works("0000-0001-0000-0001", payload)

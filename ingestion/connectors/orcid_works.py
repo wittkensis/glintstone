@@ -254,14 +254,19 @@ def parse_works(orcid: str, payload: dict) -> list[dict]:
         if not title:
             continue
 
+        # DOI can live at the group level OR on any work-summary inside the
+        # group (real ORCID payloads populate both, but not always — scan all).
+        # external-id-value is a bare string in live data; _text falls through
+        # to the raw value for safety.
         doi = None
-        for summ in summaries:
-            ext = (summ.get("external-ids") or {}).get("external-id") or []
-            for eid in ext:
+        ext_sources = [group.get("external-ids") or {}] + [
+            (summ.get("external-ids") or {}) for summ in summaries
+        ]
+        for ext_block in ext_sources:
+            for eid in ext_block.get("external-id") or []:
                 if (eid.get("external-id-type") or "").lower() == "doi":
-                    val = _text(eid.get("external-id-value")) or eid.get(
-                        "external-id-value"
-                    )
+                    raw = eid.get("external-id-value")
+                    val = _text(raw) if isinstance(raw, dict) else raw
                     if isinstance(val, str) and val.strip():
                         doi = _normalize_doi(val)
                         break
