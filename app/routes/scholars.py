@@ -26,7 +26,11 @@ def scholar_list(request: Request):
 
 @router.get("/{scholar_id}")
 def scholar_detail(
-    scholar_id: int, request: Request, type: str = "", pub_page: int = 1
+    scholar_id: int,
+    request: Request,
+    type: str = "",
+    pub_page: int = 1,
+    contrib_page: int = 1,
 ):
     # Registered after the list route so it doesn't shadow GET "" — FastAPI
     # matches by registration order and "" is declared first.
@@ -50,9 +54,13 @@ def scholar_detail(
         pub_params["type"] = type.strip()
     publications = api.get_scholar_publications(scholar_id, pub_params)
 
-    # First 50 contributions, newest annotation run first. Pagination beyond
-    # the first page is a deliberate fast-follow (#157), not built here.
-    contributions = api.get_scholar_contributions(scholar_id, {"per_page": 50})
+    # Contributions ledger (#177) — newest annotation run first, 50/page. The
+    # ?contrib_page= query param drives server-rendered "Show more" pagination,
+    # mirroring the publications ?pub_page= pattern (#206) for consistency. Both
+    # paged params live on the same URL, so advancing one preserves the other.
+    contributions = api.get_scholar_contributions(
+        scholar_id, {"per_page": 50, "page": max(1, contrib_page)}
+    )
 
     from app.main import templates
 
@@ -71,5 +79,8 @@ def scholar_detail(
             "contributions": contributions.items,
             "contrib_total": contributions.total,
             "run_count": contributions.run_count,
+            "contrib_page": contributions.page,
+            "contrib_total_pages": contributions.total_pages,
+            "pub_active_type_for_contrib": type.strip(),
         },
     )
