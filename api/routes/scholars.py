@@ -33,14 +33,13 @@ def list_scholars(
         params.extend([like, like, like])
 
     if has_artifacts:
-        # Restrict to scholars linked to at least one artifact via annotation_runs.
-        # The artifacts table carries annotation_run_id which links to the scholar
-        # who produced that annotation run.
+        # Restrict to scholars credited on at least one artifact via the
+        # artifact_contributors junction (#261). This mirrors the contributions
+        # ledger so the filter and the detail page agree.
         conditions.append(
             "EXISTS ("
-            "  SELECT 1 FROM annotation_runs ar"
-            "  JOIN artifacts a ON a.annotation_run_id = ar.id"
-            "  WHERE ar.scholar_id = s.id"
+            "  SELECT 1 FROM artifact_contributors ac"
+            "  WHERE ac.scholar_id = s.id"
             ")"
         )
 
@@ -63,10 +62,9 @@ def list_scholars(
             f"""
             SELECT s.id, s.name, s.normalized_name, s.orcid, s.institution,
                    s.expertise_periods, s.expertise_languages, s.author_type,
-                   COUNT(DISTINCT a.p_number) AS artifact_count
+                   COUNT(DISTINCT ac.p_number) AS artifact_count
             FROM scholars s
-            LEFT JOIN annotation_runs ar ON ar.scholar_id = s.id
-            LEFT JOIN artifacts a ON a.annotation_run_id = ar.id
+            LEFT JOIN artifact_contributors ac ON ac.scholar_id = s.id
             {where}
             GROUP BY s.id, s.name, s.normalized_name, s.orcid, s.institution,
                      s.expertise_periods, s.expertise_languages, s.author_type
@@ -113,17 +111,32 @@ def get_scholar_contributions(
     per_page: int = Query(default=50, ge=1, le=50),
     conn=Depends(get_db),
 ):
-    """Artifacts this scholar contributed to, joined through annotation_runs.
+    """Artifacts this scholar contributed to, via the artifact_contributors
+    junction (#261 — real per-artifact attribution parsed from ORACC credits).
 
-    Each row is one artifact that carries an annotation_run produced by this
-    scholar. The `method` / `source_type` of that run is the attribution signal
-    rendered as a method chip on the detail page. Newest run first (the most
-    recent work is the most relevant), then by p_number for stable ordering.
+    Each row is one artifact this scholar is credited on, carrying the *role*
+    they played (lemmatizer / editor / adapter / director / creator /
+    contributor). Attribution is conservative: only exact, unambiguous matches
+    against ``scholars.normalized_name`` are stored, so an empty ledger means
+    "no high-confidence credit", never a silent mismatch.
 
-    Counts are reported as distinct artifacts (`total`) and distinct annotation
-    runs (`run_count`) — matching the list page's `artifact_count` semantics.
-    Pagination is capped at 50 rows per page for v1; a prolific scholar's full
-    ledger is a deliberate fast-follow.
+    Response shape is unchanged from the previous annotation_runs-backed version
+    so the #156/#177 detail template and pagination keep working. The role is
+    surfaced in the ``method`` field (rendered as the method chip) and the
+    source project in ``source_type``. ``created_at`` is null for backfilled
+    credit links (the prose carries no per-link timestamp) — the template
+    renders an em-dash for the date in that case.
+
+    ``total`` is distinct artifacts (matching the list page's artifact_count
+    semantics); ``run_count`` is the number of distinct roles this scholar held
+    across the corpus (the detail page reads it as "across N annotation runs" —
+    here it counts the distinct contribution roles, the analogous provenance
+    unit). NB the ledger is ordered p_number ASC since backfilled links share no
+    meaningful timestamp; newest-first returns once human runs add dated links.
+
+    NOTE: annotation_runs.scholar_id is intentionally NOT read here. It is kept
+    for its original purpose (future human annotation runs); it is all-NULL for
+    the import-era corpus, which is exactly why this junction exists.
     """
     offset = (page - 1) * per_page
 
@@ -133,15 +146,13 @@ def get_scholar_contributions(
         if not cur.fetchone():
             raise HTTPException(status_code=404, detail="Scholar not found")
 
-        # Distinct artifacts attributed + distinct runs behind them. The list
-        # page counts distinct p_number, so we mirror that here for consistency.
+        # Distinct artifacts attributed + distinct roles behind them.
         cur.execute(
             """
-            SELECT COUNT(DISTINCT a.p_number) AS total,
-                   COUNT(DISTINCT ar.id)      AS run_count
-            FROM annotation_runs ar
-            JOIN artifacts a ON a.annotation_run_id = ar.id
-            WHERE ar.scholar_id = %s
+            SELECT COUNT(DISTINCT ac.p_number) AS total,
+                   COUNT(DISTINCT ac.role)     AS run_count
+            FROM artifact_contributors ac
+            WHERE ac.scholar_id = %s
             """,
             (scholar_id,),
         )
@@ -149,15 +160,32 @@ def get_scholar_contributions(
         total = int(counts["total"])
         run_count = int(counts["run_count"])
 
+        # One row per distinct artifact. An artifact may credit the scholar in
+        # several roles; we collapse to one row and surface the highest-signal
+        # role (lemmatizer > editor > adapter > director > creator > contributor)
+        # so the method chip is deterministic. The aggregation also de-dupes a
+        # scholar credited on the same artifact under multiple oracc_projects.
         cur.execute(
             """
             SELECT a.p_number, a.designation, a.object_type,
                    a.period_normalized, a.genre, a.language_normalized,
-                   ar.method, ar.source_type, ar.created_at
-            FROM annotation_runs ar
-            JOIN artifacts a ON a.annotation_run_id = ar.id
-            WHERE ar.scholar_id = %s
-            ORDER BY ar.created_at DESC NULLS LAST, a.p_number
+                   (ARRAY_AGG(ac.role ORDER BY
+                        CASE ac.role
+                            WHEN 'lemmatizer'  THEN 1
+                            WHEN 'editor'      THEN 2
+                            WHEN 'adapter'     THEN 3
+                            WHEN 'director'    THEN 4
+                            WHEN 'creator'     THEN 5
+                            ELSE 6
+                        END))[1]               AS method,
+                   MIN(ac.oracc_project)       AS source_type,
+                   MAX(ac.created_at)          AS created_at
+            FROM artifact_contributors ac
+            JOIN artifacts a ON a.p_number = ac.p_number
+            WHERE ac.scholar_id = %s
+            GROUP BY a.p_number, a.designation, a.object_type,
+                     a.period_normalized, a.genre, a.language_normalized
+            ORDER BY a.p_number
             LIMIT %s OFFSET %s
             """,
             (scholar_id, per_page, offset),

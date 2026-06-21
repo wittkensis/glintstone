@@ -145,6 +145,7 @@ GRANT USAGE, SELECT ON SEQUENCE my_table_id_seq TO glintstone;
 | 035 | `035_compvis_orphan_audit.sql` | Orphan cleanup for compvis annotations |
 | 036 | `036_artifact_image_fetch_log_page_outcomes.sql` | Widen `outcome` check constraint on `artifact_image_fetch_log` to include page-level outcomes |
 | 037 | `037_user_roles.sql` | `role` column on `users` (admin/standard); seeds `eric.wittke@gmail.com` as admin |
+| 050 | `050_artifact_contributors.sql` | #261 junction `artifact_contributors` (p_number × scholar × role) — real per-artifact attribution parsed from `artifact_credits` prose; backs the `/scholars/{id}/contributions` ledger |
 
 **Always confirm `migrate.py status` matches this table.** If it doesn't, update one or the other.
 

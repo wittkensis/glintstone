@@ -13,6 +13,9 @@ import json
 from pathlib import Path
 from typing import Iterable, Iterator
 
+from collections import Counter
+
+from core.credits_parser import normalize_name, parse_credits
 from ingestion.base import ConflictPolicy, LoadStats, RunContext, SourceConnector
 from ingestion.loader import upsert_batch
 
@@ -235,7 +238,7 @@ class OraccCreditsConnector(SourceConnector):
                     }
 
     def load(self, ctx: RunContext, rows: Iterable[dict]) -> LoadStats:
-        return upsert_batch(
+        stats = upsert_batch(
             ctx.db,
             table="artifact_credits",
             rows=rows,
@@ -243,8 +246,80 @@ class OraccCreditsConnector(SourceConnector):
             policy=ConflictPolicy.SKIP,
             batch_size=500,
         )
+        # #261: after the prose is loaded, derive the structured per-artifact
+        # scholar attribution into artifact_contributors. Idempotent + fill-only
+        # (ON CONFLICT DO NOTHING), so every ingest keeps the junction current
+        # without re-parsing what's already linked.
+        self._attribute(ctx)
+        return stats
+
+    def _scholar_index(self, ctx: RunContext) -> dict[str, int]:
+        """normalized_name -> scholar id, restricted to GLOBALLY UNIQUE keys so
+        an ambiguous name can never resolve. Mirrors the backfill script.
+        """
+        rows = ctx.db.execute(
+            "SELECT normalized_name, id FROM scholars "
+            "WHERE normalized_name IS NOT NULL AND normalized_name <> ''"
+        ).fetchall()
+
+        def _val(r: object, key: str, idx: int) -> object:
+            return r[key] if isinstance(r, dict) else r[idx]  # type: ignore[index]
+
+        counts: Counter[str] = Counter(str(_val(r, "normalized_name", 0)) for r in rows)
+        index: dict[str, int] = {}
+        for r in rows:
+            nn = str(_val(r, "normalized_name", 0))
+            if counts[nn] == 1:
+                index[nn] = int(_val(r, "id", 1))  # type: ignore[arg-type]
+        return index
+
+    def _attribute(self, ctx: RunContext) -> None:
+        """Parse credit prose -> conservative (scholar, role) links."""
+        index = self._scholar_index(ctx)
+        credits = ctx.db.execute(
+            "SELECT id, p_number, oracc_project, credits_text FROM artifact_credits"
+        ).fetchall()
+
+        def _g(r: object, key: str, idx: int) -> object:
+            return r[key] if isinstance(r, dict) else r[idx]  # type: ignore[index]
+
+        matched = 0
+        unmatched = 0
+        for c in credits:
+            text = str(_g(c, "credits_text", 3))
+            for m in parse_credits(text):
+                nn = normalize_name(m.name)
+                sid = index.get(nn) if nn else None
+                if sid is None:
+                    unmatched += 1
+                    continue
+                matched += 1
+                ctx.db.execute(
+                    """
+                    INSERT INTO artifact_contributors
+                        (p_number, scholar_id, role, oracc_project,
+                         source_credit_id, matched_name)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (p_number, scholar_id, role, oracc_project)
+                    DO NOTHING
+                    """,
+                    (
+                        _g(c, "p_number", 1),
+                        sid,
+                        m.role,
+                        _g(c, "oracc_project", 2),
+                        _g(c, "id", 0),
+                        m.name,
+                    ),
+                )
+        ctx.db.commit()
+        ctx.info("oracc_credits.attributed", matched=matched, unmatched=unmatched)
 
     def verify(self, ctx: RunContext) -> None:
         row = ctx.db.execute("SELECT COUNT(*) AS n FROM artifact_credits").fetchone()
         n = row["n"] if isinstance(row, dict) else row[0]
-        ctx.info("oracc_credits.verify", count=n)
+        link_row = ctx.db.execute(
+            "SELECT COUNT(*) AS n FROM artifact_contributors"
+        ).fetchone()
+        links = link_row["n"] if isinstance(link_row, dict) else link_row[0]
+        ctx.info("oracc_credits.verify", count=n, contributor_links=links)
