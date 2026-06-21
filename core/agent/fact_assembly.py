@@ -762,6 +762,19 @@ def _should_use_variant_b(genre: str | None) -> bool:
     return any(g in genre.lower() for g in _GENRE_B_VARIANTS)
 
 
+def _coerce_line_int(label: str) -> int:
+    """Best-effort integer from a (possibly text) line-number label.
+
+    text_lines.line_number is text in production; values like "2'" or "12.1"
+    appear. Extract the leading run of digits for neighbor-window arithmetic;
+    return 0 when there is none (the ±2 window query tolerates it gracefully).
+    """
+    import re  # noqa: PLC0415
+
+    m = re.match(r"\d+", label.strip())
+    return int(m.group()) if m else 0
+
+
 def assemble_line_facts(
     conn: psycopg.Connection[DictRow],
     p_number: str,
@@ -845,7 +858,12 @@ def assemble_line_facts(
     language: str = row["language_normalized"] or "Unknown"
     period: str | None = row["period_normalized"]
     genre: str | None = row["genre"]
-    position: int = row["position"]
+    # text_lines.line_number is stored as text in production (proto-cuneiform
+    # lines can be non-numeric, e.g. "2'"). Keep the raw label for display, but
+    # derive an integer for the ±2 neighbor-window arithmetic. Fall back to 0
+    # when the label has no numeric part (the window query tolerates that).
+    position_label: str = str(row["position"]) if row["position"] is not None else ""
+    position: int = _coerce_line_int(position_label)
 
     # 2. Missing layer analysis (server-computed, not model-generated)
     missing_layers: list[str] = []
@@ -926,13 +944,15 @@ def assemble_line_facts(
             cur.execute(
                 """
                 SELECT tl.line_number,
-                       tl.line_number AS position,
+                       (substring(tl.line_number FROM '^\d+'))::int AS position,
                        tl.raw_atf AS atf_text
                 FROM text_lines tl
                 WHERE tl.surface_id = %s
-                  AND tl.line_number BETWEEN %s AND %s
+                  AND tl.line_number ~ '^\d+'
+                  AND (substring(tl.line_number FROM '^\d+'))::int
+                      BETWEEN %s AND %s
                   AND tl.id != %s
-                ORDER BY tl.line_number
+                ORDER BY position
                 """,
                 (surface_id, position - 2, position + 2, line_id),
             )
