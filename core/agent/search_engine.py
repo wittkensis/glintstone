@@ -403,7 +403,13 @@ class SearchEngine:
     ) -> list[SearchHit]:
         if not q.strip() or self._voyage is None:
             return []
-        vector = _cached_query_vector(self._voyage, q)
+        # pgvector's text input is "[a, b, c]". psycopg sends a Python list as a
+        # Postgres array literal ("{a,b,c}"), which `::vector` cannot cast — the
+        # cast raised, the caller swallowed it, and semantic search silently
+        # degraded to lexical despite 1.3M embeddings. Stringify the list so the
+        # `%s::vector` cast receives the form pgvector expects (matches the
+        # backfill writer in scripts/backfill_embeddings.py).
+        vector = str(_cached_query_vector(self._voyage, q))
 
         # Map public entity_types to embedding entity_type values stored in DB
         embedding_type_map = {

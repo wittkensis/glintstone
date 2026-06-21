@@ -75,7 +75,7 @@ class AnthropicClient:
         the 5-minute TTL pay only ~0.1× for the system tokens.
         """
         client = self._ensure()
-        response = client.messages.with_options(timeout=timeout).create(
+        response = client.with_options(timeout=timeout).messages.create(
             model=self.model,
             max_tokens=max_tokens,
             system=[
