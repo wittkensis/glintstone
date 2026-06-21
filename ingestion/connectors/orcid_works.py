@@ -330,18 +330,24 @@ class OrcidWorksConnector(SourceConnector):
     # --- scholar selection ---
 
     def _scholars_with_orcid(self, ctx: RunContext) -> list[dict]:
+        # Subset controls can come either from the constructor (programmatic use)
+        # or from ctx.config (so a framework run via run_connector — which builds
+        # the connector with no args — can still cap a subset for staged rollout).
+        limit = self.limit if self.limit is not None else ctx.config.get("limit")
+        orcids = self.orcids if self.orcids is not None else ctx.config.get("orcids")
+
         clauses = ["orcid IS NOT NULL", "trim(orcid) <> ''"]
         params: list[Any] = []
-        if self.orcids:
+        if orcids:
             clauses.append("orcid = ANY(%s)")
-            params.append(self.orcids)
+            params.append(list(orcids))
         sql = (
             "SELECT id, name, orcid FROM scholars "
             f"WHERE {' AND '.join(clauses)} "
             "ORDER BY id"
         )
-        if self.limit:
-            sql += f" LIMIT {int(self.limit)}"
+        if limit:
+            sql += f" LIMIT {int(limit)}"
         rows = ctx.db.execute(sql, tuple(params)).fetchall()
         return [dict(r) for r in rows]
 
