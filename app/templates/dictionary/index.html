@@ -308,8 +308,18 @@
                     {% else %}
                     <div class="empty-state">
                         <div class="empty-icon" aria-hidden="true">&#x12000;</div>
+                        {% if level == 'glosses' %}
+                            {% if search or active_filters %}
+                            <h3>No glosses match these filters</h3>
+                            <p>No guide-word entries match the current search or filters. Try clearing a filter, or browse <a href="/dictionary?level=lemmas">lemmas</a> directly.</p>
+                            {% else %}
+                            <h3>No glosses available</h3>
+                            <p>A gloss is a guide-word entry — the short English sense of a word (e.g. &ldquo;king&rdquo;, &ldquo;house&rdquo;). None are indexed yet for this corpus. Proper names are excluded, as they have no translatable gloss.</p>
+                            {% endif %}
+                        {% else %}
                         <h3>No results found</h3>
                         <p>Try adjusting your search or filters.</p>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>{# /dict-results #}

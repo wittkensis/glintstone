@@ -11,6 +11,23 @@ def _nfc(value: str) -> str:
     return unicodedata.normalize("NFC", value)
 
 
+# A "gloss" is a guide-word/translation entry — it only makes sense for common
+# vocabulary (nouns, verbs, prepositions, etc.). Proper nouns (PN/DN/GN/…) carry
+# a *numeric* guide_word (e.g. "1", "00", "2") that is a homonym-disambiguation
+# index, not a translation. Including them collapses tens of thousands of
+# unrelated names under one meaningless "gloss" (guide_word "1" alone groups
+# ~15.8k lemmas). The gloss browse therefore excludes guide_words that are
+# purely numeric — the precise, data-grounded signal of an index vs. a gloss.
+_REAL_GLOSS_PREDICATE = (
+    "l.guide_word IS NOT NULL AND l.guide_word <> '' AND l.guide_word !~ '^[0-9]+$'"
+)
+
+# Cap the per-row preview of grouped lemmas in the gloss browse list so a
+# legitimately large group (e.g. "bird" → 524 lemmas) does not emit a giant
+# payload into the list response. The full set is available on the detail call.
+_GLOSS_PREVIEW_PER_LANG = 8
+
+
 # POS code → full label
 POS_LABELS = {
     "N": "Noun",
@@ -343,11 +360,11 @@ class LexicalRepository(BaseRepository):
             params.update(p)
 
         where = "WHERE " + " AND ".join(conditions) if conditions else ""
-        # Must also filter out null/empty guide_words
+        # Restrict to real glosses (drop null/empty + numeric proper-noun indices)
         if where:
-            where += " AND l.guide_word IS NOT NULL AND l.guide_word <> ''"
+            where += f" AND {_REAL_GLOSS_PREDICATE}"
         else:
-            where = "WHERE l.guide_word IS NOT NULL AND l.guide_word <> ''"
+            where = f"WHERE {_REAL_GLOSS_PREDICATE}"
 
         offset = (page - 1) * per_page
         params["per_page"] = per_page
@@ -400,9 +417,13 @@ class LexicalRepository(BaseRepository):
                 for entry in item["lemmas_by_lang"]:
                     lang = entry["lang"]
                     cf = entry["cf"]
-                    if cf not in by_lang[lang]:
+                    if cf and cf not in by_lang[lang]:
                         by_lang[lang].append(cf)
-            item["lemmas_grouped"] = {lm.get(k, k): v for k, v in by_lang.items()}
+            # Cap the inline preview per language so the list payload stays small;
+            # the gloss detail call returns the full lemma set.
+            item["lemmas_grouped"] = {
+                lm.get(k, k): v[:_GLOSS_PREVIEW_PER_LANG] for k, v in by_lang.items()
+            }
 
         return {
             "items": items,
@@ -844,7 +865,7 @@ class LexicalRepository(BaseRepository):
                 END AS code,
                 COUNT(DISTINCT l.guide_word) AS count
             FROM lexical_lemmas l
-            WHERE l.guide_word IS NOT NULL AND l.guide_word <> ''
+            WHERE {_REAL_GLOSS_PREDICATE}
             {extra}
             GROUP BY code
             HAVING COUNT(DISTINCT l.guide_word) > 0
@@ -869,7 +890,7 @@ class LexicalRepository(BaseRepository):
             f"""
             SELECT l.pos AS code, COUNT(DISTINCT l.guide_word) AS count
             FROM lexical_lemmas l
-            WHERE l.guide_word IS NOT NULL AND l.guide_word <> ''
+            WHERE {_REAL_GLOSS_PREDICATE}
               AND l.pos IS NOT NULL AND l.pos <> ''
             {extra}
             GROUP BY l.pos
