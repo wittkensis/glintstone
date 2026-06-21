@@ -41,6 +41,20 @@ _Q_NUMBER_RE = re.compile(r"^Q\d{6,7}$", re.I)
 _RRF_K = 60
 _CURSOR_TTL_SECONDS = 300
 
+# Public entity_type → embedding entity_type values stored in entity_embeddings.
+# Artifacts carry up to 3 embedding flavors that all collapse to "tablets".
+_EMBEDDING_TYPE_MAP: dict[str, list[str]] = {
+    "tablets": [
+        "artifact_translation",
+        "artifact_lemma_bag",
+        "artifact_designation",
+    ],
+    "lemmas": ["lemma_gloss"],
+    "scholars": ["scholar_blob"],
+    "entities": ["named_entity"],
+    "composites": ["composite_designation"],
+}
+
 
 @dataclass
 class SearchHit:
@@ -411,94 +425,99 @@ class SearchEngine:
         # backfill writer in scripts/backfill_embeddings.py).
         vector = str(_cached_query_vector(self._voyage, q))
 
-        # Map public entity_types to embedding entity_type values stored in DB
-        embedding_type_map = {
-            "tablets": [
-                "artifact_translation",
-                "artifact_lemma_bag",
-                "artifact_designation",
-            ],
-            "lemmas": ["lemma_gloss"],
-            "scholars": ["scholar_blob"],
-            "entities": ["named_entity"],
-            "composites": ["composite_designation"],
-        }
+        # Map public entity_types to the embedding entity_type values stored in
+        # the DB (and back). Artifacts have up to 3 embedding flavors that all
+        # collapse to the public "tablets" type.
         embedding_types: list[str] = []
         for t in types:
-            embedding_types.extend(embedding_type_map.get(t, []))
+            embedding_types.extend(_EMBEDDING_TYPE_MAP.get(t, []))
         if not embedding_types:
             return []
 
-        # Single query: vector scan + dedup to best-per-entity + label hydration.
+        # Per-type KNN, then dedup, then hydrate labels.
         #
-        # Artifacts have up to 3 embedding flavors (translation / lemma_bag /
-        # designation) sharing the same entity_id. DISTINCT ON keeps only the
-        # closest embedding per entity_id before the JOIN. The HNSW index on
-        # entity_embeddings.vec handles the ORDER BY efficiently.
-        with conn.cursor() as cur:
-            cur.execute(
+        # WHY per-type: the HNSW index (idx_entity_embeddings_vec, vector_cosine_ops)
+        # can only accelerate a query whose *leading* ORDER BY is `vec <=> q`. The
+        # previous query led its ORDER BY with a pub_type CASE + entity_id (needed
+        # for DISTINCT ON), which made the planner fall back to a btree scan +
+        # full sort over every matching row — ~21 s for artifacts alone, ~40 s for
+        # all types (issue #247). Splitting into one `ORDER BY vec <=> q LIMIT k`
+        # subquery per embedding_type lets each leg use the HNSW index, and also
+        # guarantees recall for rare types (e.g. artifact_lemma_bag, 431 rows)
+        # that a single global KNN would starve via post-filtering. Measured on
+        # prod: ~150 ms with 30/30 recall@30 vs brute force.
+        #
+        # `ef_search` sets the HNSW candidate-list size (recall/latency knob).
+        # 80 gives full recall in testing with ample margin under the 800 ms
+        # hero budget and the 15 s hybrid timeout.
+        #
+        # The embedding_type list is a fixed internal allow-list (never user
+        # input), so interpolating it into the SQL is safe; the vector and the
+        # per-leg limit are still bound as parameters.
+        per_type_limit = max(limit * 2, 40)
+        legs: list[str] = []
+        params: list[object] = []
+        for emb_type in embedding_types:
+            legs.append(
                 """
-                WITH best AS (
-                    SELECT DISTINCT ON (
-                        CASE entity_type
-                            WHEN 'artifact_translation' THEN 'tablets'
-                            WHEN 'artifact_lemma_bag'   THEN 'tablets'
-                            WHEN 'artifact_designation' THEN 'tablets'
-                            WHEN 'lemma_gloss'           THEN 'lemmas'
-                            WHEN 'scholar_blob'          THEN 'scholars'
-                            WHEN 'named_entity'          THEN 'entities'
-                            WHEN 'composite_designation' THEN 'composites'
-                            ELSE entity_type
-                        END,
-                        entity_id
-                    )
-                        CASE entity_type
-                            WHEN 'artifact_translation' THEN 'tablets'
-                            WHEN 'artifact_lemma_bag'   THEN 'tablets'
-                            WHEN 'artifact_designation' THEN 'tablets'
-                            WHEN 'lemma_gloss'           THEN 'lemmas'
-                            WHEN 'scholar_blob'          THEN 'scholars'
-                            WHEN 'named_entity'          THEN 'entities'
-                            WHEN 'composite_designation' THEN 'composites'
-                            ELSE entity_type
-                        END  AS pub_type,
-                        entity_id,
-                        (1 - (vec <=> %s::vector)) AS cosine
-                    FROM entity_embeddings
-                    WHERE entity_type = ANY(%s)
-                      AND model = 'voyage-3-large'
-                    ORDER BY
-                        CASE entity_type
-                            WHEN 'artifact_translation' THEN 'tablets'
-                            WHEN 'artifact_lemma_bag'   THEN 'tablets'
-                            WHEN 'artifact_designation' THEN 'tablets'
-                            WHEN 'lemma_gloss'           THEN 'lemmas'
-                            WHEN 'scholar_blob'          THEN 'scholars'
-                            WHEN 'named_entity'          THEN 'entities'
-                            WHEN 'composite_designation' THEN 'composites'
-                            ELSE entity_type
-                        END,
-                        entity_id,
-                        vec <=> %s::vector ASC
-                    LIMIT %s
-                )
-                SELECT
-                    se.entity_type,
-                    se.entity_id,
-                    se.primary_label,
-                    se.secondary_label,
-                    se.sources,
-                    se.p_number_ref,
-                    se.int_ref,
-                    b.cosine
-                FROM best b
-                JOIN search_entities se
-                    ON se.entity_type = b.pub_type
-                   AND se.entity_id   = b.entity_id
-                ORDER BY b.cosine DESC
-                """,
-                (vector, embedding_types, vector, limit),
+                (SELECT entity_type, entity_id, vec <=> %s::vector AS dist
+                   FROM entity_embeddings
+                  WHERE entity_type = %s AND model = 'voyage-3-large'
+                  ORDER BY vec <=> %s::vector
+                  LIMIT %s)
+                """
             )
+            params.extend([vector, emb_type, vector, per_type_limit])
+
+        union_sql = "\nUNION ALL\n".join(legs)
+        query = f"""
+            WITH knn AS (
+                {union_sql}
+            ),
+            best AS (
+                SELECT DISTINCT ON (pub_type, entity_id)
+                    pub_type, entity_id, (1 - dist) AS cosine
+                FROM (
+                    SELECT
+                        CASE entity_type
+                            WHEN 'artifact_translation' THEN 'tablets'
+                            WHEN 'artifact_lemma_bag'   THEN 'tablets'
+                            WHEN 'artifact_designation' THEN 'tablets'
+                            WHEN 'lemma_gloss'           THEN 'lemmas'
+                            WHEN 'scholar_blob'          THEN 'scholars'
+                            WHEN 'named_entity'          THEN 'entities'
+                            WHEN 'composite_designation' THEN 'composites'
+                            ELSE entity_type
+                        END AS pub_type,
+                        entity_id,
+                        dist
+                    FROM knn
+                ) mapped
+                ORDER BY pub_type, entity_id, dist ASC
+            )
+            SELECT
+                se.entity_type,
+                se.entity_id,
+                se.primary_label,
+                se.secondary_label,
+                se.sources,
+                se.p_number_ref,
+                se.int_ref,
+                b.cosine
+            FROM best b
+            JOIN search_entities se
+                ON se.entity_type = b.pub_type
+               AND se.entity_id   = b.entity_id
+            ORDER BY b.cosine DESC
+            LIMIT %s
+        """
+        params.append(limit)
+
+        with conn.cursor() as cur:
+            # Per-query HNSW recall/latency knob. SET LOCAL keeps it scoped to
+            # this transaction (and this pooled connection) so it can't leak.
+            cur.execute("SET LOCAL hnsw.ef_search = 80", [])
+            cur.execute(query, params)
             rows = cur.fetchall()
 
         hits = [
