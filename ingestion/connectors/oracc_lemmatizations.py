@@ -264,6 +264,37 @@ def _find_corpus_dirs(project: str) -> list[Path]:
     return sorted(dirs)
 
 
+def _resolve_line_ids(line_cache: dict, p_number: str, line_number) -> dict | None:
+    """Look up the per-surface line_id map for (p_number, line_number).
+
+    Exact match first. If that misses and the ORACC line_number is a bare
+    integer (e.g. "2"), retry against the CDLI prime-notation variant ("2'").
+    ORACC numbers broken/continuation lines with bare ints while the CDLI ATF
+    that populated text_lines uses a trailing prime for the same lines, so an
+    exact lookup spuriously dead-letters. The fallback is scoped narrowly: only
+    when the source value is a plain integer with no existing suffix, and only
+    by appending a single prime — it will not coerce "2'"->"2''" or touch
+    composite / surface-prefixed numbers, so it cannot manufacture a false
+    match that an exact integer lookup wouldn't already have made.
+    """
+    hit = line_cache.get((p_number, line_number))
+    if hit is not None:
+        return hit
+    if isinstance(line_number, str) and line_number.isdigit():
+        return line_cache.get((p_number, line_number + "'"))
+    return None
+
+
+def _select_line_id(line_ids: dict | None, surface) -> int | None:
+    """Pick a single line_id from the per-surface map, preferring the lemma's
+    surface, then falling back to any surface present for that line."""
+    if not line_ids:
+        return None
+    return (line_ids.get(surface) if surface else None) or next(
+        iter(line_ids.values()), None
+    )
+
+
 def _build_caches(db, project: str) -> tuple[dict, dict]:
     corpus_dirs = _find_corpus_dirs(project)
     if not corpus_dirs:
@@ -382,13 +413,10 @@ class OraccLemmatizationsConnector(SourceConnector):
 
                 with ctx.db.cursor() as cur:
                     for lemma in lemmas:
-                        line_ids = line_cache.get((p_number, lemma["line_number"]))
-                        line_id = None
-                        if line_ids:
-                            surface = lemma.get("surface")
-                            line_id = (
-                                line_ids.get(surface) if surface else None
-                            ) or next(iter(line_ids.values()), None)
+                        line_ids = _resolve_line_ids(
+                            line_cache, p_number, lemma["line_number"]
+                        )
+                        line_id = _select_line_id(line_ids, lemma.get("surface"))
                         if not line_id:
                             proj_no_line += 1
                             dl_buffer.append(
@@ -454,6 +482,111 @@ class OraccLemmatizationsConnector(SourceConnector):
         row = ctx.db.execute("SELECT COUNT(*) AS n FROM lemmatizations").fetchone()
         n = row["n"] if isinstance(row, dict) else row[0]
         ctx.info("oracc_lemmatizations.verify", count=n)
+
+    # --- replay support (DLQ #174) -------------------------------------
+    #
+    # build_caches_for_payloads / resolve_payload let the dlq-replay CLI run a
+    # stored dead-letter payload back through the SAME match logic load() uses,
+    # without re-reading any ORACC source files. The payload already carries the
+    # parsed lemma fields, so replay only needs the line/token caches.
+
+    @staticmethod
+    def build_caches_for_payloads(db, p_numbers: list[str]) -> tuple[dict, dict]:
+        """Build (line_cache, token_cache) for an explicit set of p_numbers.
+
+        Mirrors _build_caches() but is keyed off a caller-supplied p_number list
+        (the distinct p_numbers in a replay batch) instead of scanning ORACC
+        corpus dirs.
+        """
+        if not p_numbers:
+            return {}, {}
+        line_cache: dict = {}
+        for row in db.execute(
+            "SELECT tl.p_number, tl.line_number, s.surface_type, tl.id "
+            "FROM text_lines tl LEFT JOIN surfaces s ON tl.surface_id = s.id "
+            "WHERE tl.p_number = ANY(%s) AND tl.is_ruling = 0 AND tl.is_blank = 0",
+            (list(p_numbers),),
+        ).fetchall():
+            if isinstance(row, dict):
+                p_num, line_num, surface_type, line_id = (
+                    row["p_number"],
+                    row["line_number"],
+                    row["surface_type"],
+                    row["id"],
+                )
+            else:
+                p_num, line_num, surface_type, line_id = row
+            line_cache.setdefault((p_num, line_num), {})[surface_type or "unknown"] = (
+                line_id
+            )
+
+        all_line_ids = [
+            lid for surf_map in line_cache.values() for lid in surf_map.values()
+        ]
+        token_cache: dict = {}
+        if all_line_ids:
+            for row in db.execute(
+                "SELECT id, line_id, position FROM tokens WHERE line_id = ANY(%s)",
+                (all_line_ids,),
+            ).fetchall():
+                if isinstance(row, dict):
+                    token_id, line_id, position = (
+                        row["id"],
+                        row["line_id"],
+                        row["position"],
+                    )
+                else:
+                    token_id, line_id, position = row
+                token_cache[(line_id, position)] = token_id
+        return line_cache, token_cache
+
+    @staticmethod
+    def resolve_payload(
+        db, payload: dict, ann_run_id: int, line_cache: dict, token_cache: dict
+    ) -> bool:
+        """Re-run one stored dead-letter payload through the current match logic.
+
+        Returns True and inserts the lemmatization (ON CONFLICT DO NOTHING) if
+        the (p_number, line_number) now resolves — including via the prime-suffix
+        fallback — and a token exists at the recorded position. Returns False if
+        it still cannot be matched, leaving the dead letter untouched. Uses the
+        exact same _resolve_line_ids / _select_line_id helpers as load(), so a
+        replay can never resolve something a fresh run wouldn't.
+        """
+        p_number = payload.get("p_number")
+        line_number = payload.get("line_number")
+        position = payload.get("position")
+        if p_number is None or line_number is None or position is None:
+            return False
+        line_ids = _resolve_line_ids(line_cache, p_number, line_number)
+        line_id = _select_line_id(line_ids, payload.get("surface"))
+        if not line_id:
+            return False
+        token_id = token_cache.get((line_id, position))
+        if token_id is None:
+            return False
+        db.execute(
+            "INSERT INTO lemmatizations "
+            "(token_id, citation_form, guide_word, sense, pos, epos, "
+            "norm, base, signature, morph_raw, annotation_run_id, confidence, language) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1.0, %s) "
+            "ON CONFLICT DO NOTHING",
+            (
+                token_id,
+                payload.get("cf"),
+                payload.get("gw"),
+                payload.get("sense"),
+                payload.get("pos"),
+                payload.get("epos"),
+                payload.get("norm"),
+                payload.get("base"),
+                payload.get("signature"),
+                payload.get("morph_raw"),
+                ann_run_id,
+                payload.get("lang"),
+            ),
+        )
+        return True
 
 
 _DEAD_LETTER_REASON = {
