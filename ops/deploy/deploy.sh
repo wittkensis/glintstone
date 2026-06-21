@@ -67,7 +67,29 @@ SHARED_DIR="$REMOTE_DIR/shared"
 REMOTE="$DEPLOY_USER@$DEPLOY_HOST"
 
 # SSH options — pin known_hosts location, use deploy key if provided.
-SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=~/.ssh/known_hosts)
+#
+# Keepalive + timeout matter here. Every `ssh_run` below opens a fresh SSH
+# connection, and the pg_dump poll loop opens dozens of them in a row from the
+# GitHub Actions runner. Without these, a single half-open TCP connection (the
+# runner sits behind NAT; the VPS may drop an idle/established-but-silent socket)
+# makes `ssh` block FOREVER with no error — the exact "Deploy to Hostinger hangs
+# post-rsync, no progress" symptom from the 2026-06-21 incident. With these, a
+# stalled connection fails in ~30s with a clear error instead of pinning the job
+# until the workflow's timeout-minutes kills it 10+ minutes later.
+#   ConnectTimeout=15        — give up establishing a connection after 15s
+#   ServerAliveInterval=15   — probe the peer every 15s on an open session
+#   ServerAliveCountMax=4    — drop the session after 4 missed probes (~60s)
+#   BatchMode=yes            — NEVER prompt for a password/passphrase. Over a
+#                              non-TTY CI SSH a prompt would hang waiting on
+#                              stdin that never comes; fail fast instead.
+SSH_OPTS=(
+    -o StrictHostKeyChecking=accept-new
+    -o UserKnownHostsFile=~/.ssh/known_hosts
+    -o BatchMode=yes
+    -o ConnectTimeout=15
+    -o ServerAliveInterval=15
+    -o ServerAliveCountMax=4
+)
 if [ -n "${SSH_KEY_PATH:-}" ]; then
     SSH_OPTS+=(-i "$SSH_KEY_PATH")
 fi
@@ -198,8 +220,16 @@ rsync_to "$PROJECT_DIR/.claude/skills/gs-expert-agentic/prompts/" \
     "$REMOTE:$RELEASE_DIR/.claude/skills/gs-expert-agentic/prompts/" >/dev/null
 
 # --- Install dependencies inside the release's venv ---
-echo "Installing dependencies into release venv..."
-ssh_run "cd $RELEASE_DIR && python3 -m venv venv && venv/bin/pip install --quiet --upgrade pip && venv/bin/pip install --quiet -r requirements.txt"
+# Bound with a remote `timeout` (busybox `timeout` is present on the VPS): a
+# wedged pip resolver or a stalled PyPI fetch must fail this step in ~8 min, not
+# hang the whole deploy. The SSH keepalive above only catches a dead *connection*
+# — it can't tell a live-but-stuck remote command from a slow one, so the remote
+# `timeout` is the backstop for that case.
+echo "[$(date -u +%H:%M:%S)] Installing dependencies into release venv (timeout 8m)..."
+ssh_run "timeout 480 sh -c 'cd $RELEASE_DIR && python3 -m venv venv && venv/bin/pip install --quiet --upgrade pip && venv/bin/pip install --quiet -r requirements.txt'" || {
+    echo "::error::Dependency install failed or exceeded 8 min — aborting (previous release stays live)."
+    exit 1
+}
 
 # --- Symlink shared state (the .env stays out of releases for safety) ---
 ssh_run "ln -sfn $SHARED_DIR/.env $RELEASE_DIR/.env"
@@ -210,9 +240,12 @@ ssh_run "mkdir -p $SHARED_DIR/source-data && ln -sfn $SHARED_DIR/source-data $RE
 # --- Verify the new venv actually imports the app code ---
 # Catches dependency drift, syntax errors, and missing-module bugs BEFORE migrations
 # run and BEFORE the symlink swap. If this fails the previous release stays live.
-echo "Verifying release imports..."
-ssh_run "cd $RELEASE_DIR && set -a && . ./.env && set +a && \
-    venv/bin/python -c 'import api.main; import app.main; import core.version; print(\"imports ok:\", core.version.release_tag())'"
+echo "[$(date -u +%H:%M:%S)] Verifying release imports (timeout 2m)..."
+ssh_run "timeout 120 sh -c 'cd $RELEASE_DIR && set -a && . ./.env && set +a && \
+    venv/bin/python -c \"import api.main; import app.main; import core.version; print(\\\"imports ok:\\\", core.version.release_tag())\"'" || {
+    echo "::error::Import verification failed or timed out — aborting (previous release stays live)."
+    exit 1
+}
 
 # --- Pre-deploy DB snapshot (production only — staging restores from prod nightly) ---
 # A failed OR timed-out pg_dump aborts the deploy: deploying without a complete
@@ -240,7 +273,14 @@ if [ "$APP_ENV" = "production" ]; then
         exit 1
     fi
 
-    echo "Snapshotting production DB → $SNAPSHOT_NAME (background, polling for completion)..."
+    # NOTE: this is the longest phase of the deploy. The prod DB is ~19 GB and
+    # the -Fc dump is ~5.7 GB, growing ~400 MB / 80s → roughly 18–20 min wall
+    # clock. The progress lines below tick every ~80s WITH a dump size so the
+    # step is visibly alive; do NOT mistake a slow-but-progressing dump for a
+    # hang and cancel it (that was the 2026-06-21 misdiagnosis). The deploy job's
+    # workflow timeout-minutes must comfortably exceed dump + rsync + migrations.
+    echo "[$(date -u +%H:%M:%S)] Snapshotting production DB → $SNAPSHOT_NAME"
+    echo "  (background dump; ~18–20 min expected for a ~19 GB DB; polling below)..."
     # Run pg_dump in the background on the server so the SSH session doesn't need
     # to stay open for the full dump. Poll with short reconnects instead.
     # -Fc (custom format) compresses internally — do not pipe through gzip.
@@ -296,9 +336,19 @@ fi
 # Tables are owned by `wittkensis` (per CLAUDE.md); the app connects as `glintstone`
 # which lacks CREATE on `public`. The shared .env must define DATABASE_URL_MIGRATIONS
 # (the owning role); we fall back to DATABASE_URL for environments that don't separate.
-echo "Running migrations..."
-ssh_run "cd $RELEASE_DIR && set -a && . ./.env && set +a && \
-    DATABASE_URL=\"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" venv/bin/python data-model/migrate.py up"
+# Bound with a remote `timeout`: a migration that blocks on a table lock (e.g. a
+# long-running query holding the table) would otherwise hang the deploy with no
+# progress. 10 min is generous for the additive migrations we ship; if a
+# migration legitimately needs longer it should be run out-of-band, not inline.
+echo "[$(date -u +%H:%M:%S)] Running migrations (timeout 10m)..."
+ssh_run "timeout 600 sh -c 'cd $RELEASE_DIR && set -a && . ./.env && set +a && \
+    DATABASE_URL=\"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" venv/bin/python data-model/migrate.py up'" || {
+    echo "::error::Migrations failed or exceeded 10 min — aborting deploy."
+    echo "::error::The current symlink was NOT swapped; the previous release stays live."
+    echo "::error::A timeout here usually means a migration is waiting on a DB lock —"
+    echo "::error::check pg_stat_activity on the VPS for a blocking query."
+    exit 1
+}
 
 # --- Write version file for cache-busting and build identification ---
 ssh_run "echo '$RELEASE_TAG' > $RELEASE_DIR/version.txt"

@@ -1,7 +1,7 @@
 ---
 question: "How does Glintstone get from a git commit to a running release on the VPS?"
 created: 2026-05-11
-modified: 2026-05-12
+modified: 2026-06-21
 context: "Rewritten 2026-05-12 to reflect post-VPS-cutover reality: production Postgres lives on the VPS itself (Neon decommissioned), migrations run server-side, and the branch model is `staging` → `main` with an approval gate on production."
 status: active
 audience: [engineers, ops, claude]
@@ -129,6 +129,45 @@ ops/deploy/rollback.sh prod-20260512-130149-dc1ea08     # roll back to that tag
 Rollback swaps **code only**. The database schema is forward. Migrations must
 be additive — never destructive — so old code can talk to a newer schema.
 For destructive recovery, restore from the matching `pre-deploy-*.dump.gz`.
+
+### Laptop fallback deploy (when CI can't ship)
+
+CI is the normal path. If a deploy must go out and CI is unavailable — a
+GitHub Actions outage, or an `ssh-keyscan` flake that survives the in-workflow
+retries — deploy from the laptop with the wrapper script:
+
+```bash
+ops/deploy/deploy-from-laptop.sh                 # api app www (default)
+ops/deploy/deploy-from-laptop.sh api app         # a subset
+```
+
+The wrapper exists so the fallback is repeatable and can't drift. It:
+
+- **Exports `DEPLOY_HOST` / `APP_ENV=production` / `SSH_KEY_PATH`** so `deploy.sh`
+  skips sourcing the laptop `.env` (whose `APP_ENV=local` would otherwise
+  override the inline `APP_ENV` and trip the pre-deploy snapshot gate — the
+  failure that aborted a fallback on 2026-06-21).
+- **Fast-forwards local `main` to `origin/main` before deploying** (you ship
+  what origin has) and **re-confirms the sync after** — so the next engineer
+  branches from a fresh HEAD and the fallback never leaves local `main` stale
+  (issue #266). It refuses to deploy if local `main` is *ahead of* or *diverged
+  from* origin (push or reconcile first; override with `SKIP_GIT_SYNC=1`).
+
+> If you ever run the raw command by hand, remember both halves:
+> `export DEPLOY_HOST=76.13.208.149 APP_ENV=production SSH_KEY_PATH=~/.ssh/glintstone_deploy`
+> **and** `git fetch origin && git branch -f main origin/main` afterward. The
+> wrapper does both for you.
+
+### About the "Deploy to Hostinger hangs" symptom
+
+The pre-deploy `pg_dump` of the ~19 GB prod DB legitimately takes **~18–20 min**
+and grows with the data. It is **not** a hang — `deploy.sh` prints a timestamped
+progress line with the dump size every ~80s. Do not cancel a deploy that is
+still printing growing dump sizes. Every long remote step (pip install, import
+verify, migrations) is now wrapped in its own remote `timeout`, and the SSH
+sessions use keepalive + `ConnectTimeout` + `BatchMode`, so a *genuine* stall
+fails fast with a clear error instead of pinning the job. The workflow's
+`timeout-minutes` is 40 to give the dump real headroom.
 
 ### Hotfix prod (skip staging)
 
