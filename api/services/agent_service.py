@@ -65,7 +65,12 @@ _re_sentence = re.compile(r"[^.!?]*[.!?](?=\s|$)")
 
 
 def _get_voyage() -> VoyageClient | None:
-    """Return Voyage client if configured, else None (semantic search degrades)."""
+    """Return Voyage client if configured, else None (semantic search degrades).
+
+    Init is retried on every call until it succeeds: a transiently-missing key
+    at first request must not pin semantic search to "off" for the process
+    lifetime. Once constructed, the same client is reused.
+    """
     global _voyage
     if _voyage is None:
         try:
@@ -74,6 +79,13 @@ def _get_voyage() -> VoyageClient | None:
             logger.warning("Voyage unavailable: %s", exc)
             return None
     return _voyage
+
+
+def reset_search_engine() -> None:
+    """Drop the cached search engine so the next call re-resolves the Voyage
+    client. Used after a config/key change and by tests."""
+    global _search_engine
+    _search_engine = None
 
 
 def _get_anthropic() -> AnthropicClient:
@@ -87,6 +99,13 @@ def _get_search_engine() -> SearchEngine:
     global _search_engine
     if _search_engine is None:
         _search_engine = SearchEngine(voyage=_get_voyage())
+    elif _search_engine._voyage is None:
+        # The engine was built before the Voyage key was resolvable (semantic
+        # silently degraded to lexical). Re-attempt to attach a client so
+        # semantic search starts firing without a process restart.
+        voyage = _get_voyage()
+        if voyage is not None:
+            _search_engine = SearchEngine(voyage=voyage)
     return _search_engine
 
 

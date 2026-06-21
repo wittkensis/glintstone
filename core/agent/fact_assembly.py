@@ -784,8 +784,9 @@ def assemble_line_facts(
         cur.execute(
             """
             SELECT tl.id AS line_id,
-                   tl.raw_atf,
+                   tl.raw_atf AS atf_text,
                    tl.line_number,
+                   tl.line_number AS position,
                    s.id AS surface_id,
                    s.surface_type AS surface_name,
                    a.language_normalized,
@@ -815,8 +816,9 @@ def assemble_line_facts(
             cur.execute(
                 """
                 SELECT tl.id AS line_id,
-                       tl.raw_atf,
+                       tl.raw_atf AS atf_text,
                        tl.line_number,
+                       tl.line_number AS position,
                        s.id AS surface_id,
                        s.surface_type AS surface_name,
                        a.language_normalized,
@@ -923,7 +925,9 @@ def assemble_line_facts(
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT tl.line_number, tl.raw_atf
+                SELECT tl.line_number,
+                       tl.line_number AS position,
+                       tl.raw_atf AS atf_text
                 FROM text_lines tl
                 WHERE tl.surface_id = %s
                   AND tl.line_number BETWEEN %s AND %s
@@ -952,7 +956,7 @@ def assemble_line_facts(
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT string_agg(atf_text, E'\n' ORDER BY position) AS full_atf
+                SELECT string_agg(raw_atf, E'\n' ORDER BY line_number) AS full_atf
                 FROM text_lines
                 WHERE surface_id = %s
                 """,
