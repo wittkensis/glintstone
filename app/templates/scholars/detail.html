@@ -292,11 +292,13 @@
 
     {% if pub_total_pages and pub_page < pub_total_pages %}
     {# Server-rendered pagination (50/page). The button advances to the next
-       page, preserving the active type filter so the URL stays shareable. #}
+       page, preserving the active type filter and the contributions page so
+       the URL stays shareable and the other section doesn't reset (#177). #}
     {% set _next = pub_page + 1 %}
     {% set _qs = ('type=' ~ pub_active_type ~ '&') if pub_active_type else '' %}
+    {% set _keep_contrib = ('contrib_page=' ~ contrib_page ~ '&') if contrib_page > 1 else '' %}
     <div class="works-more">
-      <a class="works-more__btn" href="/scholars/{{ scholar.id }}?{{ _qs }}pub_page={{ _next }}">
+      <a class="works-more__btn" href="/scholars/{{ scholar.id }}?{{ _qs }}{{ _keep_contrib }}pub_page={{ _next }}">
         Show more — {{ '{:,}'.format(pub_total) }} publications total
       </a>
     </div>
@@ -312,7 +314,7 @@
   </section>
 
   {# Contributions ledger #}
-  <section class="scholar-section">
+  <section class="scholar-section" id="contributions">
     <div class="scholar-section__head">
       <h2 class="scholar-section__title">Contributions</h2>
       {% if contrib_total %}
@@ -360,6 +362,26 @@
       </li>
       {% endfor %}
     </ul>
+
+    {% if contrib_total_pages and contrib_page < contrib_total_pages %}
+    {# Server-rendered pagination (50/page), mirroring the publications footer
+       (#206). Advancing preserves the active type filter and the current
+       publications page so neither section resets the other (#177). #}
+    {% set _cnext = contrib_page + 1 %}
+    {% set _cqs = ('type=' ~ pub_active_type_for_contrib ~ '&') if pub_active_type_for_contrib else '' %}
+    {% set _keep_pub = ('pub_page=' ~ pub_page ~ '&') if pub_page > 1 else '' %}
+    <div class="works-more">
+      <a class="works-more__btn" href="/scholars/{{ scholar.id }}?{{ _cqs }}{{ _keep_pub }}contrib_page={{ _cnext }}#contributions">
+        Show more — {{ '{:,}'.format(contrib_total) }} artifact{{ '' if contrib_total == 1 else 's' }} total
+      </a>
+    </div>
+    {% elif contrib_page > 1 %}
+    {# #189-style end state — reached the last page of a multi-page ledger. #}
+    <div class="works-more works-more--end">
+      <p class="works-more__end">No more contributions — showing all {{ '{:,}'.format(contrib_total) }} artifact{{ '' if contrib_total == 1 else 's' }}.</p>
+    </div>
+    {% endif %}
+
     {% else %}
     <div class="scholar-empty">
       No artifacts are attributed to this scholar yet. Contributions appear here once an annotation run is linked.

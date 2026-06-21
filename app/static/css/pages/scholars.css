@@ -601,6 +601,11 @@ main.scholar-detail {
     color: var(--color-text);
     border-color: var(--color-accent);
 }
+.works-more__end {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+}
 
 @media (max-width: 600px) {
     /* Mobile: drop the year column, stats wrap 2-up — zero horizontal overflow. */
