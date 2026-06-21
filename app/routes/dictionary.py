@@ -28,7 +28,12 @@ def dictionary_index(
 
     # Default sort per level
     if not sort:
-        sort = "name" if level == "signs" else "frequency"
+        if level == "signs":
+            sort = "name"
+        elif level == "glosses":
+            sort = "attestations"
+        else:
+            sort = "frequency"
 
     # Build API params
     params: dict = {"level": level, "page": page, "per_page": 50, "sort": sort}
