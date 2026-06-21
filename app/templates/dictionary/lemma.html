@@ -2,6 +2,8 @@
 
 {% block title %}{{ lemma.citation_form or 'Lemma' }} — Dictionary — Glintstone{% endblock %}
 
+{% from "components/_macros.html" import data_empty %}
+
 {% block content %}
 <main class="lemma-detail-page">
 
@@ -68,9 +70,9 @@
         {% endif %}
 
         {# ── Senses ──────────────────────────────────────────────────── #}
-        {% if senses %}
         <section class="dict-detail__section" aria-labelledby="senses-heading" style="margin-top: var(--space-6);">
             <h3 id="senses-heading">Senses</h3>
+            {% if senses %}
             <ol class="lemma-detail__senses">
                 {% for sense in senses %}
                 <li class="lemma-detail__sense">
@@ -91,8 +93,10 @@
                 </li>
                 {% endfor %}
             </ol>
+            {% else %}
+            {{ data_empty('No senses on record', 'No definitions or glosses have been recorded for this lemma yet.') }}
+            {% endif %}
         </section>
-        {% endif %}
 
         {# ── Sign associations ───────────────────────────────────────── #}
         {% if signs %}

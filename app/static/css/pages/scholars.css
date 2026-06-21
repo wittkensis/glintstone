@@ -362,16 +362,8 @@ main.scholar-detail {
     border-color: var(--color-badge-blue-border);
 }
 
-/* Empty state */
-.scholar-empty {
-    padding: var(--space-10) var(--space-6);
-    text-align: center;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    border: var(--border-subtle);
-    border-radius: var(--radius-md);
-    background: var(--surface-raised);
-}
+/* Empty states are now the shared .data-empty component
+   (components/empty-states.css), applied via the data_empty() macro. */
 
 @media (max-width: 600px) {
     .contrib-row__link {
@@ -399,13 +391,9 @@ main.scholar-detail {
    the page reads as one coherent record, not two bolted-together features.
    ========================================================================== */
 
-/* #189 explicit empties — inline italic-subtle marker shared across the page
-   (year "n.d.", "No citation data", "No institution"). Defined here so both
-   the v1 identity header and the v2 works ledger render the contract. */
-.field-empty {
-    font-style: italic;
-    color: var(--color-text-subtle);
-}
+/* #189 explicit empties — the inline `.field-empty` marker now lives in the
+   shared components/empty-states.css so every detail page renders one contract.
+   (Year "n.d.", "No citation data", "No institution" all use it.) */
 
 /* ---- Publications stat strip (Tufte: data-dense summary, real aggregates) ---- */
 .works-stats {
@@ -560,26 +548,7 @@ main.scholar-detail {
     border-color: var(--color-badge-purple-border);
 }
 
-/* ---- #189 section-level empty ---- */
-.works-empty {
-    padding: var(--space-10) var(--space-6);
-    text-align: center;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    border: var(--border-subtle);
-    border-radius: var(--radius-md);
-    background: var(--surface-raised);
-    margin-top: var(--space-4);
-}
-.works-empty__title {
-    color: var(--color-text);
-    font-weight: var(--font-weight-medium);
-    margin-bottom: var(--space-1);
-}
-.works-empty__hint {
-    font-size: var(--text-xs);
-    color: var(--color-text-subtle);
-}
+/* #189 section-level empties use the shared .data-empty component. */
 
 /* ---- "show more" footer (server-rendered pagination) ---- */
 .works-more {

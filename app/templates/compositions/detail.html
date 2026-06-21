@@ -6,6 +6,8 @@
 <link rel="stylesheet" href="/static/css/pages/compositions.css?v={{ app_version }}">
 {% endblock %}
 
+{% from "components/_macros.html" import data_empty %}
+
 {% block content %}
 <main class="composition-detail-page">
 
@@ -156,7 +158,18 @@
             </tbody>
         </table>
         {% else %}
-        <p class="compositions-empty" id="exemplars-empty">No exemplars match the current filters.</p>
+        {# #189 explicit empty. Two cases: an active filter matched nothing, or the
+           composition genuinely has no linked exemplars. The id is preserved so the
+           client-side period filter can still toggle this block. #}
+        <div id="exemplars-empty">
+            {% if filter_period or filter_provenience %}
+            {{ data_empty('No exemplars match the current filters',
+                          'Clear the period or site filter to see all linked exemplars for this composition.') }}
+            {% else %}
+            {{ data_empty('No exemplars on record',
+                          'No tablet exemplars are linked to this composition in Glintstone yet.') }}
+            {% endif %}
+        </div>
         {% endif %}
     </section>
 

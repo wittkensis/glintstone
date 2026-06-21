@@ -648,6 +648,32 @@
 {% endmacro %}
 
 
+{# ── Standard explicit empties (#189) ─────────────────────────────────────────
+   When a record's section or field has no data, show an EXPLICIT placeholder
+   rather than silently omitting it — so the page reads as intentionally-empty,
+   not broken. Two tiers, one shared vocabulary:
+
+     data_empty(title, hint)   section/block level → "No <X> on record" + hint
+     field_empty(text)         inline field level  → an em dash / "No data"
+
+   Both render real text (.data-empty / .field-empty in empty-states.css) so a
+   screen reader announces "nothing here", not a silent gap.
+
+   Usage:
+     {{ data_empty('No readings recorded',
+                   'This sign has no attested readings in the corpus yet.') }}
+     <td>{{ ex.period or field_empty() }}</td>
+   ────────────────────────────────────────────────────────────────────────── #}
+{% macro data_empty(title='No data on record', hint=none) %}
+<div class="data-empty">
+    <p class="data-empty__title">{{ title }}</p>
+    {% if hint %}<p class="data-empty__hint">{{ hint }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro field_empty(text='—') %}<span class="field-empty">{{ text }}</span>{% endmacro %}
+
+
 {# ── KPI Dashboard (progress rings) ── #}
 {% macro kpi_dashboard(kpi) %}
 {% if kpi %}

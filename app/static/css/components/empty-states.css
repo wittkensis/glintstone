@@ -33,6 +33,51 @@
 }
 
 /* ==========================================================================
+   Standard explicit empty state (#189)
+   ----------------------------------------------------------------------------
+   One consistent vocabulary for "data is missing here" across detail pages.
+   Used via the data_empty() / field_empty() macros in components/_macros.html.
+
+   Two tiers:
+     .data-empty  — section/block level: "No <X> on record" + optional hint.
+                    Reads as intentionally-empty, not broken.
+     .field-empty — inline field level: an em dash or short "No data" marker
+                    sitting where a value would be.
+
+   Both are real text (not a visual-only cue) so screen readers announce them.
+   ========================================================================== */
+
+.data-empty {
+    padding: var(--space-8) var(--space-6);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+}
+
+.data-empty__title {
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+.data-empty__hint {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-subtle);
+    font-size: var(--text-xs);
+    line-height: var(--line-height-relaxed);
+}
+
+/* Inline field-level marker — italic + subtle, sits in the value slot. */
+.field-empty {
+    font-style: italic;
+    color: var(--color-text-subtle);
+}
+
+/* ==========================================================================
    Contribute Buttons
    ========================================================================== */
 
