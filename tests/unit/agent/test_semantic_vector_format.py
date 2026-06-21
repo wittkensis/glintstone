@@ -50,8 +50,12 @@ def test_query_vector_passed_as_pgvector_string():
     engine._semantic_search(conn, "a sealed envelope", ["tablets"], limit=5)
 
     assert conn.captured, "semantic query was never executed"
-    _sql, params = conn.captured[0]
-    # First and third positional params are the vector (used twice in the query).
+    # The engine first issues `SET LOCAL hnsw.ef_search` (no bound params) to tune
+    # HNSW recall, then the vector query. Find the query that carries params.
+    vector_calls = [(sql, p) for sql, p in conn.captured if p]
+    assert vector_calls, "vector query was never executed"
+    _sql, params = vector_calls[0]
+    # First and third positional params are the vector (used twice per KNN leg).
     vec_param = params[0]
     assert isinstance(vec_param, str), (
         "query vector must be a string for ::vector cast, "
