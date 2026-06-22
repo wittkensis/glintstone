@@ -140,11 +140,32 @@ def _iter_catalogues(base: Path) -> Iterator[Path]:
 
 def _corpusjson_p_numbers(base: Path) -> set[str]:
     """Every P-number that has a corpusjson file on disk (parseable by oracc-atf)."""
-    found: set[str] = set()
+    return set(_corpusjson_p_to_project(base))
+
+
+def _corpusjson_p_to_project(base: Path) -> dict[str, str]:
+    """Map each on-disk corpusjson P-number to its ORACC project.
+
+    The project is derived from the path: the directory tree between ORACC_BASE
+    and the `corpusjson/` dir (e.g. ".../ORACC/saao/saa19/corpusjson/P*.json"
+    -> "saao/saa19"). Used so corpusjson-only tablets absent from every
+    catalogue.json still get a minimal row carrying their project.
+    """
+    out: dict[str, str] = {}
+    base_parts = base.parts
     pattern = str(base / "**" / "corpusjson" / "P*.json")
     for path_str in glob.glob(pattern, recursive=True):
-        found.add(os.path.splitext(os.path.basename(path_str))[0])
-    return found
+        p = os.path.splitext(os.path.basename(path_str))[0]
+        parts = Path(path_str).parts
+        try:
+            cj = parts.index("corpusjson")
+        except ValueError:
+            out.setdefault(p, "")
+            continue
+        project = "/".join(parts[len(base_parts) : cj])
+        # first project wins (a P-number under multiple project dirs is rare)
+        out.setdefault(p, project)
+    return out
 
 
 class OraccCatalogConnector(SourceConnector):
@@ -213,7 +234,27 @@ class OraccCatalogConnector(SourceConnector):
                             drop_placeholder_museum=(col == "museum_no"),
                         )
 
-        ctx.info("oracc_catalog.merged", unique_p_numbers=len(seen))
+        # Tablets with corpusjson on disk but absent from every catalogue.json
+        # still need a minimal row so oracc-atf can parse them. Emit a
+        # p_number-only record (all metadata NULL — nothing is fabricated),
+        # carrying only the project derived from the corpusjson path.
+        on_disk = _corpusjson_p_to_project(self.base)
+        catless = 0
+        for p, project in on_disk.items():
+            if p in seen:
+                continue
+            rec = {col: None for col in FIELD_ALIASES}
+            rec["p_number"] = p
+            rec["projects"] = {project} if project else set()
+            seen[p] = rec
+            catless += 1
+
+        ctx.info(
+            "oracc_catalog.merged",
+            unique_p_numbers=len(seen),
+            catalogue_backed=len(seen) - catless,
+            corpusjson_only=catless,
+        )
         yield from seen.values()
 
     def load(self, ctx: RunContext, rows: Iterable[dict]) -> LoadStats:
