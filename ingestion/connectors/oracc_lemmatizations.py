@@ -346,7 +346,9 @@ class OraccLemmatizationsConnector(SourceConnector):
     display_name = "ORACC CDL Lemmatizations"
     description = "Imports lemmatizations from ORACC corpusjson CDL files into the lemmatizations table."
     kind = "annotation"
-    runs_after = ["atf-parser", "annotation-runs"]
+    # oracc-atf populates the text_lines/tokens this connector matches against
+    # for ORACC-only tablets, so it must run first (issue #273, Fix A).
+    runs_after = ["atf-parser", "annotation-runs", "oracc-atf"]
     license = "CC-BY-SA-3.0"
     upstream_url = "https://oracc.museum.upenn.edu/"
 
