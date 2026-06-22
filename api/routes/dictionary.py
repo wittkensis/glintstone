@@ -112,6 +112,29 @@ def lookup_written_form(
     return repo.lookup_by_written_form(form, language)
 
 
+@router.get("/lemmas/{lemma_id}/attestations")
+def get_lemma_attestations(
+    lemma_id: int,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    conn=Depends(get_db),
+):
+    """Tablet lines where this lemma is attested (#176).
+
+    Each row is one text line where the lemma occurs, carrying its P-number,
+    designation, line reference, transliterated ATF, and (where known) period /
+    provenience / language. Paginated — a common lemma can occur on thousands
+    of tablets. Returns ``items`` empty (not 404) for an existing lemma with no
+    attestations so the page can render its empty state; 404 only for a
+    non-existent lemma id.
+    """
+    repo = LexicalRepository(conn)
+    result = repo.get_lemma_attestations(lemma_id, page=page, per_page=per_page)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Lemma not found")
+    return result
+
+
 @router.get("/lemmas/{lemma_id}/norms")
 def get_lemma_norms(lemma_id: int, conn=Depends(get_db)):
     """Get all normalized forms and their written spellings for a lemma."""

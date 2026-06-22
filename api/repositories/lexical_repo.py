@@ -934,6 +934,114 @@ class LexicalRepository(BaseRepository):
             "computed_at": row["computed_at"],
         }
 
+    def get_lemma_attestations(
+        self, lemma_id: int, page: int = 1, per_page: int = 20
+    ) -> dict | None:
+        """List the tablet lines where a lemma is actually attested (#176).
+
+        The dictionary entry (``lexical_lemmas``) is joined to the raw
+        token-level ``lemmatizations`` by their text *citation form* — there is
+        no foreign key between them. The 2026 Fix A/C backfill 9x'd
+        lemmatizations (65.9k -> 5.4M rows) but populated ``citation_form`` +
+        ``guide_word``, not ``norm_id`` (~20k rows) or ``entry_id`` (zero). So
+        ``(citation_form, guide_word)`` is the only pair that links the
+        dictionary to the corpus at scale. ``guide_word`` disambiguates
+        homographs (e.g. ``saḫ[pig]`` vs ``saḫ[clean]``); it is matched with
+        ``IS NOT DISTINCT FROM`` so a NULL guide_word on the lemma matches NULL
+        lemmatizations rather than dropping them.
+
+        The unit of attestation is the **text line**, not the raw lemmatization
+        row: a single line may carry the lemma in several tokens, or several
+        competing analyses of one token (which the schema deliberately keeps as
+        separate rows). Collapsing to the distinct line gives the scholar one
+        row per place the word occurs — the tablet + line where the lemma is
+        written, with its transliterated ATF for context.
+
+        Returns ``None`` if the lemma id does not exist (so the route can 404).
+        For an existing lemma with no attestations it returns an empty
+        ``items`` list with ``total`` 0 — the page renders the standard empty
+        state in that case.
+
+        Pagination is mandatory: a common lemma (e.g. ``šarru[king]``) occurs on
+        thousands of tablets. The index ``idx_lemmatizations_citation_form``
+        (migration 052) makes the citation-form filter index-driven.
+        """
+        lemma = self.fetch_one(
+            "SELECT citation_form, guide_word FROM lexical_lemmas WHERE id = %(id)s",
+            {"id": lemma_id},
+        )
+        if not lemma:
+            return None
+
+        params = {
+            "cf": lemma["citation_form"],
+            "gw": lemma["guide_word"],
+        }
+
+        # Distinct lines where the lemma occurs + distinct tablets behind them.
+        counts = self.fetch_one(
+            """
+            SELECT COUNT(*)                  AS total_lines,
+                   COUNT(DISTINCT p_number)  AS tablet_count
+            FROM (
+                SELECT DISTINCT tl.id, tl.p_number
+                FROM lemmatizations lz
+                JOIN tokens t       ON t.id = lz.token_id
+                JOIN text_lines tl  ON tl.id = t.line_id
+                WHERE lz.citation_form = %(cf)s
+                  AND lz.guide_word IS NOT DISTINCT FROM %(gw)s
+            ) s
+            """,
+            params,
+        )
+        total = int(counts["total_lines"]) if counts else 0
+        tablet_count = int(counts["tablet_count"]) if counts else 0
+
+        items: list[dict] = []
+        if total:
+            offset = (page - 1) * per_page
+            page_params = {**params, "limit": per_page, "offset": offset}
+            items = self.fetch_all(
+                """
+                SELECT tl.p_number,
+                       tl.line_number,
+                       tl.raw_atf,
+                       a.designation,
+                       a.period_normalized,
+                       a.provenience_normalized,
+                       a.language_normalized
+                FROM (
+                    SELECT DISTINCT tl.id,
+                           tl.p_number,
+                           tl.line_number,
+                           tl.raw_atf,
+                           tl.column_number
+                    FROM lemmatizations lz
+                    JOIN tokens t      ON t.id = lz.token_id
+                    JOIN text_lines tl ON tl.id = t.line_id
+                    WHERE lz.citation_form = %(cf)s
+                      AND lz.guide_word IS NOT DISTINCT FROM %(gw)s
+                ) tl
+                JOIN artifacts a ON a.p_number = tl.p_number
+                ORDER BY tl.p_number, tl.column_number, tl.line_number
+                LIMIT %(limit)s OFFSET %(offset)s
+                """,
+                page_params,
+            )
+
+        total_pages = (total + per_page - 1) // per_page if total else 0
+        return {
+            "lemma_id": lemma_id,
+            "citation_form": lemma["citation_form"],
+            "guide_word": lemma["guide_word"],
+            "items": [dict(r) for r in items],
+            "total": total,
+            "tablet_count": tablet_count,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": total_pages,
+        }
+
     # ── Helpers ───────────────────────────────────────────────
 
     @staticmethod

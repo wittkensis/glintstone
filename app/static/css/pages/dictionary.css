@@ -1031,8 +1031,108 @@
 .attestation-jump--unindexed .attestation-jump__count,
 .attestation-jump--unindexed .attestation-jump__arrow { color: var(--color-text-subtle); }
 
+/* ── Inline attestation table (#176) ──────────────────────────────────────── */
+.lemma-attestations__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+.lemma-attestations__count {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+.lemma-attestations__hint {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: var(--space-1) 0 var(--space-3);
+}
+.attestation-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--border-default);
+}
+.attestation-row {
+    border-bottom: var(--border-default);
+}
+.attestation-row__link {
+    display: flex;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-2);
+    color: var(--color-text);
+    text-decoration: none;
+    transition: background var(--transition-normal);
+}
+.attestation-row__link:hover { background: var(--color-accent-10); }
+.attestation-row__ref {
+    flex-shrink: 0;
+    width: 7.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.attestation-row__pnum {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-accent);
+    font-variant-numeric: tabular-nums;
+}
+.attestation-row__line {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+.attestation-row__main { min-width: 0; }
+.attestation-row__atf {
+    display: block;
+    font-family: var(--font-mono, monospace);
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    word-break: break-word;
+}
+.attestation-row__atf--empty { font-family: inherit; }
+.attestation-row__tablet {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+.attestation-row__tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-top: var(--space-1);
+}
+.attestation-row__facet {
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    background: var(--surface-raised);
+    border: var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-1);
+}
+.lemma-attestations__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-top: var(--space-4);
+}
+.lemma-attestations__seeall {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-accent);
+    text-decoration: none;
+}
+.lemma-attestations__seeall:hover { text-decoration: underline; }
+
 @media (max-width: 768px) {
     .lemma-detail__columns { grid-template-columns: 1fr; }
     .morphology { position: static; }
+    .attestation-row__link { flex-direction: column; gap: var(--space-1); }
+    .attestation-row__ref { flex-direction: row; width: auto; gap: var(--space-2); }
 }
 
