@@ -135,6 +135,24 @@ def get_lemma_attestations(
     return result
 
 
+@router.get("/lemmas/{lemma_id}/attestation-periods")
+def get_lemma_attestation_periods(lemma_id: int, conn=Depends(get_db)):
+    """Per-period attestation distribution for this lemma (#201).
+
+    Groups the lemma's attesting tablets (same #176 join) by canonical
+    historical period and returns a count per period alongside each period's
+    BCE date range — the chronological spread of the word's usage, drawn as a
+    proportional BCE timeline on the lemma detail page. ``periods`` is empty
+    for an existing lemma with no datable attestations (the page renders the
+    empty state); 404 only for a non-existent lemma id.
+    """
+    repo = LexicalRepository(conn)
+    result = repo.get_lemma_attestation_periods(lemma_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Lemma not found")
+    return result
+
+
 @router.get("/lemmas/{lemma_id}/norms")
 def get_lemma_norms(lemma_id: int, conn=Depends(get_db)):
     """Get all normalized forms and their written spellings for a lemma."""

@@ -140,6 +140,17 @@ def lemma_detail(request: Request, lemma_id: int, page: int = Query(1, ge=1)):
     except Exception:
         attestations = None
 
+    # Per-period attestation timeline (#201) — the chronological spread of the
+    # word's usage across canonical periods, on a proportional BCE axis.
+    # Fourth, non-fatal call: on any failure the timeline section renders its
+    # empty state rather than 500ing the page.
+    try:
+        attestation_periods = api.get(
+            f"/dictionary/lemmas/{lemma_id}/attestation-periods"
+        )
+    except Exception:
+        attestation_periods = None
+
     from app.main import templates
 
     return templates.TemplateResponse(
@@ -151,6 +162,7 @@ def lemma_detail(request: Request, lemma_id: int, page: int = Query(1, ge=1)):
             "signs": data.get("signs", []),
             "norms": norms,
             "attestations": attestations or {},
+            "attestation_periods": attestation_periods or {},
             "api_url": request.app.state.api.base_url,
         },
     )

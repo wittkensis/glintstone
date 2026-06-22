@@ -44,6 +44,48 @@
         {% endif %}
     </div>
 
+    {# ── Attestation timeline (#201) — when the word was in use ────────────
+         A proportional BCE histogram: one band per canonical period the lemma
+         is attested in, sized by how many tablets of that period carry it.
+         Reuses the #195 period-canon / proportional-axis machinery (now a
+         count-driven histogram). ``attestation_periods.periods`` is the API's
+         datable-period list; empty → #189 empty state. ─────────────────────── #}
+    {% set tl_periods = attestation_periods.get('periods', []) %}
+    {% set tl_dated = attestation_periods.get('dated_tablet_count', 0) %}
+    {% set tl_undated = attestation_periods.get('undated_tablet_count', 0) %}
+    <section class="lemma-timeline" aria-labelledby="lemma-timeline-heading">
+        <div class="lemma-timeline__head">
+            <h2 id="lemma-timeline-heading" class="lemma-timeline__title">When this word was used</h2>
+            {% if tl_periods %}
+            <span class="lemma-timeline__count">
+                {{ '{:,}'.format(tl_dated) }} datable tablet{{ '' if tl_dated == 1 else 's' }}
+                across {{ tl_periods | length }} period{{ '' if tl_periods | length == 1 else 's' }}
+            </span>
+            {% endif %}
+        </div>
+
+        {% if tl_periods %}
+        <p class="lemma-timeline__hint">
+            Each band is a historical period <em>{{ lemma.citation_form }}</em> is attested in, placed on a
+            proportional BCE axis and sized by how many tablets of that period carry the word.
+        </p>
+        <div id="lemma-period-timeline"
+             data-periods="{{ tl_periods | tojson | forceescape }}"
+             class="lemma-timeline__svg-wrap">
+            {# LemmaPeriodTimeline JS renders the SVG histogram into this container #}
+        </div>
+        {% if tl_undated %}
+        <p class="lemma-timeline__footnote">
+            {{ '{:,}'.format(tl_undated) }} further tablet{{ '' if tl_undated == 1 else 's' }}
+            carry the word but have no datable period and are not shown on the axis.
+        </p>
+        {% endif %}
+        {% else %}
+        {{ data_empty('No datable attestations',
+                      'This lemma has no attestations on tablets with a known historical period yet, so its usage over time cannot be charted. The timeline appears once datable occurrences are linked to this entry.') }}
+        {% endif %}
+    </section>
+
     <div class="lemma-detail__columns">
 
         {# ── Main column ─────────────────────────────────────────────── #}
@@ -226,4 +268,8 @@
 
     </div>{# /.lemma-detail__columns #}
 </main>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/lemma-period-timeline.js?v={{ app_version }}"></script>
 {% endblock %}

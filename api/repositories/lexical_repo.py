@@ -1042,6 +1042,139 @@ class LexicalRepository(BaseRepository):
             "total_pages": total_pages,
         }
 
+    def get_lemma_attestation_periods(self, lemma_id: int) -> dict | None:
+        """Per-canonical-period attestation counts for one lemma (#201).
+
+        Reuses the #176 join (``lexical_lemmas`` → ``lemmatizations`` by
+        ``(citation_form, guide_word)`` → ``tokens`` → ``text_lines`` →
+        ``artifacts``) but, instead of listing individual lines, it groups the
+        attesting artifacts by their canonical historical period and returns a
+        count per period. This is the chronological *spread* of a word's usage
+        — e.g. ``šarru[king]`` peaking in the Middle Babylonian and
+        Neo-Assyrian periods — which a scholar reads as "when was this word in
+        use, and when was it most common?".
+
+        Period source: ``artifacts.period_normalized`` already holds the
+        canonical period name (the same value ``period_canon.canonical``
+        carries), so we join straight to a de-duplicated ``period_canon`` to
+        attach each period's scholarly-consensus BCE date range
+        (``date_start_bce`` / ``date_end_bce``). ``period_canon`` is keyed on
+        the raw spelling, so one canonical name can recur with slightly
+        different ranges; ``DISTINCT ON (canonical)`` collapses to one row per
+        canonical, matching ``PeriodRepository.get_canonical_periods`` and
+        ``ArtifactRepository.get_filter_options`` so the axis stays consistent
+        across the app.
+
+        The unit counted is the **distinct attesting tablet** (P-number) per
+        period — one bar height = how many tablets of that period carry the
+        word. (Counting lines would over-weight long literary tablets; the
+        scholar's mental model is "how many *texts* of this era use the word".)
+
+        Only periods that (a) appear among the lemma's attesting tablets and
+        (b) carry a usable BCE range are returned in ``periods`` — these are
+        the datable bands the timeline draws. Tablets whose period is unknown
+        or undatable are summed into ``undated_tablets`` so the page can be
+        honest about coverage without inventing a position on the axis.
+
+        Returns ``None`` if the lemma id does not exist (route 404s).
+        ``periods`` is an empty list for a lemma with no datable attestations —
+        the page renders the #189 empty state in that case.
+        """
+        lemma = self.fetch_one(
+            "SELECT citation_form, guide_word FROM lexical_lemmas WHERE id = %(id)s",
+            {"id": lemma_id},
+        )
+        if not lemma:
+            return None
+
+        params = {
+            "cf": lemma["citation_form"],
+            "gw": lemma["guide_word"],
+        }
+
+        rows = self.fetch_all(
+            """
+            WITH pc AS (
+                SELECT DISTINCT ON (canonical)
+                    canonical, date_start_bce, date_end_bce, sort_order
+                FROM period_canon
+                ORDER BY canonical, sort_order NULLS LAST
+            ),
+            tablets AS (
+                SELECT DISTINCT tl.p_number
+                FROM lemmatizations lz
+                JOIN tokens t      ON t.id = lz.token_id
+                JOIN text_lines tl ON tl.id = t.line_id
+                WHERE lz.citation_form = %(cf)s
+                  AND lz.guide_word IS NOT DISTINCT FROM %(gw)s
+            )
+            SELECT pc.canonical,
+                   pc.date_start_bce,
+                   pc.date_end_bce,
+                   pc.sort_order,
+                   COUNT(DISTINCT tb.p_number) AS tablet_count
+            FROM tablets tb
+            JOIN artifacts a ON a.p_number = tb.p_number
+            JOIN pc ON pc.canonical = a.period_normalized
+            WHERE pc.date_start_bce IS NOT NULL
+              AND pc.date_end_bce IS NOT NULL
+            GROUP BY pc.canonical, pc.date_start_bce, pc.date_end_bce,
+                     pc.sort_order
+            ORDER BY pc.sort_order NULLS LAST, pc.canonical
+            """,
+            params,
+        )
+
+        # Tablets whose period doesn't map to a dated canon (NULL period,
+        # "uncertain", or a period with no agreed BCE range) — counted for
+        # honesty about coverage, not drawn on the axis.
+        undated = self.fetch_one(
+            """
+            WITH pc AS (
+                SELECT DISTINCT ON (canonical)
+                    canonical, date_start_bce, date_end_bce
+                FROM period_canon
+                ORDER BY canonical, sort_order NULLS LAST
+            ),
+            tablets AS (
+                SELECT DISTINCT tl.p_number
+                FROM lemmatizations lz
+                JOIN tokens t      ON t.id = lz.token_id
+                JOIN text_lines tl ON tl.id = t.line_id
+                WHERE lz.citation_form = %(cf)s
+                  AND lz.guide_word IS NOT DISTINCT FROM %(gw)s
+            )
+            SELECT COUNT(DISTINCT tb.p_number) AS undated_tablets
+            FROM tablets tb
+            JOIN artifacts a ON a.p_number = tb.p_number
+            LEFT JOIN pc ON pc.canonical = a.period_normalized
+            WHERE pc.canonical IS NULL
+               OR pc.date_start_bce IS NULL
+               OR pc.date_end_bce IS NULL
+            """,
+            params,
+        )
+
+        periods = [
+            {
+                "period": r["canonical"],
+                "date_start_bce": r["date_start_bce"],
+                "date_end_bce": r["date_end_bce"],
+                "tablet_count": int(r["tablet_count"]),
+            }
+            for r in rows
+        ]
+        dated_total = sum(p["tablet_count"] for p in periods)
+
+        return {
+            "lemma_id": lemma_id,
+            "citation_form": lemma["citation_form"],
+            "guide_word": lemma["guide_word"],
+            "periods": periods,
+            "dated_tablet_count": dated_total,
+            "undated_tablet_count": (int(undated["undated_tablets"]) if undated else 0),
+        }
+
     # ── Helpers ───────────────────────────────────────────────
 
     @staticmethod
