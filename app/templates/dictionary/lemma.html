@@ -2,7 +2,7 @@
 
 {% block title %}{{ lemma.citation_form or 'Lemma' }} — Dictionary — Glintstone{% endblock %}
 
-{% from "components/_macros.html" import data_empty %}
+{% from "components/_macros.html" import data_empty, field_empty %}
 
 {% block content %}
 <main class="lemma-detail-page">
@@ -49,25 +49,82 @@
         {# ── Main column ─────────────────────────────────────────────── #}
         <div class="lemma-detail__main">
 
-        {# ── Attestation jump — primary next action, top of main ─────── #}
-        {% if tablet_count %}
-        <a class="attestation-jump" href="/tablets?search={{ lemma.citation_form | urlencode }}">
-            <span class="attestation-jump__text">
-                <span class="attestation-jump__label">See {{ lemma.citation_form }} in tablets</span>
-                <span class="attestation-jump__sub">Browse indexed tablets where this lemma occurs</span>
-            </span>
-            <span class="attestation-jump__count">{{ '{:,}'.format(tablet_count) }}</span>
-            <span class="attestation-jump__arrow" aria-hidden="true">›</span>
-        </a>
-        {% else %}
-        <span class="attestation-jump attestation-jump--unindexed">
-            <span class="attestation-jump__text">
-                <span class="attestation-jump__label">Tablet occurrences</span>
-                <span class="attestation-jump__sub">Not yet indexed in the Glintstone corpus</span>
-            </span>
-            <span class="attestation-jump__count">—</span>
-        </span>
-        {% endif %}
+        {# ── Attestations — inline table of the lines where this lemma is
+             actually written (#176), replacing the old count+jump card.
+             ``attestations`` is the /attestations API payload: items (one row
+             per text line), total (distinct lines), tablet_count (distinct
+             tablets), page / total_pages. ─────────────────────────────────── #}
+        {% set att_items = attestations.get('items', []) %}
+        {% set att_total = attestations.get('total', 0) %}
+        {% set att_tablets = attestations.get('tablet_count', 0) %}
+        {% set att_page = attestations.get('page', 1) %}
+        {% set att_pages = attestations.get('total_pages', 0) %}
+        <section class="dict-detail__section lemma-attestations" aria-labelledby="attestations-heading">
+            <div class="lemma-attestations__head">
+                <h3 id="attestations-heading">Attestations</h3>
+                {% if att_total %}
+                <span class="lemma-attestations__count">
+                    {{ '{:,}'.format(att_total) }} line{{ '' if att_total == 1 else 's' }}
+                    across {{ '{:,}'.format(att_tablets) }} tablet{{ '' if att_tablets == 1 else 's' }}
+                </span>
+                {% endif %}
+            </div>
+
+            {% if att_items %}
+            <p class="lemma-attestations__hint">Lines in the corpus where <em>{{ lemma.citation_form }}</em> is written, with the transliterated text and tablet.</p>
+            <ul class="attestation-list">
+                {% for a in att_items %}
+                <li class="attestation-row">
+                    <a class="attestation-row__link" href="/tablets/{{ a.p_number }}">
+                        <span class="attestation-row__ref">
+                            <span class="attestation-row__pnum">{{ a.p_number }}</span>
+                            <span class="attestation-row__line">{{ ('l. ' ~ a.line_number) if a.line_number else field_empty('—') }}</span>
+                        </span>
+                        <span class="attestation-row__main">
+                            {% if a.raw_atf %}
+                            <span class="attestation-row__atf" lang="akk" dir="ltr">{{ a.raw_atf }}</span>
+                            {% else %}
+                            <span class="attestation-row__atf attestation-row__atf--empty">{{ field_empty('No transliteration on record') }}</span>
+                            {% endif %}
+                            <span class="attestation-row__tablet">{{ a.designation or a.p_number }}</span>
+                            {% set facets = [] %}
+                            {% if a.period_normalized %}{% set _ = facets.append(a.period_normalized) %}{% endif %}
+                            {% if a.provenience_normalized %}{% set _ = facets.append(a.provenience_normalized) %}{% endif %}
+                            {% if a.language_normalized %}{% set _ = facets.append(a.language_normalized) %}{% endif %}
+                            {% if facets %}
+                            <span class="attestation-row__tags">
+                                {% for f in facets %}<span class="attestation-row__facet">{{ f }}</span>{% endfor %}
+                            </span>
+                            {% endif %}
+                        </span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+
+            {# Pagination — same query (page param), preserved across the page.
+               'See all in tablets' jumps to the full filtered tablet browse. #}
+            <div class="lemma-attestations__footer">
+                {% if att_pages > 1 %}
+                <nav class="pagination" aria-label="Attestation pages">
+                    {% if att_page > 1 %}
+                    <a href="/dictionary/lemmas/{{ lemma.id }}?page={{ att_page - 1 }}#attestations-heading" class="btn">Previous</a>
+                    {% endif %}
+                    <span class="page-info">Page {{ att_page }} of {{ '{:,}'.format(att_pages) }}</span>
+                    {% if att_page < att_pages %}
+                    <a href="/dictionary/lemmas/{{ lemma.id }}?page={{ att_page + 1 }}#attestations-heading" class="btn">Next</a>
+                    {% endif %}
+                </nav>
+                {% endif %}
+                <a class="lemma-attestations__seeall" href="/tablets?search={{ lemma.citation_form | urlencode }}">
+                    See all {{ lemma.citation_form }} in tablets ›
+                </a>
+            </div>
+            {% else %}
+            {{ data_empty('No attestations on record',
+                          'This lemma has no lemmatized occurrences in the corpus yet. Attestations appear here once tokens on a tablet are linked to this dictionary entry.') }}
+            {% endif %}
+        </section>
 
         {# ── Senses ──────────────────────────────────────────────────── #}
         <section class="dict-detail__section" aria-labelledby="senses-heading" style="margin-top: var(--space-6);">

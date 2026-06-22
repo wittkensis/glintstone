@@ -110,7 +110,7 @@ def dictionary_index(
 
 
 @router.get("/lemmas/{lemma_id}")
-def lemma_detail(request: Request, lemma_id: int):
+def lemma_detail(request: Request, lemma_id: int, page: int = Query(1, ge=1)):
     api = request.app.state.api
     try:
         data = api.get(f"/dictionary/lemmas/{lemma_id}")
@@ -128,6 +128,18 @@ def lemma_detail(request: Request, lemma_id: int):
     except Exception:
         norms = []
 
+    # Inline attestation table (#176) — the tablet lines where this lemma is
+    # actually written, replacing the old count+jump card. Third, non-fatal
+    # call: if the attestation endpoint is unavailable the page still renders
+    # (the table falls back to the empty state rather than 500ing).
+    try:
+        attestations = api.get(
+            f"/dictionary/lemmas/{lemma_id}/attestations",
+            params={"page": page, "per_page": 20},
+        )
+    except Exception:
+        attestations = None
+
     from app.main import templates
 
     return templates.TemplateResponse(
@@ -138,7 +150,7 @@ def lemma_detail(request: Request, lemma_id: int):
             "senses": data.get("senses", []),
             "signs": data.get("signs", []),
             "norms": norms,
-            "tablet_count": data.get("tablet_count"),
+            "attestations": attestations or {},
             "api_url": request.app.state.api.base_url,
         },
     )
