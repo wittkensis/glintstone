@@ -191,7 +191,7 @@ class OraccAtfConnector(SourceConnector):
     # oracc-lemmatizations so the lemma match step has these lines/tokens to hit.
     # The before-relationship is expressed on oracc-lemmatizations' own
     # runs_after (see that connector); here we only declare our upstreams.
-    runs_after = ["annotation-runs", "cdli-catalog", "atf-parser"]
+    runs_after = ["annotation-runs", "cdli-catalog", "oracc-catalog", "atf-parser"]
     license = "CC-BY-SA-3.0"
     upstream_url = "https://oracc.museum.upenn.edu/"
 
