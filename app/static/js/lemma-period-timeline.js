@@ -62,11 +62,18 @@ function lptFetchOrder() {
     return _lptPeriodsPromise;
 }
 
-/** Format a BCE year (negative integer) as a human label: -2000 -> "2000". */
+/**
+ * Format a period_canon year as a human era label.
+ *
+ * period_canon stores BCE years as POSITIVE integers (e.g. 2100 = 2100 BCE,
+ * the Ur III period) and the few genuinely-CE years as NEGATIVE integers
+ * (e.g. -224 = 224 CE, the end of the Parthian period / start of Sassanian).
+ * So the era suffix is the inverse of the sign: positive → BCE, negative → CE.
+ */
 function lptFormatYear(year) {
-    if (year < 0) return String(-year);
-    if (year === 0) return '0';
-    return year + ' CE';
+    if (year > 0) return year + ' BCE';
+    if (year < 0) return (-year) + ' CE';
+    return '0';
 }
 
 /**
@@ -219,7 +226,7 @@ LemmaPeriodTimeline.prototype._render = function () {
             p.period + ': ' + p.tablet_count + ' tablet'
             + (p.tablet_count === 1 ? '' : 's') + ' ('
             + lptFormatYear(p.date_start_bce) + '–' + lptFormatYear(p.date_end_bce)
-            + ' BCE)'
+            + ')'
         );
 
         // Count label centred above the bar (skipped if the bar is too narrow).
@@ -238,7 +245,7 @@ LemmaPeriodTimeline.prototype._render = function () {
                 var label = period.period + ' · ' + period.tablet_count
                     + ' tablet' + (period.tablet_count === 1 ? '' : 's')
                     + ' · ' + lptFormatYear(period.date_start_bce) + '–'
-                    + lptFormatYear(period.date_end_bce) + ' BCE';
+                    + lptFormatYear(period.date_end_bce);
                 tipText.textContent = label;
                 tooltip.setAttribute('display', 'block');
                 var textW = Math.min(label.length * 6.0, 360);

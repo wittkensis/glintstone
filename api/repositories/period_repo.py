@@ -18,8 +18,10 @@ class PeriodRepository(BaseRepository):
         """Return one row per canonical period, ordered chronologically.
 
         Each row: {canonical, date_start_bce, date_end_bce, sort_order,
-        group_name}. BCE dates are stored as negative integers (or null when
-        a period has no agreed range, e.g. "Uncertain"). Rows are ordered by
+        group_name}. BCE dates are stored as POSITIVE integers (e.g. 2100 =
+        2100 BCE) and the few genuinely-CE dates as NEGATIVE integers (e.g.
+        -224 = 224 CE, the Parthian/Sassanian boundary); null when a period
+        has no agreed range, e.g. "Uncertain". Rows are ordered by
         sort_order (nulls last) so the consumer can lay them out left-to-right
         in chronological order without re-sorting.
         """
