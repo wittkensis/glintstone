@@ -677,6 +677,13 @@
     border-radius: var(--radius-sm);
 }
 
+/* The HTML `hidden` attribute must win over `display: flex` above; an author
+   `display` rule otherwise overrides the user-agent `[hidden] { display: none }`,
+   leaving the badge visible when no period filter is active (#294). */
+.period-filter-badge[hidden] {
+    display: none;
+}
+
 .period-filter-badge strong {
     color: var(--color-accent);
 }
