@@ -492,7 +492,9 @@ class ArtifactRepository(BaseRepository):
 
         return artifact
 
-    def get_provenience_wikidata_qid(self, provenience_normalized: str | None) -> str | None:
+    def get_provenience_wikidata_qid(
+        self, provenience_normalized: str | None
+    ) -> str | None:
         """Return the confident Wikidata Q-number for a normalized place name.
 
         Join path (Issue #281, data from #164):
