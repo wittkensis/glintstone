@@ -94,6 +94,54 @@
     </section>
     {% endif %}
 
+    {# ── Transliteration preview (#159) ──────────────────────────────────────
+         The actual cuneiform transliteration (ATF) of a representative exemplar
+         — the linked tablet that carries the most readable lines — so a reader
+         sees real text, not just a list of P-numbers. Reuses the #176 inline
+         attestation rendering: ``raw_atf`` shown verbatim (prime notation and
+         damage brackets preserved). ``atf_preview`` is null when no linked
+         exemplar has readable ATF → #189 empty state. ──────────────────────── #}
+    <section class="composition-detail__atf-preview" aria-labelledby="atf-preview-heading">
+        <div class="composition-detail__atf-preview-header">
+            <h2 id="atf-preview-heading">Transliteration preview</h2>
+            {% if atf_preview and atf_preview.lines %}
+            <span class="composition-detail__atf-preview-count">
+                First {{ atf_preview.preview_line_count }} of
+                {{ "{:,}".format(atf_preview.total_atf_lines) }} line{{ '' if atf_preview.total_atf_lines == 1 else 's' }}
+            </span>
+            {% endif %}
+        </div>
+
+        {% if atf_preview and atf_preview.lines %}
+        <p class="composition-detail__atf-preview-hint">
+            Transliterated text of a representative exemplar —
+            <a href="/tablets/{{ atf_preview.p_number }}">{{ atf_preview.designation or atf_preview.p_number }}</a>{% if atf_preview.period %}, {{ atf_preview.period }}{% endif %}{% if atf_preview.provenience %} ({{ atf_preview.provenience }}){% endif %}.
+        </p>
+        <ul class="attestation-list">
+            {% for line in atf_preview.lines %}
+            <li class="attestation-row">
+                <a class="attestation-row__link" href="/tablets/{{ atf_preview.p_number }}">
+                    <span class="attestation-row__ref">
+                        <span class="attestation-row__line">{{ ('l. ' ~ line.line_number) if line.line_number else '—' }}</span>
+                    </span>
+                    <span class="attestation-row__main">
+                        <span class="attestation-row__atf" lang="akk" dir="ltr">{{ line.raw_atf }}</span>
+                    </span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        <div class="composition-detail__atf-preview-footer">
+            <a class="composition-detail__atf-preview-full" href="/tablets/{{ atf_preview.p_number }}">
+                Read the full tablet ›
+            </a>
+        </div>
+        {% else %}
+        {{ data_empty('No transliteration available yet',
+                      'None of this composition\'s linked exemplars carry a transliteration in Glintstone yet. A preview of the text appears here once an exemplar with transliterated lines is linked.') }}
+        {% endif %}
+    </section>
+
     {# ── Exemplar List ──────────────────────────────────────────────────────── #}
     <section class="composition-detail__exemplars" aria-labelledby="exemplars-heading">
         <div class="composition-detail__exemplars-header">

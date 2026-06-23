@@ -59,7 +59,41 @@ def get_composite(q_number: str, conn=Depends(get_db)):
 
     exemplars = repo.get_exemplars(q_number)
 
-    return {"composite": composite, "exemplars": exemplars}
+    # ATF preview (#159): the transliterated text of a representative exemplar,
+    # shown inline on the composition detail page. None when no linked exemplar
+    # carries readable ATF, so the page renders its #189 empty state.
+    atf_preview = repo.get_representative_atf_preview(q_number)
+
+    return {
+        "composite": composite,
+        "exemplars": exemplars,
+        "atf_preview": atf_preview,
+    }
+
+
+@router.get("/{q_number}/atf-preview")
+def get_composite_atf_preview(
+    q_number: str,
+    limit: int = Query(8, ge=1, le=40, description="Lines to preview"),
+    conn=Depends(get_db),
+):
+    """Transliterated-text preview of a representative exemplar (#159).
+
+    Picks the linked exemplar with the most readable ATF lines and returns its
+    first ``limit`` lines verbatim (prime notation, damage brackets preserved).
+    ``atf_preview`` is ``null`` for a composite with no readable-ATF exemplar
+    (the page renders the #189 empty state); 404 only for an unknown Q-number.
+    """
+    repo = CompositeRepository(conn)
+
+    composite = repo.find_by_q_number(q_number)
+    if not composite:
+        raise HTTPException(status_code=404, detail=f"Composite {q_number} not found")
+
+    return {
+        "q_number": q_number,
+        "atf_preview": repo.get_representative_atf_preview(q_number, limit=limit),
+    }
 
 
 @router.get("/{q_number}/exemplars")

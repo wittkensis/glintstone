@@ -93,6 +93,78 @@ class CompositeRepository(BaseRepository):
             {"q_number": q_number},
         )
 
+    def get_representative_atf_preview(
+        self, q_number: str, limit: int = 8
+    ) -> dict | None:
+        """Preview of a representative exemplar's transliterated text (#159).
+
+        The composition detail page shows the actual cuneiform transliteration
+        (ATF) of one well-preserved exemplar so a reader can see real text, not
+        just a list of P-numbers. We pick the *representative* exemplar as the
+        linked tablet carrying the most non-empty, non-structural ATF lines —
+        i.e. the most complete witness we hold — then return that tablet's first
+        ``limit`` readable lines in document order.
+
+        "Readable" excludes ATF structural/metadata lines (those beginning with
+        ``$`` strict/loose state notes, ``@`` surface markers, ``&`` headers,
+        ``#`` comments) so the preview opens on actual transliterated signs
+        rather than a "beginning broken" annotation. The ``raw_atf`` text itself
+        is returned verbatim — prime notation, damage brackets ``[...]``, and
+        half-bracket damage ``#`` on signs are all preserved exactly as stored.
+
+        Returns ``None`` when no linked exemplar has any readable ATF line, so
+        the caller renders the #189 empty state. Never reads
+        ``pipeline_completeness`` (it is unreliable — #257).
+        """
+        # Step 1: choose the representative exemplar — most readable ATF lines.
+        rep = self.fetch_one(
+            r"""
+            SELECT ac.p_number,
+                   a.designation,
+                   a.period,
+                   a.provenience,
+                   count(*) AS atf_line_count
+            FROM artifact_composites ac
+            JOIN text_lines tl ON tl.p_number = ac.p_number
+            JOIN artifacts a ON a.p_number = ac.p_number
+            WHERE ac.q_number = %(q_number)s
+              AND tl.raw_atf IS NOT NULL
+              AND tl.raw_atf <> ''
+              AND tl.raw_atf !~ '^[$@&#]'
+            GROUP BY ac.p_number, a.designation, a.period, a.provenience
+            ORDER BY atf_line_count DESC, ac.p_number
+            LIMIT 1
+            """,
+            {"q_number": q_number},
+        )
+        if not rep:
+            return None
+
+        # Step 2: that exemplar's first N readable lines, in document order.
+        lines = self.fetch_all(
+            r"""
+            SELECT tl.line_number, tl.raw_atf
+            FROM text_lines tl
+            WHERE tl.p_number = %(p_number)s
+              AND tl.raw_atf IS NOT NULL
+              AND tl.raw_atf <> ''
+              AND tl.raw_atf !~ '^[$@&#]'
+            ORDER BY tl.column_number, tl.id
+            LIMIT %(limit)s
+            """,
+            {"p_number": rep["p_number"], "limit": limit},
+        )
+
+        return {
+            "p_number": rep["p_number"],
+            "designation": rep["designation"],
+            "period": rep["period"],
+            "provenience": rep["provenience"],
+            "total_atf_lines": rep["atf_line_count"],
+            "preview_line_count": len(lines),
+            "lines": lines,
+        }
+
     def get_total_count(self) -> int:
         """
         Get total number of composites.
