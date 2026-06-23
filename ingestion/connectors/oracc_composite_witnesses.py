@@ -133,9 +133,7 @@ class OraccCompositeWitnessesConnector(SourceConnector):
                 with open(cat_path, encoding="utf-8") as f:
                     data = json.load(f)
             except (json.JSONDecodeError, ValueError, OSError):
-                ctx.warn(
-                    "oracc_composite_witnesses.bad_json", path=str(cat_path)
-                )
+                ctx.warn("oracc_composite_witnesses.bad_json", path=str(cat_path))
                 continue
 
             for key, entry in data.get("members", {}).items():
@@ -175,15 +173,11 @@ class OraccCompositeWitnessesConnector(SourceConnector):
         # count instead of letting the INSERT raise.
         known_q: set[str] = {
             (r[0] if isinstance(r, tuple) else r["q_number"])
-            for r in ctx.db.execute(
-                "SELECT q_number FROM composites"
-            ).fetchall()
+            for r in ctx.db.execute("SELECT q_number FROM composites").fetchall()
         }
         known_p: set[str] = {
             (r[0] if isinstance(r, tuple) else r["p_number"])
-            for r in ctx.db.execute(
-                "SELECT p_number FROM artifacts"
-            ).fetchall()
+            for r in ctx.db.execute("SELECT p_number FROM artifacts").fetchall()
         }
         ctx.info(
             "oracc_composite_witnesses.guards",
