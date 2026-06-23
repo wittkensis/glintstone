@@ -343,8 +343,20 @@
             </nav>
             <!-- Sliding Content Panel -->
             <div class="knowledge-content-panel">
-                <div class="knowledge-content-panel__header">
+                <div class="knowledge-content-panel__header" style="display:flex;align-items:center;justify-content:space-between;">
                     <span class="knowledge-content-panel__title">Summary</span>
+                    <!-- AI provenance badge — the anchor trust signal. Static; carries its
+                         own plain-English explainer via hover/focus tooltip (no JS needed). -->
+                    <span class="ai-tooltip-wrap">
+                        <span class="ai-badge ai-badge--header" tabindex="0" aria-describedby="ai-tip-summary">
+                            <span class="ai-badge__dot"></span> AI
+                        </span>
+                        <span class="ai-tooltip" id="ai-tip-summary" role="tooltip">
+                            <strong>Machine-generated.</strong> This summary was written by an AI model,
+                            grounded only in the cited catalog &amp; annotation facts below — it is
+                            <em>not</em> a scholar's edition. Verify before citing.
+                        </span>
+                    </span>
                 </div>
                 <div class="knowledge-content-panel__body">
                 <!-- Summary Tab Content -->
@@ -369,11 +381,21 @@
                             <p class="artifact-summary__unsupported is-hidden" id="artifact-summary-unsupported"></p>
                             <p class="artifact-summary__text" id="artifact-summary-text"></p>
                             <p class="artifact-summary__hypothesis is-hidden" id="artifact-summary-hypothesis"></p>
-                            <div class="artifact-summary__meta" id="artifact-summary-meta"></div>
+                            <!-- "Grounded in" attribution list — one row per cited Citation. Populated by JS. -->
+                            <div class="ai-sources is-hidden" id="artifact-summary-sources">
+                                <p class="ai-sources__title">Grounded in</p>
+                                <ul class="ai-sources__list" id="artifact-summary-sources-list"></ul>
+                            </div>
+                            <!-- Badge-anchored meta footer (model + facts cited). Populated by JS. -->
+                            <div class="ai-meta" id="artifact-summary-meta"></div>
                         </div>
-                        <!-- Error state -->
+                        <!-- Error / ungroundable state — never a hallucinated fallback. -->
                         <div class="artifact-summary__error is-hidden" id="artifact-summary-error">
-                            <p>Summary unavailable for this artifact.</p>
+                            <div class="data-empty">
+                                <p class="data-empty__title">Summary unavailable</p>
+                                <p class="data-empty__hint">The model could not ground a summary in citable facts
+                                    for this artifact, so none is shown. The catalog data remains on the record.</p>
+                            </div>
                         </div>
                     </div>
                 </div>

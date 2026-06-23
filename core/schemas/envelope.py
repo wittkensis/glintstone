@@ -112,6 +112,10 @@ class CardPayload(BaseModel):
     )
     synthesis_citations: list[Citation] = PField(default_factory=list)
     best_guess: BestGuess | None = None
+    model: str = PField(
+        default="",
+        description="Model id that authored the synthesis (e.g. 'claude-sonnet'); surfaced in the AI meta line for provenance",
+    )
     language_supported: bool = PField(
         default=True,
         description="False when the primary language is outside the AI-suggestion scope (non-Sumerian/Akkadian)",

@@ -378,6 +378,7 @@ def do_summarize_artifact(
         synthesis=synthesis_text,
         synthesis_citations=synthesis_citations,
         best_guess=best_guess,
+        model=anthropic.model if synthesis_text else "",
         language_supported=_language_supported(bundle),
     )
 
@@ -429,6 +430,7 @@ def _card_response_from_persisted(
         synthesis=persisted.output_text,
         synthesis_citations=persisted.citations,
         best_guess=best_guess,
+        model=persisted.model,
         language_supported=_language_supported(bundle),
     )
     return ToolResponse[CardPayload](

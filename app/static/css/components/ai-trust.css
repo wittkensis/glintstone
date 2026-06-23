@@ -1,0 +1,118 @@
+/* =========================================================================
+   AI Trust Signals — badge tooltip, inline citation markers, "Grounded in"
+   attribution list, confidence pills, hedged text, missing-layer caveats,
+   meta footer.  Render-proven in PERSONAL/design/specs/ai-trust-signals/.
+
+   Token-driven only — zero raw hex. Reuses existing primitives:
+   --ai-badge-*, --confidence-*, --source-badge-*, --color-*, --space-*,
+   --elevation-*, --z-dropdown. Imported AFTER design-system.css in main.css.
+   ========================================================================= */
+
+/* === 1. AI badge — header variant with explanatory affordance =========== */
+/* .ai-badge already exists. The header variant turns the badge itself into
+   the tooltip trigger so AI provenance carries its own plain-English explainer. */
+.ai-badge--header { cursor: help; }
+.ai-badge__dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: currentColor; flex-shrink: 0;
+}
+
+/* Tooltip: plain CSS hover/focus bubble, academic + quiet. No JS required. */
+.ai-tooltip-wrap { position: relative; display: inline-flex; }
+.ai-tooltip {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: var(--z-dropdown);
+    width: 240px; padding: var(--space-3); background: var(--color-bg-pure-black);
+    border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+    box-shadow: var(--elevation-3); font-size: var(--text-xs); line-height: 1.5;
+    color: var(--color-text-muted); font-family: var(--font-sans); font-weight: 400;
+    letter-spacing: normal; text-transform: none;
+    opacity: 0; visibility: hidden; transition: opacity var(--transition-fast);
+}
+.ai-tooltip-wrap:hover .ai-tooltip,
+.ai-tooltip-wrap:focus-within .ai-tooltip { opacity: 1; visibility: visible; }
+.ai-tooltip strong { color: var(--color-text); font-weight: 600; }
+.ai-tooltip.is-open { opacity: 1; visibility: visible; } /* JS touch toggle */
+
+/* === 2. Inline citation marker — the [n] stays visible & clickable ====== */
+.cite-marker {
+    font-size: 0.7em; font-weight: var(--font-weight-semibold);
+    color: var(--ai-badge-text); vertical-align: super; line-height: 0;
+    padding: 0 1px; cursor: pointer; text-decoration: none;
+    font-feature-settings: "tnum";
+}
+.cite-marker:hover { color: var(--color-text); }
+
+/* === 2b. Source attribution list — reuses research-card vocabulary ====== */
+.ai-sources {
+    margin-top: var(--space-3); padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+.ai-sources__title {
+    font-size: 0.6875rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--color-text-muted); margin: 0 0 var(--space-2);
+}
+.ai-sources__list {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: var(--space-1-5);
+}
+.ai-source {
+    display: flex; align-items: baseline; gap: var(--space-2);
+    font-size: var(--text-xs); line-height: 1.45; color: var(--color-text-muted);
+}
+.ai-source__n {
+    font-family: var(--font-mono); font-size: 0.6875rem;
+    color: var(--ai-badge-text); flex-shrink: 0; min-width: 1.1rem;
+    font-feature-settings: "tnum";
+}
+.ai-source__body { flex: 1; min-width: 0; }
+.ai-source__scholar { color: var(--color-text); font-weight: 500; }
+.ai-source__field { color: var(--color-text-subtle); }
+.ai-source a { color: var(--color-accent); text-decoration: none; }
+.ai-source a:hover { text-decoration: underline; }
+/* brief :target highlight when a marker jumps to its evidence row */
+.ai-source:target .ai-source__n { color: var(--color-text); }
+.ai-source:target {
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 2px var(--ai-badge-text);
+    transition: box-shadow var(--transition-fast);
+}
+
+/* === 3. Confidence band on a line suggestion (reuses confidence tokens) == */
+.conf-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.5625rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; padding: 2px 6px; border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+.conf-pill--high { background: var(--confidence-high-bg); color: var(--confidence-high-text); }
+.conf-pill--medium { background: var(--confidence-medium-bg); color: var(--confidence-medium-text); }
+.conf-pill--low { background: var(--confidence-low-bg); color: var(--confidence-low-text); }
+.conf-pill__bars { display: inline-flex; gap: 2px; align-items: flex-end; height: 8px; }
+.conf-pill__bar { width: 2px; background: currentColor; opacity: 0.35; }
+.conf-pill__bar:nth-child(1) { height: 3px; }
+.conf-pill__bar:nth-child(2) { height: 5px; }
+.conf-pill__bar:nth-child(3) { height: 8px; }
+.conf-pill--high .conf-pill__bar { opacity: 1; }
+.conf-pill--medium .conf-pill__bar:nth-child(1),
+.conf-pill--medium .conf-pill__bar:nth-child(2) { opacity: 1; }
+.conf-pill--low .conf-pill__bar:nth-child(1) { opacity: 1; }
+
+/* low-confidence suggestion text is hedged: italic + muted, never asserted */
+.line-suggestion__text--hedged { font-style: italic; color: var(--color-text-muted); }
+
+/* missing-layer caveat row — server-computed honesty */
+.ai-caveat {
+    display: flex; gap: var(--space-2); align-items: baseline;
+    font-size: var(--text-xs); color: var(--color-text-subtle);
+    font-style: italic; margin-top: var(--space-2);
+    padding-left: var(--space-2); border-left: 2px solid var(--confidence-medium-text);
+}
+
+/* AI meta line — replaces the plain "AI-generated" text with a real badge row */
+.ai-meta {
+    display: flex; align-items: center; gap: var(--space-2);
+    flex-wrap: wrap; font-size: 0.6875rem; color: var(--color-text-subtle);
+    margin-top: var(--space-3); padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+}
+.ai-meta__sep { opacity: 0.5; }
