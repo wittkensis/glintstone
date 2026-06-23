@@ -947,7 +947,7 @@ def assemble_line_facts(
     if context_variant == "a":
         with conn.cursor() as cur:
             cur.execute(
-                """
+                r"""
                 SELECT tl.line_number,
                        (substring(tl.line_number FROM '^\d+'))::int AS position,
                        tl.raw_atf AS atf_text
