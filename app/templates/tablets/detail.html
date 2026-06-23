@@ -171,7 +171,10 @@
                 {% if tablet.provenience %}
                 <div class="meta-item">
                     <dt>Provenience</dt>
-                    <dd>{{ tablet.provenience }}</dd>
+                    <dd>{{ tablet.provenience }}{% if tablet.provenience_wikidata_qid %}
+                        <a class="meta-wikidata" href="https://www.wikidata.org/wiki/{{ tablet.provenience_wikidata_qid }}"
+                           target="_blank" rel="noopener noreferrer"
+                           title="View this place on Wikidata">Wikidata ↗</a>{% endif %}</dd>
                 </div>
                 {% endif %}
                 {% if tablet.excavation_no %}

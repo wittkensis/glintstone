@@ -457,6 +457,15 @@ class ArtifactRepository(BaseRepository):
         if not artifact:
             return None
 
+        # Attach a confident Wikidata link for the provenience (place), if one
+        # exists. Issue #281 surfaces the #164 entity_wikidata_links data: the
+        # artifact's normalized place name → provenience_canon.pleiades_id →
+        # entity_wikidata_links. Only high-confidence, ID-based (pleiades) place
+        # links are shown; a missing/ambiguous match yields no link (no empty UI).
+        artifact["provenience_wikidata_qid"] = self.get_provenience_wikidata_qid(
+            artifact.get("provenience_normalized")
+        )
+
         # Attach composites
         artifact["composites"] = self.get_composites(p_number)
 
@@ -482,6 +491,36 @@ class ArtifactRepository(BaseRepository):
         }
 
         return artifact
+
+    def get_provenience_wikidata_qid(self, provenience_normalized: str | None) -> str | None:
+        """Return the confident Wikidata Q-number for a normalized place name.
+
+        Join path (Issue #281, data from #164):
+            provenience_canon.ancient_name (= artifacts.provenience_normalized)
+              → provenience_canon.pleiades_id
+              → entity_wikidata_links.source_key  (entity_type='place',
+                                                    match_basis='pleiades')
+
+        Only ID-based place links are returned (the only confident basis shipped).
+        Returns None when there is no confident match — the caller renders nothing.
+        """
+        if not provenience_normalized:
+            return None
+        row = self.fetch_one(
+            """
+            SELECT ewl.wikidata_qid
+            FROM provenience_canon pc
+            JOIN entity_wikidata_links ewl
+              ON ewl.source_key = pc.pleiades_id
+             AND ewl.entity_type = 'place'
+             AND ewl.match_basis = 'pleiades'
+            WHERE pc.ancient_name = %(name)s
+              AND pc.pleiades_id IS NOT NULL
+            LIMIT 1
+        """,
+            {"name": provenience_normalized},
+        )
+        return row["wikidata_qid"] if row else None
 
     def get_composites(self, p_number: str) -> list[dict]:
         return self.fetch_all(
