@@ -32,8 +32,9 @@ var _periodsPromise = null;
 
 /**
  * Fetch canonical periods from the app's /_periods proxy and reshape into the structures the
- * timeline needs: a {canonical -> [start, end]} range map (BCE = negative,
- * null when a period has no agreed range) and a chronological display order.
+ * timeline needs: a {canonical -> [start, end]} range map (BCE = positive,
+ * CE = negative; null when a period has no agreed range) and a chronological
+ * display order.
  * Resolves to { ranges, order } even on failure (empty structures), so callers
  * can fall back gracefully rather than throwing.
  */
@@ -174,13 +175,17 @@ TransmissionTimeline.prototype._axisTicks = function (dateRange) {
 };
 
 /**
- * Format a BCE year (negative integer) as a human label, e.g. -2000 -> "2000".
- * Positive years (rare, e.g. Parthian end) are suffixed CE.
+ * Format a period_canon year as a human era label.
+ *
+ * period_canon stores BCE years as POSITIVE integers (e.g. 2100 = 2100 BCE)
+ * and the few genuinely-CE years as NEGATIVE integers (e.g. -224 = 224 CE,
+ * the end of the Parthian period). So the era suffix is the inverse of the
+ * sign: positive → BCE, negative → CE.
  */
 function formatYear(year) {
-    if (year < 0) return String(-year);
-    if (year === 0) return '0';
-    return year + ' CE';
+    if (year > 0) return year + ' BCE';
+    if (year < 0) return (-year) + ' CE';
+    return '0';
 }
 
 TransmissionTimeline.prototype._render = function () {
