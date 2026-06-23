@@ -247,14 +247,43 @@ function loadSignAnnotations() {
         });
 }
 
-// Load composite tablets from API
+// #404 Concept B — sibling-witness strip.
+// On panel-open, fetch the composite's exemplars and render the OTHER tablets
+// witnessing the same text as a horizontal strip of navigable cards (the current
+// tablet highlighted, non-link). Best-preserved siblings first; capped to 8 with
+// a "+N more" card → the composition page. Coverage dot maps translation status.
+const SIBLING_CAP = 8;
+
+function htmlEscape(s) {
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+}
+
+function siblingCoverage(t) {
+    // Mirror the composition route's _coverage(): semantic_complete is canonical
+    // (binary today), has_translation the fallback.
+    let score;
+    const raw = t.semantic_complete;
+    if (raw != null && raw !== '' && !isNaN(parseFloat(raw))) {
+        score = parseFloat(raw);
+    } else {
+        score = t.has_translation ? 1 : 0;
+    }
+    if (score >= 0.99) return 'translated';
+    if (score > 0) return 'partial';
+    return 'untranslated';
+}
+
 function loadCompositeTablets(qNumber) {
     if (!qNumber || !TabletPage.apiUrl) return;
 
+    const wrap = document.getElementById('composite-siblings');
     const listContainer = document.getElementById('composite-list');
     const countBadge = document.getElementById('composite-count');
+    const label = wrap ? wrap.querySelector('.witness-siblings__label') : null;
+    if (!listContainer) return;
 
-    // Use correct endpoint for composite exemplars
     fetch(`${TabletPage.apiUrl}/composites/${qNumber}/exemplars`)
         .then(response => {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -263,41 +292,66 @@ function loadCompositeTablets(qNumber) {
         .then(data => {
             const exemplars = data.exemplars || [];
 
-            if (exemplars.length === 0) {
-                listContainer.innerHTML = '<div class="composite-panel__loading">No tablets</div>';
+            if (countBadge) {
+                countBadge.textContent =
+                    `${exemplars.length} witness${exemplars.length !== 1 ? 'es' : ''} in Glintstone`;
+            }
+
+            // Only witness linked: collapse the strip to a single statement.
+            if (exemplars.length <= 1) {
+                if (label) {
+                    label.textContent =
+                        'This is the only witness of this text linked in Glintstone.';
+                }
+                listContainer.remove();
                 return;
             }
 
-            // Render actual tablet items with thumbnails
-            listContainer.innerHTML = exemplars.map(tablet => {
-                const isCurrent = tablet.p_number === TabletPage.pNumber;
-                const thumbUrl = `${TabletPage.apiUrl}/image/${tablet.p_number}?size=64`;
+            // Best-preserved siblings first (most readable ATF lines) — the
+            // strongest comparanda surface first (spec default).
+            const sorted = exemplars.slice().sort(
+                (a, b) => (b.atf_line_count || 0) - (a.atf_line_count || 0)
+            );
 
-                return `
-                    <a href="/tablets/${tablet.p_number}"
-                       class="composite-tablet-item ${isCurrent ? 'is-current' : ''}"
-                       data-p-number="${tablet.p_number}">
-                        <div class="composite-tablet-item__thumbnail">
-                            <img src="${thumbUrl}"
-                                 alt="${tablet.designation || tablet.p_number}"
-                                 loading="lazy"
-                                 onerror="this.style.display='none';">
-                        </div>
-                        <div class="composite-tablet-item__info">
-                            <div class="composite-tablet-item__pnumber">${tablet.p_number}</div>
-                            <div class="composite-tablet-item__designation">${tablet.designation || 'Unnamed'}</div>
-                        </div>
-                    </a>
-                `;
-            }).join('');
+            // Current tablet first (highlighted), then capped siblings.
+            const current = sorted.filter(t => t.p_number === TabletPage.pNumber);
+            const others = sorted.filter(t => t.p_number !== TabletPage.pNumber);
+            const shown = current.concat(others.slice(0, SIBLING_CAP));
+            const overflow = others.length - Math.min(others.length, SIBLING_CAP);
 
-            // Update count badge
-            if (countBadge) {
-                countBadge.textContent = `${exemplars.length} tablet${exemplars.length !== 1 ? 's' : ''}`;
+            const cards = shown.map(t => {
+                const isCurrent = t.p_number === TabletPage.pNumber;
+                const cov = siblingCoverage(t);
+                const period = t.period || 'Period unknown';
+                const prov = t.provenience ? ` · ${htmlEscape(t.provenience)}` : '';
+                const ref = isCurrent
+                    ? (t.line_ref ? `this tablet · ${htmlEscape(t.line_ref)}` : 'this tablet')
+                    : (t.line_ref ? htmlEscape(t.line_ref) : '');
+                const inner =
+                    `<span class="sibling-card__top">` +
+                    `<span class="sibling-card__cov sibling-card__cov--${cov}"></span>` +
+                    `<span class="sibling-card__pnum">${htmlEscape(t.p_number)}</span></span>` +
+                    `<span class="sibling-card__period">${htmlEscape(period)}${prov}</span>` +
+                    (ref ? `<span class="sibling-card__ref">${ref}</span>` : '');
+                return isCurrent
+                    ? `<div class="sibling-card is-current">${inner}</div>`
+                    : `<a class="sibling-card" href="/tablets/${htmlEscape(t.p_number)}">${inner}</a>`;
+            });
+
+            if (overflow > 0) {
+                cards.push(
+                    `<a class="sibling-card sibling-card--more" ` +
+                    `href="/compositions/${htmlEscape(qNumber)}">+ ${overflow} more ›</a>`
+                );
             }
+
+            listContainer.innerHTML = cards.join('');
+            listContainer.setAttribute('aria-busy', 'false');
         })
         .catch(err => {
-            console.error('Composite load failed:', err);
-            listContainer.innerHTML = '<div class="composite-panel__loading">Failed to load</div>';
+            console.error('Composite siblings load failed:', err);
+            listContainer.innerHTML =
+                '<div class="composite-panel__loading">Failed to load other witnesses</div>';
+            listContainer.setAttribute('aria-busy', 'false');
         });
 }

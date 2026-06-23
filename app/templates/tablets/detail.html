@@ -46,8 +46,26 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="composite-panel__list" id="composite-list">
-            <div class="composite-panel__loading">Loading tablets...</div>
+        {# #404 Concept B — this tablet's coverage range within the text. From
+           artifact_composites.line_ref (a free-text whole-tablet range, e.g.
+           "obv 1–40"); shown only when recorded. #}
+        {% if primary.line_ref %}
+        <div class="composite-panel__covers">
+            <span class="covers-chip">covers {{ primary.line_ref }}</span>
+        </div>
+        {% endif %}
+
+        {# #404 Concept B — sibling-witness strip. The other tablets witnessing
+           this text, reachable directly. tablet-detail.js fills this list from
+           the composite's exemplars on panel-open; skeletons hold the space. #}
+        <div class="witness-siblings" id="composite-siblings"
+             data-q-number="{{ primary.q_number }}" data-p-number="{{ tablet.p_number }}">
+            <p class="witness-siblings__label">Other witnesses of this text</p>
+            <div class="witness-siblings__strip" id="composite-list" aria-busy="true">
+                <div class="sibling-card"><div class="sibling-card__sk" style="width:60%;"></div><div class="sibling-card__sk sibling-card__sk--sm"></div></div>
+                <div class="sibling-card"><div class="sibling-card__sk" style="width:55%;"></div><div class="sibling-card__sk sibling-card__sk--sm"></div></div>
+                <div class="sibling-card"><div class="sibling-card__sk" style="width:62%;"></div><div class="sibling-card__sk sibling-card__sk--sm" style="width:70%;"></div></div>
+            </div>
         </div>
         <a class="composite-panel__view-all" href="/compositions/{{ primary.q_number }}">
             View all{% if primary.exemplar_count %} {{ "{:,}".format(primary.exemplar_count) }}{% endif %} exemplars

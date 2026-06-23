@@ -151,6 +151,28 @@ def composition_detail(
 
     filtered = [{**e, "coverage": _coverage(e)} for e in filtered]
 
+    # #404 Concept A — witness-switcher + extent column.
+    # `extent_max` = the most readable ATF lines any single witness holds; the
+    # extent bar in the exemplars table is each witness's count / this max, so
+    # "which witness is most complete?" reads straight off the table. Computed
+    # over ALL exemplars (not the filtered view) so the bar's scale stays stable
+    # while a scholar filters by site/period.
+    extent_max = max((e.get("atf_line_count") or 0 for e in all_exemplars), default=0)
+
+    # Witnesses readable in the switcher: those carrying readable ATF, best-
+    # preserved first (strongest comparanda surface first — spec default). The
+    # representative witness (matches the pre-loaded preview) is starred and
+    # pre-selected. A single readable witness renders one non-interactive chip.
+    rep_p = (atf_preview or {}).get("p_number")
+    witnesses = sorted(
+        (
+            {**e, "coverage": _coverage(e)}
+            for e in all_exemplars
+            if (e.get("atf_line_count") or 0) > 0
+        ),
+        key=lambda e: (-(e.get("atf_line_count") or 0), e.get("p_number") or ""),
+    )
+
     # Build transmission history: group exemplars by period for the old row-based
     # timeline (kept for fallback; SVG timeline uses raw exemplars client-side)
     timeline: dict[str, list[dict]] = {}
@@ -212,6 +234,9 @@ def composition_detail(
             "composite": composite_meta,
             "exemplars": filtered,
             "atf_preview": atf_preview,
+            "witnesses": witnesses,
+            "extent_max": extent_max,
+            "rep_p": rep_p,
             "timeline_exemplars": timeline_exemplars,
             "linked_count": linked_count,
             "oracc_count": oracc_count,
