@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}{{ guide_word }} — Glosses — Dictionary — Glintstone{% endblock %}
+
+{% from "components/_macros.html" import data_empty, field_empty %}
+
+{% block content %}
+<main class="gloss-detail-page">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/dictionary">Dictionary</a>
+        <span aria-hidden="true">/</span>
+        <a href="/dictionary?level=glosses">Glosses</a>
+        <span aria-hidden="true">/</span>
+        <span>{{ guide_word }}</span>
+    </nav>
+
+    {# ── Header — the guide word is the shared meaning ─────────────────── #}
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <h1 class="gloss-detail__guide">‘{{ guide_word }}’</h1>
+            </div>
+        </div>
+    </div>
+
+    {# ── Metadata badges ─────────────────────────────────────────────── #}
+    <div class="lemma-detail__meta">
+        {% if pos_label %}
+        <span class="badge badge--sm">{{ pos_label }}</span>
+        {% endif %}
+        {% if lemmas %}
+        <span class="dict-detail__sub">{{ lemmas | length }} dictionary entr{{ 'y' if lemmas | length == 1 else 'ies' }}</span>
+        {% endif %}
+        {% if total_attestations %}
+        <span class="lemma-detail__attestations">{{ '{:,}'.format(total_attestations) }} attestation{{ '' if total_attestations == 1 else 's' }}</span>
+        {% endif %}
+    </div>
+
+    {# ── Lemmas that share this gloss ──────────────────────────────────── #}
+    <section class="dict-detail__section" aria-labelledby="lemmas-heading">
+        <h3 id="lemmas-heading">Dictionary entries glossed ‘{{ guide_word }}’</h3>
+        {% if lemmas %}
+        <p class="gloss-detail__hint">Every lemma in the corpus whose guide word is <em>{{ guide_word }}</em>, most attested first — the words different languages and periods used for this meaning.</p>
+        <ul class="gloss-detail__lemmas">
+            {% for lem in lemmas %}
+            <li class="gloss-detail__lemma-row">
+                <a href="/dictionary/lemmas/{{ lem.id }}" class="gloss-detail__lemma-link">{{ lem.citation_form }}</a>
+                {% if lem.guide_word %}
+                <span class="dict-card__guide">[{{ lem.guide_word }}]</span>
+                {% endif %}
+                {% if lem.pos_label %}
+                <span class="dict-card__badge">{{ lem.pos_label }}</span>
+                {% endif %}
+                {% if lem.language_label %}
+                <span class="badge badge--sm badge--language">{{ lem.language_label }}</span>
+                {% endif %}
+                {% if lem.attestation_count %}
+                <span class="dict-detail__sub">{{ '{:,}'.format(lem.attestation_count) }} attestation{{ '' if lem.attestation_count == 1 else 's' }}</span>
+                {% endif %}
+                {% if lem.glosses %}
+                <span class="gloss-detail__defs">{{ lem.glosses | join(', ') }}</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        {{ data_empty('No dictionary entries on record', 'No lemmas in the corpus carry this guide word yet.') }}
+        {% endif %}
+    </section>
+
+</main>
+{% endblock %}

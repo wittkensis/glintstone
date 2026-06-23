@@ -1183,3 +1183,132 @@
     .attestation-row__ref { flex-direction: row; width: auto; gap: var(--space-2); }
 }
 
+/* ==========================================================================
+   Sense detail page (#184)
+   ========================================================================== */
+
+.lemma-detail__sense-link {
+    color: var(--color-text);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.lemma-detail__sense-link:hover {
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
+}
+
+.sense-detail__definition {
+    font-size: var(--text-2xl);
+    line-height: var(--line-height-tight);
+}
+
+.sense-detail__lemma-line {
+    margin: 0;
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-relaxed);
+}
+
+.sense-detail__lemma-link {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-family: var(--font-serif);
+}
+
+.sense-detail__lemma-link:hover { text-decoration: underline; }
+
+.sense-detail__translations {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.sense-detail__translation {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+}
+
+.sense-detail__lang {
+    flex: 0 0 auto;
+    min-width: 5rem;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.sense-detail__glosses { color: var(--color-text); }
+
+.sense-detail__hint,
+.gloss-detail__hint {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.sense-detail__siblings {
+    margin: 0;
+    padding-left: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.sense-detail__sibling { color: var(--color-text-secondary); }
+
+.sense-detail__sibling-link {
+    color: var(--color-text);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+
+.sense-detail__sibling-link:hover {
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
+}
+
+/* ==========================================================================
+   Gloss detail page (#184)
+   ========================================================================== */
+
+.gloss-detail__guide {
+    font-family: var(--font-serif);
+    font-size: var(--text-3xl);
+}
+
+.gloss-detail__lemmas {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.gloss-detail__lemma-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.gloss-detail__lemma-link {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+}
+
+.gloss-detail__lemma-link:hover { text-decoration: underline; }
+
+.gloss-detail__defs {
+    flex-basis: 100%;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+

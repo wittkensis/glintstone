@@ -175,9 +175,14 @@
             <ol class="lemma-detail__senses">
                 {% for sense in senses %}
                 <li class="lemma-detail__sense">
-                    {# definition_parts is a Postgres array; display as comma-joined string #}
+                    {# definition_parts is a Postgres array; display as comma-joined string.
+                       Each sense links to its own detail page (#184). #}
                     <span class="lemma-detail__definition">
-                        {% if sense.definition_parts %}
+                        {% if sense.id %}
+                        <a href="/dictionary/senses/{{ sense.id }}" class="lemma-detail__sense-link">
+                            {% if sense.definition_parts %}{{ sense.definition_parts | join(', ') }}{% else %}<em class="lemma-detail__no-def">No definition recorded</em>{% endif %}
+                        </a>
+                        {% elif sense.definition_parts %}
                             {{ sense.definition_parts | join(', ') }}
                         {% else %}
                             <em class="lemma-detail__no-def">No definition recorded</em>

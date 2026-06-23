@@ -104,6 +104,123 @@ def get_scholar(scholar_id: int, conn=Depends(get_db)):
     return dict(row)
 
 
+@router.get("/{scholar_id}/activity")
+def get_scholar_activity(scholar_id: int, conn=Depends(get_db)):
+    """A compact activity profile for one scholar's contribution corpus (#157).
+
+    What this is — and just as importantly, what it is *not*. The obvious read
+    of "activity over time" is a calendar timeline (work per month/year). We
+    deliberately do NOT build that here, because the only timestamp on a
+    contribution link (``artifact_contributors.created_at``) is the backfill
+    date — every credit this scholar holds shares one ingestion date, so a
+    calendar chart would be a single misleading spike, not real history.
+
+    The honest temporal signal is the **historical period of the tablets the
+    scholar worked on**: a scholar of Neo-Assyrian letters and one of Ur III
+    administrative texts have genuinely different activity profiles, and that
+    spread is real data, not an ingestion artefact. So the timeline axis is the
+    BCE timeline of the ancient texts, not a modern calendar — the same
+    proportional-period histogram the lemma detail page uses (#201), reused
+    verbatim on the client so the visual language stays consistent.
+
+    Returns:
+      ``periods``        — datable period bands for the #201 timeline, each
+                           ``{period, date_start_bce, date_end_bce, tablet_count}``;
+                           one bar = how many distinct tablets of that period the
+                           scholar is credited on. Empty list when the scholar has
+                           no datable contributions (page renders the #189 empty
+                           state).
+      ``dated_tablet_count``   — distinct tablets that fell into a datable period.
+      ``undated_tablet_count`` — distinct contributed tablets with no datable
+                           period (charted nowhere; surfaced as a footnote so the
+                           page is honest about coverage).
+      ``total_tablets``  — distinct tablets contributed (matches the ledger total).
+      ``roles``          — ``[{role, count}]`` the scholar held, busiest first;
+                           the second, non-temporal slice of "what they do".
+
+    404 for a non-existent scholar id (never a silent empty profile).
+    """
+    with conn.cursor() as cur:
+        cur.execute("SELECT 1 FROM scholars WHERE id = %s", (scholar_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Scholar not found")
+
+        # Per-period distinct-tablet counts for this scholar's credited
+        # artifacts, joined to a de-duplicated period_canon for the BCE range.
+        # DISTINCT ON (canonical) collapses period_canon's per-raw-spelling rows
+        # to one canonical row, matching PeriodRepository.get_canonical_periods
+        # and the lemma timeline so the axis is consistent app-wide.
+        cur.execute(
+            """
+            WITH pc AS (
+                SELECT DISTINCT ON (canonical)
+                    canonical, date_start_bce, date_end_bce, sort_order
+                FROM period_canon
+                ORDER BY canonical, sort_order NULLS LAST
+            ),
+            tablets AS (
+                SELECT DISTINCT ac.p_number, a.period_normalized
+                FROM artifact_contributors ac
+                JOIN artifacts a ON a.p_number = ac.p_number
+                WHERE ac.scholar_id = %s
+            )
+            SELECT pc.canonical       AS period,
+                   pc.date_start_bce,
+                   pc.date_end_bce,
+                   pc.sort_order,
+                   COUNT(*)           AS tablet_count
+            FROM tablets t
+            JOIN pc ON pc.canonical = t.period_normalized
+            WHERE pc.date_start_bce IS NOT NULL
+              AND pc.date_end_bce   IS NOT NULL
+            GROUP BY pc.canonical, pc.date_start_bce, pc.date_end_bce, pc.sort_order
+            ORDER BY pc.sort_order NULLS LAST, pc.date_start_bce
+            """,
+            (scholar_id,),
+        )
+        period_rows = cur.fetchall()
+        periods = [
+            {
+                "period": r["period"],
+                "date_start_bce": r["date_start_bce"],
+                "date_end_bce": r["date_end_bce"],
+                "tablet_count": int(r["tablet_count"]),
+            }
+            for r in period_rows
+        ]
+        dated = sum(p["tablet_count"] for p in periods)
+
+        # Total distinct contributed tablets (matches the ledger's `total`).
+        cur.execute(
+            "SELECT COUNT(DISTINCT p_number) AS n "
+            "FROM artifact_contributors WHERE scholar_id = %s",
+            (scholar_id,),
+        )
+        total_tablets = int(cur.fetchone()["n"])
+
+        # Role breakdown — the non-temporal "what they do" slice, busiest first.
+        cur.execute(
+            """
+            SELECT role, COUNT(DISTINCT p_number) AS n
+            FROM artifact_contributors
+            WHERE scholar_id = %s
+            GROUP BY role
+            ORDER BY n DESC, role
+            """,
+            (scholar_id,),
+        )
+        roles = [{"role": r["role"], "count": int(r["n"])} for r in cur.fetchall()]
+
+    return {
+        "scholar_id": scholar_id,
+        "periods": periods,
+        "dated_tablet_count": dated,
+        "undated_tablet_count": max(total_tablets - dated, 0),
+        "total_tablets": total_tablets,
+        "roles": roles,
+    }
+
+
 @router.get("/{scholar_id}/contributions")
 def get_scholar_contributions(
     scholar_id: int,

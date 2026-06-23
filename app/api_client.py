@@ -198,6 +198,18 @@ class GlintstoneAPI:
         except Exception:
             return {}
 
+    def get_scholar_activity(self, scholar_id: int) -> dict:
+        """Compact activity profile for a scholar (#157) — period histogram +
+        role breakdown. Degrades to an explicit-empty envelope on any failure so
+        the detail page renders the #189 empty state rather than 500-ing; an
+        activity-fetch error must never blank the whole scholar page.
+        """
+        try:
+            result = self._t.get(f"/scholars/{scholar_id}/activity")
+            return result if isinstance(result, dict) else {}  # type: ignore[return-value]
+        except Exception:
+            return {}
+
     def get_scholar_contributions(self, scholar_id: int, params: dict) -> "Page":
         try:
             return Page.from_dict(

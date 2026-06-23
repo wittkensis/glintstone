@@ -96,6 +96,19 @@ def source_label(code: str) -> str:
     return SOURCE_LABELS.get(code, code)
 
 
+# Target-gloss language labels. These are the languages a *sense* is translated
+# INTO (ISO 639-1 codes in the lexical_senses.translations jsonb), distinct from
+# the oracc source-language codes in language_map / LANG_FALLBACK above — kept
+# separate so the two namespaces never collide (e.g. oracc has no "en").
+TRANSLATION_LANG_LABELS = {
+    "en": "English",
+    "de": "German",
+    "ar": "Arabic",
+    "fa": "Persian",
+    "fr": "French",
+}
+
+
 LANG_FALLBACK = {
     "qpn": "Proper Noun",
     "xhu": "Hurrian",
@@ -475,6 +488,94 @@ class LexicalRepository(BaseRepository):
             "signs": signs,
             "tablet_count": occurrence_stats["tablet_count"],
             "occurrences_computed_at": occurrence_stats["computed_at"],
+        }
+
+    def get_sense_detail(self, sense_id: int) -> dict | None:
+        """One dictionary *sense* in full, with its lemma context (#184).
+
+        Until now a sense only existed inline on its lemma page — there was no
+        addressable page for an individual meaning. This builds one: the sense
+        itself (its definition, translations, source), the parent lemma it
+        belongs to (so the reader has the headword in hand and a link back), and
+        the lemma's *other* senses (its polysemy — e.g. ``alāku`` "go" carries
+        scores of distinct meanings, and seeing the siblings is the whole point
+        of a per-sense page).
+
+        Honest about coverage: ``semantic_domain``, ``usage_notes`` and
+        ``example_passages`` are effectively empty across the corpus today, so
+        the page (and this method) lean on what is actually populated —
+        ``definition_parts`` and ``translations`` — rather than promising fields
+        the data can't fill. The template renders the standard #189 empty state
+        for any section with nothing to show.
+
+        Returns ``None`` if the sense id does not exist (route 404s).
+        """
+        sense = self.fetch_one(
+            """SELECT id, lemma_id, sense_number, definition_parts,
+                      usage_notes, semantic_domain, typical_context,
+                      translations, source, source_citation, source_url
+               FROM lexical_senses
+               WHERE id = %(id)s""",
+            {"id": sense_id},
+        )
+        if not sense:
+            return None
+
+        lemma = self.fetch_one(
+            """SELECT id, citation_form, guide_word, pos,
+                      language_code, attestation_count, source
+               FROM lexical_lemmas
+               WHERE id = %(id)s""",
+            {"id": sense["lemma_id"]},
+        )
+
+        # Sibling senses — the lemma's polysemy, this sense flagged. Empty when
+        # the parent lemma is unresolved (orphan sense) — page degrades cleanly.
+        siblings = []
+        if lemma:
+            siblings = self.fetch_all(
+                """SELECT DISTINCT ON (sense_number, definition_parts)
+                       id, sense_number, definition_parts
+                   FROM lexical_senses
+                   WHERE lemma_id = %(lid)s
+                   ORDER BY sense_number, definition_parts""",
+                {"lid": sense["lemma_id"]},
+            )
+
+        lm = self._lang_map()
+        sense["source_label"] = source_label(sense["source"])
+
+        # Flatten the translations jsonb ({"en": ["arm", ...], ...}) into a
+        # per-language list the template can render without knowing the shape.
+        translations: list[dict] = []
+        raw_tr = sense.get("translations") or {}
+        if isinstance(raw_tr, dict):
+            for code, glosses in raw_tr.items():
+                if glosses:
+                    translations.append(
+                        {
+                            "language_code": code,
+                            "language_label": TRANSLATION_LANG_LABELS.get(
+                                code, code.upper()
+                            ),
+                            "glosses": glosses
+                            if isinstance(glosses, list)
+                            else [glosses],
+                        }
+                    )
+        sense["translation_groups"] = translations
+
+        if lemma:
+            lemma["language_label"] = lm.get(
+                lemma["language_code"], lemma["language_code"]
+            )
+            lemma["pos_label"] = pos_label(lemma["pos"]) if lemma["pos"] else ""
+            lemma["source_label"] = source_label(lemma["source"])
+
+        return {
+            "sense": sense,
+            "lemma": lemma or {},
+            "sibling_senses": siblings,
         }
 
     def get_sign_detail(self, sign_id: int) -> dict | None:

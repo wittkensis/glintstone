@@ -168,6 +168,35 @@ def lemma_detail(request: Request, lemma_id: int, page: int = Query(1, ge=1)):
     )
 
 
+@router.get("/senses/{sense_id}")
+def sense_detail(request: Request, sense_id: int):
+    """Detail page for a single dictionary sense (#184) — one meaning of a
+    lemma, with its translations, source, and the lemma's other senses. On any
+    API failure or a missing sense we redirect to the dictionary index rather
+    than 500-ing (mirrors the lemma/sign routes).
+    """
+    api = request.app.state.api
+    try:
+        data = api.get(f"/dictionary/senses/{sense_id}")
+    except Exception:
+        data = None
+    if not data:
+        return RedirectResponse(url="/dictionary", status_code=302)
+
+    from app.main import templates
+
+    return templates.TemplateResponse(
+        request,
+        "dictionary/sense.html",
+        {
+            "sense": data.get("sense", {}),
+            "lemma": data.get("lemma", {}),
+            "sibling_senses": data.get("sibling_senses", []),
+            "api_url": request.app.state.api.base_url,
+        },
+    )
+
+
 @router.get("/signs/{sign_id}")
 def sign_detail(request: Request, sign_id: int):
     api = request.app.state.api
@@ -186,6 +215,39 @@ def sign_detail(request: Request, sign_id: int):
         {
             "sign": data.get("sign", {}),
             "lemmas": data.get("lemmas", []),
+            "api_url": request.app.state.api.base_url,
+        },
+    )
+
+
+@router.get("/glosses/{guide_word:path}")
+def gloss_detail(request: Request, guide_word: str, pos: str = ""):
+    """Detail page for a *gloss group* (#184) — all lemmas that share one guide
+    word (e.g. every dictionary entry meaning "king"), a cross-lemma view of a
+    single meaning across the corpus. Backed by the existing
+    /dictionary/glosses/{guide_word} API. ``:path`` lets guide words containing
+    slashes resolve. On failure or an unknown gloss we redirect to the glosses
+    browse rather than 500-ing.
+    """
+    api = request.app.state.api
+    params = {"pos": pos} if pos else None
+    try:
+        data = api.get(f"/dictionary/glosses/{guide_word}", params=params)
+    except Exception:
+        data = None
+    if not data:
+        return RedirectResponse(url="/dictionary?level=glosses", status_code=302)
+
+    from app.main import templates
+
+    return templates.TemplateResponse(
+        request,
+        "dictionary/gloss.html",
+        {
+            "guide_word": data.get("guide_word", guide_word),
+            "pos_label": data.get("pos_label", ""),
+            "lemmas": data.get("lemmas", []),
+            "total_attestations": data.get("total_attestations", 0),
             "api_url": request.app.state.api.base_url,
         },
     )

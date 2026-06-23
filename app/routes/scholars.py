@@ -62,6 +62,12 @@ def scholar_detail(
         scholar_id, {"per_page": 50, "page": max(1, contrib_page)}
     )
 
+    # Activity profile (#157) — a compact view of *when* (which historical
+    # periods) and *how* (which roles) this scholar contributed. Non-fatal: the
+    # client degrades to {} on failure, so an activity-fetch error renders the
+    # widget's empty state rather than blanking the page.
+    activity = api.get_scholar_activity(scholar_id)
+
     from app.main import templates
 
     return templates.TemplateResponse(
@@ -69,6 +75,7 @@ def scholar_detail(
         "scholars/detail.html",
         {
             "scholar": scholar,
+            "activity": activity,
             "publications": publications.get("items", []),
             "pub_total": publications.get("total", 0),
             "pub_summary": publications.get("summary", {}),
