@@ -80,9 +80,7 @@ def _require_tablet(stamped, p_number):
         )
 
 
-@pytest.mark.parametrize(
-    "p_number", [SURFACE_BACKED_TABLET, SURFACELESS_TABLET]
-)
+@pytest.mark.parametrize("p_number", [SURFACE_BACKED_TABLET, SURFACELESS_TABLET])
 def test_every_stamped_token_is_serveable(conn, p_number):
     """Stamp set == serveable set: no clickable token may 404 in interpret."""
     stamped = _stamped_tokens(conn, p_number)
@@ -128,9 +126,7 @@ def test_served_token_resolves_to_correct_tablet_and_line(conn):
     _require_tablet(stamped, SURFACELESS_TABLET)
 
     stamp_line_id, token_id = stamped[0]
-    bundle = fact_assembly.assemble_token_facts(
-        conn, SURFACELESS_TABLET, token_id
-    )
+    bundle = fact_assembly.assemble_token_facts(conn, SURFACELESS_TABLET, token_id)
     assert bundle is not None, "surface-less token must resolve after #407 fix"
 
     # Ground truth straight from the schema: the token's line and its tablet.
@@ -165,10 +161,7 @@ def test_unknown_token_still_returns_none(conn):
     if max_id is None:
         pytest.skip("no tokens in database")
     bogus = max_id + 10_000_000
-    assert (
-        fact_assembly.assemble_token_facts(conn, SURFACELESS_TABLET, bogus)
-        is None
-    )
+    assert fact_assembly.assemble_token_facts(conn, SURFACELESS_TABLET, bogus) is None
 
 
 if __name__ == "__main__":  # pragma: no cover - manual smoke run
