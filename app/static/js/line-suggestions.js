@@ -36,6 +36,18 @@
         return `${surface}::${lineNumber}`;
     }
 
+    // Confidence pill: 3-bar glyph + word label. Status by shape + text, never
+    // color alone (a11y). band ∈ low|medium|high.
+    function confPill(band) {
+        const word = band === 'high' ? 'high' : band === 'medium' ? 'medium' : 'low confidence';
+        return `<span class="conf-pill conf-pill--${escHtml(band)}">`
+            + '<span class="conf-pill__bars">'
+            + '<span class="conf-pill__bar"></span>'
+            + '<span class="conf-pill__bar"></span>'
+            + '<span class="conf-pill__bar"></span></span>'
+            + `${escHtml(word)}</span>`;
+    }
+
     function getAtfViewer() {
         const container = document.querySelector('.atf-viewer');
         return container ? container._viewer : null;
@@ -106,19 +118,13 @@
         wrapper.className = 'line-suggestion';
         wrapper.dataset.surfaceLine = lineEl.dataset.line;
 
-        const confidenceClass = `line-suggestion__badge--${top.confidence_band}`;
-
-        let missingHtml = '';
-        if (data.missing_layers && data.missing_layers.length) {
-            missingHtml = `<span class="line-suggestion__missing" title="${escHtml(data.missing_layers.join('; '))}">⚠</span>`;
-        }
+        const topHedged = top.confidence_band === 'low' ? ' line-suggestion__text--hedged' : '';
 
         wrapper.innerHTML = `
             <button class="line-suggestion__toggle" aria-expanded="false" aria-label="Show translation suggestion">
                 <span class="line-suggestion__label">AI</span>
-                <span class="line-suggestion__text">${escHtml(top.translation)}</span>
-                <span class="line-suggestion__badge ${confidenceClass}">${top.confidence_band}</span>
-                ${missingHtml}
+                ${confPill(top.confidence_band)}
+                <span class="line-suggestion__text${topHedged}">${escHtml(top.translation)}</span>
                 <svg class="line-suggestion__expand-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
             </button>
             <div class="line-suggestion__detail" hidden>
@@ -148,20 +154,23 @@
 
         const allSugs = suggestions.map((s, i) => {
             const caveat = s.caveat ? `<span class="line-suggestion__caveat">${escHtml(s.caveat)}</span>` : '';
+            // Low-confidence alternates are rendered as hedges: italic + muted, never asserted.
+            const hedged = s.confidence_band === 'low' ? ' line-suggestion__text--hedged' : '';
             return `<li class="line-suggestion__alt ${i === 0 ? 'line-suggestion__alt--top' : ''}">
-                <span class="line-suggestion__badge line-suggestion__badge--${s.confidence_band}">${s.confidence_band}</span>
-                <span>${escHtml(s.translation)}</span>${caveat}
+                ${confPill(s.confidence_band)}
+                <span class="${hedged.trim()}">${escHtml(s.translation)}</span>${caveat}
             </li>`;
         }).join('');
 
-        const missing = (data.missing_layers || []).map(m =>
-            `<li class="line-suggestion__missing-item">${escHtml(m)}</li>`
+        // Server-computed missing-layer caveats — honest, not model prose.
+        const caveats = (data.missing_layers || []).map(m =>
+            `<div class="ai-caveat"><span>${escHtml(m)}</span></div>`
         ).join('');
 
         return `
             ${chain ? `<div class="line-suggestion__chain">${chain}</div>` : ''}
             <ol class="line-suggestion__alts">${allSugs}</ol>
-            ${missing ? `<ul class="line-suggestion__missing-list">${missing}</ul>` : ''}
+            ${caveats}
         `;
     }
 
@@ -193,7 +202,7 @@
         panel.innerHTML = `
             <div class="artifact-summary__line-suggestion-header">
                 <span class="artifact-summary__line-suggestion-label">Line ${lineNumber} suggestion</span>
-                <span class="line-suggestion__badge line-suggestion__badge--${top.confidence_band}">${top.confidence_band}</span>
+                ${confPill(top.confidence_band)}
             </div>
             <p class="artifact-summary__line-suggestion-text">${escHtml(top.translation)}</p>
             ${top.caveat ? `<p class="artifact-summary__line-suggestion-caveat">${escHtml(top.caveat)}</p>` : ''}

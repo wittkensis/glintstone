@@ -29,14 +29,76 @@
     const unsupportedEl = document.getElementById('artifact-summary-unsupported');
     const textEl = document.getElementById('artifact-summary-text');
     const hypothesisEl = document.getElementById('artifact-summary-hypothesis');
+    const sourcesEl = document.getElementById('artifact-summary-sources');
+    const sourcesListEl = document.getElementById('artifact-summary-sources-list');
     const metaEl = document.getElementById('artifact-summary-meta');
     const errorEl = document.getElementById('artifact-summary-error');
 
     let fetched = false;
     let interactionId = null;
 
-    function stripMarkers(text) {
-        return text.replace(/\s*\[\d+\]/g, '');
+    function escHtml(str) {
+        return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        }[c]));
+    }
+
+    // Render synthesis prose with inline [n] markers kept as clickable anchors
+    // to their evidence row. cited.has(n) gates anchoring to real citations only.
+    function renderTextWithMarkers(text, citedNs) {
+        return escHtml(text).replace(/\[(\d+)\]/g, (match, n) => {
+            const num = parseInt(n, 10);
+            if (!citedNs.has(num)) return match; // unbound marker — leave as plain text
+            return `<a class="cite-marker" href="#s${num}">[${num}]</a>`;
+        });
+    }
+
+    // Map a Citation to its source-badge variant. Provenance is carried in the
+    // source_id tag ('cdli_catalog', 'oracc_lemmatization', ...) and the
+    // retrieval_field; fall back to ORACC for lemma/lexical facts.
+    function sourceBadge(cit) {
+        const id = String(cit.source_id || '').toLowerCase();
+        const field = String(cit.retrieval_field || '').toLowerCase();
+        if (id.includes('cdli')) return { cls: 'cdli', label: 'CDLI', tail: 'catalog' };
+        if (id.includes('epsd') || field.startsWith('sense')) return { cls: 'epsd2', label: 'ePSD2', tail: 'lexicon' };
+        if (id.includes('oracc') || field.startsWith('lemma')) return { cls: 'oracc', label: 'ORACC', tail: 'lemmatization' };
+        if (cit.scholar_name || cit.publication_short) return null; // scholar-attributed; no source badge
+        return { cls: 'cdli', label: 'CDLI', tail: 'catalog' };
+    }
+
+    function renderSources(citations, citedNs) {
+        if (!sourcesEl || !sourcesListEl) return;
+        const shown = (citations || []).filter((c) => citedNs.has(c.n));
+        if (!shown.length) { sourcesEl.classList.add('is-hidden'); return; }
+        shown.sort((a, b) => a.n - b.n);
+
+        sourcesListEl.innerHTML = shown.map((cit) => {
+            const badge = sourceBadge(cit);
+            const fieldLabel = cit.retrieval_field
+                ? `<span class="ai-source__field">${escHtml(cit.retrieval_field.split(':')[0])}</span>`
+                : '';
+            const badgeHtml = badge
+                ? `<span class="source-badge source-badge--${badge.cls}">${badge.label}</span> ${escHtml(badge.tail)}`
+                : '';
+            const scholarHtml = cit.scholar_name
+                ? `<span class="ai-source__scholar">${escHtml(cit.scholar_name)}${cit.year ? ' ' + escHtml(cit.year) : ''}</span>`
+                : '';
+            const pubHtml = (!cit.scholar_name && cit.publication_short)
+                ? `<span class="ai-source__scholar">${escHtml(cit.publication_short)}</span>`
+                : '';
+            // annotation-run provenance link when present (competing-reading runs etc.)
+            const runHtml = cit.annotation_run_id
+                ? ` · <a href="${apiUrl ? escHtml(apiUrl) : ''}/annotation-runs/${escHtml(cit.annotation_run_id)}">annotation run</a>`
+                : '';
+
+            const parts = [fieldLabel, badgeHtml, scholarHtml, pubHtml]
+                .filter(Boolean).join(' · ');
+            return `<li class="ai-source" id="s${cit.n}">`
+                + `<span class="ai-source__n">[${cit.n}]</span>`
+                + `<span class="ai-source__body">${parts}${runHtml}</span></li>`;
+        }).join('');
+
+        sourcesEl.classList.remove('is-hidden');
     }
 
     function renderFeedback() {
@@ -135,21 +197,41 @@
 
         const synthesis = card.synthesis || data.summary || '';
 
+        // If we have no grounded synthesis at all, this is an ungroundable
+        // result — show the honest "Summary unavailable" state, never a fabrication.
+        if (!card.synthesis) {
+            showError();
+            return;
+        }
+
+        const citations = card.synthesis_citations || [];
+        const citedNs = new Set(citations.map((c) => c.n));
+
         const hypMatch = synthesis.match(/\(hypothesis\)[^.!?]*[.!?]/i);
         const mainText = hypMatch
             ? synthesis.replace(hypMatch[0], '').trim()
             : synthesis;
 
-        textEl.textContent = stripMarkers(mainText);
+        // Keep [n] markers visible & clickable — the trust regression to undo.
+        textEl.innerHTML = renderTextWithMarkers(mainText, citedNs);
 
         if (hypMatch) {
-            hypothesisEl.textContent = stripMarkers(hypMatch[0]);
+            hypothesisEl.innerHTML = renderTextWithMarkers(hypMatch[0].trim(), citedNs);
             hypothesisEl.classList.remove('is-hidden');
         }
 
-        const metaParts = ['AI-generated'];
-        if (card.best_guess) metaParts.push('sparse — uses similar-tablet priors');
-        metaEl.textContent = metaParts.join(' · ');
+        // "Grounded in" attribution list — every cited claim traceable.
+        renderSources(citations, citedNs);
+
+        // Badge-anchored meta footer: [• AI] · model · N facts cited
+        const factCount = citedNs.size;
+        const metaBits = [];
+        if (card.model) metaBits.push(escHtml(card.model));
+        metaBits.push(`${factCount} ${factCount === 1 ? 'fact' : 'facts'} cited`);
+        if (card.best_guess) metaBits.push('sparse — uses similar-tablet priors');
+        metaEl.innerHTML =
+            '<span class="ai-badge"><span class="ai-badge__dot"></span> AI</span>'
+            + '<span>' + metaBits.join(' <span class="ai-meta__sep">·</span> ') + '</span>';
 
         // Store interaction_id for feedback; render buttons if available
         if (data.interaction_id) {
