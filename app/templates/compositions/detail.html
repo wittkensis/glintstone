@@ -101,11 +101,12 @@
          attestation rendering: ``raw_atf`` shown verbatim (prime notation and
          damage brackets preserved). ``atf_preview`` is null when no linked
          exemplar has readable ATF → #189 empty state. ──────────────────────── #}
-    <section class="composition-detail__atf-preview" aria-labelledby="atf-preview-heading">
+    <section class="composition-detail__atf-preview" aria-labelledby="atf-preview-heading"
+             {% if atf_preview and atf_preview.lines %}data-q-number="{{ composite.q_number }}" data-api-url="{{ api_url }}"{% endif %}>
         <div class="composition-detail__atf-preview-header">
             <h2 id="atf-preview-heading">Transliteration preview</h2>
             {% if atf_preview and atf_preview.lines %}
-            <span class="composition-detail__atf-preview-count">
+            <span class="composition-detail__atf-preview-count" id="atf-preview-count">
                 First {{ atf_preview.preview_line_count }} of
                 {{ "{:,}".format(atf_preview.total_atf_lines) }} line{{ '' if atf_preview.total_atf_lines == 1 else 's' }}
             </span>
@@ -113,11 +114,35 @@
         </div>
 
         {% if atf_preview and atf_preview.lines %}
-        <p class="composition-detail__atf-preview-hint">
+        {# #404 Concept A — witness-switcher. Read any witness's ATF in place.
+           Best-preserved first; ★ = representative (pre-selected). A single
+           readable witness renders one non-interactive chip (no false compare). #}
+        {% set single_witness = witnesses | length <= 1 %}
+        <div class="witness-switcher" id="witness-switcher" role="tablist" aria-label="Choose a witness to read">
+            {% for w in witnesses %}
+            {% set is_rep = w.p_number == rep_p %}
+            <button class="witness-chip{% if is_rep %} witness-chip--rep is-active{% endif %}{% if single_witness %} witness-chip--static{% endif %}"
+                    role="tab" aria-selected="{{ 'true' if is_rep else 'false' }}"
+                    data-p-number="{{ w.p_number }}"
+                    data-designation="{{ w.designation or '' }}"
+                    data-period="{{ w.period or '' }}"
+                    data-provenience="{{ w.provenience or '' }}"
+                    {% if single_witness %}aria-disabled="true"{% endif %}>
+                <span class="witness-chip__top">
+                    <span class="witness-chip__cov witness-chip__cov--{{ w.coverage or 'untranslated' }}"></span>
+                    <span class="witness-chip__pnum">{{ w.p_number }}</span>
+                </span>
+                <span class="witness-chip__meta">{{ w.period or 'Period unknown' }}{% if w.provenience %} · {{ w.provenience }}{% endif %}</span>
+                <span class="witness-chip__lines">{{ "{:,}".format(w.atf_line_count) }} lines{% if single_witness %} · only witness with text{% endif %}</span>
+            </button>
+            {% endfor %}
+        </div>
+
+        <p class="composition-detail__atf-preview-hint" id="atf-preview-hint">
             Transliterated text of a representative exemplar —
             <a href="/tablets/{{ atf_preview.p_number }}">{{ atf_preview.designation or atf_preview.p_number }}</a>{% if atf_preview.period %}, {{ atf_preview.period }}{% endif %}{% if atf_preview.provenience %} ({{ atf_preview.provenience }}){% endif %}.
         </p>
-        <ul class="attestation-list">
+        <ul class="attestation-list" id="witness-atf-list" aria-busy="false">
             {% for line in atf_preview.lines %}
             <li class="attestation-row">
                 <a class="attestation-row__link" href="/tablets/{{ atf_preview.p_number }}">
@@ -132,7 +157,7 @@
             {% endfor %}
         </ul>
         <div class="composition-detail__atf-preview-footer">
-            <a class="composition-detail__atf-preview-full" href="/tablets/{{ atf_preview.p_number }}">
+            <a class="composition-detail__atf-preview-full" id="atf-preview-full" href="/tablets/{{ atf_preview.p_number }}">
                 Read the full tablet ›
             </a>
         </div>
@@ -182,6 +207,7 @@
                     <th>Designation</th>
                     <th>Period</th>
                     <th>Provenience</th>
+                    <th>Extent</th>
                     <th>Coverage</th>
                 </tr>
             </thead>
@@ -198,6 +224,20 @@
                     <td>{{ ex.designation or '—' }}</td>
                     <td>{{ ex.period or '—' }}</td>
                     <td>{{ ex.provenience or '—' }}</td>
+                    <td>
+                        {# #404 Concept A — extent bar: readable ATF lines we hold,
+                           scaled to the most-complete witness. Answers "which
+                           witness is most complete?" in the table as data-ink. #}
+                        {% set ext = ex.atf_line_count or 0 %}
+                        {% if ext > 0 and extent_max > 0 %}
+                        <span class="extent-cell">
+                            <span class="extent-bar"><span class="extent-bar__fill" style="width: {{ (ext * 100 // extent_max) }}%"></span></span>
+                            <span class="extent-num">{{ "{:,}".format(ext) }}</span>
+                        </span>
+                        {% else %}
+                        <span class="extent-num">—</span>
+                        {% endif %}
+                    </td>
                     <td>
                         <span class="badge badge--coverage-{{ cov }}">{{ coverage_labels[cov] }}</span>
                     </td>
@@ -289,4 +329,5 @@
 }());
 </script>
 {% endif %}
+<script src="/static/js/witness-switcher.js?v={{ app_version }}"></script>
 {% endblock %}

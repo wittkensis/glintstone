@@ -802,3 +802,107 @@
 .breadcrumb a:hover {
     text-decoration: underline;
 }
+
+/* ==========================================================================
+   #404 Concept A — witness-switcher + extent column on the composite preview.
+   Token-driven only. Lets a scholar read any witness's ATF in place, and the
+   "Extent" column answers "which witness is most complete?" as data-ink.
+   ========================================================================== */
+.witness-switcher {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-4);
+    scrollbar-width: thin;
+}
+.witness-chip {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 132px;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-raised);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+.witness-chip:hover {
+    border: var(--border-default);
+    box-shadow: var(--elevation-1);
+}
+.witness-chip.is-active {
+    border: var(--border-strong);
+    background: var(--color-accent-10);
+    box-shadow: var(--elevation-1);
+}
+.witness-chip[disabled],
+.witness-chip--static {
+    cursor: default;
+}
+.witness-chip__top {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1-5);
+}
+.witness-chip__cov {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--color-border);
+}
+.witness-chip__cov--translated  { background: var(--color-success); }
+.witness-chip__cov--partial     { background: var(--color-warning); }
+.witness-chip__cov--untranslated{ background: var(--color-text-subtle); }
+.witness-chip__pnum {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-text);
+    font-weight: var(--font-weight-medium);
+}
+.witness-chip.is-active .witness-chip__pnum { color: var(--color-accent); }
+.witness-chip__meta {
+    font-size: var(--text-xxs);
+    color: var(--color-text-subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+.witness-chip__lines {
+    font-size: var(--text-xxs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+.witness-chip--rep .witness-chip__pnum::after {
+    content: "★";
+    margin-left: var(--space-1);
+    color: var(--color-accent);
+    font-size: var(--text-xxs);
+}
+
+/* extent bar reused inside the exemplars table ("how complete?") */
+.extent-cell { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.extent-bar {
+    flex: 1 1 auto;
+    height: 4px;
+    min-width: 40px;
+    background: var(--color-overlay-light);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+.extent-bar__fill {
+    height: 100%;
+    background: var(--color-accent-muted);
+    border-radius: var(--radius-full);
+}
+.extent-num {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}

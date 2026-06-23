@@ -71,10 +71,16 @@ class CompositeRepository(BaseRepository):
             q_number: The composite Q-number
 
         Returns:
-            List of artifact dictionaries that are exemplars of this composite
+            List of artifact dictionaries that are exemplars of this composite.
+            Each row carries ``atf_line_count`` — the number of *readable* ATF
+            lines (same non-structural filter as the representative-preview
+            query: excludes ``$``/``@``/``&``/``#`` lines). This powers the
+            "Extent" column (#404 Concept A): how complete each witness is, from
+            data we hold rather than a self-reported field. Witnesses with no
+            readable ATF report ``0``.
         """
         return self.fetch_all(
-            """
+            r"""
             SELECT
                 a.p_number,
                 a.designation,
@@ -83,7 +89,15 @@ class CompositeRepository(BaseRepository):
                 a.genre,
                 ac.line_ref,
                 ps.semantic_complete,
-                ps.has_translation
+                ps.has_translation,
+                COALESCE((
+                    SELECT count(*)
+                    FROM text_lines tl
+                    WHERE tl.p_number = a.p_number
+                      AND tl.raw_atf IS NOT NULL
+                      AND tl.raw_atf <> ''
+                      AND tl.raw_atf !~ '^[$@&#]'
+                ), 0) AS atf_line_count
             FROM artifacts a
             JOIN artifact_composites ac ON a.p_number = ac.p_number
             LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
@@ -92,6 +106,64 @@ class CompositeRepository(BaseRepository):
         """,
             {"q_number": q_number},
         )
+
+    def get_witness_atf_preview(
+        self, q_number: str, p_number: str, limit: int = 8
+    ) -> dict | None:
+        """First-N readable ATF lines of *one specific* witness (#404 Concept A).
+
+        Generalises ``get_representative_atf_preview`` to any exemplar so the
+        witness-switcher can read any witness's text in place, not just the one
+        representative. Verifies ``p_number`` is actually linked to ``q_number``
+        first (no cross-composite leakage). Same readable-line filter; ``raw_atf``
+        returned verbatim. Returns ``None`` when the witness is not linked or has
+        no readable ATF, so the caller keeps the current preview unchanged.
+        """
+        rep = self.fetch_one(
+            r"""
+            SELECT a.p_number,
+                   a.designation,
+                   a.period,
+                   a.provenience,
+                   count(tl.id) AS atf_line_count
+            FROM artifact_composites ac
+            JOIN artifacts a ON a.p_number = ac.p_number
+            JOIN text_lines tl ON tl.p_number = ac.p_number
+            WHERE ac.q_number = %(q_number)s
+              AND ac.p_number = %(p_number)s
+              AND tl.raw_atf IS NOT NULL
+              AND tl.raw_atf <> ''
+              AND tl.raw_atf !~ '^[$@&#]'
+            GROUP BY a.p_number, a.designation, a.period, a.provenience
+            """,
+            {"q_number": q_number, "p_number": p_number},
+        )
+        if not rep:
+            return None
+
+        lines = self.fetch_all(
+            r"""
+            SELECT tl.line_number, tl.raw_atf
+            FROM text_lines tl
+            WHERE tl.p_number = %(p_number)s
+              AND tl.raw_atf IS NOT NULL
+              AND tl.raw_atf <> ''
+              AND tl.raw_atf !~ '^[$@&#]'
+            ORDER BY tl.column_number, tl.id
+            LIMIT %(limit)s
+            """,
+            {"p_number": rep["p_number"], "limit": limit},
+        )
+
+        return {
+            "p_number": rep["p_number"],
+            "designation": rep["designation"],
+            "period": rep["period"],
+            "provenience": rep["provenience"],
+            "total_atf_lines": rep["atf_line_count"],
+            "preview_line_count": len(lines),
+            "lines": lines,
+        }
 
     def get_representative_atf_preview(
         self, q_number: str, limit: int = 8

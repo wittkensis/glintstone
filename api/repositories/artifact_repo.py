@@ -525,10 +525,17 @@ class ArtifactRepository(BaseRepository):
         return row["wikidata_qid"] if row else None
 
     def get_composites(self, p_number: str) -> list[dict]:
+        """Compositions this tablet witnesses.
+
+        ``line_ref`` is this tablet's coverage range within the composition
+        (e.g. "obv 1–40"), a free-text whole-tablet range from
+        ``artifact_composites`` — surfaced as the "covers" chip on the tablet
+        page (#404 Concept B). NULL when not recorded (no chip shown).
+        """
         return self.fetch_all(
             """
             SELECT c.q_number, c.designation, c.language, c.period,
-                   c.genre, c.exemplar_count
+                   c.genre, c.exemplar_count, ac.line_ref
             FROM composites c
             JOIN artifact_composites ac ON c.q_number = ac.q_number
             WHERE ac.p_number = %(p_number)s

@@ -1811,3 +1811,75 @@ body.page-tablet-detail > .page-header {
     flex-direction: column;
     min-height: 0;
 }
+
+/* ==========================================================================
+   #404 Concept B — sibling-witness strip + coverage chip on the tablet page.
+   Finishes the composite-panel reverse link (the old "Loading tablets…"
+   placeholder): hop directly to a neighbouring copy, and see this tablet's
+   coverage range within the text. Token-driven only.
+   ========================================================================== */
+.witness-siblings { margin-top: var(--space-3); }
+.witness-siblings__label {
+    font-size: var(--text-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-subtle);
+    margin: 0 0 var(--space-2);
+}
+.witness-siblings__strip {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    scrollbar-width: thin;
+}
+.sibling-card {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 120px;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-raised);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.sibling-card:hover { border: var(--border-default); box-shadow: var(--elevation-1); }
+.sibling-card.is-current {
+    border: var(--border-strong);
+    background: var(--color-accent-10);
+    cursor: default;
+}
+.sibling-card__top { display: flex; align-items: center; gap: var(--space-1-5); }
+.sibling-card__pnum { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: var(--font-weight-medium); }
+.sibling-card.is-current .sibling-card__pnum { color: var(--color-accent); }
+.sibling-card__period { font-size: var(--text-xxs); color: var(--color-text-subtle); }
+.sibling-card__ref { font-size: var(--text-xxs); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.sibling-card__cov {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--color-border);
+}
+.sibling-card__cov--translated  { background: var(--color-success); }
+.sibling-card__cov--partial     { background: var(--color-warning); }
+.sibling-card__cov--untranslated{ background: var(--color-text-subtle); }
+.sibling-card--more {
+    align-items: center; justify-content: center;
+    color: var(--color-accent); font-size: var(--text-xs); min-width: 96px;
+}
+.sibling-card__sk {
+    height: 11px; background: var(--color-overlay-light); border-radius: var(--radius-xs);
+}
+.sibling-card__sk--sm { height: 9px; width: 80%; margin-top: 6px; }
+.covers-chip {
+    display: inline-flex; align-items: center; gap: var(--space-1);
+    padding: 2px var(--space-2);
+    background: var(--color-accent-10);
+    border: 1px solid var(--color-accent-20);
+    border-radius: var(--radius-full);
+    font-size: var(--text-2xs);
+    color: var(--color-accent);
+    font-variant-numeric: tabular-nums;
+}
+.covers-note { font-size: var(--text-xs); color: var(--color-text-subtle); margin-left: var(--space-2); }

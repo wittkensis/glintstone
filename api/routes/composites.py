@@ -113,3 +113,30 @@ def get_composite_exemplars(q_number: str, conn=Depends(get_db)):
     exemplars = repo.get_exemplars(q_number)
 
     return {"q_number": q_number, "exemplars": exemplars, "count": len(exemplars)}
+
+
+@router.get("/{q_number}/witnesses/{p_number}/atf-preview")
+def get_composite_witness_atf_preview(
+    q_number: str,
+    p_number: str,
+    limit: int = Query(8, ge=1, le=40, description="Lines to preview"),
+    conn=Depends(get_db),
+):
+    """First-N readable ATF lines of one specific witness (#404 Concept A).
+
+    Backs the witness-switcher: clicking a witness chip on the composition page
+    fetches *that* witness's text in place. ``atf_preview`` is ``null`` when the
+    witness is not linked to this composite or carries no readable ATF (the
+    client keeps the current preview); 404 only for an unknown Q-number.
+    """
+    repo = CompositeRepository(conn)
+
+    composite = repo.find_by_q_number(q_number)
+    if not composite:
+        raise HTTPException(status_code=404, detail=f"Composite {q_number} not found")
+
+    return {
+        "q_number": q_number,
+        "p_number": p_number,
+        "atf_preview": repo.get_witness_atf_preview(q_number, p_number, limit=limit),
+    }
