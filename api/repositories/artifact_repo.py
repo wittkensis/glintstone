@@ -594,10 +594,19 @@ class ArtifactRepository(BaseRepository):
         )
 
     def get_atf(self, p_number: str) -> dict:
-        """Get ATF text lines for a tablet."""
+        """Get ATF text lines for a tablet.
+
+        Carries ``line_id`` (text_lines.id) on every line so the parser can map
+        each line's parsed words to its ``tokens`` rows for token_id stamping
+        (#330). ``tokens_by_line`` maps line_id -> ordered token rows
+        (position, raw_form, id); the parser aligns words to tokens by
+        normalized raw_form match and only stamps when the alignment is
+        unambiguous (accuracy over coverage — see atf_parser._align_tokens).
+        """
         lines = self.fetch_all(
             """
             SELECT
+                tl.id AS line_id,
                 tl.line_number,
                 tl.raw_atf,
                 tl.is_ruling,
@@ -612,7 +621,29 @@ class ArtifactRepository(BaseRepository):
             {"p_number": p_number},
         )
 
-        return {"p_number": p_number, "lines": lines, "total_lines": len(lines)}
+        # Tokens for these lines, in position order. Only rows with a non-null
+        # raw_form are usable for surface-form alignment.
+        token_rows = self.fetch_all(
+            """
+            SELECT t.id, t.line_id, t.position, t.raw_form
+            FROM tokens t
+            JOIN text_lines tl ON t.line_id = tl.id
+            WHERE tl.p_number = %(p_number)s
+              AND t.raw_form IS NOT NULL
+            ORDER BY t.line_id, t.position
+        """,
+            {"p_number": p_number},
+        )
+        tokens_by_line: dict[int, list[dict]] = {}
+        for tr in token_rows:
+            tokens_by_line.setdefault(tr["line_id"], []).append(tr)
+
+        return {
+            "p_number": p_number,
+            "lines": lines,
+            "tokens_by_line": tokens_by_line,
+            "total_lines": len(lines),
+        }
 
     def _translation_rows(
         self,

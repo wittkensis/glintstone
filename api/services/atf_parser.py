@@ -70,12 +70,22 @@ _SUBSCRIPT_MAP = str.maketrans("", "", "₀₁₂₃₄₅₆₇₈₉")
 _NUMERIC_PATTERN = re.compile(r"^[\d/]+\([A-Za-z0-9_]+\)(?:[#?!]*)$")
 
 
-def parse_atf_response(lines: list[dict]) -> dict:
+def parse_atf_response(
+    lines: list[dict],
+    tokens_by_line: dict[int, list[dict]] | None = None,
+) -> dict:
     """Transform flat DB lines into structured surface/column/line format.
 
-    Input: [{line_number, raw_atf, is_ruling, is_blank, surface_type, column_number}, ...]
+    Input: [{line_id, line_number, raw_atf, is_ruling, is_blank, surface_type,
+             column_number}, ...]
+    ``tokens_by_line`` (optional): line_id -> ordered list of token rows
+        ({id, position, raw_form}). When supplied, each content word is mapped
+        to its tokens.id and emitted as ``token_id`` — but ONLY where the
+        line's words align to its tokens unambiguously (#330). See
+        ``_align_tokens`` for the refuse-on-mismatch guard.
     Output: {surfaces: [...], hasMultipleSurfaces, hasMultipleColumns}
     """
+    tokens_by_line = tokens_by_line or {}
     # Group lines by (surface_type, column_number), preserving first-appearance order
     # Key: surface_type → OrderedDict[column_number → [lines]]
     surface_columns: OrderedDict[str, OrderedDict[int, list[dict]]] = OrderedDict()
@@ -96,7 +106,11 @@ def parse_atf_response(lines: list[dict]) -> dict:
         for col_num, col_lines in col_groups.items():
             parsed_lines = []
             for db_line in col_lines:
-                parsed = _parse_db_line(db_line)
+                line_id = db_line.get("line_id")
+                line_tokens = (
+                    tokens_by_line.get(line_id) if line_id is not None else None
+                )
+                parsed = _parse_db_line(db_line, line_tokens)
                 if parsed is not None:
                     parsed_lines.append(parsed)
             columns.append(
@@ -124,8 +138,13 @@ def parse_atf_response(lines: list[dict]) -> dict:
     }
 
 
-def _parse_db_line(db_line: dict) -> dict | None:
-    """Parse a single DB row into a structured line object."""
+def _parse_db_line(db_line: dict, line_tokens: list[dict] | None = None) -> dict | None:
+    """Parse a single DB row into a structured line object.
+
+    ``line_tokens`` (optional): ordered tokens rows for this line. When given,
+    ``_align_tokens`` stamps token_id onto each content word — but only when
+    the whole line aligns unambiguously (#330).
+    """
     raw_atf = (db_line.get("raw_atf") or "").strip()
     line_number = db_line.get("line_number") or ""
     is_ruling = bool(db_line.get("is_ruling"))
@@ -165,6 +184,12 @@ def _parse_db_line(db_line: dict) -> dict | None:
 
     words = parse_words(content)
 
+    # #330: stamp tokens.id onto content words where the line aligns
+    # unambiguously. Refuses (leaves words unstamped) on any mismatch — a wrong
+    # word→token map mis-attributes a scholarly interpretation, so we never guess.
+    if line_tokens:
+        _align_tokens(words, line_tokens)
+
     return {
         "type": "content",
         "number": num_display,
@@ -174,6 +199,64 @@ def _parse_db_line(db_line: dict) -> dict | None:
         "composite": composite,
         "translations": {},
     }
+
+
+# Content word types that correspond 1:1 to a tokens row. ``broken`` blocks
+# ([x x x]) and ``punctuation`` are parser-only artifacts with no token.
+_TOKEN_WORD_TYPES = frozenset({"word", "logogram", "determinative"})
+
+# Half-bracket damage markers that ORACC strips from raw_form but the surface
+# ATF (and thus the parser) keeps. Removed before form comparison.
+_HALF_BRACKETS = str.maketrans("", "", "⸢⸣⸤⸥")  # ⸢⸣⸤⸥
+
+
+def _token_form_key(raw: str | None) -> str | None:
+    """Normalize an ATF surface form for token-alignment comparison.
+
+    Strips half-bracket damage markers, then applies the same normalization
+    used for lexical lookup (damage flags, subscripts, sign variants, case).
+    Returns None for empty/break placeholders so they never match a real word.
+    """
+    if not raw:
+        return None
+    cleaned = raw.translate(_HALF_BRACKETS)
+    key = normalize_lookup(cleaned)
+    # A bare break placeholder ('x') carries no identity — never align on it.
+    if key in (None, "x"):
+        return None
+    return key
+
+
+def _align_tokens(words: list[dict], line_tokens: list[dict]) -> None:
+    """Map each content word to its tokens.id, in order — or refuse the line.
+
+    ACCURACY OVER COVERAGE (#330). Token_id is stamped only when the line's
+    content words align 1:1 with its real tokens AND every pair's normalized
+    surface form matches. On ANY mismatch (count differs, or a form disagrees)
+    NO token_id is stamped for the line — those words stay unclickable rather
+    than risk mis-attributing an interpretation to the wrong cuneiform word.
+
+    Mutates ``words`` in place, adding ``token_id`` only on a clean alignment.
+    """
+    content_words = [w for w in words if w.get("type") in _TOKEN_WORD_TYPES]
+
+    # Real tokens: drop break-placeholder tokens (raw_form 'x'), which the
+    # parser collapses into single ``broken`` words rather than emitting per-x.
+    real_tokens = [t for t in line_tokens if _token_form_key(t.get("raw_form"))]
+
+    # Count guard: differing granularity ⇒ refuse the whole line.
+    if not content_words or len(content_words) != len(real_tokens):
+        return
+
+    # Form guard: every aligned pair's normalized form must match exactly.
+    pairs = list(zip(content_words, real_tokens))
+    for word, token in pairs:
+        if _token_form_key(word.get("text")) != _token_form_key(token.get("raw_form")):
+            return  # ambiguous alignment — refuse the entire line
+
+    # Unambiguous: stamp.
+    for word, token in pairs:
+        word["token_id"] = token["id"]
 
 
 def parse_words(text: str) -> list[dict]:
