@@ -95,6 +95,22 @@ def get_lemma_detail(lemma_id: int, conn=Depends(get_db)):
     return result
 
 
+@router.get("/senses/{sense_id}")
+def get_sense_detail(sense_id: int, conn=Depends(get_db)):
+    """A single dictionary sense in full, with its lemma context (#184).
+
+    Extends the dictionary's detail surface beyond the lemma: an addressable
+    page for one meaning, carrying its definition / translations / source, the
+    parent lemma, and the lemma's other senses (its polysemy). 404 for a
+    non-existent sense id.
+    """
+    repo = LexicalRepository(conn)
+    result = repo.get_sense_detail(sense_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Sense not found")
+    return result
+
+
 @router.get("/lookup")
 def lookup_written_form(
     form: str = Query(

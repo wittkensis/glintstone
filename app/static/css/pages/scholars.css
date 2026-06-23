@@ -588,3 +588,56 @@ main.scholar-detail {
         flex-basis: calc(50% - var(--space-2));
     }
 }
+
+/* ==========================================================================
+   Activity profile (#157) — role chips + reused #201 period histogram
+   ========================================================================== */
+
+.scholar-activity__roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-4);
+    padding: 0;
+    list-style: none;
+}
+
+.scholar-activity__role {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-bg-inset);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+}
+
+.scholar-activity__role-name {
+    color: var(--color-text);
+    text-transform: capitalize;
+}
+
+.scholar-activity__role-count {
+    color: var(--color-accent);
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--font-weight-medium);
+}
+
+.scholar-activity__hint {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-normal);
+}
+
+.scholar-activity__timeline {
+    width: 100%;
+    margin-bottom: var(--space-2);
+}
+
+.scholar-activity__footnote {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}

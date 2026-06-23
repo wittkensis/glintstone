@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{{ (sense.definition_parts | join(', ')) if sense.definition_parts else 'Sense' }} — {{ lemma.citation_form or 'Dictionary' }} — Glintstone{% endblock %}
+
+{% from "components/_macros.html" import data_empty, field_empty %}
+
+{% block content %}
+<main class="sense-detail-page">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/dictionary">Dictionary</a>
+        <span aria-hidden="true">/</span>
+        {% if lemma.id %}
+        <a href="/dictionary/lemmas/{{ lemma.id }}">{{ lemma.citation_form or 'Lemma' }}</a>
+        <span aria-hidden="true">/</span>
+        {% endif %}
+        <span>Sense{% if sense.sense_number %} {{ sense.sense_number }}{% endif %}</span>
+    </nav>
+
+    {# ── Header — the sense's definition is the headline ───────────────── #}
+    <div class="page-header">
+        <div class="page-header-main">
+            <div class="page-header-title">
+                <h1 class="sense-detail__definition">
+                    {% if sense.definition_parts %}
+                        {{ sense.definition_parts | join(', ') }}
+                    {% else %}
+                        <em>No definition recorded</em>
+                    {% endif %}
+                </h1>
+            </div>
+        </div>
+    </div>
+
+    {# ── Metadata badges ─────────────────────────────────────────────── #}
+    <div class="lemma-detail__meta">
+        {% if sense.sense_number %}
+        <span class="badge badge--sm">Sense {{ sense.sense_number }}</span>
+        {% endif %}
+        {% if lemma.pos_label %}
+        <span class="badge badge--sm">{{ lemma.pos_label }}</span>
+        {% endif %}
+        {% if lemma.language_label %}
+        <span class="badge badge--sm badge--language">{{ lemma.language_label }}</span>
+        {% endif %}
+        {% if sense.source_label %}
+        <span class="source-badge" title="Source: {{ sense.source_label }}">{{ sense.source_label }}</span>
+        {% endif %}
+    </div>
+
+    {# ── Parent lemma context ─────────────────────────────────────────── #}
+    {% if lemma.id %}
+    <section class="dict-detail__section" aria-labelledby="lemma-heading">
+        <h3 id="lemma-heading">Dictionary entry</h3>
+        <p class="sense-detail__lemma-line">
+            This is one meaning of
+            <a href="/dictionary/lemmas/{{ lemma.id }}" class="sense-detail__lemma-link">{{ lemma.citation_form }}</a>{% if lemma.guide_word %}
+            <span class="lemma-detail__guide">[{{ lemma.guide_word }}]</span>{% endif %}{% if lemma.attestation_count %},
+            attested {{ '{:,}'.format(lemma.attestation_count) }} time{{ '' if lemma.attestation_count == 1 else 's' }} in the corpus{% endif %}.
+        </p>
+    </section>
+    {% endif %}
+
+    {# ── Translations — the populated, data-honest field ──────────────── #}
+    <section class="dict-detail__section" aria-labelledby="translations-heading">
+        <h3 id="translations-heading">Translations</h3>
+        {% if sense.translation_groups %}
+        <ul class="sense-detail__translations">
+            {% for tg in sense.translation_groups %}
+            <li class="sense-detail__translation">
+                <span class="sense-detail__lang">{{ tg.language_label }}</span>
+                <span class="sense-detail__glosses">{{ tg.glosses | join(', ') }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        {{ data_empty('No translations on record', 'No language glosses are recorded for this sense yet.') }}
+        {% endif %}
+    </section>
+
+    {# ── Sibling senses — the lemma's polysemy ────────────────────────── #}
+    {% if lemma.id %}
+    <section class="dict-detail__section" aria-labelledby="siblings-heading">
+        <h3 id="siblings-heading">Other senses of {{ lemma.citation_form }}</h3>
+        {% set siblings = sibling_senses | rejectattr('id', 'equalto', sense.id) | list %}
+        {% if siblings %}
+        <p class="sense-detail__hint">{{ lemma.citation_form }} carries {{ sibling_senses | length }} recorded sense{{ '' if sibling_senses | length == 1 else 's' }}. The others:</p>
+        <ol class="sense-detail__siblings">
+            {% for s in siblings %}
+            <li class="sense-detail__sibling">
+                <a href="/dictionary/senses/{{ s.id }}" class="sense-detail__sibling-link">
+                    {% if s.definition_parts %}{{ s.definition_parts | join(', ') }}{% else %}<em>No definition recorded</em>{% endif %}
+                </a>
+                {% if s.sense_number %}<span class="dict-detail__sub">sense {{ s.sense_number }}</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+        {% else %}
+        {{ data_empty('Only sense on record', 'This is the only recorded meaning for this dictionary entry.') }}
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {# ── Source attribution ───────────────────────────────────────────── #}
+    {% if sense.source_label %}
+    <section class="dict-detail__section" aria-labelledby="attribution-heading">
+        <h3 id="attribution-heading">Source</h3>
+        <p class="lemma-detail__attribution">
+            Sense data sourced from <strong>{{ sense.source_label }}</strong>{% if sense.source_citation %}: {{ sense.source_citation }}{% endif %}.
+            {% if sense.source_url %}
+            <a href="{{ sense.source_url }}" target="_blank" rel="noopener">View source ›</a>
+            {% endif %}
+        </p>
+    </section>
+    {% endif %}
+
+</main>
+{% endblock %}

@@ -313,6 +313,64 @@
     {% endif %}
   </section>
 
+  {# ── Activity profile (#157) ──────────────────────────────────────────────
+       A compact view of *when* and *how* this scholar contributed. "When" is
+       the historical period of the tablets they worked on — NOT a calendar
+       chart: the only contribution timestamp is the backfill date, so a
+       calendar view would be one misleading spike. The honest temporal signal
+       is the BCE spread of the ancient texts, drawn with the same #201
+       proportional-period histogram the lemma page uses (reused verbatim:
+       container id `lemma-period-timeline`, the JS auto-inits on it). "How" is
+       the role breakdown. ``activity.periods`` empty → #189 empty state. #}
+  {% set act_periods = activity.get('periods', []) %}
+  {% set act_dated = activity.get('dated_tablet_count', 0) %}
+  {% set act_undated = activity.get('undated_tablet_count', 0) %}
+  {% set act_roles = activity.get('roles', []) %}
+  <section class="scholar-section scholar-activity" aria-labelledby="activity-heading">
+    <div class="scholar-section__head">
+      <h2 class="scholar-section__title" id="activity-heading">Activity</h2>
+      {% if act_periods %}
+      <span class="scholar-section__count">
+        {{ '{:,}'.format(act_dated) }} datable tablet{{ '' if act_dated == 1 else 's' }}
+        across {{ act_periods | length }} period{{ '' if act_periods | length == 1 else 's' }}
+      </span>
+      {% endif %}
+    </div>
+
+    {% if act_roles %}
+    <ul class="scholar-activity__roles">
+      {% for r in act_roles %}
+      <li class="scholar-activity__role">
+        <span class="scholar-activity__role-name">{{ r.role }}</span>
+        <span class="scholar-activity__role-count">{{ '{:,}'.format(r.count) }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if act_periods %}
+    <p class="scholar-activity__hint">
+      Each band is a historical period this scholar contributed to, placed on a
+      proportional BCE axis and sized by how many tablets of that period they
+      worked on — the chronological reach of their contributions.
+    </p>
+    <div id="lemma-period-timeline"
+         data-periods="{{ act_periods | tojson | forceescape }}"
+         class="scholar-activity__timeline">
+      {# LemmaPeriodTimeline JS renders the SVG histogram into this container #}
+    </div>
+    {% if act_undated %}
+    <p class="scholar-activity__footnote">
+      {{ '{:,}'.format(act_undated) }} further contributed tablet{{ '' if act_undated == 1 else 's' }}
+      have no datable period and are not shown on the axis.
+    </p>
+    {% endif %}
+    {% else %}
+    {{ data_empty('No datable activity yet',
+                  'This scholar has no contributions on tablets with a known historical period, so their activity cannot be charted on the timeline. The chart appears once datable contributions are linked.') }}
+    {% endif %}
+  </section>
+
   {# Contributions ledger #}
   <section class="scholar-section" id="contributions">
     <div class="scholar-section__head">
@@ -389,4 +447,11 @@
   </section>
 
 </main>
+{% endblock %}
+
+{% block scripts %}
+{# Reuses the lemma period-timeline (#201): it auto-inits on #lemma-period-timeline,
+   which the Activity section above carries (the scholar page has no lemma timeline,
+   so the id is unambiguous). #}
+<script src="/static/js/lemma-period-timeline.js?v={{ app_version }}"></script>
 {% endblock %}
