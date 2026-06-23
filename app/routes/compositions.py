@@ -107,10 +107,12 @@ def composition_detail(
     if isinstance(composite, dict) and "composite" in composite:
         composite_meta = composite.get("composite") or {}
         all_exemplars = composite.get("exemplars", [])
+        atf_preview = composite.get("atf_preview")
     else:
         composite_meta = composite if isinstance(composite, dict) else {}
         exemplars_data = api.get_composite_exemplars(q_number)
         all_exemplars = exemplars_data.get("exemplars", [])
+        atf_preview = None
 
     linked_count = len(all_exemplars)
 
@@ -209,6 +211,7 @@ def composition_detail(
         {
             "composite": composite_meta,
             "exemplars": filtered,
+            "atf_preview": atf_preview,
             "timeline_exemplars": timeline_exemplars,
             "linked_count": linked_count,
             "oracc_count": oracc_count,

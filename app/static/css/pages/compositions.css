@@ -497,6 +497,58 @@
 }
 
 /* ==========================================================================
+   Transliteration preview (#159) — reuses #176 .attestation-row/.attestation-list
+   inline-ATF rendering (globally available via dictionary.css). Only the
+   section chrome lives here.
+   ========================================================================== */
+
+.composition-detail__atf-preview {
+    margin-bottom: var(--space-8);
+}
+
+.composition-detail__atf-preview-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-2);
+}
+
+.composition-detail__atf-preview h2 {
+    font-size: var(--text-base);
+    font-weight: 600;
+    margin: 0;
+}
+
+.composition-detail__atf-preview-count {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.composition-detail__atf-preview-hint {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-3);
+}
+
+.composition-detail__atf-preview-footer {
+    margin-top: var(--space-3);
+}
+
+.composition-detail__atf-preview-full {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-accent);
+    text-decoration: none;
+}
+
+.composition-detail__atf-preview-full:hover {
+    text-decoration: underline;
+}
+
+/* ==========================================================================
    Transmission History Timeline — SVG container
    ========================================================================== */
 
