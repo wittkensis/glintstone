@@ -103,7 +103,7 @@ def get_artifact_atf(p_number: str, conn=Depends(get_db)):
         get_legend_items,
     )
 
-    parsed = parse_atf_response(atf_data["lines"])
+    parsed = parse_atf_response(atf_data["lines"], atf_data.get("tokens_by_line"))
     raw_atf = build_raw_atf(atf_data["lines"])
     legend = get_legend_items(parsed["surfaces"])
 
