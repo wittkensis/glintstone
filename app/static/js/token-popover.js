@@ -57,6 +57,16 @@ class TokenPopover {
                 // Silently leave the popover with just the surface form
             });
 
+        // PRD-020: grounded AI token interpretation. The lexical panel above is
+        // the primary, database-backed content; the AI interpretation is
+        // supplementary and clearly labeled. It loads independently so a slow
+        // (2-5 s) Claude call never blocks the lexical data, and a failure never
+        // removes it. Only fires when the ATF render stamped a real token_id.
+        const tokenId = el.dataset.tokenId;
+        if (tokenId && tokenId !== '0' && /^\d+$/.test(tokenId)) {
+            TokenPopover._fetchInterpretation(popover, el, pNumber, tokenId, apiUrl);
+        }
+
         // Dismiss on outside click
         setTimeout(() => {
             document.addEventListener('click', TokenPopover._onDocClick, { capture: true, once: true });
@@ -161,6 +171,132 @@ class TokenPopover {
         }
 
         body.innerHTML = parts.join('');
+    }
+
+    /**
+     * PRD-020 — fetch and render the grounded AI interpretation for a token.
+     *
+     * Appends an "AI interpretation" panel below the lexical data. Renders the
+     * step-by-step reasoning chain (each step: label · value · confidence) and,
+     * when the token has no lemmatization, the provisional hypotheses. Every
+     * panel carries an explicit AI trust badge so a scholar never mistakes an
+     * AI inference for an attested reading.
+     *
+     * Degrades silently on error (network, 4xx/5xx, abort): the lexical panel
+     * remains the source of truth. Guards against the popover having been
+     * dismissed (or a different token clicked) before the fetch resolves.
+     *
+     * @param {Element} popover  - the open popover element
+     * @param {Element} el       - the anchor token element (for repositioning)
+     * @param {string}  pNumber  - artifact P-number
+     * @param {string}  tokenId  - integer token PK as a string
+     * @param {string}  apiUrl   - API base URL (no trailing slash)
+     */
+    static async _fetchInterpretation(popover, el, pNumber, tokenId, apiUrl) {
+        const body = popover.querySelector('.token-popover__body');
+        if (!body) return;
+
+        // Loading section — appended so the lexical panel stays visible.
+        const panel = document.createElement('div');
+        panel.className = 'token-popover__ai-panel';
+        panel.innerHTML =
+            `<div class="token-popover__ai-head">`
+            + TokenPopover._aiBadge()
+            + `</div>`
+            + `<div class="token-popover__ai-loading">Interpreting in context…</div>`;
+        body.appendChild(panel);
+        TokenPopover._position(popover, el);
+
+        let data;
+        try {
+            const res = await fetch(
+                `${apiUrl}/artifacts/${encodeURIComponent(pNumber)}`
+                + `/tokens/${encodeURIComponent(tokenId)}/interpret`
+            );
+            if (!res.ok) throw new Error(`interpret ${res.status}`);
+            data = await res.json();
+        } catch {
+            // Popover may have been dismissed; only mutate if still ours.
+            if (TokenPopover._current === popover) panel.remove();
+            return;
+        }
+
+        // Bail if the popover was dismissed or replaced while we waited.
+        if (TokenPopover._current !== popover || !panel.isConnected) return;
+
+        const payload = (data && data.data) || {};
+        const steps = Array.isArray(payload.steps) ? payload.steps : [];
+        const hypotheses = Array.isArray(payload.hypotheses) ? payload.hypotheses : [];
+
+        if (steps.length === 0 && hypotheses.length === 0) {
+            // Nothing grounded to show — don't leave an empty AI shell.
+            panel.remove();
+            TokenPopover._position(popover, el);
+            return;
+        }
+
+        const parts = [`<div class="token-popover__ai-head">${TokenPopover._aiBadge()}</div>`];
+
+        if (steps.length) {
+            const rows = steps.map((s) => {
+                const conf =
+                    typeof s.confidence === 'number'
+                        ? TokenPopover._confPillFromScore(s.confidence)
+                        : '';
+                return `<li class="token-popover__ai-step">`
+                    + `<span class="token-popover__ai-label">${TokenPopover._esc(s.label)}</span>`
+                    + `<span class="token-popover__ai-value">${TokenPopover._esc(s.value)}</span>`
+                    + conf
+                    + `</li>`;
+            }).join('');
+            parts.push(`<ol class="token-popover__ai-chain">${rows}</ol>`);
+        }
+
+        if (hypotheses.length) {
+            const hyps = hypotheses.map((h) => {
+                const band = h.confidence_band || 'low';
+                const evidence = Array.isArray(h.evidence_chain) && h.evidence_chain.length
+                    ? `<div class="token-popover__ai-evidence">${
+                        h.evidence_chain.map((f) => TokenPopover._esc(f)).join(' · ')
+                      }</div>`
+                    : '';
+                return `<div class="token-popover__hypothesis">`
+                    + `<span class="token-popover__hypothesis-prefix">Hypothesis:</span> `
+                    + `${TokenPopover._esc(h.reading)} `
+                    + TokenPopover._confPill(band)
+                    + evidence
+                    + `</div>`;
+            }).join('');
+            parts.push(hyps);
+        }
+
+        panel.innerHTML = parts.join('');
+        TokenPopover._position(popover, el);
+    }
+
+    /** AI trust badge — mirrors the ai-trust.css header badge from the trust UI. */
+    static _aiBadge() {
+        return `<span class="ai-badge ai-badge--header" `
+            + `title="Generated by AI from available scholarly data. Not peer-reviewed.">`
+            + `<span class="ai-badge__dot"></span>AI interpretation</span>`;
+    }
+
+    /** Confidence pill matching the trust-UI .conf-pill (3 bars + word, a11y-safe). */
+    static _confPill(band) {
+        const safe = band === 'high' || band === 'medium' ? band : 'low';
+        const word = safe === 'high' ? 'high' : safe === 'medium' ? 'medium' : 'low confidence';
+        return `<span class="conf-pill conf-pill--${safe}">`
+            + `<span class="conf-pill__bars">`
+            + `<span class="conf-pill__bar"></span>`
+            + `<span class="conf-pill__bar"></span>`
+            + `<span class="conf-pill__bar"></span></span>`
+            + `${TokenPopover._esc(word)}</span>`;
+    }
+
+    /** Map a 0..1 step confidence to the same three-band pill. */
+    static _confPillFromScore(score) {
+        const band = score >= 0.75 ? 'high' : score >= 0.5 ? 'medium' : 'low';
+        return TokenPopover._confPill(band);
     }
 
     /**
