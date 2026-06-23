@@ -603,7 +603,19 @@ def assemble_token_facts(
     p_number: str,
     token_id: int,
 ) -> TokenFactBundle | None:
-    """Pull token + neighbor + sign-candidate + genre-prior facts."""
+    """Pull token + neighbor + sign-candidate + genre-prior facts.
+
+    The tablet is resolved via ``text_lines.p_number`` directly, NOT through a
+    surfaces join. A token belongs to its text_line, and the line carries its
+    own ``p_number`` FK to artifacts — that is the authoritative tablet link.
+    Gating on ``surfaces.p_number`` (the old behavior) silently 404'd every
+    token on a surface-less line (``text_lines.surface_id IS NULL``), even
+    though ``get_atf`` had stamped those tokens as clickable via the same
+    ``text_lines.p_number`` path (#407). The surfaces join was an unnecessary
+    narrowing; no fact below reads any surfaces column, so dropping it loses
+    no context (if surface context is ever needed here, LEFT JOIN surfaces so
+    it never gates the lookup).
+    """
     bundle = TokenFactBundle(p_number=p_number, token_id=token_id)
 
     # Token itself
@@ -616,9 +628,8 @@ def assemble_token_facts(
                    a.provenience_normalized AS provenience
             FROM tokens t
             JOIN text_lines tl ON t.line_id = tl.id
-            JOIN surfaces s ON tl.surface_id = s.id
-            JOIN artifacts a ON s.p_number = a.p_number
-            WHERE t.id = %s AND s.p_number = %s
+            JOIN artifacts a ON tl.p_number = a.p_number
+            WHERE t.id = %s AND tl.p_number = %s
             """,
             (token_id, p_number),
         )
