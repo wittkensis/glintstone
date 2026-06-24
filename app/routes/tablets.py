@@ -2,6 +2,7 @@
 
 import json
 import logging
+import math
 from pathlib import Path
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import RedirectResponse
@@ -16,6 +17,82 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/tablets")
 
 
+def _atlas_filter_params(
+    search: str,
+    pipeline: str,
+    period: list[str],
+    provenience: list[str],
+    genre: list[str],
+    language: list[str],
+    has_ocr: str,
+) -> dict:
+    """Build the filter params (sans pagination) shared by the timeline and
+    by-site aggregate calls — exactly the predicates the grid uses, so a brush
+    re-filters the corpus the same way the checkboxes do."""
+    p: dict = {}
+    if search:
+        p["search"] = search
+    if pipeline:
+        p["pipeline"] = pipeline
+    if period:
+        p["period"] = period
+    if provenience:
+        p["provenience"] = provenience
+    if genre:
+        p["genre"] = genre
+    if language:
+        p["language"] = language
+    if has_ocr:
+        p["has_ocr"] = "true"
+    return p
+
+
+def _timeline_axis(rows: list[dict]) -> list[dict]:
+    """Decorate per-period rows with log-scaled bar geometry + proportional BCE
+    position so the Timeline view renders honestly without JS (Tufte: log scale
+    keeps the 111k Ur III skew from drowning the small periods).
+
+    Adds to each row:
+      - ``bar_width``: percent width of the count bar (log10-scaled).
+      - ``bar_left``: percent offset on the shared 3000→0 BCE axis (from
+        date_start_bce); 0 when the period has no canonical date.
+    The axis spans 3000 BCE (left) to 0 (right). Counts are scaled so the
+    largest period reads ~100%% and a single tablet still shows a visible stub.
+    """
+    AXIS_MAX_BCE = 3000.0
+    if not rows:
+        return []
+    max_count = max((r.get("count") or 0) for r in rows) or 1
+    log_max = math.log10(max_count + 1) or 1.0
+    out: list[dict] = []
+    for r in rows:
+        count = r.get("count") or 0
+        # log-scale the bar; floor at 4% so tiny periods stay clickable/visible
+        width = max(4.0, (math.log10(count + 1) / log_max) * 100.0)
+        # Anchor the count-bar at the date the period *starts* on the shared
+        # BCE axis, then clamp its width so it never runs past the right edge of
+        # the track (left + width <= 100). This keeps the bar both positioned in
+        # time (where on the 3000→0 BCE axis) and sized by count (log), matching
+        # the Tufte coverage-matrix encoding in the spec without overflow.
+        start = r.get("date_start_bce")
+        if start is not None:
+            bce = abs(start)
+            # Axis runs 3000 BCE (0%) → 0 BCE (100%). Periods older than 3000
+            # BCE pin to the left edge.
+            left = max(0.0, min(96.0, (1 - bce / AXIS_MAX_BCE) * 100.0))
+        else:
+            left = 0.0
+        width = min(width, 100.0 - left)
+        out.append(
+            {
+                **r,
+                "bar_width": round(width, 1),
+                "bar_left": round(left, 1),
+            }
+        )
+    return out
+
+
 @router.get("")
 def tablet_list(
     request: Request,
@@ -27,8 +104,14 @@ def tablet_list(
     language: list[str] = Query(default=[]),
     has_ocr: str = "",
     page: int = 1,
+    view: str = "grid",
 ):
     api = request.app.state.api
+    # Only grid / timeline are real views in Wave 1 (#320). The map is Wave 2
+    # (gated on migration 049 + geocoding, #319) — anything unknown falls back
+    # to the grid so a stale/shared URL never lands on a blank view.
+    if view not in ("grid", "timeline"):
+        view = "grid"
     # include_filter_options=true lets the API return both the page and the
     # cross-filter counts in a single round trip — half the latency of two
     # sequential httpx calls.
@@ -49,6 +132,16 @@ def tablet_list(
         params["has_ocr"] = "true"
 
     artifact_page = api.list_artifacts(params)
+
+    # Corpus-Atlas aggregates (#320): per-period counts (timeline) + ranked
+    # find-spots (geography lens), both over the SAME active filter as the grid.
+    # Fetched on every load so the view-switcher flips instantly client-side and
+    # the no-JS fallback server-renders whichever view the URL asked for.
+    atlas_params = _atlas_filter_params(
+        search, pipeline, period, provenience, genre, language, has_ocr
+    )
+    timeline_rows = _timeline_axis(api.get_artifacts_timeline(atlas_params))
+    site_rows = api.get_artifacts_by_site({**atlas_params, "limit": 12})
 
     lv = build_filtered_list(
         scope="tablets",
@@ -86,6 +179,9 @@ def tablet_list(
             "filter_options": lv.filter_options,
             "active_filters": active_filters_as_dicts(lv),
             "api_url": request.app.state.api.base_url,
+            "view": view,
+            "timeline_rows": timeline_rows,
+            "site_rows": site_rows,
         },
     )
 
