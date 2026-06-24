@@ -26,6 +26,21 @@ def _filter_cache_key(active_filters: dict[str, list[str]]) -> tuple:
     return tuple(sorted((k, tuple(sorted(v))) for k, v in active_filters.items()))
 
 
+# ── Unfiltered artifact-count cache ─────────────────────────────────────────
+# The /tablets browse page with no filters is the hot path, and its total is the
+# whole-table row count (~353K). Running COUNT(*) OVER() inline forced Postgres
+# to scan every matching row before the LIMIT 24 — the structural cost #438
+# targets. Instead we read the planner's row estimate (pg_class.reltuples),
+# which is O(1) and refreshed by autovacuum/ANALYZE, and cache it briefly. The
+# count is an *estimate* for the unfiltered view only; every filtered query
+# still gets an exact COUNT (see ArtifactRepository.search). The estimate is
+# within a fraction of a percent of the true count for a near-static catalog and
+# only feeds the page total / pager, never data correctness.
+# Override the TTL with ARTIFACT_COUNT_CACHE_TTL (seconds, 0 disables caching).
+_ARTIFACT_COUNT_CACHE: dict = {}
+_ARTIFACT_COUNT_CACHE_TTL = float(os.environ.get("ARTIFACT_COUNT_CACHE_TTL", "300"))
+
+
 class ArtifactRepository(BaseRepository):
     # ── Filter options with grouped counts ──────────────────
 
@@ -491,6 +506,35 @@ class ArtifactRepository(BaseRepository):
         )
         return rows
 
+    def _estimated_artifact_count(self) -> int:
+        """Fast, cached estimate of the total artifact count (unfiltered).
+
+        Reads ``pg_class.reltuples`` — the planner's row-count estimate kept
+        current by autovacuum/ANALYZE — instead of scanning the table. Used only
+        for the unfiltered /tablets total; filtered queries get an exact COUNT.
+        Falls back to an exact COUNT(*) once if the estimate is unavailable
+        (e.g. the table was never analyzed), then caches whatever it found.
+        """
+        now = time.monotonic()
+        cached = _ARTIFACT_COUNT_CACHE.get("artifacts")
+        if (
+            _ARTIFACT_COUNT_CACHE_TTL > 0
+            and cached is not None
+            and (now - cached[1]) < _ARTIFACT_COUNT_CACHE_TTL
+        ):
+            return cached[0]
+
+        est = self.fetch_scalar(
+            "SELECT reltuples::bigint FROM pg_class WHERE relname = 'artifacts'"
+        )
+        count = int(est) if est is not None and est >= 0 else 0
+        if count <= 0:
+            # Never analyzed (or empty stats): pay for one exact count, then cache.
+            count = int(self.fetch_scalar("SELECT COUNT(*) FROM artifacts") or 0)
+
+        _ARTIFACT_COUNT_CACHE["artifacts"] = (count, now)
+        return count
+
     def search(
         self,
         search: str | None = None,
@@ -562,13 +606,40 @@ class ArtifactRepository(BaseRepository):
         params["per_page"] = per_page
         params["offset"] = offset
 
+        # ── Total count, computed separately from the page (#438) ───────────
+        # The page query no longer carries COUNT(*) OVER(). That window function
+        # forced Postgres to materialize every matching row before applying the
+        # LIMIT — a full 353K-row scan on the unfiltered /tablets view just to
+        # learn a number that barely changes. We split it out:
+        #
+        #   • No filters  → estimate from planner stats (O(1), cached). This is
+        #     the hot path and the total is the whole-table count.
+        #   • Filters set → exact COUNT(*) over the same WHERE, but WITHOUT the
+        #     LATERAL image join (the expensive part) and without selecting the
+        #     row payload — Postgres can satisfy it from the index/heap far
+        #     cheaper than the windowed full materialization did.
+        if not conditions:
+            total = self._estimated_artifact_count()
+        else:
+            count_params = {
+                k: v for k, v in params.items() if k not in ("per_page", "offset")
+            }
+            total = (
+                self.fetch_scalar(
+                    f"""
+                SELECT COUNT(*)
+                FROM artifacts a
+                LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+                {where}
+            """,
+                    count_params,
+                )
+                or 0
+            )
+
         # LATERAL pick of the primary cached image so cards can show a real
         # thumbnail when artifact_images has one. ORDER prefers display_order
         # 0 (the canonical primary), then photo over lineart, then row id.
-        #
-        # COUNT(*) OVER() returns the total matching rows pre-LIMIT, so we get
-        # the total alongside the page in a single round trip instead of running
-        # a second COUNT query.
         items = self.fetch_all(
             f"""
             SELECT a.p_number, a.designation,
@@ -580,8 +651,7 @@ class ArtifactRepository(BaseRepository):
                    ps.reading_complete, ps.linguistic_complete,
                    ps.semantic_complete, ps.has_image,
                    primary_img.r2_thumbnail_key AS primary_thumbnail_key,
-                   primary_img.credit_line     AS primary_credit_line,
-                   COUNT(*) OVER() AS _total_count
+                   primary_img.credit_line     AS primary_credit_line
             FROM artifacts a
             LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
             LEFT JOIN LATERAL (
@@ -600,29 +670,6 @@ class ArtifactRepository(BaseRepository):
             params,
         )
 
-        if items:
-            total = items[0].get("_total_count") or 0
-            for row in items:
-                row.pop("_total_count", None)
-        else:
-            # Empty result set: could be a real no-match OR an out-of-range
-            # page request. Run a dedicated count to distinguish so pagination
-            # still shows the right total when the user overshoots.
-            count_params = {
-                k: v for k, v in params.items() if k not in ("per_page", "offset")
-            }
-            total = (
-                self.fetch_scalar(
-                    f"""
-                SELECT COUNT(*)
-                FROM artifacts a
-                LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
-                {where}
-            """,
-                    count_params,
-                )
-                or 0
-            )
         return {
             "items": items,
             "total": total,

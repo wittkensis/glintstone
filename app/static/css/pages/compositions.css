@@ -489,6 +489,11 @@
     margin: 0;
 }
 
+.composition-detail__exemplars-count {
+    color: var(--color-text-muted);
+    font-weight: 400;
+}
+
 .exemplar-filters {
     display: flex;
     align-items: center;

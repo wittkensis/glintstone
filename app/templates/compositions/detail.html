@@ -287,7 +287,9 @@
     {# ── Exemplar List ──────────────────────────────────────────────────────── #}
     <section class="composition-detail__exemplars" aria-labelledby="exemplars-heading">
         <div class="composition-detail__exemplars-header">
-            <h2 id="exemplars-heading">Exemplars</h2>
+            <h2 id="exemplars-heading">Exemplars
+                {% if exemplars_total %}<span class="composition-detail__exemplars-count">({{ "{:,}".format(exemplars_total) }})</span>{% endif %}
+            </h2>
             {% if proveniences %}
             <form class="exemplar-filters" method="GET" action="/compositions/{{ composite.q_number }}">
                 {# Period filter is now driven by the SVG timeline; expose provenience filter here #}
@@ -362,6 +364,25 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        {# Server-side pager. The table renders one page of exemplars; the SVG
+           timeline above still plots every witness. Links preserve any active
+           period / provenience filter. Hidden when everything fits on one page. #}
+        {% if exemplar_pages > 1 %}
+        {% set _qp = [] %}
+        {% if filter_period %}{% set _ = _qp.append('filter_period=' ~ (filter_period | urlencode)) %}{% endif %}
+        {% if filter_provenience %}{% set _ = _qp.append('filter_provenience=' ~ (filter_provenience | urlencode)) %}{% endif %}
+        {% set _base = '/compositions/' ~ composite.q_number ~ '?' ~ (_qp | join('&')) ~ ('&' if _qp else '') %}
+        <nav class="pagination" aria-label="Exemplars pagination">
+            {% if ex_page > 1 %}
+            <a class="btn" href="{{ _base }}ex_page={{ ex_page - 1 }}#exemplars-heading" rel="prev">Previous</a>
+            {% endif %}
+            <span class="page-info">Page {{ ex_page }} of {{ "{:,}".format(exemplar_pages) }}</span>
+            {% if ex_page < exemplar_pages %}
+            <a class="btn" href="{{ _base }}ex_page={{ ex_page + 1 }}#exemplars-heading" rel="next">Next</a>
+            {% endif %}
+        </nav>
+        {% endif %}
         {% else %}
         {# #189 explicit empty. Two cases: an active filter matched nothing, or the
            composition genuinely has no linked exemplars. The id is preserved so the
@@ -430,42 +451,39 @@
     // Initialise the SVG timeline
     var timeline = new TransmissionTimeline(container);
 
-    // Listen for period-selected events from the timeline
+    var qNumber = {{ composite.q_number | tojson }};
+    var currentProv = {{ filter_provenience | tojson }};
+
+    // Build the detail URL for a given period filter, preserving any active
+    // provenience filter and resetting to page 1 (the filtered set is a
+    // different, smaller list, so the old page index no longer applies).
+    function detailUrl(period) {
+        var params = [];
+        if (period) params.push('filter_period=' + encodeURIComponent(period));
+        if (currentProv) params.push('filter_provenience=' + encodeURIComponent(currentProv));
+        var qs = params.length ? '?' + params.join('&') : '';
+        return '/compositions/' + qNumber + qs + '#exemplars-heading';
+    }
+
+    // Listen for period-selected events from the timeline. Because the exemplars
+    // table is now server-side paginated, a period filter must round-trip to the
+    // server so the *whole* filtered set is paged correctly (a client-only hide
+    // would only filter the current page). The badge updates instantly for
+    // perceived responsiveness, then we navigate.
     container.addEventListener('period-selected', function (evt) {
-        var period = evt.detail.period;
-        filterExemplarsByPeriod(period);
-    });
-
-    // ── Client-side exemplar list period filter ─────────────────────────────
-    var tbody = document.getElementById('exemplars-tbody');
-    var badge = document.getElementById('period-filter-badge');
-    var badgeLabel = document.getElementById('period-filter-label');
-    var clearBtn = document.getElementById('period-filter-clear');
-    var emptyMsg = document.getElementById('exemplars-empty');
-
-    // Store all rows for reset
-    var allRows = tbody ? Array.from(tbody.querySelectorAll('tr')) : [];
-
-    function filterExemplarsByPeriod(period) {
-        if (!tbody) return;
-        var shown = 0;
-
-        allRows.forEach(function (row) {
-            var rowPeriod = row.dataset.period || '';
-            var match = !period || rowPeriod === period;
-            row.hidden = !match;
-            if (match) shown++;
-        });
-
+        var period = evt.detail.period || '';
         if (badge) {
             badge.hidden = !period;
             if (badgeLabel) badgeLabel.textContent = period;
         }
+        window.location.href = detailUrl(period);
+    });
 
-        if (emptyMsg) emptyMsg.hidden = shown > 0;
-    }
+    var badge = document.getElementById('period-filter-badge');
+    var badgeLabel = document.getElementById('period-filter-label');
+    var clearBtn = document.getElementById('period-filter-clear');
 
-    // If a server-side period filter is active on load, apply it to the badge
+    // If a server-side period filter is active on load, reflect it in the badge
     var serverPeriod = {{ filter_period | tojson }};
     if (serverPeriod && badge) {
         badge.hidden = false;
@@ -474,11 +492,9 @@
 
     if (clearBtn) {
         clearBtn.addEventListener('click', function () {
-            filterExemplarsByPeriod('');
-            // Also reset SVG timeline selection
-            if (timeline && typeof timeline.clearSelection === 'function') {
-                timeline.clearSelection();
-            }
+            // Clearing the period filter navigates back to the unfiltered,
+            // first-page view (preserving any provenience filter).
+            window.location.href = detailUrl('');
         });
     }
 }());

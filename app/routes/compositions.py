@@ -94,12 +94,22 @@ def compositions_list(
     )
 
 
+# Exemplars rendered per page in the detail table. A heavy composition
+# (Q005026 = 3,635 witnesses) used to render every row inline, producing a
+# ~6.4 MB HTML document. The table is now server-side paginated to this many
+# rows; the SVG timeline + find-spots map still receive the full set (they are
+# per-witness visualizations and need every dot), but those carry only a few
+# fields per row, not full table markup.
+EXEMPLARS_PER_PAGE = 50
+
+
 @router.get("/{q_number}")
 def composition_detail(
     request: Request,
     q_number: str,
     filter_period: str = "",
     filter_provenience: str = "",
+    ex_page: int = 1,
 ):
     api = request.app.state.api
     composite = api.get_composite(q_number)
@@ -164,6 +174,21 @@ def composition_detail(
         return "untranslated"
 
     filtered = [{**e, "coverage": _coverage(e)} for e in filtered]
+
+    # Server-side pagination of the exemplars *table* (the heavy part of the
+    # page). The timeline + map below still see all_exemplars; only the rendered
+    # table is sliced. filtered_total is the count after the period/provenience
+    # filters but before paging, so the pager and the "N exemplars" label match
+    # the filtered view the scholar is looking at.
+    import math as _math
+
+    filtered_total = len(filtered)
+    exemplar_pages = max(1, _math.ceil(filtered_total / EXEMPLARS_PER_PAGE))
+    # Clamp the requested page into range so a hand-typed ?ex_page never 500s or
+    # renders an empty table for an in-range result set.
+    ex_page = max(1, min(ex_page, exemplar_pages))
+    _start = (ex_page - 1) * EXEMPLARS_PER_PAGE
+    exemplars_page = filtered[_start : _start + EXEMPLARS_PER_PAGE]
 
     # #404 Concept A — witness-switcher + extent column.
     # `extent_max` = the most readable ATF lines any single witness holds; the
@@ -286,7 +311,11 @@ def composition_detail(
         "compositions/detail.html",
         {
             "composite": composite_meta,
-            "exemplars": filtered,
+            "exemplars": exemplars_page,
+            "exemplars_total": filtered_total,
+            "ex_page": ex_page,
+            "exemplar_pages": exemplar_pages,
+            "exemplars_per_page": EXEMPLARS_PER_PAGE,
             "atf_preview": atf_preview,
             "related": related,
             "current_user": current_user,

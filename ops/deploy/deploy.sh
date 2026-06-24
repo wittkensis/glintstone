@@ -94,8 +94,60 @@ if [ -n "${SSH_KEY_PATH:-}" ]; then
     SSH_OPTS+=(-i "$SSH_KEY_PATH")
 fi
 
-ssh_run() { ssh "${SSH_OPTS[@]}" "$REMOTE" "$@"; }
-rsync_to() { rsync -avz --delete -e "ssh ${SSH_OPTS[*]}" "$@"; }
+# --- Connection-level retry wrapper (#437) -----------------------------------
+# The GitHub-runner → VPS SSH connect has intermittently timed out at the TCP
+# layer (~6 deploys needed a manual re-run). The keyscan step already retries;
+# this wraps the deploy SSH/rsync legs themselves.
+#
+# CRITICAL safety property: we retry ONLY on a connection-level failure, never
+# on a remote command's own non-zero exit. ssh returns 255 when *it* fails to
+# connect/authenticate; rsync returns 255 when its transport (ssh) fails, or
+# 30/35 on transport timeouts. Any other non-zero is the remote command (or a
+# real rsync data error) reporting failure — that is a genuine result and must
+# propagate unretried, so we never re-run a command that already executed (which
+# could double-apply a non-idempotent step). stdout/stderr and the final exit
+# code are passed through unchanged, so command-substitution callers still work.
+#
+# Tunables (env-overridable so CI or an operator can dial them):
+#   SSH_RETRY_ATTEMPTS   total attempts including the first (default 4)
+#   SSH_RETRY_BASE_DELAY first backoff in seconds, doubled each retry (default 5)
+SSH_RETRY_ATTEMPTS="${SSH_RETRY_ATTEMPTS:-4}"
+SSH_RETRY_BASE_DELAY="${SSH_RETRY_BASE_DELAY:-5}"
+
+# Exit codes that mean "the connection/transport failed before/around the
+# command" and are therefore safe to retry.
+_ssh_retryable_code() {
+    case "$1" in
+        255) return 0 ;;  # ssh: connection/auth failure
+        30|35) return 0 ;;  # rsync: timeout in data send/receive or I/O timeout
+        *) return 1 ;;
+    esac
+}
+
+# Run "$@" with connection-level retries. Used by ssh_run / rsync_to.
+with_ssh_retry() {
+    local attempt=1 delay="$SSH_RETRY_BASE_DELAY" code
+    while :; do
+        "$@" && return 0
+        code=$?
+        if _ssh_retryable_code "$code" && [ "$attempt" -lt "$SSH_RETRY_ATTEMPTS" ]; then
+            echo "  ⚠ connection failed (exit $code), attempt $attempt/$SSH_RETRY_ATTEMPTS — retrying in ${delay}s..." >&2
+            sleep "$delay"
+            attempt=$((attempt + 1))
+            delay=$((delay * 2))
+            continue
+        fi
+        # Either a non-retryable (real command) failure, or attempts exhausted:
+        # surface the true exit code without further retries.
+        return "$code"
+    done
+}
+
+_ssh_run_once() { ssh "${SSH_OPTS[@]}" "$REMOTE" "$@"; }
+_rsync_to_once() { rsync -avz --delete -e "ssh ${SSH_OPTS[*]}" "$@"; }
+
+ssh_run() { with_ssh_retry _ssh_run_once "$@"; }
+rsync_to() { with_ssh_retry _rsync_to_once "$@"; }
 
 # --- Parse deploy targets (and the optional --force-no-snapshot flag) ---
 TARGETS=("$@")
