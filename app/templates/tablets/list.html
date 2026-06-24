@@ -19,18 +19,10 @@
     ) }}
 
     <div class="main-content">
-        <div class="page-header">
-            <div class="page-header-main">
-                <div class="page-header-title">
-                    <h1>Tablets</h1>
-                    <p class="subtitle">
-                        Showing {{ '{:,}'.format(total) }} tablets
-                    </p>
-                </div>
-            </div>
-        </div>
 
-        {# Build filter query string for stage filter + pagination links #}
+        {# ── Shared filter query string (sans view/page) reused by switcher,
+             brush links, stage filter and pagination. Keeps every brush target
+             a real <a href> that server-renders the same slice (no-JS rule). #}
         {% set fq = namespace(s='') %}
         {% if search %}{% set fq.s = fq.s ~ 'search=' ~ (search|urlencode) ~ '&' %}{% endif %}
         {% for p in period %}{% set fq.s = fq.s ~ 'period=' ~ (p|urlencode) ~ '&' %}{% endfor %}
@@ -38,14 +30,121 @@
         {% for g in genre %}{% set fq.s = fq.s ~ 'genre=' ~ (g|urlencode) ~ '&' %}{% endfor %}
         {% for l in language %}{% set fq.s = fq.s ~ 'language=' ~ (l|urlencode) ~ '&' %}{% endfor %}
         {% if has_ocr %}{% set fq.s = fq.s ~ 'has_ocr=1&' %}{% endif %}
+        {% if pipeline %}{% set fq.s = fq.s ~ 'pipeline=' ~ (pipeline|urlencode) ~ '&' %}{% endif %}
 
+        {# ── Corpus toolbar: title + view switcher (Grid / Timeline) ───────── #}
+        <div class="corpus-toolbar">
+            <div class="page-header-title">
+                <h1>Tablets</h1>
+                <p class="subtitle">Showing {{ '{:,}'.format(total) }} tablets</p>
+            </div>
+            <nav class="view-switch" role="group" aria-label="Corpus view" data-atlas-switch>
+                <a href="/tablets?{{ fq.s }}view=grid"
+                   data-view="grid"
+                   aria-pressed="{{ 'true' if view == 'grid' else 'false' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Grid</a>
+                <a href="/tablets?{{ fq.s }}view=timeline"
+                   data-view="timeline"
+                   aria-pressed="{{ 'true' if view == 'timeline' else 'false' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="19" y2="18"/></svg>Timeline</a>
+            </nav>
+        </div>
+
+        {# ── Linked-filter banner: shows the active brush + a clear affordance #}
+        {% if period or provenience %}
+        <div class="linked-banner" data-atlas-banner>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            Brushing
+            {% for p in period %}<strong>{{ p }}</strong>{% if not loop.last or provenience %} · {% endif %}{% endfor %}
+            {% for s in provenience %}<strong>{{ s }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}
+            — <strong>{{ '{:,}'.format(total) }}</strong> matching tablets.
+            <a class="clear" href="/tablets?view={{ view }}{% if pipeline %}&pipeline={{ pipeline|urlencode }}{% endif %}">Clear selection ×</a>
+        </div>
+        {% endif %}
+
+        {# ── TIMELINE view: small-multiple coverage rows, brushable ────────── #}
+        {% if view == 'timeline' %}
+        <div class="tl-panel" data-atlas-timeline>
+            <div class="tl-panel__head">
+                <h2>Corpus across time</h2>
+                <span class="hint">Click a period to filter · bar length = tablet count (log)</span>
+            </div>
+            {% for row in timeline_rows %}
+                {% set is_sel = row.canonical in period %}
+                {% set tq = namespace(s='') %}
+                {% if search %}{% set tq.s = tq.s ~ 'search=' ~ (search|urlencode) ~ '&' %}{% endif %}
+                {% for p in period if p != row.canonical %}{% set tq.s = tq.s ~ 'period=' ~ (p|urlencode) ~ '&' %}{% endfor %}
+                {% if not is_sel %}{% set tq.s = tq.s ~ 'period=' ~ (row.canonical|urlencode) ~ '&' %}{% endif %}
+                {% for p in provenience %}{% set tq.s = tq.s ~ 'provenience=' ~ (p|urlencode) ~ '&' %}{% endfor %}
+                {% for g in genre %}{% set tq.s = tq.s ~ 'genre=' ~ (g|urlencode) ~ '&' %}{% endfor %}
+                {% for l in language %}{% set tq.s = tq.s ~ 'language=' ~ (l|urlencode) ~ '&' %}{% endfor %}
+                {% if has_ocr %}{% set tq.s = tq.s ~ 'has_ocr=1&' %}{% endif %}
+                {% if pipeline %}{% set tq.s = tq.s ~ 'pipeline=' ~ (pipeline|urlencode) ~ '&' %}{% endif %}
+                <a class="tl-row{{ ' is-selected' if is_sel }}"
+                   href="/tablets?{{ tq.s }}view=timeline"
+                   data-period="{{ row.canonical }}"
+                   aria-pressed="{{ 'true' if is_sel else 'false' }}">
+                    <div class="tl-row__label">{{ row.canonical }}
+                        {% if row.date_start_bce %}<span class="yr">{{ row.date_start_bce|abs }}{% if row.date_end_bce %}–{{ row.date_end_bce|abs }}{% endif %} BCE</span>{% endif %}
+                    </div>
+                    <div class="tl-row__track">
+                        <div class="tl-row__bar{{ '' if (is_sel or not (period or provenience)) else ' is-dim' }}"
+                             style="left:{{ row.bar_left }}%; width:{{ row.bar_width }}%;"></div>
+                    </div>
+                    <div class="tl-row__count">{{ '{:,}'.format(row.count) }}</div>
+                </a>
+            {% else %}
+                <p class="subtitle">No period data for this slice.</p>
+            {% endfor %}
+            <div class="tl-axis">
+                <div class="tl-axis__ticks">
+                    <span>3000</span><span>2500</span><span>2000</span><span>1500</span><span>1000</span><span>500</span><span>BCE</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# ── Find-spots by yield: coordinate-free ranked bar-list (Wave 1) ─── #}
+        {% if site_rows %}
+        <div class="atlas-sites" data-atlas-sites>
+            <h2>Find-spots by yield</h2>
+            {% set top_ct = site_rows[0].count or 1 %}
+            <ul class="site-rank">
+                {% for s in site_rows %}
+                {% set is_sel = s.ancient_name in provenience %}
+                {% set sq = namespace(s='') %}
+                {% if search %}{% set sq.s = sq.s ~ 'search=' ~ (search|urlencode) ~ '&' %}{% endif %}
+                {% for p in period %}{% set sq.s = sq.s ~ 'period=' ~ (p|urlencode) ~ '&' %}{% endfor %}
+                {% for p in provenience if p != s.ancient_name %}{% set sq.s = sq.s ~ 'provenience=' ~ (p|urlencode) ~ '&' %}{% endfor %}
+                {% if not is_sel %}{% set sq.s = sq.s ~ 'provenience=' ~ (s.ancient_name|urlencode) ~ '&' %}{% endif %}
+                {% for g in genre %}{% set sq.s = sq.s ~ 'genre=' ~ (g|urlencode) ~ '&' %}{% endfor %}
+                {% for l in language %}{% set sq.s = sq.s ~ 'language=' ~ (l|urlencode) ~ '&' %}{% endfor %}
+                {% if has_ocr %}{% set sq.s = sq.s ~ 'has_ocr=1&' %}{% endif %}
+                {% if pipeline %}{% set sq.s = sq.s ~ 'pipeline=' ~ (pipeline|urlencode) ~ '&' %}{% endif %}
+                <li class="{{ 'is-active' if is_sel }}">
+                    <a href="/tablets?{{ sq.s }}view={{ view }}"
+                       data-site="{{ s.ancient_name }}"
+                       aria-pressed="{{ 'true' if is_sel else 'false' }}">
+                        <span class="name">{{ s.ancient_name }} <small>{{ s.region }}</small></span>
+                        <span class="ct">{{ '{:,}'.format(s.count) }}</span>
+                        <span class="barline" style="width:{{ (100 * s.count / top_ct)|round(0, 'floor')|int }}%;"></span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            <p class="map-cov">⚠ Coverage: tablets with "uncertain" provenience are omitted. Geographic map view arrives once site coordinates are geocoded (Wave 2).</p>
+        </div>
+        {% endif %}
+
+        {# ── Stage filter (pipeline) ──────────────────────────────────────── #}
+        {% set sfq = fq.s ~ ('view=' ~ view ~ '&') %}
         {% set stages = [
             {'label': 'All', 'value': ''},
             {'label': 'Needs transliteration', 'value': 'needs_reading'},
             {'label': 'Needs lemmatization', 'value': 'needs_linguistic'},
             {'label': 'Complete', 'value': 'complete'},
         ] %}
-        {{ stage_filter(stages, pipeline or '', '/tablets', extra_params=fq.s, has_ocr=has_ocr or '') }}
+        {{ stage_filter(stages, pipeline or '', '/tablets', extra_params=sfq, has_ocr=has_ocr or '') }}
 
         {# Active filter pills #}
         {% if active_filters %}
@@ -58,26 +157,27 @@
                 </a>
                 {% endfor %}
             </div>
-            <a href="/tablets{% if pipeline %}?pipeline={{ pipeline }}{% endif %}" class="active-filters__clear">Clear all</a>
+            <a href="/tablets?view={{ view }}{% if pipeline %}&pipeline={{ pipeline }}{% endif %}" class="active-filters__clear">Clear all</a>
         </div>
         {% endif %}
 
-        <div class="tablet-grid">
+        {# ── Shared result grid: the SAME list, filtered by the brush ──────── #}
+        <div class="tablet-grid" data-atlas-grid>
             {% for tablet in tablets %}
                 {{ tablet_card(tablet, api_url=api_url) }}
             {% else %}
             <div class="empty-state">
                 <div class="empty-icon">&#x12000;</div>
-                <h3>No tablets found</h3>
-                <p>Try adjusting your search or filters.</p>
+                <h3>No tablets in this slice</h3>
+                <p>Try clearing the brush or adjusting your filters.</p>
             </div>
             {% endfor %}
         </div>
 
-        {% set base = '/tablets?' ~ fq.s %}
-        {% if pipeline %}{% set base = base ~ 'pipeline=' ~ pipeline ~ '&' %}{% endif %}
+        {% set base = '/tablets?' ~ fq.s ~ 'view=' ~ view ~ '&' %}
         {{ pagination(page, total_pages, base) }}
     </div>
 </div>
 </main>
+<script src="/static/js/corpus-atlas.js" defer></script>
 {% endblock %}

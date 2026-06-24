@@ -76,6 +76,12 @@ class _FakeAPI:
     def get_artifact(self, p_number, token=None):
         return self.envelope if isinstance(self.envelope, dict) else {}
 
+    def get_artifacts_timeline(self, params):
+        return []
+
+    def get_artifacts_by_site(self, params):
+        return []
+
     def get_artifact_debug(self, p_number):
         return {}
 

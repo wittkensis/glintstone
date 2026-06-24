@@ -124,6 +124,27 @@ class GlintstoneAPI:
         except Exception:
             return {}
 
+    def get_artifacts_timeline(self, params: dict) -> list:
+        """Per-period counts over the current filter (Corpus-Atlas timeline).
+
+        Degrades to an empty list on any failure so the timeline view falls
+        back to its plain period-count rendering rather than 500-ing the page.
+        """
+        try:
+            result = self._t.get("/artifacts/timeline", params=params)
+            return result.get("items", []) if isinstance(result, dict) else []
+        except Exception:
+            return []
+
+    def get_artifacts_by_site(self, params: dict) -> list:
+        """Ranked find-spots by tablet count over the current filter
+        (Corpus-Atlas geography lens). Empty list on failure."""
+        try:
+            result = self._t.get("/artifacts/by-site", params=params)
+            return result.get("items", []) if isinstance(result, dict) else []
+        except Exception:
+            return []
+
     def get_artifact_debug(self, p_number: str) -> dict:
         try:
             return self._t.get(f"/artifacts/{p_number}/debug")  # type: ignore[return-value]

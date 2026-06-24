@@ -78,6 +78,67 @@ def search_artifacts(
     return result
 
 
+@router.get("/timeline")
+def artifacts_timeline(
+    search: str | None = None,
+    pipeline: str | None = None,
+    period: list[str] = Query(default=[]),
+    provenience: list[str] = Query(default=[]),
+    genre: list[str] = Query(default=[]),
+    language: list[str] = Query(default=[]),
+    has_ocr: bool = False,
+    conn=Depends(get_db),
+):
+    """Per-period tablet counts over the current filter, for the Corpus-Atlas
+    timeline view (#320). Returns {"items": [{canonical, date_start_bce,
+    date_end_bce, group_name, count}, ...]} ordered chronologically.
+
+    Accepts the same filter params as GET /artifacts so a brushed slice on the
+    timeline reflects exactly the grid's active filters.
+    """
+    repo = ArtifactRepository(conn)
+    items = repo.timeline_counts(
+        search=search,
+        pipeline=pipeline,
+        period=period or None,
+        provenience=provenience or None,
+        genre=genre or None,
+        language=language or None,
+        has_ocr=has_ocr,
+    )
+    return {"items": items}
+
+
+@router.get("/by-site")
+def artifacts_by_site(
+    search: str | None = None,
+    pipeline: str | None = None,
+    period: list[str] = Query(default=[]),
+    provenience: list[str] = Query(default=[]),
+    genre: list[str] = Query(default=[]),
+    language: list[str] = Query(default=[]),
+    has_ocr: bool = False,
+    limit: int = 25,
+    conn=Depends(get_db),
+):
+    """Ranked find-spots by tablet count over the current filter — the
+    coordinate-free geography lens for the Corpus-Atlas (#320). Returns
+    {"items": [{ancient_name, region, count}, ...]}, 'uncertain' excluded.
+    """
+    repo = ArtifactRepository(conn)
+    items = repo.site_counts(
+        search=search,
+        pipeline=pipeline,
+        period=period or None,
+        provenience=provenience or None,
+        genre=genre or None,
+        language=language or None,
+        has_ocr=has_ocr,
+        limit=min(max(limit, 1), 100),
+    )
+    return {"items": items}
+
+
 @router.get("/{p_number}")
 def get_artifact(p_number: str, conn=Depends(get_db)):
     repo = ArtifactRepository(conn)

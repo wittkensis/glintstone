@@ -78,6 +78,54 @@ def test_get_artifact_returns_empty_on_failure():
     assert api.get_artifact("P000001") == {}
 
 
+# ── Corpus Atlas aggregates (#320) ───────────────────────────────────────────
+
+
+def test_timeline_empty_on_missing_fixture():
+    api = make_api({})
+    assert api.get_artifacts_timeline({}) == []
+
+
+def test_timeline_returns_items():
+    api = make_api(
+        {
+            "/artifacts/timeline": {
+                "items": [
+                    {"canonical": "Ur III", "count": 111285, "date_start_bce": 2112}
+                ]
+            }
+        }
+    )
+    rows = api.get_artifacts_timeline({})
+    assert len(rows) == 1
+    assert rows[0]["canonical"] == "Ur III"
+    assert rows[0]["count"] == 111285
+
+
+def test_by_site_empty_on_missing_fixture():
+    api = make_api({})
+    assert api.get_artifacts_by_site({}) == []
+
+
+def test_by_site_returns_items():
+    api = make_api(
+        {
+            "/artifacts/by-site": {
+                "items": [
+                    {
+                        "ancient_name": "Girsu",
+                        "region": "South Mesopotamia",
+                        "count": 38153,
+                    }
+                ]
+            }
+        }
+    )
+    rows = api.get_artifacts_by_site({})
+    assert rows[0]["ancient_name"] == "Girsu"
+    assert rows[0]["count"] == 38153
+
+
 def test_get_artifact_returns_fixture():
     api = make_api({"/artifacts/P000001": {"p_number": "P000001", "title": "Test"}})
     result = api.get_artifact("P000001")

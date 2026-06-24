@@ -299,6 +299,198 @@ class ArtifactRepository(BaseRepository):
 
     # ── Search with multi-select ────────────────────────────
 
+    def _build_search_where(
+        self,
+        search: str | None = None,
+        pipeline: str | None = None,
+        period: list[str] | None = None,
+        provenience: list[str] | None = None,
+        genre: list[str] | None = None,
+        language: list[str] | None = None,
+        has_ocr: bool = False,
+    ) -> tuple[list[str], dict]:
+        """Build the WHERE conditions + params shared by search() and the
+        Corpus-Atlas aggregate queries (timeline / by-site).
+
+        Returns (conditions, params). The conditions assume the FROM clause
+        aliases ``artifacts`` as ``a`` and LEFT JOINs ``pipeline_status`` as
+        ``ps`` — both aggregate callers replicate that join shape so the
+        pipeline/has_ocr predicates resolve. Keeping one builder means a brush
+        over the timeline filters by *exactly* the same predicates as the grid.
+        """
+        conditions: list[str] = []
+        params: dict = {}
+
+        if search:
+            terms = [t.strip() for t in search.split("||") if t.strip()]
+            if terms:
+                search_conds = []
+                for i, term in enumerate(terms):
+                    key = f"search{i}"
+                    search_conds.append(
+                        f"(a.p_number ILIKE %({key})s OR a.designation ILIKE %({key})s)"
+                    )
+                    params[key] = f"%{term}%"
+                conditions.append(f"({' OR '.join(search_conds)})")
+
+        if pipeline == "needs_reading":
+            conditions.append(
+                "(ps.reading_complete IS NULL OR ps.reading_complete < 0.5)"
+            )
+        elif pipeline == "needs_linguistic":
+            conditions.append(
+                "(ps.reading_complete > 0 AND (ps.linguistic_complete IS NULL OR ps.linguistic_complete < 0.5))"
+            )
+        elif pipeline == "complete":
+            conditions.append("(ps.semantic_complete >= 1.0)")
+
+        if period:
+            clause, p = self.build_in_clause(period, prefix="period")
+            conditions.append(f"a.period_normalized {clause}")
+            params.update(p)
+        if provenience:
+            clause, p = self.build_in_clause(provenience, prefix="prov")
+            conditions.append(f"a.provenience_normalized {clause}")
+            params.update(p)
+        if genre:
+            clause, p = self.build_in_clause(genre, prefix="genre")
+            conditions.append(f"""EXISTS (
+                SELECT 1 FROM artifact_genres ag
+                JOIN canonical_genres cg ON ag.genre_id = cg.id
+                WHERE ag.p_number = a.p_number AND cg.name {clause}
+            )""")
+            params.update(p)
+        if language:
+            clause, p = self.build_in_clause(language, prefix="lang")
+            conditions.append(f"""EXISTS (
+                SELECT 1 FROM artifact_languages al
+                JOIN canonical_languages cl ON al.language_id = cl.id
+                WHERE al.p_number = a.p_number AND cl.name {clause}
+            )""")
+            params.update(p)
+        if has_ocr:
+            conditions.append("ps.graphemic_complete > 0")
+
+        return conditions, params
+
+    def timeline_counts(
+        self,
+        search: str | None = None,
+        pipeline: str | None = None,
+        period: list[str] | None = None,
+        provenience: list[str] | None = None,
+        genre: list[str] | None = None,
+        language: list[str] | None = None,
+        has_ocr: bool = False,
+    ) -> list[dict]:
+        """Per-period tablet counts, cross-filtered by every *other* dimension
+        but NOT by the period brush itself, joined to period_canon for BCE date
+        ranges + chronological ordering.
+
+        Powers the Corpus-Atlas timeline (Wave 1, #320). Excluding period from
+        its own WHERE (the same self-exclusion the sidebar checkbox counts use)
+        is what makes the chart a usable filter control: brushing Ur III must
+        leave Old Babylonian visible so a scholar can add it (OR-within-period
+        = union), per the spec. The grid still filters by period; only this
+        chart shows all periods, with the brushed ones highlighted client-side.
+
+        Deliberately does NOT read pipeline_completeness (the #257 landmine) —
+        it only reads pipeline_status, the same table search() uses.
+        """
+        # Exclude the period filter from the timeline's own counts (cross-filter
+        # self-exclusion) so every period stays selectable from the chart.
+        conditions, params = self._build_search_where(
+            search=search,
+            pipeline=pipeline,
+            period=None,
+            provenience=provenience,
+            genre=genre,
+            language=language,
+            has_ocr=has_ocr,
+        )
+        where = "WHERE " + " AND ".join(conditions) if conditions else ""
+        rows = self.fetch_all(
+            f"""
+            SELECT a.period_normalized AS canonical,
+                   pc.date_start_bce,
+                   pc.date_end_bce,
+                   pc.group_name,
+                   pc.sort_order,
+                   COUNT(*) AS count
+            FROM artifacts a
+            LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+            LEFT JOIN (
+                SELECT DISTINCT ON (canonical)
+                    canonical, date_start_bce, date_end_bce,
+                    group_name, sort_order
+                FROM period_canon
+                ORDER BY canonical, sort_order NULLS LAST
+            ) pc ON pc.canonical = a.period_normalized
+            {where}
+            {"AND" if where else "WHERE"} a.period_normalized IS NOT NULL
+            GROUP BY a.period_normalized, pc.date_start_bce, pc.date_end_bce,
+                     pc.group_name, pc.sort_order
+            ORDER BY pc.sort_order NULLS LAST, count DESC
+        """,
+            params,
+        )
+        return rows
+
+    def site_counts(
+        self,
+        search: str | None = None,
+        pipeline: str | None = None,
+        period: list[str] | None = None,
+        provenience: list[str] | None = None,
+        genre: list[str] | None = None,
+        language: list[str] | None = None,
+        has_ocr: bool = False,
+        limit: int = 25,
+    ) -> list[dict]:
+        """Ranked find-spots (provenience) by tablet count, cross-filtered by
+        every *other* dimension but NOT by the provenience brush itself — the
+        coordinate-free geography lens for Wave 1 (#320).
+
+        Self-excluding provenience (same as the timeline excludes period) keeps
+        every find-spot visible/selectable from the list after one is brushed,
+        so a scholar can union two sites. Excludes the literal 'uncertain'
+        provenience (25k rows with no place meaning) and null provenience. Joins
+        provenience_canon for the region label. Top ``limit`` only.
+        """
+        conditions, params = self._build_search_where(
+            search=search,
+            pipeline=pipeline,
+            period=period,
+            provenience=None,
+            genre=genre,
+            language=language,
+            has_ocr=has_ocr,
+        )
+        conditions.append("a.provenience_normalized IS NOT NULL")
+        conditions.append("a.provenience_normalized <> 'uncertain'")
+        where = "WHERE " + " AND ".join(conditions)
+        params["site_limit"] = limit
+        rows = self.fetch_all(
+            f"""
+            SELECT a.provenience_normalized AS ancient_name,
+                   COALESCE(pc.region, 'Unknown') AS region,
+                   COUNT(*) AS count
+            FROM artifacts a
+            LEFT JOIN pipeline_status ps ON a.p_number = ps.p_number
+            LEFT JOIN (
+                SELECT DISTINCT ON (ancient_name) ancient_name, region
+                FROM provenience_canon
+                ORDER BY ancient_name, sort_order NULLS LAST
+            ) pc ON pc.ancient_name = a.provenience_normalized
+            {where}
+            GROUP BY a.provenience_normalized, pc.region
+            ORDER BY count DESC
+            LIMIT %(site_limit)s
+        """,
+            params,
+        )
+        return rows
+
     def search(
         self,
         search: str | None = None,

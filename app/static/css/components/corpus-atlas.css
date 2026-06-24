@@ -1,0 +1,218 @@
+/* ─── Corpus Atlas (Wave 1, #320) ────────────────────────────────────────────
+   View-switcher (Grid / Timeline) + brushable timeline + find-spots-by-yield
+   over the all-artifacts page. Ported from the render-proven prototype at
+   PERSONAL/design/specs/all-artifacts/. Token-driven only — no raw hex.
+   Map view is Wave 2 (gated on #319), intentionally absent here. */
+
+/* View switcher — segmented control (reuses btn-group visual language) */
+.corpus-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+.view-switch {
+  display: inline-flex;
+  background: var(--surface-raised);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  gap: 2px;
+}
+.view-switch a {
+  cursor: pointer;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: var(--transition-fast);
+}
+.view-switch a:hover { color: var(--color-text); }
+.view-switch a[aria-pressed="true"] {
+  background: var(--color-accent-20);
+  color: var(--color-accent-hover);
+}
+.view-switch svg { width: 15px; height: 15px; }
+
+/* Linked-filter banner — explains the active brush */
+.linked-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-accent-10);
+  border: 1px solid var(--color-accent-30);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-4);
+  color: var(--color-text);
+}
+.linked-banner svg { flex-shrink: 0; color: var(--color-accent-hover); }
+.linked-banner strong { color: var(--color-accent-hover); }
+.linked-banner .clear {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* ── Timeline view: small-multiple coverage rows on a shared BCE axis ─────── */
+.tl-panel {
+  background: var(--surface-raised);
+  border: var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.tl-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+.tl-panel__head h2 {
+  font-size: var(--text-lg);
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
+.tl-panel__head .hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+.tl-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 64px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast);
+  text-decoration: none;
+  color: inherit;
+}
+.tl-row:hover { background: var(--color-overlay-light); }
+.tl-row__label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tl-row__label .yr {
+  display: block;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xxs);
+}
+.tl-row__track { position: relative; height: 18px; }
+.tl-row__bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 10px;
+  background: var(--color-accent);
+  border-radius: var(--radius-xs);
+  opacity: 0.85;
+  transition: var(--transition-fast);
+}
+.tl-row__bar.is-dim { opacity: 0.18; }
+.tl-row__count {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.tl-row.is-selected { background: var(--color-accent-15); }
+.tl-row.is-selected .tl-row__bar { opacity: 1; }
+
+.tl-axis {
+  display: grid;
+  grid-template-columns: 140px 1fr 64px;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  border-top: var(--border-subtle);
+  padding-top: var(--space-2);
+}
+.tl-axis__ticks {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xxs);
+  color: var(--color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Find-spots by yield: coordinate-free ranked bar-list (Wave-1 geography) ─ */
+.atlas-sites {
+  background: var(--surface-raised);
+  border: var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-5);
+}
+.atlas-sites h2 {
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-subtle);
+  margin: 0 0 var(--space-4);
+}
+.site-rank { list-style: none; margin: 0; padding: 0; }
+.site-rank li { margin-bottom: var(--space-1); }
+.site-rank a {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-decoration: none;
+  color: inherit;
+}
+.site-rank a:hover,
+.site-rank li.is-active a { background: var(--color-overlay-light); }
+.site-rank .name { font-size: var(--text-sm); }
+.site-rank .name small {
+  display: block;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xxs);
+}
+.site-rank .ct {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.site-rank .barline {
+  grid-column: 1 / 3;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+  opacity: 0.5;
+  margin-top: 2px;
+}
+.atlas-sites .map-cov {
+  font-size: var(--text-xxs);
+  color: var(--color-warning);
+  margin: var(--space-3) 0 0;
+  border-top: var(--border-subtle);
+  padding-top: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .tl-row,
+  .tl-axis { grid-template-columns: 110px 1fr 52px; }
+}
