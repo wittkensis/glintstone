@@ -1,12 +1,12 @@
 ---
 question: "How does Glintstone get from a git commit to a running release on the VPS?"
 created: 2026-05-11
-modified: 2026-06-21
-context: "Rewritten 2026-05-12 to reflect post-VPS-cutover reality: production Postgres lives on the VPS itself (Neon decommissioned), migrations run server-side, and the branch model is `staging` → `main` with an approval gate on production."
+modified: 2026-06-23
+context: "Rewritten 2026-05-12 to reflect post-VPS-cutover reality: production Postgres lives on the VPS itself (Neon decommissioned), migrations run server-side, and the branch model is `staging` → `main` with an approval gate on production. 2026-06-23 (#219/#272): pre-deploy pg_dump now skipped on code-only deploys and parallelised (-Fd -j4) when it runs."
 status: active
 audience: [engineers, ops, claude]
 owners: [eric]
-related_issues: ["#14", "#52", "#61"]
+related_issues: ["#14", "#52", "#61", "#219", "#272"]
 related_skills: [gs-expert-deployment]
 supersedes: null
 superseded_by: null
@@ -32,7 +32,7 @@ different `/var/www/` directory and different supervisor services.
   │   ├── .env                        (runtime secrets)
   │   └── backups/
   │       ├── glintstone-YYYYMMDD-*.dump.gz   (nightly cron @ 04:15 UTC)
-  │       └── pre-deploy-prod-*.dump.gz       (every prod deploy; last 3 kept)
+  │       └── pre-deploy-prod-*.dumpdir/      (migration deploys only; -Fd parallel; last 2 kept)
   └── releases/
       ├── prod-20260512-165148-7a7b585/       ← newest, KEEP_RELEASES=5
       └── …
@@ -85,7 +85,9 @@ git push origin staging                  git push origin main
         ├── rsync release/                       ├── rsync release/
         ├── venv + pip install                   ├── venv + pip install
         ├── venv import check                    ├── venv import check
-        │                                        ├── pg_dump → pre-deploy snapshot
+        │                                        ├── pending-migration check
+        │                                        │     ├─ none  → SKIP pg_dump (code-only)
+        │                                        │     └─ found → pg_dump -Fd -j4 snapshot
         ├── migrate.py up (staging DB)           ├── migrate.py up (prod DB)
         ├── write version.txt                    ├── write version.txt
         ├── record PREV_RELEASE                  ├── record PREV_RELEASE
@@ -128,7 +130,26 @@ ops/deploy/rollback.sh prod-20260512-130149-dc1ea08     # roll back to that tag
 
 Rollback swaps **code only**. The database schema is forward. Migrations must
 be additive — never destructive — so old code can talk to a newer schema.
-For destructive recovery, restore from the matching `pre-deploy-*.dump.gz`.
+For destructive recovery, restore from the matching pre-deploy snapshot.
+
+> **Restore a pre-deploy snapshot.** Since #272 the pre-deploy snapshot is a
+> PostgreSQL **directory-format** dump (`pre-deploy-<tag>.dumpdir`, produced by
+> `pg_dump -Fd -j4`), not a single `.dump.gz` file. Restore it with `pg_restore`
+> (also parallel), **not** `psql`:
+>
+> ```bash
+> # on the VPS, as a role that owns the tables (DATABASE_URL_MIGRATIONS)
+> set -a && . /var/www/glintstone/shared/.env && set +a
+> pg_restore -j4 --clean --if-exists \
+>     -d "${DATABASE_URL_MIGRATIONS:-$DATABASE_URL}" \
+>     /var/www/glintstone/shared/backups/pre-deploy-<tag>.dumpdir
+> ```
+>
+> Drop `--clean --if-exists` to load into a fresh/empty database instead.
+> Note: a pre-deploy snapshot is only taken on deploys that **ship a migration**
+> — code-only deploys skip the dump (#219), so the relevant snapshot is the one
+> from the last migration-bearing deploy. Nightly cron backups
+> (`glintstone-YYYYMMDD-*.dump.gz`) remain the every-day recovery point.
 
 ### Laptop fallback deploy (when CI can't ship)
 
@@ -160,14 +181,30 @@ The wrapper exists so the fallback is repeatable and can't drift. It:
 
 ### About the "Deploy to Hostinger hangs" symptom
 
-The pre-deploy `pg_dump` of the ~19 GB prod DB legitimately takes **~18–20 min**
-and grows with the data. It is **not** a hang — `deploy.sh` prints a timestamped
-progress line with the dump size every ~80s. Do not cancel a deploy that is
-still printing growing dump sizes. Every long remote step (pip install, import
+Since #219/#272 most deploys **skip the pre-deploy `pg_dump` entirely**: it now
+runs only when the deploy actually ships a database migration. When it does run,
+it is a parallel `pg_dump -Fd -j4` of the ~22 GB prod DB — roughly **~5 min**,
+down from the old ~18–20 min single-stream dump. It is **not** a hang —
+`deploy.sh` prints a timestamped progress line with the dump size every ~60s. Do
+not cancel a deploy that is still printing growing dump sizes. Every long remote
+step (pip install, import
 verify, migrations) is now wrapped in its own remote `timeout`, and the SSH
 sessions use keepalive + `ConnectTimeout` + `BatchMode`, so a *genuine* stall
 fails fast with a clear error instead of pinning the job. The workflow's
 `timeout-minutes` is 40 to give the dump real headroom.
+
+> **Verify breadcrumb (#219/#272).** To confirm the skip logic is behaving:
+> - In the deploy log of a **code-only** deploy, look for
+>   `No pending migrations (N/N applied) … SKIPPING the pre-deploy pg_dump`. The
+>   `Snapshotting production DB` lines should be absent and total deploy time
+>   should be ~4–5 min.
+> - In the deploy log of a **migration-bearing** deploy, look for
+>   `K pending migration(s) … will snapshot the DB first` followed by the
+>   `Snapshotting production DB → …dumpdir (-Fd -j4)` lines, and a
+>   `pre-deploy-<tag>.dumpdir` directory in `shared/backups/`.
+> - If you ever see `Could not parse migrate.py status output — defaulting to
+>   TAKING a backup`, the detection hit an error and **fell back to dumping** (the
+>   safe default); investigate the `migrate.py status` line that printed below it.
 
 ### Hotfix prod (skip staging)
 
@@ -202,7 +239,7 @@ its URL from `/var/www/glintstone/shared/.env` at runtime; staging from
 | Import error / syntax bug in new code | venv import check (pre-swap) | Deploy aborts before symlink swap; previous release stays live |
 | Failed migration | `migrate.py up` non-zero exit | Deploy aborts pre-swap; pre-deploy snapshot is on disk |
 | New code runtime error after restart | Smoke test (curl /health, /healthz) | Auto-rollback to `PREV_RELEASE` |
-| Migration corrupted data | (not auto-detected) | Restore from `shared/backups/pre-deploy-<tag>.dump.gz` |
+| Migration corrupted data | (not auto-detected) | `pg_restore -j4` from `shared/backups/pre-deploy-<tag>.dumpdir` (see Roll back) |
 | Concurrent staging + prod deploy | GH Actions `concurrency: deploy-${{ github.ref }}` | Different refs, different VPS directories — they don't race |
 | Disk fills | `KEEP_RELEASES=5` + snapshot cap (3) | Trim is automatic; older nightly backups need a manual prune |
 | SSH key rotated | First deploy fails at `ssh-keyscan` / auth | `gh secret set HOSTINGER_SSH_KEY` |
