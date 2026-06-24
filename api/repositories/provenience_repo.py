@@ -18,6 +18,9 @@ separately under `uncertain`, so the map can label it ("25,533 tablets of
 uncertain provenance") instead of silently dropping or mis-placing them.
 """
 
+import os
+import time
+
 from core.repository import BaseRepository
 
 # The catch-all ancient_name buckets that do NOT represent a real located site.
@@ -25,6 +28,19 @@ from core.repository import BaseRepository
 # case-insensitively against provenience_canon.ancient_name and
 # artifacts.provenience_normalized.
 _UNCERTAIN_NAMES = ("uncertain", "unknown")
+
+# ── Site-coords TTL cache (speed-audit QW/ME-4, 2026-06-23) ─────────────────
+# get_site_coords() runs two corpus-wide aggregate queries (~375 ms on prod)
+# and its result only changes when ingestion re-geocodes proveniences, never
+# per-request. Yet the web layer calls it on every tablet- and composition-
+# detail page load. A short process-level TTL cache (single global result —
+# the query takes no parameters) turns that 375 ms into ~0 ms for the vast
+# majority of detail-page traffic. Mirrors the _FILTER_CACHE pattern in
+# artifact_repo.py. Override the TTL with SITE_COORDS_CACHE_TTL (seconds, 0
+# disables). The cache lives per uvicorn worker process; a fresh deploy clears
+# it. Worst-case staleness is one TTL window (default 5 min) after a re-geocode.
+_COORDS_CACHE: dict = {}
+_COORDS_CACHE_TTL = float(os.environ.get("SITE_COORDS_CACHE_TTL", "300"))
 
 
 class ProvenienceRepository(BaseRepository):
@@ -50,7 +66,18 @@ class ProvenienceRepository(BaseRepository):
 
         Coordinates are best-effort from Pleiades; sites that could not be
         located simply do not appear (the contract is "located sites only").
+
+        Result is served from a short process-level TTL cache (see
+        ``_COORDS_CACHE_TTL``) because the underlying data only changes when
+        ingestion re-geocodes proveniences, never per-request.
         """
+        if _COORDS_CACHE_TTL > 0:
+            entry = _COORDS_CACHE.get("coords")
+            if entry is not None:
+                cached, ts = entry
+                if time.monotonic() - ts < _COORDS_CACHE_TTL:
+                    return cached
+
         sites = self.fetch_all(
             """
             SELECT pc.ancient_name,
@@ -90,7 +117,12 @@ class ProvenienceRepository(BaseRepository):
             {"uncertain": list(_UNCERTAIN_NAMES)},
         )
 
-        return {
+        result = {
             "sites": sites,
             "uncertain": {"tablet_count": uncertain_count or 0},
         }
+
+        if _COORDS_CACHE_TTL > 0:
+            _COORDS_CACHE["coords"] = (result, time.monotonic())
+
+        return result

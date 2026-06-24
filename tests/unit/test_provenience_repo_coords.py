@@ -10,7 +10,25 @@ data-availability gate; here the two fetch helpers are stubbed.
 
 from __future__ import annotations
 
+import pytest
+
+from api.repositories import provenience_repo
 from api.repositories.provenience_repo import ProvenienceRepository
+
+
+@pytest.fixture(autouse=True)
+def _clear_coords_cache():
+    """Isolate the process-level site-coords TTL cache between tests.
+
+    ``get_site_coords`` memoises its (parameter-free) result in a module-level
+    ``_COORDS_CACHE`` (speed-audit QW/ME-4). Without clearing it, the first test
+    to run seeds the cache and later tests — which stub different fetch_* return
+    values — would read the stale cached payload instead of their own. Mirrors
+    the ``_QUERY_VEC_CACHE.clear()`` isolation in the search-engine timing tests.
+    """
+    provenience_repo._COORDS_CACHE.clear()
+    yield
+    provenience_repo._COORDS_CACHE.clear()
 
 
 def _repo() -> ProvenienceRepository:
