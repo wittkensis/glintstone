@@ -346,3 +346,61 @@ def batch_summarize(
         queued=len(candidates),
         message=f"Queued {len(candidates)} artifact(s) for summarization.",
     )
+
+
+class BatchInterpretParams(BaseModel):
+    limit: int = 100
+    surfaceless_only: bool = True
+    skip_cached: bool = True
+
+
+class BatchInterpretResponse(BaseModel):
+    queued: int
+    message: str
+
+
+def _run_interpret_batch(conn, params: BatchInterpretParams) -> None:
+    """Fire-and-forget worker — warms the token-interpretation cache (#411)."""
+    import argparse  # noqa: PLC0415
+    import logging  # noqa: PLC0415
+
+    from core.agent.batch import cmd_interpret  # noqa: PLC0415
+
+    logger = logging.getLogger(__name__)
+    logger.info("batch/interpret: starting (limit=%d)", params.limit)
+    ns = argparse.Namespace(
+        limit=params.limit,
+        surfaceless_only=params.surfaceless_only,
+        skip_cached=params.skip_cached,
+        dry_run=False,
+    )
+    cmd_interpret(ns)
+
+
+@corrections_router.post(
+    "/batch/interpret",
+    response_model=BatchInterpretResponse,
+    summary="Warm the token-interpretation cache in the background (internal, #411)",
+)
+def batch_interpret(
+    body: BatchInterpretParams,
+    background_tasks: BackgroundTasks,
+    conn=Depends(get_db),
+) -> BatchInterpretResponse:
+    """Enqueues a background pass that pre-runs interpret_token for lemmatized
+    tokens so the first user interpret is a warm cache hit (~ms) instead of the
+    cold 30-45s chain (#411). Idempotent: skips tokens with a fresh cached
+    interpretation by default; defaults to the surface-less #407 risk surface."""
+    from core.agent.batch import _fetch_interpret_candidates  # noqa: PLC0415
+
+    candidates = _fetch_interpret_candidates(
+        conn,
+        limit=body.limit,
+        surfaceless_only=body.surfaceless_only,
+        skip_cached=body.skip_cached,
+    )
+    background_tasks.add_task(_run_interpret_batch, conn, body)
+    return BatchInterpretResponse(
+        queued=len(candidates),
+        message=f"Queued {len(candidates)} token(s) for interpretation warming.",
+    )

@@ -31,9 +31,36 @@ from core.version import release_tag, version_payload
 logger = logging.getLogger(__name__)
 
 
+def _warm_query_cache() -> None:
+    """Pre-warm the popular query-embed cache (#253) off the request path.
+
+    Runs in a background thread from startup so a cold ~1.4-1.9s Voyage embed is
+    paid once at boot instead of on the first user search after a deploy. Fully
+    best-effort: a missing key or a Voyage hiccup just leaves the queries to
+    embed lazily on first use, exactly as before — it must never delay startup or
+    crash the process.
+    """
+    try:
+        from api.services.agent_service import _get_voyage
+        from core.agent.search_engine import warm_query_cache
+
+        n = warm_query_cache(_get_voyage())
+        logger.info("query-embed warm-cache: %d queries pinned", n)
+    except Exception as exc:  # never let warming break startup
+        logger.warning("query-embed warm-cache skipped: %r", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_pool()
+    # Warm the popular query-embed cache in a daemon thread so the first hero
+    # search after a deploy isn't cold (#253). Backgrounded so it never delays
+    # the server accepting connections or the /health smoke test.
+    import threading
+
+    threading.Thread(
+        target=_warm_query_cache, name="warm-query-cache", daemon=True
+    ).start()
     yield
     close_pool()
 

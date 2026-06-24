@@ -13,7 +13,9 @@ acquires its own pool connection so that the ~200-1000 ms Voyage network call
 overlaps with the lexical DB query instead of sitting after it.
 
 Cursor format: base64-encoded JSON of {q_hash, score_floor, last_id, types}.
-Query embeddings cached in-process by q_hash for 5 minutes (cursor TTL).
+Query embeddings cached in-process by q_hash for 5 minutes (cursor TTL). Popular
+queries are pre-warmed and PINNED at startup (never expire) so the cold Voyage
+embed isn't paid on the first hero search after a deploy (#253).
 """
 
 from __future__ import annotations
@@ -86,17 +88,22 @@ class SearchResults:
 
 # ── In-process query embedding cache ─────────────────────────────────────────
 
-
-_QUERY_VEC_CACHE: dict[str, tuple[float, list[float]]] = {}
+# Cache entries are (stored_at, vector, pinned). A PINNED entry (#253) is a
+# pre-warmed popular query: it never expires, so the cold ~1.4-1.9s Voyage embed
+# is paid once at startup instead of on the first user search after every deploy.
+# Unpinned entries keep the original 5-minute (cursor-TTL) behaviour.
+_QUERY_VEC_CACHE: dict[str, tuple[float, list[float], bool]] = {}
 
 
 def _cached_query_vector(voyage: VoyageClient, q: str) -> list[float]:
     h = hashlib.sha256(q.encode()).hexdigest()
     now = time.time()
     cached = _QUERY_VEC_CACHE.get(h)
-    if cached and (now - cached[0]) < _CURSOR_TTL_SECONDS:
-        logger.debug("voyage cache hit q_hash=%s", h[:8])
-        return cached[1]
+    if cached:
+        stored_at, vector, pinned = cached
+        if pinned or (now - stored_at) < _CURSOR_TTL_SECONDS:
+            logger.debug("voyage cache hit q_hash=%s pinned=%s", h[:8], pinned)
+            return vector
     t0 = time.monotonic()
     result = voyage.embed_query(q)
     logger.info(
@@ -104,8 +111,57 @@ def _cached_query_vector(voyage: VoyageClient, q: str) -> list[float]:
         int((time.monotonic() - t0) * 1000),
         h[:8],
     )
-    _QUERY_VEC_CACHE[h] = (now, result.vector)
+    _QUERY_VEC_CACHE[h] = (now, result.vector, False)
     return result.vector
+
+
+def warm_query_cache(
+    voyage: VoyageClient | None, queries: list[str] | None = None
+) -> int:
+    """Pre-embed the popular hero-search queries and PIN them in the cache (#253).
+
+    Called once at API startup (off the request path) so the first semantic
+    search after a deploy doesn't pay the cold ~1.4-1.9s Voyage embed. One
+    batched Voyage call covers the whole seed list. Pinned entries never expire,
+    so a popular query stays warm even past the 5-minute TTL.
+
+    Returns the number of queries warmed (0 if Voyage is unavailable). Never
+    raises — a warming failure must never block startup or the request path; the
+    queries simply stay cold and embed lazily on first use, exactly as before.
+    """
+    if voyage is None:
+        logger.info("voyage warm-cache skipped: client unavailable")
+        return 0
+    if queries is None:
+        from core.agent.popular_queries import popular_queries
+
+        queries = popular_queries()
+    # Only embed the ones not already pinned (idempotent across re-runs/tests).
+    pending = [
+        q
+        for q in queries
+        if not (
+            (e := _QUERY_VEC_CACHE.get(hashlib.sha256(q.encode()).hexdigest())) and e[2]
+        )
+    ]
+    if not pending:
+        return 0
+    try:
+        t0 = time.monotonic()
+        results = voyage.embed(pending, input_type="query")
+        now = time.time()
+        for q, res in zip(pending, results):
+            h = hashlib.sha256(q.encode()).hexdigest()
+            _QUERY_VEC_CACHE[h] = (now, res.vector, True)
+        logger.info(
+            "voyage warm-cache pinned=%d duration_ms=%d",
+            len(results),
+            int((time.monotonic() - t0) * 1000),
+        )
+        return len(results)
+    except Exception as exc:
+        logger.warning("voyage warm-cache failed (queries stay cold): %r", exc)
+        return 0
 
 
 # ── Search engine ────────────────────────────────────────────────────────────

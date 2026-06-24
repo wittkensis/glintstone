@@ -287,3 +287,66 @@ def test_rrf_score_increases_with_dual_list_presence():
     fused = engine._rrf([[shared, lex_only], [shared, sem_only]])
     ids = [h.entity_id for h in fused]
     assert ids[0] == "P_BOTH"
+
+
+# ── #253 popular-query warm cache ─────────────────────────────────────────────
+
+
+def test_warm_query_cache_pins_and_skips_cold_embed():
+    """warm_query_cache pre-embeds queries and PINS them so a later lookup is a
+    hit with no further embed call (#253: kills the cold ~1.4-1.9s hero path)."""
+    from core.agent.search_engine import warm_query_cache
+
+    _QUERY_VEC_CACHE.clear()
+    voyage = MagicMock()
+    voyage.embed.return_value = [
+        MagicMock(vector=[0.1, 0.2, 0.3]),
+        MagicMock(vector=[0.4, 0.5, 0.6]),
+    ]
+    n = warm_query_cache(voyage, queries=["barley rations", "royal inscriptions"])
+    assert n == 2
+    assert voyage.embed.call_count == 1  # ONE batched call for the whole list
+
+    # A subsequent lookup is a pinned hit — embed_query must never be called.
+    vec = _cached_query_vector(voyage, "barley rations")
+    assert vec == [0.1, 0.2, 0.3]
+    voyage.embed_query.assert_not_called()
+
+
+def test_warm_query_cache_pin_survives_ttl():
+    """A pinned entry must NOT expire after the 5-minute TTL (#253)."""
+    import hashlib
+
+    from core.agent.search_engine import warm_query_cache
+
+    _QUERY_VEC_CACHE.clear()
+    voyage = MagicMock()
+    voyage.embed.return_value = [MagicMock(vector=[0.7, 0.8, 0.9])]
+    warm_query_cache(voyage, queries=["land sale"])
+
+    # Force the stored timestamp far into the past (well past the TTL).
+    h = hashlib.sha256("land sale".encode()).hexdigest()
+    stored_at, vector, pinned = _QUERY_VEC_CACHE[h]
+    _QUERY_VEC_CACHE[h] = (stored_at - 10_000, vector, pinned)
+
+    vec = _cached_query_vector(voyage, "land sale")  # still a hit
+    assert vec == [0.7, 0.8, 0.9]
+    voyage.embed_query.assert_not_called()
+
+
+def test_warm_query_cache_no_voyage_is_noop():
+    """No Voyage client → warm pass is a safe no-op returning 0 (never raises)."""
+    from core.agent.search_engine import warm_query_cache
+
+    _QUERY_VEC_CACHE.clear()
+    assert warm_query_cache(None) == 0
+
+
+def test_warm_query_cache_swallows_embed_failure():
+    """A Voyage hiccup during warming must not raise — queries just stay cold."""
+    from core.agent.search_engine import warm_query_cache
+
+    _QUERY_VEC_CACHE.clear()
+    voyage = MagicMock()
+    voyage.embed.side_effect = RuntimeError("voyage down")
+    assert warm_query_cache(voyage, queries=["letters"]) == 0
