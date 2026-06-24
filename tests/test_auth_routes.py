@@ -162,6 +162,35 @@ class TestSessionRepo:
 
         assert session_repo.find_by_token_hash(token_hash) is None
 
+    def test_session_lookup_returns_avatar_url(
+        self, test_user, user_repo, session_repo, db_conn
+    ):
+        """Regression for #450: an avatar set on the user must survive a page
+        reload. On reload the browser re-authenticates via the session cookie,
+        so the session→user join is the read path. It previously dropped
+        avatar_url (also role/theme), so the saved avatar vanished after refresh.
+        """
+        from datetime import datetime, timedelta, timezone
+        from api.services.auth_service import generate_session_token, hash_token
+
+        avatar_url = f"https://pub-test.r2.dev/avatars/{test_user['id']}.jpg"
+        user_repo.update_avatar_url(test_user["id"], avatar_url)
+        db_conn.commit()
+
+        raw = generate_session_token()
+        token_hash = hash_token(raw)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=1)
+        session_repo.create_session(test_user["id"], token_hash, expires_at)
+        db_conn.commit()
+
+        row = session_repo.find_by_token_hash(token_hash)
+        assert row is not None
+        # The read-back the middleware relies on must carry the persisted avatar.
+        assert row["avatar_url"] == avatar_url
+        # role + theme rode the same missing-column bug; assert they survive too.
+        assert "role" in row
+        assert "theme" in row
+
 
 class TestApiKeyRepo:
     def test_create_and_find(self, test_user, api_key_repo, db_conn):

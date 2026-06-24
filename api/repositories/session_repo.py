@@ -47,7 +47,10 @@ class SessionRepository(BaseRepository):
                 u.email,
                 u.display_name,
                 u.orcid_id,
-                u.email_verified_at
+                u.email_verified_at,
+                u.avatar_url,
+                u.role,
+                u.theme
             FROM user_sessions s
             JOIN users u ON u.id = s.user_id
             WHERE s.token_hash = %(token_hash)s
