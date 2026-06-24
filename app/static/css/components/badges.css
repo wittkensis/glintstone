@@ -44,6 +44,14 @@
     border-color: var(--color-badge-green-border);
 }
 
+/* Dialect (#186) - Purple, distinct from the green Language badge so a reader
+   sees the language and its historical variety as two different axes. */
+.badge--dialect {
+    background: var(--color-badge-purple-bg);
+    color: var(--color-badge-purple-text);
+    border-color: var(--color-badge-purple-border);
+}
+
 /* Frequency - Blue-gray */
 .badge--frequency {
     background: var(--color-badge-blue-bg);

@@ -109,6 +109,60 @@ def dictionary_index(
     )
 
 
+@router.get("/search")
+def dictionary_search(
+    request: Request,
+    q: str = "",
+    search: str = "",
+    level: str = "lemmas",
+    language: list[str] = Query(default=[]),
+    pos: list[str] = Query(default=[]),
+    source: list[str] = Query(default=[]),
+    frequency: str = "",
+    sort: str = "",
+):
+    """Stable, shareable dictionary search/exploratory entry (#185, #284).
+
+    The dictionary index at ``/dictionary`` is *already* the faceted exploratory
+    surface — a search box, language/type/source/frequency facets (#163), level
+    switcher, pagination, and a fully URL-encoded state that deep-links and the
+    back button both respect. Rather than fork a second, divergent results page,
+    this route is the canonical **entry point** for that surface: it accepts the
+    ``/dictionary/search?q=…`` shape that the cmd+K drawer, external links, and
+    the missing-/search expectation (#284) all reach for, normalises ``q`` →
+    ``search``, and forwards (carrying every facet through) to the one index.
+
+    One page, one source of truth — no second copy of the browse logic to drift.
+    """
+    # Accept either ?q= (the conventional search-page param) or ?search= (the
+    # index's own param); q wins when both are present.
+    term = (q or search).strip()
+
+    params: list[tuple[str, str]] = []
+    if level and level != "lemmas":
+        params.append(("level", level))
+    if term:
+        params.append(("search", term))
+    for v in language:
+        params.append(("language", v))
+    for v in pos:
+        params.append(("pos", v))
+    for v in source:
+        params.append(("source", v))
+    if frequency:
+        params.append(("frequency", frequency))
+    if sort:
+        params.append(("sort", sort))
+
+    from urllib.parse import urlencode
+
+    target = "/dictionary"
+    if params:
+        target += "?" + urlencode(params)
+    # 302 (not 301) so the canonical index can evolve its URL contract freely.
+    return RedirectResponse(url=target, status_code=302)
+
+
 @router.get("/lemmas/{lemma_id}")
 def lemma_detail(request: Request, lemma_id: int, page: int = Query(1, ge=1)):
     api = request.app.state.api

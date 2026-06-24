@@ -13,15 +13,18 @@ from core.database import get_db
 router = APIRouter(prefix="/scholars", tags=["scholars"])
 
 
-@router.get("")
-def list_scholars(
-    search: str = "",
-    page: int = Query(default=1, ge=1),
-    per_page: int = Query(default=24, ge=1, le=100),
-    has_artifacts: bool = Query(default=False),
-    conn=Depends(get_db),
-):
-    offset = (page - 1) * per_page
+def _scholar_filters(
+    search: str,
+    has_artifacts: bool,
+    has_orcid: bool,
+    institution: list[str],
+) -> tuple[list[str], list]:
+    """Build the shared WHERE conditions + params for the scholars index.
+
+    Factored out so the list endpoint and the facet-counts endpoint (#194)
+    apply *exactly* the same predicates — the filter rail's counts must agree
+    with the rows the same filters return, or the page lies to the reader.
+    """
     params: list = []
     conditions: list[str] = []
 
@@ -43,16 +46,47 @@ def list_scholars(
             ")"
         )
 
+    if has_orcid:
+        # An ORCID is the durable, disambiguating identifier for a real
+        # researcher; this filter narrows the 86k-row directory to the
+        # identified scholars (the data-rich subset worth browsing).
+        conditions.append("s.orcid IS NOT NULL AND s.orcid <> ''")
+
+    if institution:
+        placeholders = ", ".join(["%s"] * len(institution))
+        conditions.append(f"s.institution IN ({placeholders})")
+        params.extend(institution)
+
+    return conditions, params
+
+
+@router.get("")
+def list_scholars(
+    search: str = "",
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=24, ge=1, le=100),
+    has_artifacts: bool = Query(default=False),
+    has_orcid: bool = Query(default=False),
+    institution: list[str] = Query(default=[]),
+    sort: str = "",
+    conn=Depends(get_db),
+):
+    offset = (page - 1) * per_page
+    conditions, params = _scholar_filters(search, has_artifacts, has_orcid, institution)
+
     where = "WHERE " + " AND ".join(conditions) if conditions else ""
 
-    # When actively filtering/searching, surface the most productive scholars
-    # first (highest artifact count). Fall back to alphabetical when browsing
-    # without a query so the list is predictable.
-    order_by = (
-        "artifact_count DESC NULLS LAST, s.normalized_name NULLS LAST, s.name"
-        if (search.strip() or has_artifacts)
-        else "s.normalized_name NULLS LAST, s.name"
-    )
+    # Sort policy (#183): the honest default for browsing a directory of
+    # contributors is *most productive first* — a reader arriving cold should
+    # meet the people who shaped the most of the record, not whoever sorts
+    # first alphabetically. ``sort=alpha`` restores the predictable A→Z order;
+    # an active text search also falls back to relevance-by-productivity.
+    if sort == "alpha":
+        order_by = "s.normalized_name NULLS LAST, s.name"
+    else:
+        order_by = (
+            "artifact_count DESC NULLS LAST, s.normalized_name NULLS LAST, s.name"
+        )
 
     with conn.cursor() as cur:
         cur.execute(f"SELECT COUNT(*) AS n FROM scholars s {where}", tuple(params))
@@ -83,6 +117,108 @@ def list_scholars(
         "page": page,
         "per_page": per_page,
         "total_pages": total_pages,
+    }
+
+
+@router.get("/facets")
+def get_scholar_facets(
+    search: str = "",
+    has_artifacts: bool = Query(default=False),
+    has_orcid: bool = Query(default=False),
+    institution: list[str] = Query(default=[]),
+    top: int = Query(default=20, ge=1, le=100),
+    conn=Depends(get_db),
+):
+    """Facet counts for the all-scholars index filter rail (#194, dep of #183).
+
+    Returns the count behind each filter option so the rail can show how many
+    scholars each choice would surface — the same Tufte data-ledger pattern the
+    dictionary's gloss-browse facets use (#163). Two dimensions today:
+
+      ``institution`` — ``[{value, label, count}]``, busiest first, capped at
+                        ``top``. Institution is sparsely populated in the corpus
+                        (most ORACC scholar records carry no affiliation), so an
+                        empty list here is the honest signal "no affiliations on
+                        record" — the web layer hides the facet rather than
+                        rendering a dead control.
+      ``has_orcid``   — ``{with, without}`` counts: how many of the currently
+                        matched scholars carry an ORCID identifier vs not.
+      ``total``       — scholars matching the *other* active filters (the
+                        denominator the rail describes).
+
+    Counts are cross-filtered the way gloss-browse facets are: each facet's
+    counts are computed against the OTHER active filters but ignore the facet's
+    OWN selection, so selecting one institution doesn't zero out its siblings.
+    """
+    # Base predicate = everything EXCEPT institution (so the institution facet
+    # shows its siblings) — but DO honour has_orcid/has_artifacts/search.
+    base_conditions, base_params = _scholar_filters(
+        search, has_artifacts, has_orcid, institution=[]
+    )
+
+    # The has_orcid facet counts ignore the has_orcid selection itself (so both
+    # "with" and "without" stay visible) but honour the other filters.
+    orcid_conditions, orcid_params = _scholar_filters(
+        search, has_artifacts, has_orcid=False, institution=institution
+    )
+    orcid_where = "WHERE " + " AND ".join(orcid_conditions) if orcid_conditions else ""
+
+    with conn.cursor() as cur:
+        # Institution facet — busiest affiliations first. Skips blank/null so a
+        # dead control never renders; the count is distinct scholars.
+        inst_where_parts = list(base_conditions)
+        inst_where_parts.append("s.institution IS NOT NULL AND s.institution <> ''")
+        inst_where = "WHERE " + " AND ".join(inst_where_parts)
+        cur.execute(
+            f"""
+            SELECT s.institution AS value, COUNT(*) AS n
+            FROM scholars s
+            {inst_where}
+            GROUP BY s.institution
+            ORDER BY n DESC, s.institution
+            LIMIT %s
+            """,
+            (*base_params, top),
+        )
+        institutions = [
+            {"value": r["value"], "label": r["value"], "count": int(r["n"])}
+            for r in cur.fetchall()
+        ]
+
+        # has_orcid facet — with vs without, against the other active filters.
+        cur.execute(
+            f"""
+            SELECT
+                COUNT(*) FILTER (
+                    WHERE s.orcid IS NOT NULL AND s.orcid <> ''
+                ) AS with_orcid,
+                COUNT(*) FILTER (
+                    WHERE s.orcid IS NULL OR s.orcid = ''
+                ) AS without_orcid
+            FROM scholars s
+            {orcid_where}
+            """,
+            tuple(orcid_params),
+        )
+        orcid_row = cur.fetchone()
+
+        # Denominator — scholars matching the *fully* active filter set.
+        all_conditions, all_params = _scholar_filters(
+            search, has_artifacts, has_orcid, institution
+        )
+        all_where = "WHERE " + " AND ".join(all_conditions) if all_conditions else ""
+        cur.execute(
+            f"SELECT COUNT(*) AS n FROM scholars s {all_where}", tuple(all_params)
+        )
+        total = int(cur.fetchone()["n"])
+
+    return {
+        "total": total,
+        "institution": institutions,
+        "has_orcid": {
+            "with": int(orcid_row["with_orcid"]),
+            "without": int(orcid_row["without_orcid"]),
+        },
     }
 
 

@@ -32,7 +32,14 @@
         <span class="badge badge--sm">{{ lemma.pos_label }}</span>
         {% endif %}
         {% if lemma.language_label %}
-        <span class="badge badge--sm badge--language">{{ lemma.language_label }}</span>
+        <span class="badge badge--sm badge--language" title="Language">{{ lemma.language_label }}</span>
+        {% endif %}
+        {# Dialect (#186) — the historical variety of the language, a distinct
+           axis from the language itself. Rendered as its own badge only when
+           the lemma carries a dialect tag, so "Akkadian · Old Babylonian" reads
+           as language-then-variety rather than one undifferentiated label. #}
+        {% if lemma.dialect_label %}
+        <span class="badge badge--sm badge--dialect" title="Dialect">{{ lemma.dialect_label }}</span>
         {% endif %}
         {% if lemma.source_label %}
         <span class="source-badge" title="Source: {{ lemma.source_label }}">{{ lemma.source_label }}</span>

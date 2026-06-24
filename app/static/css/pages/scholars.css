@@ -1,61 +1,43 @@
 /**
- * Scholars directory page
- * Search-first layout: search input + quick filter pills + result list.
- * No results shown until user types or activates a filter.
+ * Scholars directory index (#183)
+ * Browse-first layout aligned with the dictionary index: a shared discovery
+ * rail (facets, #194) on the left, a productivity-ranked result list on the
+ * right. Rendered meaningful on load — no longer empty-until-you-search. The
+ * rail's own styling lives in the shared components/discovery-rail.css.
  */
 
 /* ==========================================================================
-   Controls block (search input + filter pills)
+   Index layout — rail | results (mirrors .dict-layout)
    ========================================================================== */
 
-.scholars-controls {
+.scholars-page {
+    height: calc(100vh - var(--site-header-height, 48px));
+    overflow: hidden;
+}
+
+.scholars-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    height: 100%;
+    overflow: hidden;
+}
+
+.scholars-main {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
-    margin-bottom: var(--space-6);
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 var(--space-6) var(--space-8);
 }
 
-.scholars-search {
-    /* Override base input sizing — full-width, taller than default */
-    width: 100%;
-    padding: var(--space-3) var(--space-4);
-    font-size: var(--text-base);
-    background: var(--color-bg-inset);
-    color: var(--color-text);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    font-family: inherit;
-    line-height: var(--line-height-normal);
-    transition: border-color var(--transition-fast);
-}
-
-.scholars-search:focus {
-    outline: none;
-    border-color: var(--color-accent);
-}
-
-.scholars-filter-row {
-    display: flex;
-    gap: var(--space-2);
-}
-
-/* Active state: accent fill (reuses .btn--toggle pattern) */
-.scholars-filter-pill--active {
-    background: var(--color-accent-15);
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-}
-
-.scholars-filter-pill--active:hover {
-    background: var(--color-accent-20);
-    border-color: var(--color-accent);
+.scholars-results {
+    min-height: 0;
 }
 
 /* ==========================================================================
    Results area
    ========================================================================== */
 
-.scholars-empty-state,
 .scholars-no-results {
     font-size: var(--text-sm);
     color: var(--color-text-muted);
@@ -156,6 +138,28 @@
 /* ==========================================================================
    Responsive — narrow screens collapse grid to two columns
    ========================================================================== */
+
+@media (max-width: 1024px) {
+    .scholars-layout {
+        grid-template-columns: 200px 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .scholars-page {
+        height: auto;
+        overflow: auto;
+    }
+    .scholars-layout {
+        grid-template-columns: 1fr;
+    }
+    .scholars-layout .discovery-rail {
+        display: none;
+    }
+    .scholars-main {
+        padding: 0 var(--space-4) var(--space-8);
+    }
+}
 
 @media (max-width: 600px) {
     .scholars-row__link {
