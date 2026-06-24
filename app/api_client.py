@@ -356,6 +356,22 @@ class GlintstoneAPI:
         except Exception:
             return {}
 
+    def get_composite_related(self, q_number: str) -> dict:
+        """Compositions related to this one by shared witnesses (#160)."""
+        try:
+            data = self._t.get(f"/composites/{q_number}/related")
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
+    def get_composite_summary(self, q_number: str) -> dict:
+        """Grounded AI synthesis across a composition's witnesses (#168)."""
+        try:
+            data = self._t.get(f"/composites/{q_number}/summary")
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
     # ── Stats / Homepage ───────────────────────────────────────────────────────
 
     def get_kpi(self) -> dict:

@@ -62,6 +62,17 @@ class ArtifactFactBundle:
 
 
 @dataclass
+class CompositeFactBundle:
+    """Facts about a composition synthesized across its witnesses (#168)."""
+
+    q_number: str
+    designation: str | None = None
+    exemplar_count: int = 0  # ORACC-recorded total
+    linked_count: int = 0  # witnesses linked in Glintstone
+    facts: list[Fact] = field(default_factory=list)
+
+
+@dataclass
 class TokenFactBundle:
     p_number: str
     token_id: int
@@ -591,6 +602,270 @@ def assemble_artifact_facts(
 
     # Best-guess gate: completeness ≤ 2 AND ≥3 similar tablets found via either embedding type
     bundle.best_guess_allowed = completeness <= 2 and len(bundle.similar_tablets) >= 3
+
+    return bundle
+
+
+# ── Composite facts ───────────────────────────────────────────────────────────
+
+
+def assemble_composite_facts(
+    conn: psycopg.Connection[DictRow],
+    q_number: str,
+    max_periods: int = 6,
+    max_sites: int = 6,
+) -> CompositeFactBundle | None:
+    """Assemble facts a synthesizer can ground a *composition-level* summary on.
+
+    DATA-GATE (#168): a composition (``composites`` row, a Q-number) is an ideal
+    text reconstructed from many physical witnesses (``artifacts`` linked via
+    ``artifact_composites``). Unlike an artifact, the composite row itself holds
+    almost no metadata — its ``genre`` / ``period`` / ``designation`` are
+    unpopulated. Everything synthesizable comes from *aggregating across its
+    witnesses*: how many witnesses, over which periods (the transmission span),
+    from which sites (geographic spread), in which languages, and how many carry
+    a translation. That is precisely the multi-exemplar synthesis #168 asks for.
+
+    Every fact is a real aggregate computed from the witness set — never an
+    invented claim. Returns ``None`` when the Q-number is unknown or has no
+    linked witness (the caller renders the honest "no summary" state). Never
+    reads ``pipeline_completeness`` (#257); translation coverage uses
+    ``pipeline_status.semantic_complete``, the same signal the detail page uses.
+    """
+    bundle = CompositeFactBundle(q_number=q_number)
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT q_number, designation, language, period, genre, exemplar_count
+            FROM composites
+            WHERE q_number = %s
+            """,
+            (q_number,),
+        )
+        comp = cur.fetchone()
+        if not comp:
+            return None
+
+        bundle.designation = comp.get("designation")
+        bundle.exemplar_count = comp.get("exemplar_count") or 0
+
+        # Witness aggregates — the heart of a composite synthesis.
+        cur.execute(
+            """
+            SELECT
+                count(*) AS linked,
+                count(DISTINCT a.period) FILTER (
+                    WHERE a.period IS NOT NULL AND a.period <> '') AS n_periods,
+                count(DISTINCT a.provenience) FILTER (
+                    WHERE a.provenience IS NOT NULL AND a.provenience <> ''
+                      AND lower(a.provenience) NOT IN ('uncertain', 'unknown')
+                ) AS n_sites,
+                count(DISTINCT a.language) FILTER (
+                    WHERE a.language IS NOT NULL AND a.language <> '') AS n_langs
+            FROM artifact_composites ac
+            JOIN artifacts a ON a.p_number = ac.p_number
+            WHERE ac.q_number = %s
+            """,
+            (q_number,),
+        )
+        agg = cur.fetchone() or {}
+        linked = agg.get("linked") or 0
+        bundle.linked_count = linked
+        if linked == 0:
+            return None
+
+    facts = bundle.facts
+
+    # 1. Designation (when present) — the title to lead with.
+    if bundle.designation:
+        _add_fact(
+            facts,
+            f"composition: {bundle.designation} ({q_number}) (CDLI/ORACC catalog)",
+            "annotation_run",
+            "cdli_catalog",
+            "designation",
+        )
+    else:
+        _add_fact(
+            facts,
+            f"composition Q-number: {q_number} "
+            "(no scholarly designation recorded) (CDLI/ORACC catalog)",
+            "annotation_run",
+            "cdli_catalog",
+            "designation",
+        )
+
+    # 2. Witness count — how well attested the text is.
+    if bundle.exemplar_count and bundle.exemplar_count != bundle.linked_count:
+        _add_fact(
+            facts,
+            f"attestation: {bundle.exemplar_count} exemplars recorded by ORACC, "
+            f"{bundle.linked_count} linked as witnesses in Glintstone (CDLI/ORACC catalog)",
+            "annotation_run",
+            "cdli_catalog",
+            "exemplar_count",
+        )
+    else:
+        _add_fact(
+            facts,
+            f"attestation: {bundle.linked_count} witness "
+            f"tablet{'s' if bundle.linked_count != 1 else ''} linked in Glintstone "
+            "(CDLI/ORACC catalog)",
+            "annotation_run",
+            "cdli_catalog",
+            "exemplar_count",
+        )
+
+    with conn.cursor() as cur:
+        # 3. Transmission span — period distribution of witnesses.
+        cur.execute(
+            """
+            SELECT a.period, count(*) AS n
+            FROM artifact_composites ac
+            JOIN artifacts a ON a.p_number = ac.p_number
+            WHERE ac.q_number = %s AND a.period IS NOT NULL AND a.period <> ''
+            GROUP BY a.period
+            ORDER BY n DESC, a.period
+            """,
+            (q_number,),
+        )
+        period_rows = cur.fetchall()
+        if period_rows:
+            top = period_rows[:max_periods]
+            spread = ", ".join(f"{r['period']} ({r['n']})" for r in top)
+            _add_fact(
+                facts,
+                f"transmission span: witnesses attested across {len(period_rows)} "
+                f"period(s) — {spread} (count = witnesses per period) (CDLI catalog)",
+                "annotation_run",
+                "cdli_catalog",
+                "period_distribution",
+            )
+
+        # 4. Geographic spread — provenience distribution.
+        cur.execute(
+            """
+            SELECT a.provenience, count(*) AS n
+            FROM artifact_composites ac
+            JOIN artifacts a ON a.p_number = ac.p_number
+            WHERE ac.q_number = %s AND a.provenience IS NOT NULL AND a.provenience <> ''
+              AND lower(a.provenience) NOT IN ('uncertain', 'unknown')
+            GROUP BY a.provenience
+            ORDER BY n DESC, a.provenience
+            """,
+            (q_number,),
+        )
+        site_rows = cur.fetchall()
+        if site_rows:
+            top = site_rows[:max_sites]
+            spread = ", ".join(f"{r['provenience']} ({r['n']})" for r in top)
+            _add_fact(
+                facts,
+                f"find-spots: witnesses excavated at {len(site_rows)} site(s) — "
+                f"{spread} (CDLI catalog)",
+                "annotation_run",
+                "cdli_catalog",
+                "provenience_distribution",
+            )
+
+        # 5. Languages attested across witnesses.
+        cur.execute(
+            """
+            SELECT a.language, count(*) AS n
+            FROM artifact_composites ac
+            JOIN artifacts a ON a.p_number = ac.p_number
+            WHERE ac.q_number = %s AND a.language IS NOT NULL AND a.language <> ''
+            GROUP BY a.language
+            ORDER BY n DESC, a.language
+            """,
+            (q_number,),
+        )
+        lang_rows = cur.fetchall()
+        if lang_rows:
+            langs = ", ".join(f"{r['language']} ({r['n']})" for r in lang_rows)
+            _add_fact(
+                facts,
+                f"languages attested across witnesses: {langs} (CDLI catalog)",
+                "annotation_run",
+                "cdli_catalog",
+                "language_distribution",
+            )
+
+        # 6. Genre — the dominant genre of the witness set (composite row has none).
+        cur.execute(
+            """
+            SELECT a.genre, count(*) AS n
+            FROM artifact_composites ac
+            JOIN artifacts a ON a.p_number = ac.p_number
+            WHERE ac.q_number = %s AND a.genre IS NOT NULL AND a.genre <> ''
+            GROUP BY a.genre
+            ORDER BY n DESC, a.genre
+            LIMIT 1
+            """,
+            (q_number,),
+        )
+        genre_row = cur.fetchone()
+        if genre_row and genre_row.get("genre"):
+            _add_fact(
+                facts,
+                f"genre: {genre_row['genre']} "
+                "(dominant genre of the witness tablets) (CDLI catalog)",
+                "annotation_run",
+                "cdli_catalog",
+                "genre",
+            )
+
+        # 7. Translation coverage — how many witnesses carry a translation.
+        cur.execute(
+            """
+            SELECT count(DISTINCT ac.p_number) AS translated
+            FROM artifact_composites ac
+            JOIN pipeline_status ps ON ps.p_number = ac.p_number
+            WHERE ac.q_number = %s AND ps.semantic_complete >= 0.99
+            """,
+            (q_number,),
+        )
+        tr = cur.fetchone() or {}
+        translated = tr.get("translated") or 0
+        _add_fact(
+            facts,
+            f"translation coverage: {translated} of {bundle.linked_count} "
+            f"linked witness(es) carry a translation in Glintstone (pipeline status)",
+            "annotation_run",
+            "pipeline_status",
+            "translation_coverage",
+        )
+
+        # 8. Best-attested witness — most readable ATF lines (anchors the synthesis).
+        cur.execute(
+            r"""
+            SELECT ac.p_number, a.designation, a.period, a.provenience,
+                   count(*) AS atf_line_count
+            FROM artifact_composites ac
+            JOIN text_lines tl ON tl.p_number = ac.p_number
+            JOIN artifacts a ON a.p_number = ac.p_number
+            WHERE ac.q_number = %s
+              AND tl.raw_atf IS NOT NULL AND tl.raw_atf <> ''
+              AND tl.raw_atf !~ '^[$@&#]'
+            GROUP BY ac.p_number, a.designation, a.period, a.provenience
+            ORDER BY atf_line_count DESC, ac.p_number
+            LIMIT 1
+            """,
+            (q_number,),
+        )
+        best = cur.fetchone()
+        if best:
+            _add_fact(
+                facts,
+                f"best-attested witness: {best['p_number']} "
+                f"({best.get('designation') or 'no designation'}; "
+                f"{best.get('period') or 'unknown period'}; "
+                f"{best['atf_line_count']} readable transliterated lines) (CDLI catalog)",
+                "annotation_run",
+                "cdli_catalog",
+                f"best_witness:{best['p_number']}",
+            )
 
     return bundle
 

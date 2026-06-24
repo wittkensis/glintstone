@@ -150,6 +150,51 @@ def suggest_line(
     return response
 
 
+# ── Composite summary (#168) ──────────────────────────────────────────────────
+
+
+composites_agent_router = APIRouter(prefix="/composites", tags=["agentic"])
+
+
+@composites_agent_router.get(
+    "/{q_number}/summary",
+    response_model=ToolResponse[CardPayload],
+    summary="Grounded composition-level summary synthesized across its witnesses",
+)
+def summarize_composite(
+    q_number: Annotated[str, Path()],
+    conn=Depends(get_db),
+) -> ToolResponse[CardPayload]:
+    """Multi-exemplar synthesis (#168): a grounded paragraph about the
+    composition built from witness aggregates (transmission span, geographic
+    spread, languages, translation coverage). Same trust contract as
+    summarize_artifact — every claim carries a citation; no best-guess branch."""
+    interaction_id_str = str(uuid.uuid4())
+
+    with log_interaction(
+        conn,
+        surface="api",
+        route_path="/composites/{q}/summary",
+        tool_name="summarize_composite",
+        request={"q_number": q_number},
+    ) as interaction:
+        response = agent_service.do_summarize_composite(
+            conn,
+            q_number=q_number,
+            interaction_id_int=None,
+            interaction_id_str=interaction_id_str,
+        )
+        interaction.record_response(
+            summary=response.summary,
+            result_ids=[q_number],
+            sources_count=len(response.sources),
+        )
+
+    if interaction.id is not None:
+        response.interaction_id = str(interaction.id)
+    return response
+
+
 # ── Feedback + Corrections ────────────────────────────────────────────────────
 
 
@@ -224,11 +269,18 @@ def submit_correction(
         if not cur.fetchone():
             raise HTTPException(status_code=404, detail="interaction_id not found")
 
-        # 2. New annotation_run for the correction
+        # 2. New annotation_run for the correction.
+        #    method must satisfy annotation_runs_method_check — a scholar
+        #    hand-submitting a correction is a 'manual' annotation; the fact
+        #    that it corrects an agent hypothesis is carried by source_name
+        #    ('user-correction') and the interaction_feedback.kind='correction'
+        #    row below. (The earlier 'agent-hypothesis-correction' literal was
+        #    never a permitted method value and violated the CHECK constraint —
+        #    the endpoint had no caller until this widget, #169.)
         cur.execute(
             """
             INSERT INTO annotation_runs (source_name, method, scholar_id)
-            VALUES ('user-correction', 'agent-hypothesis-correction', %s)
+            VALUES ('user-correction', 'manual', %s)
             RETURNING id
             """,
             (body.scholar_id,),
