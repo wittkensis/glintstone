@@ -212,7 +212,7 @@ TransmissionTimeline.prototype._render = function () {
     var paddingTop = 12;
     var trackHeight = 80;      // dot area height
     var axisHeight = 18;       // BCE tick axis below the track
-    var labelHeight = 28;      // period label area below the axis
+    var labelHeight = 40;      // period label area below the axis (2 staggered rows)
     var svgHeight = paddingTop + trackHeight + axisHeight + labelHeight + 8;
 
     // viewBox approach so it scales with container width
@@ -443,16 +443,83 @@ TransmissionTimeline.prototype._render = function () {
     var labelsG = document.createElementNS(SVG_NS, 'g');
     labelsG.setAttribute('class', 'tl-labels');
 
-    orderedPeriods.forEach(function (period) {
+    // Label-collision handling. Period bands get narrow and crowd on the dense
+    // right edge (Neo-/Late-Babylonian, Achaemenid, Seleucid, Parthian sit in a
+    // ~500-year sliver). With no thinning their centred names overlap into an
+    // illegible smear. We:
+    //   1. truncate long names (and truncate harder when the band is narrow),
+    //   2. estimate each label's footprint and stagger alternates onto a second
+    //      row when a neighbour would overlap, and
+    //   3. as a last resort drop (thin) a label that still collides on its row,
+    // so every rendered label is legible. Anchoring stays centred on the band
+    // midpoint, but the midpoint is clamped so edge labels never spill outside
+    // the viewBox.
+    var CHAR_W = 4.6;          // approx px per char at 9px font in viewBox units
+    var LABEL_GAP = 6;         // min horizontal gap between labels on the same row
+    var labelRowY = [
+        axisY + axisHeight + 11,   // row 0 (upper)
+        axisY + axisHeight + 24,   // row 1 (lower, staggered)
+    ];
+
+    // Build the candidate labels first, with their clamped centre and estimated
+    // footprint, then sort LEFT-TO-RIGHT by screen x before the collision walk.
+    // Sorting by x (not chronology) matters: the BCE axis runs oldest-on-the-
+    // right, so chronological order is right-to-left on screen — walking it
+    // directly would mis-detect every overlap. We sort by x so the greedy
+    // "does this start after the last one ended?" test is correct.
+    var labelCandidates = orderedPeriods.map(function (period) {
         var range = self._ranges[period];
-        var midX;
+        var midX, bandW;
         if (range) {
-            midX = (yearToX(range[0]) + yearToX(range[1])) / 2;
+            var bx1 = yearToX(range[0]);
+            var bx2 = yearToX(range[1]);
+            midX = (bx1 + bx2) / 2;
+            bandW = Math.abs(bx2 - bx1);
         } else {
             midX = paddingLeft + trackWidth - 20;
+            bandW = 40;
         }
 
-        var labelY = axisY + axisHeight + labelHeight - 6;
+        // Truncate: long names always; narrow bands harder so a tight cluster
+        // of short labels has a chance to sit side-by-side without overlapping.
+        var maxChars = bandW < 70 ? 9 : 14;
+        var shortName = period.length > maxChars
+            ? period.substring(0, maxChars - 1) + '…'
+            : period;
+
+        var halfW = (shortName.length * CHAR_W) / 2;
+
+        // Clamp the label centre so it stays fully inside the drawable width.
+        var minX = paddingLeft + halfW;
+        var maxX = paddingLeft + trackWidth - halfW;
+        if (midX < minX) midX = minX;
+        if (midX > maxX) midX = maxX;
+
+        return { period: period, shortName: shortName, midX: midX, halfW: halfW };
+    }).sort(function (a, b) { return a.midX - b.midX; });
+
+    // Track the right edge of the last placed label per row, for collision tests.
+    var rowRightEdge = [-Infinity, -Infinity];
+
+    labelCandidates.forEach(function (cand) {
+        var period = cand.period;
+        var shortName = cand.shortName;
+        var midX = cand.midX;
+        var leftEdge = midX - cand.halfW;
+        var rightEdge = midX + cand.halfW;
+
+        // Pick a row: prefer the one whose last label ends before this one
+        // starts. Try row 0, then row 1.
+        var row = -1;
+        for (var r = 0; r < 2; r++) {
+            if (leftEdge - rowRightEdge[r] >= LABEL_GAP) { row = r; break; }
+        }
+        // Both rows still occupied at this x → thin (skip) this label so we
+        // never render an unreadable overlap. The period band + dots remain.
+        if (row === -1) return;
+
+        rowRightEdge[row] = rightEdge;
+        var labelY = labelRowY[row];
 
         var text = document.createElementNS(SVG_NS, 'text');
         text.setAttribute('x', midX);
@@ -463,10 +530,13 @@ TransmissionTimeline.prototype._render = function () {
         text.setAttribute('role', 'button');
         text.setAttribute('aria-pressed', 'false');
         text.setAttribute('data-period', period);
-        // Shorten very long period names
-        var shortName = period.length > 14 ? period.substring(0, 13) + '…' : period;
         text.textContent = shortName;
         text.style.cursor = 'pointer';
+        // Full name on hover (and for AT) so truncation/thinning loses no info.
+        var fullTitle = document.createElementNS(SVG_NS, 'title');
+        fullTitle.textContent = period;
+        text.appendChild(fullTitle);
+        text.setAttribute('aria-label', period);
 
         (function (p, textEl) {
             function selectPeriod(newPeriod) {
