@@ -287,12 +287,45 @@ def _resolve_line_ids(line_cache: dict, p_number: str, line_number) -> dict | No
 
 def _select_line_id(line_ids: dict | None, surface) -> int | None:
     """Pick a single line_id from the per-surface map, preferring the lemma's
-    surface, then falling back to any surface present for that line."""
+    surface, then falling back to any surface present for that line.
+
+    Values in the map are (line_id, source) tuples (see _stash_line, #254);
+    this returns just the line_id.
+    """
     if not line_ids:
         return None
-    return (line_ids.get(surface) if surface else None) or next(
+    chosen = (line_ids.get(surface) if surface else None) or next(
         iter(line_ids.values()), None
     )
+    return chosen[0] if chosen is not None else None
+
+
+def _stash_line(
+    line_cache: dict, p_num, line_num, surface_type, line_id: int, source
+) -> None:
+    """Record a line_id for (p_number, line_number) under its surface.
+
+    A (p_number, line_number, surface) tuple is NOT unique: the same logical
+    line can exist multiple times — across CDLI columns and across sources
+    (cdli vs oracc). When that happens, an ORACC lemma's token position is the
+    ORACC tokenization, so the oracc-source line is the correct match target.
+    We therefore let an oracc-source line win the slot and never let a
+    non-oracc line overwrite an oracc one already stored. This is the #254 fix:
+    the prior code did a blind last-writer-wins, which dropped the oracc line
+    ~82% of the time and dead-lettered the lemma as no_token_match even though
+    the right token existed on a sibling duplicate line.
+    """
+    surf = surface_type or "unknown"
+    surf_map = line_cache.setdefault((p_num, line_num), {})
+    existing = surf_map.get(surf)
+    if existing is None:
+        surf_map[surf] = (line_id, source)
+        return
+    # Only overwrite if the incoming line is oracc-source and the stored one
+    # is not — i.e. upgrade a cdli slot to the oracc line, never downgrade.
+    _, existing_source = existing
+    if source == "oracc" and existing_source != "oracc":
+        surf_map[surf] = (line_id, source)
 
 
 def _build_caches(db, project: str) -> tuple[dict, dict]:
@@ -307,25 +340,31 @@ def _build_caches(db, project: str) -> tuple[dict, dict]:
 
     line_cache: dict = {}
     for row in db.execute(
-        "SELECT tl.p_number, tl.line_number, s.surface_type, tl.id "
+        "SELECT tl.p_number, tl.line_number, s.surface_type, tl.id, tl.source "
         "FROM text_lines tl LEFT JOIN surfaces s ON tl.surface_id = s.id "
-        "WHERE tl.p_number = ANY(%s) AND tl.is_ruling = 0 AND tl.is_blank = 0",
+        "WHERE tl.p_number = ANY(%s) AND tl.is_ruling = 0 AND tl.is_blank = 0 "
+        # oracc-source lines last so they win the last-writer-wins collapse in
+        # _stash_line below: an ORACC lemma indexes ORACC tokenization, so when
+        # a (p_number, line_number, surface) tuple is duplicated across sources
+        # (cdli columns + oracc), the oracc line carries the tokens the lemma
+        # positions refer to (#254).
+        "ORDER BY (tl.source = 'oracc')",
         (list(p_numbers),),
     ).fetchall():
         if isinstance(row, dict):
-            p_num, line_num, surface_type, line_id = (
+            p_num, line_num, surface_type, line_id, source = (
                 row["p_number"],
                 row["line_number"],
                 row["surface_type"],
                 row["id"],
+                row["source"],
             )
         else:
-            p_num, line_num, surface_type, line_id = row
-        key = (p_num, line_num)
-        line_cache.setdefault(key, {})[surface_type or "unknown"] = line_id
+            p_num, line_num, surface_type, line_id, source = row
+        _stash_line(line_cache, p_num, line_num, surface_type, line_id, source)
 
     all_line_ids = [
-        lid for surf_map in line_cache.values() for lid in surf_map.values()
+        lid for surf_map in line_cache.values() for (lid, _src) in surf_map.values()
     ]
     token_cache: dict = {}
     if all_line_ids:
@@ -504,26 +543,28 @@ class OraccLemmatizationsConnector(SourceConnector):
             return {}, {}
         line_cache: dict = {}
         for row in db.execute(
-            "SELECT tl.p_number, tl.line_number, s.surface_type, tl.id "
+            "SELECT tl.p_number, tl.line_number, s.surface_type, tl.id, tl.source "
             "FROM text_lines tl LEFT JOIN surfaces s ON tl.surface_id = s.id "
-            "WHERE tl.p_number = ANY(%s) AND tl.is_ruling = 0 AND tl.is_blank = 0",
+            "WHERE tl.p_number = ANY(%s) AND tl.is_ruling = 0 AND tl.is_blank = 0 "
+            # oracc-source lines last so they win the collapse (#254) — see
+            # _stash_line. Keeps the replay path identical to load().
+            "ORDER BY (tl.source = 'oracc')",
             (list(p_numbers),),
         ).fetchall():
             if isinstance(row, dict):
-                p_num, line_num, surface_type, line_id = (
+                p_num, line_num, surface_type, line_id, source = (
                     row["p_number"],
                     row["line_number"],
                     row["surface_type"],
                     row["id"],
+                    row["source"],
                 )
             else:
-                p_num, line_num, surface_type, line_id = row
-            line_cache.setdefault((p_num, line_num), {})[surface_type or "unknown"] = (
-                line_id
-            )
+                p_num, line_num, surface_type, line_id, source = row
+            _stash_line(line_cache, p_num, line_num, surface_type, line_id, source)
 
         all_line_ids = [
-            lid for surf_map in line_cache.values() for lid in surf_map.values()
+            lid for surf_map in line_cache.values() for (lid, _src) in surf_map.values()
         ]
         token_cache: dict = {}
         if all_line_ids:

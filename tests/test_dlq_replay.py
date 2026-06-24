@@ -8,8 +8,10 @@ replay batching/marking loop against an in-memory fake connection.
 from __future__ import annotations
 
 from ingestion.connectors.oracc_lemmatizations import (
+    OraccLemmatizationsConnector,
     _resolve_line_ids,
     _select_line_id,
+    _stash_line,
 )
 from ingestion import dlq_replay
 
@@ -46,11 +48,223 @@ def test_non_numeric_line_number_no_fallback():
 
 
 def test_select_line_id_prefers_surface():
-    line_ids = {"obverse": 1, "reverse": 2}
+    # cache values are (line_id, source) tuples (#254); _select_line_id
+    # returns just the line_id.
+    line_ids = {"obverse": (1, "cdli"), "reverse": (2, "oracc")}
     assert _select_line_id(line_ids, "reverse") == 2
     # falls back to any surface when the lemma surface is absent
-    assert _select_line_id({"reverse": 2}, "obverse") == 2
+    assert _select_line_id({"reverse": (2, "oracc")}, "obverse") == 2
     assert _select_line_id(None, "obverse") is None
+
+
+# --- #254: duplicate-line collision / oracc-source preference -------------
+
+
+def test_stash_line_oracc_wins_over_cdli():
+    # The same (p_number, line_number, surface) exists as a cdli column line
+    # and as the oracc line. The oracc line carries the tokenization an ORACC
+    # lemma's position refers to, so it must win the slot regardless of insert
+    # order.
+    cache: dict = {}
+    _stash_line(cache, "P1", "4", "obverse", 100, "cdli")
+    _stash_line(cache, "P1", "4", "obverse", 200, "oracc")
+    assert _select_line_id(cache[("P1", "4")], "obverse") == 200
+
+    # ...and the reverse insert order yields the same winner (no downgrade).
+    cache2: dict = {}
+    _stash_line(cache2, "P1", "4", "obverse", 200, "oracc")
+    _stash_line(cache2, "P1", "4", "obverse", 100, "cdli")
+    assert _select_line_id(cache2[("P1", "4")], "obverse") == 200
+
+
+def test_stash_line_keeps_first_when_no_oracc():
+    # No oracc line present -> keep whatever was stored first; never invent.
+    cache: dict = {}
+    _stash_line(cache, "P1", "4", "obverse", 100, "cdli")
+    _stash_line(cache, "P1", "4", "obverse", 101, "cdli")
+    assert _select_line_id(cache[("P1", "4")], "obverse") == 100
+
+
+# --- #254: end-to-end build_caches + resolve against the bug fixture ------
+#
+# A realistic reconstruction of the prod failure (#254): a 3000-row sample of
+# open `no_token_match` dead letters where ~82% had the (p,line,surface) tuple
+# duplicated across sources. With blind last-writer-wins the oracc line was
+# dropped and the lemma's token went unmatched. We assert the fix resolves the
+# duplicated rows (the right oracc token is found at the *as-is* position — no
+# -1 shift) and that the genuine residue (lemma position beyond the line's
+# token count) correctly stays unresolved.
+
+
+class _CacheFakeDB:
+    """Serves canned text_lines + tokens rows so build_caches_for_payloads and
+    resolve_payload run their real SQL-shaped logic against a fixture."""
+
+    def __init__(self, line_rows, token_rows):
+        self._line_rows = line_rows
+        self._token_rows = token_rows
+        self.inserts = 0
+
+    def execute(self, sql, params=None):
+        s = " ".join(sql.split())
+        if s.startswith("SELECT id FROM annotation_runs"):
+            return _FakeResult([{"id": 7}])
+        if "FROM text_lines" in s:
+            return _FakeResult(self._line_rows)
+        if "FROM tokens" in s:
+            ids = set(params[0])
+            return _FakeResult([t for t in self._token_rows if t["line_id"] in ids])
+        if s.startswith("INSERT INTO lemmatizations"):
+            self.inserts += 1
+            return _FakeResult([])
+        return _FakeResult([])
+
+    def commit(self):
+        pass
+
+    def rollback(self):
+        pass
+
+
+def _build_254_fixture(n_dup=82, n_residue=18):
+    """Build line/token rows + dead-letter payloads modeling the #254 split.
+
+    For each duplicated case: a cdli line (line_id 1000+i, short — only 2
+    tokens, no token at the lemma position) and an oracc line (2000+i, with a
+    token at the lemma position). The lemma payload targets position 2.
+
+    For each residue case: only an oracc line exists but it has just 2 tokens
+    (positions 0,1) while the lemma seeks position 2 -> genuinely unresolvable.
+    """
+    line_rows: list[dict] = []
+    token_rows: list[dict] = []
+    payloads: list[dict] = []
+    tok_id = 0
+    for i in range(n_dup):
+        p = f"P{i:06d}"
+        cdli_id, oracc_id = 1000 + i, 2000 + i
+        line_rows.append(
+            {
+                "p_number": p,
+                "line_number": "4",
+                "surface_type": "obverse",
+                "id": cdli_id,
+                "source": "cdli",
+            }
+        )
+        line_rows.append(
+            {
+                "p_number": p,
+                "line_number": "4",
+                "surface_type": "obverse",
+                "id": oracc_id,
+                "source": "oracc",
+            }
+        )
+        # cdli line: only positions 0,1 (no pos 2)
+        for pos in (0, 1):
+            tok_id += 1
+            token_rows.append({"id": tok_id, "line_id": cdli_id, "position": pos})
+        # oracc line: positions 0,1,2 -> the lemma's token lives here
+        for pos in (0, 1, 2):
+            tok_id += 1
+            token_rows.append({"id": tok_id, "line_id": oracc_id, "position": pos})
+        payloads.append(
+            {
+                "project": "x",
+                "p_number": p,
+                "line_number": "4",
+                "surface": "obverse",
+                "position": 2,
+                "cf": "lugal",
+            }
+        )
+    for j in range(n_residue):
+        p = f"R{j:06d}"
+        oracc_id = 3000 + j
+        line_rows.append(
+            {
+                "p_number": p,
+                "line_number": "4",
+                "surface_type": "obverse",
+                "id": oracc_id,
+                "source": "oracc",
+            }
+        )
+        for pos in (0, 1):  # no position 2 anywhere -> genuine residue
+            tok_id += 1
+            token_rows.append({"id": tok_id, "line_id": oracc_id, "position": pos})
+        payloads.append(
+            {
+                "project": "x",
+                "p_number": p,
+                "line_number": "4",
+                "surface": "obverse",
+                "position": 2,
+                "cf": "lugal",
+            }
+        )
+    return line_rows, token_rows, payloads
+
+
+def test_254_oracc_preference_resolves_dup_lines_and_leaves_residue():
+    line_rows, token_rows, payloads = _build_254_fixture(n_dup=82, n_residue=18)
+    db = _CacheFakeDB(line_rows, token_rows)
+    p_numbers = sorted({pl["p_number"] for pl in payloads})
+    line_cache, token_cache = OraccLemmatizationsConnector.build_caches_for_payloads(
+        db, p_numbers
+    )
+
+    resolved = 0
+    for pl in payloads:
+        if OraccLemmatizationsConnector.resolve_payload(
+            db, pl, 7, line_cache, token_cache
+        ):
+            resolved += 1
+
+    total = len(payloads)  # 100
+    # ~82% resolve (the duplicated rows, via the oracc line at the as-is
+    # position — proving there is NO off-by-one to compensate)...
+    assert resolved == 82
+    assert 0.80 <= resolved / total <= 0.85
+    # ...and the ~18% genuine residue (position beyond the line) stays open.
+    assert total - resolved == 18
+
+
+def test_254_no_position_shift_applied():
+    """Guard against a regression to the misdiagnosed `position - 1` fix: the
+    token must be matched at the lemma's recorded position, not position-1."""
+    line_rows = [
+        {
+            "p_number": "P1",
+            "line_number": "4",
+            "surface_type": "obverse",
+            "id": 2000,
+            "source": "oracc",
+        },
+    ]
+    token_rows = [
+        {"id": 1, "line_id": 2000, "position": 0},
+        {"id": 2, "line_id": 2000, "position": 1},
+        {"id": 3, "line_id": 2000, "position": 2},
+    ]
+    db = _CacheFakeDB(line_rows, token_rows)
+    line_cache, token_cache = OraccLemmatizationsConnector.build_caches_for_payloads(
+        db, ["P1"]
+    )
+    # position 2 -> token id 3 (exact). A -1 shift would wrongly pick token 2.
+    assert token_cache[(2000, 2)] == 3
+    payload = {
+        "project": "x",
+        "p_number": "P1",
+        "line_number": "4",
+        "surface": "obverse",
+        "position": 2,
+        "cf": "lugal",
+    }
+    assert OraccLemmatizationsConnector.resolve_payload(
+        db, payload, 7, line_cache, token_cache
+    )
 
 
 # --- DLQ replay loop ------------------------------------------------------
