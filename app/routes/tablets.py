@@ -1,5 +1,6 @@
 """Tablet routes — list and detail."""
 
+import concurrent.futures
 import json
 import logging
 import math
@@ -135,8 +136,6 @@ def tablet_list(
     if has_ocr:
         params["has_ocr"] = "true"
 
-    artifact_page = api.list_artifacts(params)
-
     # Corpus-Atlas aggregates (#320): per-period counts (timeline) + ranked
     # find-spots (geography lens), both over the SAME active filter as the grid.
     # Fetched on every load so the view-switcher flips instantly client-side and
@@ -144,8 +143,28 @@ def tablet_list(
     atlas_params = _atlas_filter_params(
         search, pipeline, period, provenience, genre, language, has_ocr
     )
-    timeline_rows = _timeline_axis(api.get_artifacts_timeline(atlas_params))
-    site_rows = api.get_artifacts_by_site({**atlas_params, "limit": 12})
+
+    # #115 — these API round trips are independent of one another, so fire them
+    # concurrently instead of sequentially. The page artifact list, the timeline
+    # aggregate, the by-site aggregate (and, on the map view, the site coords) all
+    # hit the API over HTTP; running them in parallel collapses the page-load
+    # latency from the SUM of the calls to the MAX. httpx.Client is thread-safe
+    # for concurrent requests, and every api.* method here already degrades to an
+    # empty/well-formed result on failure, so a slow or failing branch can never
+    # 500 the page — same contract as before, just overlapped. Mirrors the
+    # ThreadPoolExecutor pattern in core/agent/search_engine.py.
+    want_coords = view == "map"
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        page_future = executor.submit(api.list_artifacts, params)
+        timeline_future = executor.submit(api.get_artifacts_timeline, atlas_params)
+        site_future = executor.submit(
+            api.get_artifacts_by_site, {**atlas_params, "limit": 12}
+        )
+        coords_future = executor.submit(api.get_site_coords) if want_coords else None
+
+        artifact_page = page_future.result()
+        timeline_rows = _timeline_axis(timeline_future.result())
+        site_rows = site_future.result()
 
     # Map view (#197): geolocated find-spots as proportional symbols. The pins
     # show the full geographic distribution of the corpus (a navigation surface,
@@ -156,8 +175,8 @@ def tablet_list(
     # design) — uncertain-provenance tablets are reported separately.
     map_pins: list = []
     map_uncertain = 0
-    if view == "map":
-        coords = api.get_site_coords()
+    if coords_future is not None:
+        coords = coords_future.result()
         map_pins = build_pins(coords.get("sites", []))
         map_uncertain = (coords.get("uncertain") or {}).get("tablet_count", 0)
 
