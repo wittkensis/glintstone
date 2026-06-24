@@ -247,23 +247,78 @@ ssh_run "timeout 120 sh -c 'cd $RELEASE_DIR && set -a && . ./.env && set +a && \
     exit 1
 }
 
+# --- Decide whether this deploy needs a pre-deploy DB snapshot (#219 / #272) ---
+# The full pg_dump of the ~22 GB prod DB is the single biggest phase of a deploy
+# (~18 min) and it gates EVERY deploy — including code-only deploys that touch no
+# data at all. A code-only deploy can never change the database, so the previous
+# release is already a perfectly good rollback point and a fresh dump buys nothing.
+#
+# We take the dump ONLY when this release actually has a database migration to run.
+# Detection is delegated to the migration runner itself — the SAME `migrate.py`
+# that the migrations step below will execute — via its `status` command, which
+# compares the migration files shipped in THIS release against the `_migrations`
+# tracking table in the live DB and prints `Applied: N` for the count already
+# applied out of the total found. If "found" > "applied" there is at least one
+# pending migration, so the DB MAY change and we MUST back up first. If they are
+# equal, `migrate.py up` below would be a no-op and the data cannot change, so the
+# dump is safely skipped. Using the runner's own view (not a git diff) means the
+# skip decision can never disagree with what actually runs.
+#
+# FAIL-SAFE: any uncertainty defaults to TAKING the dump. If `migrate.py status`
+# errors, times out, or its output can't be parsed into two clean numbers, we set
+# migrations_pending=true and back up. A needless dump costs ~18 min; a skipped
+# backup before a real migration risks the data — so the safe default is to dump.
+migrations_pending=true   # fail-safe default: back up unless we PROVE it's unneeded
+if [ "$APP_ENV" = "production" ]; then
+    echo "[$(date -u +%H:%M:%S)] Checking for pending migrations (timeout 1m)..."
+    # `migrate.py status` prints lines like:
+    #   Found 53 migrations in /.../migrations
+    #   Applied: 53
+    # We extract the two integers and compare. Anything unexpected -> stay safe.
+    MIG_STATUS="$(ssh_run "timeout 60 sh -c 'cd $RELEASE_DIR && set -a && . ./.env && set +a && \
+        DATABASE_URL=\"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" venv/bin/python data-model/migrate.py status'" 2>/dev/null)" || MIG_STATUS=""
+    found_count="$(printf '%s\n' "$MIG_STATUS" | sed -n 's/^Found \([0-9]\{1,\}\) migrations.*/\1/p' | head -1)"
+    applied_count="$(printf '%s\n' "$MIG_STATUS" | sed -n 's/^Applied: \([0-9]\{1,\}\).*/\1/p' | head -1)"
+    if [ -n "$found_count" ] && [ -n "$applied_count" ]; then
+        if [ "$found_count" -le "$applied_count" ]; then
+            migrations_pending=false
+            echo "  No pending migrations ($applied_count/$found_count applied) — DB cannot change."
+            echo "  SKIPPING the pre-deploy pg_dump (code-only deploy; previous release is the rollback)."
+        else
+            echo "  $((found_count - applied_count)) pending migration(s) ($applied_count/$found_count applied) — will snapshot the DB first."
+        fi
+    else
+        echo "::warning::Could not parse migrate.py status output — defaulting to TAKING a backup (fail-safe)."
+        echo "::warning::status output was: ${MIG_STATUS:-<empty / command failed>}"
+    fi
+fi
+
 # --- Pre-deploy DB snapshot (production only — staging restores from prod nightly) ---
 # A failed OR timed-out pg_dump aborts the deploy: deploying without a complete
 # backup right before a migration is the risk profile we're eliminating. The
 # wait below is bounded AND fails hard — it must never fall through to migrations
 # with a partial dump on disk (see the #7 deploy-hang post-mortem, 2026-06-20).
-if [ "$APP_ENV" = "production" ]; then
-    SNAPSHOT_NAME="pre-deploy-$RELEASE_TAG.dump"
+if [ "$APP_ENV" = "production" ] && $migrations_pending; then
+    # Directory-format dump (a directory of per-table files), NOT a single file.
+    # Suffix `.dumpdir` so the rotation glob and restore command can tell the new
+    # parallel dumps apart from any legacy single-file `.dump` left on the box.
+    SNAPSHOT_NAME="pre-deploy-$RELEASE_TAG.dumpdir"
+    # Parallelism for the dump (#272). The prod box has several cores and the dump
+    # is I/O+CPU bound on a single connection with -Fc; -Fd -j N runs N worker
+    # connections in parallel and cuts wall-clock roughly N-fold. 4 is a safe
+    # default that leaves headroom for the live API/web workers also hitting PG.
+    DUMP_JOBS="${DUMP_JOBS:-4}"
 
     # --- Pre-flight: make room and verify the dump can fit ---
-    # The dump is written to the same filesystem as everything else. A 19 GB DB
-    # produces a ~6 GB -Fc dump; with the disk at ~91% used this can fail
-    # mid-write (leaving a truncated "backup"). Rotate OLD dumps BEFORE the new
-    # one runs (we previously trimmed afterward, so peak usage held 4 dumps at
-    # once), then refuse to start if free space is implausibly low.
+    # The dump is written to the same filesystem as everything else. A ~22 GB DB
+    # produces a ~6 GB compressed dump; with the disk tight this can fail mid-write
+    # (leaving a truncated "backup"). Rotate OLD dumps BEFORE the new one runs,
+    # then refuse to start if free space is implausibly low. Covers both the new
+    # `.dumpdir` directories and any legacy single-file `.dump` snapshots.
     echo "Rotating old snapshots before dump (keep newest 2)..."
-    ssh_run "cd $SHARED_DIR/backups && ls -1t pre-deploy-*.dump 2>/dev/null | tail -n +3 | xargs -r rm -f; \
-             rm -f pre-deploy-*.dump.done 2>/dev/null || true"
+    ssh_run "cd $SHARED_DIR/backups 2>/dev/null && \
+             ls -1dt pre-deploy-*.dumpdir pre-deploy-*.dump 2>/dev/null | tail -n +3 | xargs -r rm -rf; \
+             rm -f pre-deploy-*.done 2>/dev/null || true"
     AVAIL_KB=$(ssh_run "df -P $SHARED_DIR/backups | awk 'NR==2{print \$4}'")
     MIN_FREE_KB=$((10 * 1024 * 1024))   # require ~10 GB headroom for the dump
     if [ "${AVAIL_KB:-0}" -lt "$MIN_FREE_KB" ]; then
@@ -273,32 +328,41 @@ if [ "$APP_ENV" = "production" ]; then
         exit 1
     fi
 
-    # NOTE: this is the longest phase of the deploy. The prod DB is ~19 GB and
-    # the -Fc dump is ~5.7 GB, growing ~400 MB / 80s → roughly 18–20 min wall
-    # clock. The progress lines below tick every ~80s WITH a dump size so the
-    # step is visibly alive; do NOT mistake a slow-but-progressing dump for a
-    # hang and cancel it (that was the 2026-06-21 misdiagnosis). The deploy job's
-    # workflow timeout-minutes must comfortably exceed dump + rsync + migrations.
-    echo "[$(date -u +%H:%M:%S)] Snapshotting production DB → $SNAPSHOT_NAME"
-    echo "  (background dump; ~18–20 min expected for a ~19 GB DB; polling below)..."
+    # NOTE: this is the longest phase of the deploy, but it only runs on a deploy
+    # that ships a migration now (code-only deploys skipped the whole block above).
+    # With -Fd -j $DUMP_JOBS the ~22 GB DB dumps in roughly a quarter of the old
+    # ~18 min single-stream time. The progress lines below tick every ~60s WITH a
+    # dump size so the step is visibly alive; do NOT mistake a slow-but-progressing
+    # dump for a hang and cancel it (that was the 2026-06-21 misdiagnosis). The
+    # deploy job's workflow timeout-minutes must comfortably exceed dump + rsync +
+    # migrations.
+    #
+    # RESTORE (directory format): use pg_restore, NOT psql. Parallel restore too:
+    #   pg_restore -j 4 --clean --if-exists -d "$DATABASE_URL_MIGRATIONS" \
+    #       /var/www/glintstone/shared/backups/pre-deploy-<RELEASE_TAG>.dumpdir
+    # (Drop --clean/--if-exists to restore into a fresh/empty database instead.)
+    echo "[$(date -u +%H:%M:%S)] Snapshotting production DB → $SNAPSHOT_NAME (-Fd -j $DUMP_JOBS)"
+    echo "  (background parallel dump; ~5 min expected for a ~22 GB DB; polling below)..."
     # Run pg_dump in the background on the server so the SSH session doesn't need
     # to stay open for the full dump. Poll with short reconnects instead.
-    # -Fc (custom format) compresses internally — do not pipe through gzip.
+    # -Fd writes a directory of internally-compressed files; -j runs N in parallel.
+    # The directory must not pre-exist (pg_dump -Fd refuses a non-empty target), so
+    # clear any stale same-named dir from a prior aborted run first.
     ssh_run "set -a && . $SHARED_DIR/.env && set +a && \
-        mkdir -p $SHARED_DIR/backups && \
-        nohup bash -c 'pg_dump -Fc \"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" \
-            > $SHARED_DIR/backups/$SNAPSHOT_NAME \
+        mkdir -p $SHARED_DIR/backups && rm -rf $SHARED_DIR/backups/$SNAPSHOT_NAME && \
+        nohup bash -c 'pg_dump -Fd -j $DUMP_JOBS -Z 1 \
+            -f $SHARED_DIR/backups/$SNAPSHOT_NAME \
+            \"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" \
             && echo done > $SHARED_DIR/backups/$SNAPSHOT_NAME.done \
             || echo failed > $SHARED_DIR/backups/$SNAPSHOT_NAME.done' \
             > /tmp/pg_dump_deploy.log 2>&1 &"
 
     # --- Bounded wait with a HARD failure on timeout ---
-    # The DB grows over time; the previous 10-min budget was already being
-    # blown by a ~12-min dump (19 GB DB → ~6 GB -Fc). When the loop ran out it
-    # silently FELL THROUGH and ran migrations against prod with only a
-    # partial backup on disk. That is the exact failure we are eliminating:
-    # a slow dump must ABORT, not proceed. Budget = 30 min, with a timestamped
-    # progress line every minute so a future stall is diagnosable from the log.
+    # A slow dump must ABORT, not silently fall through and run migrations against
+    # prod with only a partial backup on disk (the failure we are eliminating).
+    # The parallel -Fd dump is much faster than the old single-stream -Fc, but we
+    # keep a generous 30-min budget so a transiently-loaded box doesn't false-fail;
+    # a timestamped progress line every minute keeps a future stall diagnosable.
     SNAPSHOT_MAX_MIN="${SNAPSHOT_MAX_MIN:-30}"
     snapshot_done=false
     echo "  Waiting for pg_dump (timeout ${SNAPSHOT_MAX_MIN}m)..."
