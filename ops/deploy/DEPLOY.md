@@ -2,11 +2,11 @@
 question: "How does Glintstone get from a git commit to a running release on the VPS?"
 created: 2026-05-11
 modified: 2026-06-23
-context: "Rewritten 2026-05-12 to reflect post-VPS-cutover reality: production Postgres lives on the VPS itself (Neon decommissioned), migrations run server-side, and the branch model is `staging` → `main` with an approval gate on production. 2026-06-23 (#219/#272): pre-deploy pg_dump now skipped on code-only deploys and parallelised (-Fd -j4) when it runs."
+context: "Rewritten 2026-05-12 to reflect post-VPS-cutover reality: production Postgres lives on the VPS itself (Neon decommissioned), migrations run server-side, and the branch model is `staging` → `main` with an approval gate on production. 2026-06-23 (#219/#272): pre-deploy pg_dump now skipped on code-only deploys and parallelised (-Fd -j4) when it runs. 2026-06-23 (#275): added the long-running ingestion / DLQ-replay section — run multi-minute ops under nohup/setsid so SIGHUP on SSH disconnect can't kill them mid-stream."
 status: active
 audience: [engineers, ops, claude]
 owners: [eric]
-related_issues: ["#14", "#52", "#61", "#219", "#272"]
+related_issues: ["#14", "#52", "#61", "#219", "#272", "#273", "#275"]
 related_skills: [gs-expert-deployment]
 supersedes: null
 superseded_by: null
@@ -215,6 +215,60 @@ git checkout -b hotfix-something main
 
 The production approval gate still fires. Cost: you've bypassed the staging
 soak. Reserve for genuine emergencies.
+
+### Long-running ingestion / DLQ replay
+
+Ingestion runs, dead-letter (DLQ) replays, and bulk backfills can take many
+minutes — sometimes hours (a GeoNames load or a multi-million-row DLQ replay).
+If you start one in a plain SSH session and the connection drops — laptop
+sleeps, Wi-Fi blips, you close the lid — the shell receives **SIGHUP** and
+kills the process *and its whole pipeline* mid-stream. We learned this the hard
+way (#273): a `ssh … | tail` DLQ replay got SIGHUP'd at ~70K of 4.87M rows when
+the pipe stalled, and had to be re-run.
+
+**Rule: any op expected to outlive an SSH session runs detached.** Use `nohup`
+(or `setsid`) so SIGHUP can't reach it, redirect output to a log file, and tail
+the log instead of holding the process open through the pipe.
+
+#### Pattern A — `nohup … &` (the default, simplest)
+
+```bash
+# On the VPS, from the app root (/var/www/glintstone/current):
+nohup python -m ingestion.cli dead-letters replay --source geonames \
+  > /var/www/glintstone/shared/logs/dlq-replay-$(date +%F).log 2>&1 &
+echo "started PID $!"          # note the PID so you can check on it later
+
+# Now it's safe to disconnect. To watch progress, re-attach and tail the log:
+tail -f /var/www/glintstone/shared/logs/dlq-replay-*.log
+
+# Check it's still alive / see it finish:
+ps -p <PID>                     # empty output = it exited
+```
+
+Why it works: `nohup` makes the process ignore SIGHUP, the `> … 2>&1`
+redirect detaches stdout/stderr from the terminal (so a closed pipe can't stall
+or kill it), and trailing `&` backgrounds it so your shell returns immediately.
+
+#### Pattern B — `setsid` (fully detached, survives even `kill -HUP` of the shell)
+
+```bash
+setsid python -m ingestion.cli run --source geonames \
+  > /var/www/glintstone/shared/logs/geonames-ingest-$(date +%F).log 2>&1 < /dev/null
+# returns immediately; the process is in its own session with no controlling
+# terminal, so nothing the SSH session does can signal it. tail the log as above.
+```
+
+Use **B** when you want the job in its own session (no chance of inheriting a
+signal from the parent shell at all); **A** is fine for everything routine.
+
+**Do / don't**
+- **Do** redirect to a log under `shared/logs/` and `tail -f` it — never pipe a
+  long run straight into `tail`/`grep` over SSH (a stalled pipe is exactly what
+  bit us in #273).
+- **Do** record the PID (`echo $!`) and the log path before you walk away.
+- **Don't** run a multi-minute ingestion/replay in a bare foreground SSH shell.
+- **Don't** assume `tmux`/`screen` is installed on the VPS — `nohup`/`setsid`
+  are always present and need no session to stay attached to.
 
 ## Required GitHub configuration
 
