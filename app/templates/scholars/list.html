@@ -7,61 +7,130 @@
 {% endblock %}
 
 {% block content %}
+{# All-scholars index (#183) — a real browse surface aligned with the dictionary
+   index's discovery-rail layout (#163 gloss-browse facets). The productivity-
+   ranked list renders server-side on load; the facet rail (#194) and live
+   search enhance it client-side. JS-off, the page is still a meaningful,
+   ranked directory of contributors. #}
 <main class="scholars-page" data-api-url="{{ api_url }}">
-    <div class="page-header">
-        <div class="page-header-main">
-            <div class="page-header-title">
-                <h1>Scholars</h1>
-                <p class="page-header-meta">{{ '{:,}'.format(total) }} contributors to the cuneiform record</p>
+    <div class="scholars-layout">
+
+        {# ── Discovery rail (left) — facet counts (#194) ──────────────── #}
+        <aside class="discovery-rail" aria-label="Browse filters">
+            <div class="discovery-rail__search">
+                <input
+                    id="scholars-search"
+                    class="discovery-rail__input"
+                    type="search"
+                    placeholder="Search by name or institution…"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    aria-label="Search scholars"
+                >
+            </div>
+
+            <div class="discovery-rail__scroll">
+
+                {# Identifier facet — ORCID is the durable researcher id. The
+                   "with" count is always meaningful; the toggle narrows the
+                   86k-row directory to the identified, data-rich subset. #}
+                {% if facets and facets.has_orcid and facets.has_orcid.with > 0 %}
+                <div class="rail-section" data-section="orcid">
+                    <div class="rail-section__heading">Identifier</div>
+                    <button type="button"
+                            class="rail-item scholars-facet"
+                            data-facet="has_orcid"
+                            aria-pressed="false">
+                        <span class="rail-item__label">Has ORCID</span>
+                        <span class="rail-item__count">{{ '{:,}'.format(facets.has_orcid.with) }}</span>
+                    </button>
+                </div>
+                {% endif %}
+
+                {# Contribution facet — scholars credited on at least one
+                   artifact (the contributions ledger). Always offered. #}
+                <div class="rail-section" data-section="contributions">
+                    <div class="rail-section__heading">Contribution</div>
+                    <button type="button"
+                            class="rail-item scholars-facet"
+                            data-facet="has_artifacts"
+                            aria-pressed="false">
+                        <span class="rail-item__label">With artifacts</span>
+                    </button>
+                </div>
+
+                {# Institution facet — sparsely populated in the corpus, so it
+                   only renders when affiliations exist. An empty list here is
+                   the honest "no affiliations on record" signal, not a bug. #}
+                {% if facets and facets.institution %}
+                <div class="rail-section" data-section="institution">
+                    <div class="rail-section__heading">Institution</div>
+                    {% set inst_threshold = 8 %}
+                    {% for item in facets.institution %}
+                    <button type="button"
+                            class="rail-item scholars-facet{% if loop.index > inst_threshold %} rail-item--overflow{% endif %}"
+                            data-facet="institution"
+                            data-value="{{ item.value }}"
+                            aria-pressed="false">
+                        <span class="rail-item__label">{{ item.label }}</span>
+                        <span class="rail-item__count">{{ '{:,}'.format(item.count) }}</span>
+                    </button>
+                    {% endfor %}
+                    {% if facets.institution|length > inst_threshold %}
+                    <button type="button" class="rail-show-more" data-target="institution">
+                        Show all {{ facets.institution|length }}
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+            </div>{# /discovery-rail__scroll #}
+        </aside>
+
+        {# ── Main content (right) ─────────────────────────────────────── #}
+        <div class="scholars-main">
+            <div class="page-header">
+                <div class="page-header-main">
+                    <div class="page-header-title">
+                        <h1>Scholars</h1>
+                        <p class="page-header-meta" id="scholars-meta">{{ '{:,}'.format(total) }} contributors to the cuneiform record</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scholars-results" aria-live="polite" aria-atomic="false">
+                {# Server-rendered productivity-ranked list (#183). Replaced
+                   wholesale by the JS once a search/facet is active. #}
+                <ul class="scholars-list" id="scholars-list">
+                    {% for scholar in initial_scholars %}
+                    <li class="scholars-row">
+                        <a class="scholars-row__link" href="/scholars/{{ scholar.id }}">
+                            <span class="scholars-row__name">{{ scholar.name }}</span>
+                            {% if scholar.institution %}
+                            <span class="scholars-row__institution">{{ scholar.institution }}</span>
+                            {% endif %}
+                            <span class="scholars-row__count">
+                                {% set c = scholar.artifact_count or 0 %}
+                                {% if c == 1 %}1 artifact{% else %}{{ '{:,}'.format(c) }} artifacts{% endif %}
+                            </span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <div class="scholars-loading" id="scholars-loading" hidden aria-label="Loading results">
+                    <span class="scholars-loading__dot"></span>
+                    <span class="scholars-loading__dot"></span>
+                    <span class="scholars-loading__dot"></span>
+                </div>
+
+                <p class="scholars-no-results" id="scholars-no-results" hidden>
+                    No scholars matched your search.
+                </p>
             </div>
         </div>
-    </div>
-
-    <div class="scholars-controls">
-        <input
-            id="scholars-search"
-            class="scholars-search"
-            type="search"
-            placeholder="Search by name or institution..."
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            spellcheck="false"
-            aria-label="Search scholars"
-        >
-
-        <div class="scholars-filter-row" role="group" aria-label="Filter scholars">
-            <button
-                class="btn btn--sm scholars-filter-pill scholars-filter-pill--active"
-                data-filter="all"
-                type="button"
-                aria-pressed="true"
-            >All</button>
-            <button
-                class="btn btn--sm scholars-filter-pill"
-                data-filter="has_artifacts"
-                type="button"
-                aria-pressed="false"
-            >With Artifacts</button>
-        </div>
-    </div>
-
-    <div class="scholars-results" aria-live="polite" aria-atomic="true">
-        <p class="scholars-empty-state" id="scholars-empty-state">
-            Search by name or institution to find contributors.
-        </p>
-
-        <ul class="scholars-list" id="scholars-list" hidden></ul>
-
-        <div class="scholars-loading" id="scholars-loading" hidden aria-label="Loading results">
-            <span class="scholars-loading__dot"></span>
-            <span class="scholars-loading__dot"></span>
-            <span class="scholars-loading__dot"></span>
-        </div>
-
-        <p class="scholars-no-results" id="scholars-no-results" hidden>
-            No scholars matched your search.
-        </p>
     </div>
 </main>
 
@@ -74,130 +143,147 @@
 
     const input = document.getElementById('scholars-search');
     const list = document.getElementById('scholars-list');
-    const emptyState = document.getElementById('scholars-empty-state');
     const loadingEl = document.getElementById('scholars-loading');
     const noResults = document.getElementById('scholars-no-results');
-    const filterPills = document.querySelectorAll('.scholars-filter-pill');
+    const meta = document.getElementById('scholars-meta');
+    const facetBtns = document.querySelectorAll('.scholars-facet');
 
     let debounceTimer = null;
     let inflight = null;
-    let activeFilter = 'all'; // 'all' | 'has_artifacts'
+    // Monotonic request token: only the most recently issued fetch is allowed
+    // to write the DOM, so a slow earlier response (e.g. the page-load default)
+    // can never overwrite a newer facet/search result (the meta-count race).
+    let reqSeq = 0;
 
-    // --- helpers -----------------------------------------------------------
+    // Active facet state. has_orcid / has_artifacts are booleans; institution
+    // is a set of selected affiliations.
+    const state = { has_orcid: false, has_artifacts: false, institution: new Set() };
 
     function escapeHtml(str) {
         if (!str) return '';
         return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function isQueryActive() {
-        return input.value.trim().length > 0 || activeFilter === 'has_artifacts';
+        return input.value.trim().length > 0
+            || state.has_orcid || state.has_artifacts
+            || state.institution.size > 0;
     }
 
-    function showState(state) {
-        // state: 'empty' | 'loading' | 'results' | 'no-results'
-        emptyState.hidden  = state !== 'empty';
-        list.hidden        = state !== 'results';
-        loadingEl.hidden   = state !== 'loading';
-        noResults.hidden   = state !== 'no-results';
+    function showState(s) {
+        // 'loading' | 'results' | 'no-results' — 'results' shows the list.
+        list.hidden = s !== 'results';
+        loadingEl.hidden = s !== 'loading';
+        noResults.hidden = s !== 'no-results';
     }
 
     function renderRow(scholar) {
         const li = document.createElement('li');
         li.className = 'scholars-row';
-
         const count = scholar.artifact_count || 0;
         const countText = count === 1 ? '1 artifact' : (count.toLocaleString() + ' artifacts');
-
         const institutionHtml = scholar.institution
             ? '<span class="scholars-row__institution">' + escapeHtml(scholar.institution) + '</span>'
             : '';
-
         li.innerHTML =
             '<a class="scholars-row__link" href="/scholars/' + scholar.id + '">' +
                 '<span class="scholars-row__name">' + escapeHtml(scholar.name) + '</span>' +
                 institutionHtml +
                 '<span class="scholars-row__count">' + countText + '</span>' +
             '</a>';
-
         return li;
     }
 
-    // --- search ------------------------------------------------------------
+    function buildParams() {
+        const params = new URLSearchParams();
+        params.set('per_page', '50');
+        const q = input.value.trim();
+        if (q) params.set('search', q);
+        if (state.has_orcid) params.set('has_orcid', 'true');
+        if (state.has_artifacts) params.set('has_artifacts', 'true');
+        state.institution.forEach(function (v) { params.append('institution', v); });
+        return params;
+    }
 
-    function doSearch(query) {
+    function doSearch() {
+        if (inflight) { inflight.abort(); inflight = null; }
         if (!isQueryActive()) {
-            showState('empty');
+            // No active filter/search → restore the server-rendered default
+            // browse (productivity-ranked) by reloading the first page once.
+            fetchAndRender(new URLSearchParams({ per_page: '24' }), true);
             return;
         }
+        fetchAndRender(buildParams(), false);
+    }
 
-        // Cancel any previous in-flight request
-        if (inflight) {
-            inflight.abort();
-            inflight = null;
-        }
-
+    function fetchAndRender(params, isDefault) {
         showState('loading');
-
-        const params = new URLSearchParams({ per_page: 50 });
-        if (query) params.set('search', query);
-        if (activeFilter === 'has_artifacts') params.set('has_artifacts', 'true');
-
         const controller = new AbortController();
         inflight = controller;
-
+        const mySeq = ++reqSeq;
         fetch(API_BASE + '/scholars?' + params.toString(), { signal: controller.signal })
             .then(function (res) {
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 return res.json();
             })
             .then(function (data) {
+                if (mySeq !== reqSeq) return;  // superseded by a newer request
                 inflight = null;
                 const items = data.items || [];
-
-                if (items.length === 0) {
-                    showState('no-results');
-                    return;
+                if (meta) {
+                    meta.textContent = (data.total || 0).toLocaleString() +
+                        (isDefault ? ' contributors to the cuneiform record'
+                                   : ' matching scholars');
                 }
-
+                if (items.length === 0) { showState('no-results'); return; }
                 list.innerHTML = '';
-                items.forEach(function (scholar) {
-                    list.appendChild(renderRow(scholar));
-                });
+                items.forEach(function (s) { list.appendChild(renderRow(s)); });
                 showState('results');
             })
             .catch(function (err) {
-                if (err.name === 'AbortError') return; // superseded by a newer request
+                if (err.name === 'AbortError') return;
+                if (mySeq !== reqSeq) return;
                 inflight = null;
                 showState('no-results');
             });
     }
 
-    // --- event wiring ------------------------------------------------------
+    // --- wiring -----------------------------------------------------------
 
     input.addEventListener('input', function () {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function () {
-            doSearch(input.value.trim());
-        }, 200);
+        debounceTimer = setTimeout(doSearch, 200);
     });
 
-    filterPills.forEach(function (pill) {
-        pill.addEventListener('click', function () {
-            var filter = pill.dataset.filter;
-            activeFilter = filter;
+    facetBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const facet = btn.dataset.facet;
+            if (facet === 'institution') {
+                const v = btn.dataset.value;
+                if (state.institution.has(v)) state.institution.delete(v);
+                else state.institution.add(v);
+                const on = state.institution.has(v);
+                btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                btn.classList.toggle('rail-item--active', on);
+            } else {
+                state[facet] = !state[facet];
+                btn.setAttribute('aria-pressed', state[facet] ? 'true' : 'false');
+                btn.classList.toggle('rail-item--active', state[facet]);
+            }
+            doSearch();
+        });
+    });
 
-            filterPills.forEach(function (p) {
-                var active = p.dataset.filter === filter;
-                p.classList.toggle('scholars-filter-pill--active', active);
-                p.setAttribute('aria-pressed', active ? 'true' : 'false');
+    // Show-all overflow toggle for the institution facet.
+    document.querySelectorAll('.rail-show-more').forEach(function (b) {
+        b.addEventListener('click', function () {
+            const section = b.closest('.rail-section');
+            section.querySelectorAll('.rail-item--overflow').forEach(function (el) {
+                el.classList.remove('rail-item--overflow');
             });
-
-            doSearch(input.value.trim());
+            b.remove();
         });
     });
 }());

@@ -121,6 +121,41 @@ LANG_FALLBACK = {
 }
 
 
+# ── Dialect labels (#186) ────────────────────────────────────────────────────
+# A *language* and a *dialect* are different axes of the same record. ORACC
+# tags many Akkadian lemmas with a dialect code (e.g. "oldbab") that names a
+# historical variety of the language — "Old Babylonian Akkadian" = the Akkadian
+# *language* in its Old Babylonian *dialect*. The codes are opaque ORACC
+# abbreviations; this map turns them into the names a reader recognises so the
+# lemma page can show "Akkadian · Old Babylonian" rather than a bare "oldbab".
+# Codes absent from the map fall through to the raw value (honest — we surface
+# what the data carries rather than inventing a label).
+DIALECT_LABELS = {
+    "stdbab": "Standard Babylonian",
+    "oldbab": "Old Babylonian",
+    "midbab": "Middle Babylonian",
+    "neobab": "Neo-Babylonian",
+    "ltebab": "Late Babylonian",
+    "oldass": "Old Assyrian",
+    "midass": "Middle Assyrian",
+    "neoass": "Neo-Assyrian",
+    "earakk": "Early Akkadian",
+    "mbperi": "Middle Babylonian Peripheral",
+    "emesal": "Emesal",  # the Sumerian register, not an Akkadian dialect
+}
+
+
+def dialect_label(code: str | None) -> str:
+    """Human label for an ORACC dialect code, or '' when absent.
+
+    Returns an empty string for null/blank so the template can take the standard
+    #189 empty-state path rather than printing a stray code.
+    """
+    if not code:
+        return ""
+    return DIALECT_LABELS.get(code, code)
+
+
 class LexicalRepository(BaseRepository):
     # ── Language helper (cached per request) ──────────────────
 
@@ -479,6 +514,10 @@ class LexicalRepository(BaseRepository):
         lemma["language_label"] = lm.get(lemma["language_code"], lemma["language_code"])
         lemma["pos_label"] = pos_label(lemma["pos"]) if lemma["pos"] else ""
         lemma["source_label"] = source_label(lemma["source"])
+        # Dialect (#186) — the historical variety of the language this lemma
+        # belongs to (e.g. Old Babylonian). Present only on the lemmas ORACC
+        # dialect-tagged; "" otherwise so the page omits the field cleanly.
+        lemma["dialect_label"] = dialect_label(lemma.get("dialect"))
 
         occurrence_stats = self.get_lemma_occurrence_stats(lemma_id)
 

@@ -232,6 +232,22 @@ class GlintstoneAPI:
         except Exception:
             return Page.empty()
 
+    def get_scholar_facets(self, params: dict) -> dict:
+        """Facet counts for the all-scholars index filter rail (#194).
+
+        Returns ``{total, institution: [...], has_orcid: {with, without}}``.
+        Degrades to an explicit-empty envelope on any failure so the index
+        renders without a rail rather than 500-ing — a facet-fetch error must
+        never blank the page.
+        """
+        try:
+            result = self._t.get("/scholars/facets", params=params)
+            if isinstance(result, dict):
+                return result  # type: ignore[return-value]
+        except Exception:
+            pass
+        return {"total": 0, "institution": [], "has_orcid": {"with": 0, "without": 0}}
+
     def get_scholar(self, scholar_id: int) -> dict:
         try:
             return self._t.get(f"/scholars/{scholar_id}")  # type: ignore[return-value]

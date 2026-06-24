@@ -1,4 +1,4 @@
-"""Scholars listing — search-first directory page + record detail."""
+"""Scholars listing — browsable directory index (#183) + record detail."""
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -7,10 +7,21 @@ router = APIRouter(prefix="/scholars")
 
 @router.get("")
 def scholar_list(request: Request):
-    # The page uses client-side search via the /api/v2/scholars endpoint.
-    # We only need the grand total for the subtitle — no results fetched on load.
+    # The all-scholars index (#183). Previously this page was empty until the
+    # reader typed a search — a thin, search-first directory. It is now a real
+    # *browse* surface: the most productive contributors are rendered on load
+    # (server-side, most-artifacts-first), with a facet rail (#194) for
+    # institution + has-ORCID and live client-side search layered on top.
     api = request.app.state.api
-    total_result = api.list_scholars({"per_page": 1})
+
+    # First page of the productivity-ranked list, rendered server-side so the
+    # page is meaningful before the search JS runs.
+    initial = api.list_scholars({"per_page": 24, "page": 1})
+
+    # Facet counts for the filter rail (#194). Degrades to an empty envelope on
+    # failure, so a facet-fetch error hides the rail rather than blanking the
+    # page — the list still renders.
+    facets = api.get_scholar_facets({})
 
     from app.main import templates
 
@@ -18,7 +29,9 @@ def scholar_list(request: Request):
         request,
         "scholars/list.html",
         {
-            "total": total_result.total,
+            "total": initial.total,
+            "initial_scholars": initial.items,
+            "facets": facets,
             "api_url": request.app.state.api.base_url,
         },
     )
