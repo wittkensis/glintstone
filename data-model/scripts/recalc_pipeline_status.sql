@@ -1,6 +1,14 @@
 -- Recalculate pipeline_status scores for all 353k artifacts.
 -- Run during off-hours. Each stage takes 30s–2min on 353k rows.
 --
+-- DEPRECATED (#260): this manual script is superseded by the
+-- `pipeline-status-recalc` ingestion connector
+-- (ingestion/connectors/pipeline_status_recalc.py), which runs automatically
+-- after each ingest (wired into cron-ingest.yml) AND populates the
+-- graphemic_complete stage this script omits. Prefer:
+--     python -m ingestion.cli run pipeline-status-recalc --mode full
+-- This file is kept only as a hand-runnable fallback for psql-only access.
+--
 -- Schema notes (verified 2026-06-06 against production):
 --   - text_lines has p_number directly (no surfaces join needed)
 --   - translations table has p_number + translation column

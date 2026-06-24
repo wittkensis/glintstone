@@ -12,6 +12,7 @@ Commands:
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from typing import Optional
 
@@ -51,12 +52,41 @@ def cmd_run(args) -> int:
     cls = reg.get(args.connector_id)
     settings = get_settings()
     mode = RunMode(args.mode) if args.mode else RunMode.FULL
+
+    # Build the connector config. `argv` is always carried for provenance (it is
+    # recorded in import_runs.config_json). On top of that, a scoped run can pass
+    # connector-readable keys two ways, merged in this order (later wins):
+    #   --config '<JSON object>'   arbitrary keys, e.g. {"projects":[...],"limit":5}
+    #   --project P1 --project P2  shorthand that becomes {"projects":[...]}
+    # Connectors read these via ctx.config.get("projects") etc. (e.g. oracc-atf).
+    config: dict = {"argv": sys.argv[1:]}
+    if args.config:
+        try:
+            parsed = json.loads(args.config)
+        except json.JSONDecodeError as exc:
+            print(f"--config is not valid JSON: {exc}", file=sys.stderr)
+            return 2
+        if not isinstance(parsed, dict):
+            print(
+                "--config must be a JSON object (e.g. '{\"projects\":[...]}')",
+                file=sys.stderr,
+            )
+            return 2
+        config.update(parsed)
+    if args.project:
+        # --project is additive shorthand; it does not clobber a "projects" list
+        # already supplied via --config, it extends it.
+        existing = config.get("projects") or []
+        if not isinstance(existing, list):
+            existing = [existing]
+        config["projects"] = existing + list(args.project)
+
     summary = run_connector(
         cls,
         mode=mode,
         app_env=settings.app_env,
         force=args.force,
-        config={"argv": sys.argv[1:]},
+        config=config,
     )
     print()
     print(f"Run {summary['run_id']} — {summary['status']}")
@@ -233,6 +263,26 @@ def main(argv: Optional[list[str]] = None) -> int:
         "--force",
         action="store_true",
         help="run even if source checksum matches last successful run",
+    )
+    p_run.add_argument(
+        "--config",
+        default=None,
+        metavar="JSON",
+        help=(
+            "JSON object of connector config for a scoped run, e.g. "
+            '--config \'{"projects":["rinap","saao"]}\'. Keys are read by '
+            "the connector via ctx.config (projects, limit, orcids, ...)."
+        ),
+    )
+    p_run.add_argument(
+        "--project",
+        action="append",
+        default=None,
+        metavar="SLUG",
+        help=(
+            "Shorthand for a subset run: repeatable, becomes "
+            "config['projects']. e.g. --project rinap --project saao"
+        ),
     )
 
     p_all = sub.add_parser("run-all", help="run every connector in dep order")

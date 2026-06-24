@@ -1007,32 +1007,46 @@ class LexicalRepository(BaseRepository):
     # ── Tablet occurrence counts ──────────────────────────────
 
     def get_lemma_occurrence_stats(self, lemma_id: int) -> dict:
-        """Return precomputed tablet occurrence stats for a lemma.
+        """Return the distinct-tablet count for a lemma — computed live (#279).
 
-        Reads from ``lexical_tablet_occurrences`` (populated by
-        ``core.jobs.lexical_occurrences``).  Returns a dict with:
-            - ``tablet_count``: number of distinct tablets, or None if not yet
-              computed
-            - ``computed_at``: timestamp of last computation, or None
+        Previously read the ``lexical_tablet_occurrences`` precompute, which the
+        2026 Fix A/C backfill left stale: that table was populated through the
+        ``lemmatizations.norm_id → lexical_norms`` path (~20k rows), but Fix A/C
+        9x'd ``lemmatizations`` to 5.4M rows populating ``citation_form`` +
+        ``guide_word`` instead — so the precompute under-counted by orders of
+        magnitude. The precompute has been retired in favour of the same live
+        ``(citation_form, guide_word)`` join the attestation endpoints already
+        use (#176/#201), backed by ``idx_lemmatizations_citation_form``.
 
-        Returns None values rather than raising when the table is empty or the
-        lemma has no rows — callers display "Not yet indexed" in that case.
+        Returns:
+            - ``tablet_count``: number of distinct tablets, or None if the lemma
+              has no attestations (callers render "Not yet indexed")
+            - ``computed_at``: None — the count is now always live (no staleness),
+              kept in the dict for backward-compatible callers
         """
+        lemma = self.fetch_one(
+            "SELECT citation_form, guide_word FROM lexical_lemmas WHERE id = %(id)s",
+            {"id": lemma_id},
+        )
+        if not lemma:
+            return {"tablet_count": None, "computed_at": None}
+
         row = self.fetch_one(
             """
-            SELECT
-                COUNT(DISTINCT p_number)  AS tablet_count,
-                MAX(computed_at)          AS computed_at
-            FROM lexical_tablet_occurrences
-            WHERE lemma_id = %(lemma_id)s
+            SELECT COUNT(DISTINCT tl.p_number) AS tablet_count
+            FROM lemmatizations lz
+            JOIN tokens t      ON t.id = lz.token_id
+            JOIN text_lines tl ON tl.id = t.line_id
+            WHERE lz.citation_form = %(cf)s
+              AND lz.guide_word IS NOT DISTINCT FROM %(gw)s
             """,
-            {"lemma_id": lemma_id},
+            {"cf": lemma["citation_form"], "gw": lemma["guide_word"]},
         )
-        if not row or row.get("tablet_count") == 0:
+        if not row or not row.get("tablet_count"):
             return {"tablet_count": None, "computed_at": None}
         return {
             "tablet_count": row["tablet_count"],
-            "computed_at": row["computed_at"],
+            "computed_at": None,
         }
 
     def get_lemma_attestations(
