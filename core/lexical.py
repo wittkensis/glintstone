@@ -170,31 +170,29 @@ def get_tablets_for_sign(sign_id: int, limit: int = 100) -> List[Dict]:
     """
     Get tablets where this sign appears.
 
+    The retired ``lexical_tablet_occurrences`` precompute (#279) never carried
+    any sign-level rows — the populate job only ever computed lemma occurrences —
+    so this always returned empty in practice. There is no live sign→tablet
+    occurrence path today, so it returns an empty list rather than querying a
+    table that no longer exists.
+
     Args:
         sign_id: ID of the sign
         limit: Maximum number of tablets to return
 
     Returns:
-        List of dicts with p_number and occurrence_count
+        Empty list (no sign-level occurrence source).
     """
-    conn = get_connection()
-
-    with conn:
-        return conn.execute(
-            """
-            SELECT p_number, occurrence_count
-            FROM lexical_tablet_occurrences
-            WHERE sign_id = %s
-            ORDER BY occurrence_count DESC
-            LIMIT %s
-            """,
-            (sign_id, limit),
-        ).fetchall()
+    return []
 
 
 def get_tablets_for_lemma(lemma_id: int, limit: int = 100) -> List[Dict]:
     """
-    Get tablets where this lemma appears.
+    Get tablets where this lemma appears, with a per-tablet occurrence count.
+
+    Computed live (#279) via the same ``(citation_form, guide_word)`` join the
+    attestation endpoints use, replacing the retired ``lexical_tablet_occurrences``
+    precompute that Fix A/C left stale.
 
     Args:
         lemma_id: ID of the lemma
@@ -208,9 +206,17 @@ def get_tablets_for_lemma(lemma_id: int, limit: int = 100) -> List[Dict]:
     with conn:
         return conn.execute(
             """
-            SELECT p_number, occurrence_count
-            FROM lexical_tablet_occurrences
-            WHERE lemma_id = %s
+            SELECT tl.p_number,
+                   COUNT(*) AS occurrence_count
+            FROM lexical_lemmas l
+            JOIN lemmatizations lz
+              ON lz.citation_form = l.citation_form
+             AND lz.guide_word IS NOT DISTINCT FROM l.guide_word
+            JOIN tokens t      ON t.id = lz.token_id
+            JOIN text_lines tl ON tl.id = t.line_id
+            WHERE l.id = %s
+              AND tl.p_number IS NOT NULL
+            GROUP BY tl.p_number
             ORDER BY occurrence_count DESC
             LIMIT %s
             """,

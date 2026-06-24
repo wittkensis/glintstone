@@ -52,6 +52,11 @@ jobs:
             ssh deploy@"$DEPLOY_HOST" "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run $connector --mode incremental"
             echo "::endgroup::"
           done
+          # #260: refresh pipeline_status so the composites badges + agent eval
+          # don't read stale completeness after this ingest.
+          echo "::group::pipeline-status-recalc"
+          ssh deploy@"$DEPLOY_HOST" "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run pipeline-status-recalc --mode full"
+          echo "::endgroup::"
 
   cdli:
     if: github.event_name == 'schedule' && github.event.schedule == '0 5 5 * *'
@@ -76,6 +81,11 @@ jobs:
             ssh deploy@"$DEPLOY_HOST" "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run $connector --mode incremental"
             echo "::endgroup::"
           done
+          # #260: refresh pipeline_status after the CDLI/ATF ingest so completeness
+          # scores (read by the composites badges + agent eval) stay fresh.
+          echo "::group::pipeline-status-recalc"
+          ssh deploy@"$DEPLOY_HOST" "cd /var/www/glintstone/current && venv/bin/python -m ingestion.cli run pipeline-status-recalc --mode full"
+          echo "::endgroup::"
 
   manual:
     if: github.event_name == 'workflow_dispatch'

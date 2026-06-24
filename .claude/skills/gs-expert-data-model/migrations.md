@@ -147,6 +147,7 @@ GRANT USAGE, SELECT ON SEQUENCE my_table_id_seq TO glintstone;
 | 037 | `037_user_roles.sql` | `role` column on `users` (admin/standard); seeds `eric.wittke@gmail.com` as admin |
 | 050 | `050_artifact_contributors.sql` | #261 junction `artifact_contributors` (p_number × scholar × role) — real per-artifact attribution parsed from `artifact_credits` prose; backs the `/scholars/{id}/contributions` ledger |
 | 052 | `052_lemmatizations_citation_form_index.sql` | #176 composite index `idx_lemmatizations_citation_form (citation_form, guide_word)` — backs the per-lemma attestation endpoint (`/dictionary/lemmas/{id}/attestations`). After Fix A/C 9x'd `lemmatizations` (65.9k → 5.4M; populated `citation_form`+`guide_word`, NOT `norm_id`/`entry_id`), the dictionary→corpus join is by citation form; this index makes it index-driven instead of a 5.4M-row seq scan |
+| 054 | `054_drop_lexical_tablet_occurrences.sql` | #279 RETIRES the stale `lexical_tablet_occurrences` precompute (frozen at 3,875 rows post Fix A/C, populated via the dead `norm_id` path). Its three code consumers (`lexical_repo.get_lemma_occurrence_stats`, `core.lexical.get_tablets_for_lemma`/`get_tablets_for_sign`) were moved to the live `(citation_form, guide_word)` join (the #176 pattern, backed by migration 052) and the orphaned populate job `core/jobs/lexical_occurrences.py` was deleted. Supersedes migration 015. |
 
 **Always confirm `migrate.py status` matches this table.** If it doesn't, update one or the other.
 

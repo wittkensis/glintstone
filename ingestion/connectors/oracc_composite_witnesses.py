@@ -226,30 +226,36 @@ class OraccCompositeWitnessesConnector(SourceConnector):
             _flush(cur)
             ctx.db.commit()
 
-            # Recompute exemplar_count from the authoritative link rows for every
-            # Q we touched. Idempotent: COUNT(*) is the same on every re-run.
-            updated_counts = 0
-            if touched_q:
-                q_list = sorted(touched_q)
-                for i in range(0, len(q_list), BATCH_SIZE):
-                    chunk = q_list[i : i + BATCH_SIZE]
-                    cur.execute(
-                        """
-                        UPDATE composites c
-                        SET exemplar_count = sub.n
-                        FROM (
-                            SELECT q_number, COUNT(*) AS n
-                            FROM artifact_composites
-                            WHERE q_number = ANY(%s)
-                            GROUP BY q_number
-                        ) sub
-                        WHERE c.q_number = sub.q_number
-                          AND c.exemplar_count IS DISTINCT FROM sub.n
-                        """,
-                        (chunk,),
-                    )
-                    updated_counts += cur.rowcount or 0
-                ctx.db.commit()
+            # Recompute exemplar_count from the authoritative link rows for ALL
+            # composites — not just the Q's this run touched (#309). The earlier
+            # touched-only recompute could leave a composite's count stale whenever
+            # its link set changed via another path (e.g. the atf-parser, a manual
+            # fix, or a witness P-number that only later appeared in `artifacts`):
+            # those Q's are never in `touched_q`, so their count silently drifted —
+            # exactly the recurrence #295 guarded against. A single global pass
+            # makes exemplar_count self-heal on every run.
+            #
+            # Set it to the true COUNT(*) of links per Q, and explicitly to 0 for
+            # composites that have no links at all (a LEFT JOIN, so a composite that
+            # lost all its witnesses correctly drops to 0 rather than keeping a
+            # phantom count). `IS DISTINCT FROM` keeps it a no-op write when already
+            # correct, so the statement is idempotent and cheap on a clean re-run.
+            cur.execute(
+                """
+                UPDATE composites c
+                SET exemplar_count = sub.n
+                FROM (
+                    SELECT c2.q_number, COUNT(ac.p_number) AS n
+                    FROM composites c2
+                    LEFT JOIN artifact_composites ac ON ac.q_number = c2.q_number
+                    GROUP BY c2.q_number
+                ) sub
+                WHERE c.q_number = sub.q_number
+                  AND c.exemplar_count IS DISTINCT FROM sub.n
+                """
+            )
+            updated_counts = cur.rowcount or 0
+            ctx.db.commit()
 
         # Honest inserted count: links present now that resolved from this source.
         stats.skipped = skipped_no_composite + skipped_no_artifact
