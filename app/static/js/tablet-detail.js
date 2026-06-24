@@ -126,15 +126,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Load image from API
+        // Load image from API. Per-surface (#129): fetch the surface manifest
+        // first so we can offer an obverse/reverse selector and serve+scale
+        // each surface independently. Falls back to the single primary image
+        // when the manifest is empty or unavailable.
         const apiUrl = TabletPage.apiUrl;
         const pNumber = TabletPage.pNumber;
         if (apiUrl && pNumber) {
-            TabletPage.zoombox.loadImage({
-                local: `${apiUrl}/image/${pNumber}`,
-                cdliPhoto: `https://cdli.earth/dl/photo/${pNumber}.jpg`,
-                cdliLineart: `https://cdli.earth/dl/lineart/${pNumber}.jpg`
-            });
+            initSurfaceImages(apiUrl, pNumber);
         }
     }
 
@@ -215,36 +214,150 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
-// Load sign annotations (OCR overlay) after image loads
+// Per-surface image state (#129). The viewer shows ONE surface at a time;
+// each surface image has its own pixel dimensions and its sign-annotation
+// bounding boxes live in that surface's coordinate space. We cache the
+// annotations once and re-render the overlays for whichever surface is active,
+// scaling each box against that surface's stored width/height (or, when the
+// dimensions are still NULL in the database, the loaded image's natural size).
+const SurfaceState = {
+    surfaces: [],           // [{ surface_image_id, surface, width, height, ... }]
+    activeId: null,         // active surface_image_id
+    annotations: null,      // cached sign-annotation rows from the API
+};
+
+// Resolve the surface manifest, render a selector when there are 2+ surfaces,
+// and load the active surface's image. Falls back to the single primary image
+// when no surface manifest exists.
+function initSurfaceImages(apiUrl, pNumber) {
+    fetch(`${apiUrl}/artifacts/${pNumber}/surface-images`)
+        .then(r => r.ok ? r.json() : { surfaces: [] })
+        .catch(() => ({ surfaces: [] }))
+        .then(data => {
+            SurfaceState.surfaces = (data && data.surfaces) || [];
+            if (SurfaceState.surfaces.length === 0) {
+                // No per-surface data — serve the artifact's primary image.
+                loadActiveSurfaceImage();
+                return;
+            }
+            const primary = SurfaceState.surfaces.find(s => s.is_primary)
+                || SurfaceState.surfaces[0];
+            SurfaceState.activeId = primary.surface_image_id;
+            renderSurfaceSelector();
+            loadActiveSurfaceImage();
+        });
+}
+
+// Build the obverse/reverse (etc.) selector buttons. Hidden for a single
+// surface — there's nothing to switch.
+function renderSurfaceSelector() {
+    const host = document.getElementById('image-surface-selector');
+    if (!host) return;
+    if (SurfaceState.surfaces.length < 2) {
+        host.hidden = true;
+        return;
+    }
+    host.innerHTML = '';
+    host.hidden = false;
+    SurfaceState.surfaces.forEach(s => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'image-surface-selector__btn';
+        btn.textContent = s.surface.charAt(0).toUpperCase() + s.surface.slice(1);
+        btn.dataset.surfaceImageId = s.surface_image_id;
+        btn.setAttribute('aria-pressed', String(s.surface_image_id === SurfaceState.activeId));
+        btn.addEventListener('click', () => switchSurface(s.surface_image_id));
+        host.appendChild(btn);
+    });
+}
+
+function switchSurface(surfaceImageId) {
+    if (surfaceImageId === SurfaceState.activeId) return;
+    SurfaceState.activeId = surfaceImageId;
+    document.querySelectorAll('.image-surface-selector__btn').forEach(b => {
+        b.setAttribute('aria-pressed',
+            String(Number(b.dataset.surfaceImageId) === surfaceImageId));
+    });
+    loadActiveSurfaceImage();
+}
+
+// Load the active surface's image at its own dimensions. When a specific
+// surface is selected we ask the API for that surface_image_id; otherwise we
+// fall back to the artifact's primary image endpoint.
+function loadActiveSurfaceImage() {
+    const { apiUrl, pNumber, zoombox } = TabletPage;
+    if (!zoombox || !apiUrl || !pNumber) return;
+
+    let local = `${apiUrl}/image/${pNumber}`;
+    if (SurfaceState.activeId != null) {
+        local += `?surface_image_id=${SurfaceState.activeId}`;
+    }
+    zoombox.loadImage({
+        local,
+        cdliPhoto: `https://cdli.earth/dl/photo/${pNumber}.jpg`,
+        cdliLineart: `https://cdli.earth/dl/lineart/${pNumber}.jpg`
+    });
+}
+
+// Load sign annotations (OCR overlay) after image loads. Fetched once and
+// cached; re-rendered per active surface.
 function loadSignAnnotations() {
     const zoombox = TabletPage.zoombox;
     if (!zoombox || !zoombox.imageLoaded || !TabletPage.apiUrl || !TabletPage.pNumber) return;
 
+    if (SurfaceState.annotations) {
+        renderSurfaceOverlays();
+        return;
+    }
+
     fetch(`${TabletPage.apiUrl}/artifacts/${TabletPage.pNumber}/sign-annotations`)
         .then(r => r.json())
         .then(data => {
-            if (!data.annotations || data.annotations.length === 0) return;
-
-            const natW = zoombox.naturalWidth;
-            const natH = zoombox.naturalHeight;
-            if (!natW || !natH) return;
-
-            const overlays = data.annotations.map(a => ({
-                x: (a.bbox_x / natW) * 100,
-                y: (a.bbox_y / natH) * 100,
-                width: (a.bbox_w / natW) * 100,
-                height: (a.bbox_h / natH) * 100,
-                sign: a.sign_id || '',
-                surface: a.surface_type || '',
-                confidence: a.confidence || 0,
-                tokenId: a.token_id != null ? a.token_id : null
-            }));
-
-            zoombox.setOverlays(overlays);
+            SurfaceState.annotations = (data && data.annotations) || [];
+            renderSurfaceOverlays();
         })
         .catch(err => {
             console.log('Sign annotations not available:', err.message);
         });
+}
+
+// Render overlay boxes for the active surface only, scaling each box against
+// that surface's true pixel dimensions (#129). Bounding boxes are stored in
+// absolute pixels of their own surface image, so obverse and reverse must NOT
+// share one scale. We prefer the surface's stored width/height; when those are
+// still NULL we fall back to the loaded image's natural size.
+function renderSurfaceOverlays() {
+    const zoombox = TabletPage.zoombox;
+    if (!zoombox) return;
+    const annotations = SurfaceState.annotations || [];
+
+    // When there is no per-surface manifest, all boxes belong to the one image.
+    const activeId = SurfaceState.activeId;
+    const active = activeId != null
+        ? SurfaceState.surfaces.find(s => s.surface_image_id === activeId)
+        : null;
+
+    // Scale reference: stored surface dimensions, else loaded natural size.
+    const refW = (active && active.width) || zoombox.naturalWidth;
+    const refH = (active && active.height) || zoombox.naturalHeight;
+    if (!refW || !refH) return;
+
+    const forSurface = activeId != null
+        ? annotations.filter(a => a.surface_image_id === activeId)
+        : annotations;
+
+    const overlays = forSurface.map(a => ({
+        x: (a.bbox_x / refW) * 100,
+        y: (a.bbox_y / refH) * 100,
+        width: (a.bbox_w / refW) * 100,
+        height: (a.bbox_h / refH) * 100,
+        sign: a.sign_id || '',
+        surface: a.surface_type || '',
+        confidence: a.confidence || 0,
+        tokenId: a.token_id != null ? a.token_id : null
+    }));
+
+    zoombox.setOverlays(overlays);
 }
 
 // #404 Concept B — sibling-witness strip.

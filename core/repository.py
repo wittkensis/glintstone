@@ -34,6 +34,14 @@ class BaseRepository:
             # dict_row returns dict; get first value
             return next(iter(row.values()))
 
+    def execute(self, sql: str, params: dict | tuple = ()) -> int:
+        """Run a write statement, commit, and return the affected row count."""
+        with self.conn.cursor() as cur:
+            cur.execute(sql, params)
+            rowcount = cur.rowcount
+        self.conn.commit()
+        return rowcount
+
     @staticmethod
     def build_in_clause(values: list, prefix: str = "p") -> tuple[str, dict]:
         """Build IN clause with named parameters.

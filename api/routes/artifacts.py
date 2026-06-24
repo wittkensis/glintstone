@@ -264,6 +264,48 @@ def get_artifact_images(p_number: str, conn=Depends(get_db)):
     }
 
 
+@router.get("/{p_number}/surface-images")
+def get_surface_images(p_number: str, conn=Depends(get_db)):
+    """Per-surface image manifest for the tablet viewer (#129).
+
+    Each entry is one physical surface image (obverse, reverse, …) with the
+    ``surface_image_id`` the viewer passes to ``/image/{p}?surface_image_id=``
+    and the stored pixel ``width``/``height`` used to scale that surface's
+    sign-annotation overlays. ``surface`` is derived from the image path
+    (``…/Obv`` → obverse, ``…/Rev`` → reverse) because the source
+    ``surface_type`` column is unreliable. Dimensions may be ``null`` until the
+    serving path backfills them on first view — the viewer then falls back to
+    the loaded image's natural size for that surface.
+    """
+    repo = ArtifactRepository(conn)
+    rows = repo.get_images(p_number)
+
+    def _surface_label(row: dict) -> str:
+        path = (row.get("image_path") or "").rstrip("/")
+        tail = path.rsplit("/", 1)[-1].lower()
+        if tail.startswith("obv"):
+            return "obverse"
+        if tail.startswith("rev"):
+            return "reverse"
+        return row.get("surface_type") or "surface"
+
+    return {
+        "p_number": p_number,
+        "count": len(rows),
+        "surfaces": [
+            {
+                "surface_image_id": r["surface_image_id"],
+                "surface": _surface_label(r),
+                "is_primary": bool(r.get("is_primary")),
+                "image_type": r.get("image_type"),
+                "width": r.get("image_width"),
+                "height": r.get("image_height"),
+            }
+            for r in rows
+        ],
+    }
+
+
 @router.get("/{p_number}/normalized")
 def get_artifact_normalized(p_number: str, conn=Depends(get_db)):
     """Get normalized readings (scholarly transliteration) for an artifact."""

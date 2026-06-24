@@ -796,15 +796,61 @@ class ArtifactRepository(BaseRepository):
         )
 
     def get_images(self, p_number: str) -> list[dict]:
+        """Per-surface image manifest.
+
+        Carries ``surface_image_id`` plus the stored ``image_width``/
+        ``image_height`` so the viewer can (a) request a specific surface's
+        image via ``/image/{p_number}?surface_image_id=...`` and (b) scale that
+        surface's sign-annotation overlays against the image's true pixel
+        dimensions instead of falling back to the browser's ``naturalWidth``
+        (#129). ``image_path`` ends in ``/Obv`` or ``/Rev`` — the reliable
+        obverse/reverse signal, since ``surface_type`` is unreliable in the
+        compvis source data.
+        """
         return self.fetch_all(
             """
-            SELECT s.surface_type, si.image_path, si.is_primary, si.image_type
+            SELECT si.id AS surface_image_id,
+                   s.surface_type, si.image_path, si.is_primary, si.image_type,
+                   si.image_width, si.image_height
             FROM surfaces s
             JOIN surface_images si ON s.id = si.surface_id
             WHERE s.p_number = %(p_number)s
-            ORDER BY si.is_primary DESC
+            ORDER BY si.is_primary DESC, si.id
         """,
             {"p_number": p_number},
+        )
+
+    def get_surface_image(self, surface_image_id: int) -> dict | None:
+        """Resolve a single surface_image row by id (#129 per-surface serving)."""
+        return self.fetch_one(
+            """
+            SELECT si.id AS surface_image_id, s.p_number, s.surface_type,
+                   si.image_path, si.image_width, si.image_height
+            FROM surface_images si
+            JOIN surfaces s ON si.surface_id = s.id
+            WHERE si.id = %(id)s
+            """,
+            {"id": surface_image_id},
+        )
+
+    def set_surface_image_dimensions(
+        self, surface_image_id: int, width: int, height: int
+    ) -> None:
+        """Persist measured pixel dimensions for a surface image (#129).
+
+        Lazy backfill: the first time the image-serving route opens a surface
+        image whose ``image_width``/``image_height`` are NULL, it measures the
+        bytes and writes them back here so subsequent overlay scaling is
+        precise without re-measuring. Idempotent — only fills NULLs.
+        """
+        self.execute(
+            """
+            UPDATE surface_images
+            SET image_width = %(w)s, image_height = %(h)s
+            WHERE id = %(id)s
+              AND (image_width IS NULL OR image_height IS NULL)
+            """,
+            {"w": width, "h": height, "id": surface_image_id},
         )
 
     def get_artifact_image_records(self, p_number: str) -> list[dict]:
@@ -1165,11 +1211,21 @@ class ArtifactRepository(BaseRepository):
     # ── Sign annotations (OCR overlay) ───────────────────────
 
     def get_sign_annotations(self, p_number: str) -> dict:
-        """Return sign annotations for the overlay viewer."""
+        """Return sign annotations for the overlay viewer.
+
+        Each row carries its ``surface_image_id`` and that surface image's
+        ``image_width``/``image_height`` (#129). Bounding boxes are stored in
+        the absolute pixel space of their own surface image (obverse and
+        reverse have different dimensions), so the viewer must scale each
+        surface's boxes against that surface's image — not one global
+        ``naturalWidth``. When the stored dimensions are NULL the viewer falls
+        back to the loaded image's natural size for that surface.
+        """
         rows = self.fetch_all(
             """
             SELECT sa.sign_id, sa.token_id, sa.bbox_x, sa.bbox_y, sa.bbox_w, sa.bbox_h,
-                   sa.confidence, s.surface_type
+                   sa.confidence, s.surface_type,
+                   sa.surface_image_id, si.image_width, si.image_height
             FROM sign_annotations sa
             JOIN surface_images si ON sa.surface_image_id = si.id
             JOIN surfaces s ON si.surface_id = s.id

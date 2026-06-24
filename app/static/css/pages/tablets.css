@@ -1812,6 +1812,34 @@ body.page-tablet-detail > .page-header {
     min-height: 0;
 }
 
+/* Per-surface image selector (#129) — obverse / reverse switch above the
+   viewer. Hidden via [hidden] when the tablet has a single surface. */
+.image-surface-selector {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.image-surface-selector__btn {
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.image-surface-selector__btn:hover {
+    color: var(--color-text);
+}
+
+.image-surface-selector__btn[aria-pressed="true"] {
+    color: var(--color-text);
+    border-color: var(--color-accent);
+    background: var(--color-surface-raised, var(--color-surface));
+}
+
 /* ==========================================================================
    #404 Concept B — sibling-witness strip + coverage chip on the tablet page.
    Finishes the composite-panel reverse link (the old "Loading tablets…"
