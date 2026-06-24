@@ -504,14 +504,20 @@ fi
 #
 # Durable fix (#271): the root-owned `.pyc` accumulate because prod services run
 # as root and write bytecode into the release tree the `deploy` user owns. Before
-# trimming, reclaim ownership of the releases directory to `deploy` (via sudo,
-# which deploy already holds for supervisorctl/nginx). After the chown the trim's
-# `rm -rf` succeeds outright instead of silently skipping root-owned files, so old
-# releases are actually reclaimed rather than piling up. The chown itself is
-# guarded so a hiccup still can't fail the (already-live) deploy.
+# trimming, reclaim ownership of the releases directory to `deploy`, after which
+# the trim's `rm -rf` succeeds outright instead of silently skipping root-owned
+# files, so old releases are actually reclaimed rather than piling up.
+#
+# This needs a NARROW sudoers grant (the deploy user's default sudo is limited to
+# supervisorctl/nginx). Installed at /etc/sudoers.d/deploy-trim on 2026-06-23:
+#   deploy ALL=(root) NOPASSWD: /bin/chown -R deploy /var/www/glintstone/releases
+#   deploy ALL=(root) NOPASSWD: /bin/chown -R deploy /var/www/glintstone-staging/releases
+# The command path and args below MUST match that rule exactly (absolute
+# /bin/chown, `-R deploy`, the literal releases path) or sudo rejects it. The
+# chown is still guarded so a hiccup can't fail the (already-live) deploy.
 echo "Reclaiming ownership of old releases for trim (best-effort)..."
-ssh_run "sudo chown -R $DEPLOY_USER $RELEASES_DIR 2>/dev/null" \
-    || echo "::warning::Could not chown releases dir — trim falls back to best-effort rm."
+ssh_run "sudo -n /bin/chown -R $DEPLOY_USER $RELEASES_DIR 2>/dev/null" \
+    || echo "::warning::Could not chown releases dir (sudoers rule /etc/sudoers.d/deploy-trim missing or path mismatch) — trim falls back to best-effort rm."
 
 echo "Trimming old releases (keep newest $KEEP_RELEASES; best-effort)..."
 ssh_run "cd $RELEASES_DIR && ls -1t | tail -n +$((KEEP_RELEASES + 1)) | xargs -r rm -rf 2>/dev/null" \
