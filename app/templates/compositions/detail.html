@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% from "components/_macros.html" import data_empty %}
+{% from "components/corpus_map.html" import corpus_map %}
 
 {% block content %}
 <main class="composition-detail-page">
@@ -91,6 +92,26 @@
             </div>
             {% endfor %}
         </div>
+    </section>
+    {% endif %}
+
+    {# ── Find-spots map (#198): where this composition's witnesses were dug ──
+         The geographic companion to the transmission timeline above — same
+         witnesses, placed in space instead of time. Circle area = how many of
+         this text's exemplars came from that site. Only shown when at least one
+         witness has a geocoded find-spot. #}
+    {% if map_pins %}
+    <section class="composition-map" aria-labelledby="comp-map-heading">
+        <h2 id="comp-map-heading" class="composition-timeline__title">Where its witnesses were found</h2>
+        <p class="composition-timeline__sub">
+            Each circle is a find-spot of this composition's exemplars; its area
+            is proportional to how many witnesses were recovered there.
+        </p>
+        {{ corpus_map(
+            map_pins, map_view_w, map_view_h,
+            not_geocoded=map_no_coords,
+            caption='Find-spots of this text\'s excavated witnesses.'
+        ) }}
     </section>
     {% endif %}
 

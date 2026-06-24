@@ -7,6 +7,9 @@ from pathlib import Path
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import RedirectResponse
 
+from app.corpus_map import VIEW_H as MAP_VIEW_H
+from app.corpus_map import VIEW_W as MAP_VIEW_W
+from app.corpus_map import build_pins, build_single_pin
 from app.list_view import active_filters_as_dicts, build_filtered_list
 from core.config import get_settings
 
@@ -107,10 +110,11 @@ def tablet_list(
     view: str = "grid",
 ):
     api = request.app.state.api
-    # Only grid / timeline are real views in Wave 1 (#320). The map is Wave 2
-    # (gated on migration 049 + geocoding, #319) — anything unknown falls back
-    # to the grid so a stale/shared URL never lands on a blank view.
-    if view not in ("grid", "timeline"):
+    # Grid / timeline (#320) + map (#197, gated on #319's geocoded coords). The
+    # map plots each geolocated find-spot as a proportional symbol and lets a
+    # click set ?provenience= — the same linked filter as the find-spots list.
+    # Anything unknown falls back to the grid so a stale URL never lands blank.
+    if view not in ("grid", "timeline", "map"):
         view = "grid"
     # include_filter_options=true lets the API return both the page and the
     # cross-filter counts in a single round trip — half the latency of two
@@ -142,6 +146,20 @@ def tablet_list(
     )
     timeline_rows = _timeline_axis(api.get_artifacts_timeline(atlas_params))
     site_rows = api.get_artifacts_by_site({**atlas_params, "limit": 12})
+
+    # Map view (#197): geolocated find-spots as proportional symbols. The pins
+    # show the full geographic distribution of the corpus (a navigation surface,
+    # not a filtered slice) — clicking one sets ?provenience= via the SAME linked
+    # filter as the find-spots list. Built only when the map view is requested so
+    # grid/timeline loads don't pay for the coords round trip. `not_geocoded` is
+    # the count of geolocated-site rows the schematic box couldn't place (≈0 by
+    # design) — uncertain-provenance tablets are reported separately.
+    map_pins: list = []
+    map_uncertain = 0
+    if view == "map":
+        coords = api.get_site_coords()
+        map_pins = build_pins(coords.get("sites", []))
+        map_uncertain = (coords.get("uncertain") or {}).get("tablet_count", 0)
 
     lv = build_filtered_list(
         scope="tablets",
@@ -182,6 +200,10 @@ def tablet_list(
             "view": view,
             "timeline_rows": timeline_rows,
             "site_rows": site_rows,
+            "map_pins": map_pins,
+            "map_uncertain": map_uncertain,
+            "map_view_w": MAP_VIEW_W,
+            "map_view_h": MAP_VIEW_H,
         },
     )
 
@@ -247,6 +269,24 @@ def tablet_detail(request: Request, p_number: str):
     # Passed as a data attribute so sidebar.js can fetch without constructing the URL in JS.
     summarize_url = f"{request.app.state.api.base_url}/artifacts/{p_number}/summary"
 
+    # Find-spot mini-map (#199): pin this single tablet's excavation site, if it
+    # has coordinates. The find-spot is where the tablet was *excavated*
+    # (gs-expert-assyriology) — the provenience string ("Umma (mod. …)") is
+    # normalized to the canonical ancient_name and matched against the geocoded
+    # sites. No coords (e.g. uncertain provenance, or an ungeocoded site like
+    # Nineveh in production) → no map; the Provenience field still shows the name.
+    map_pin = None
+    raw_prov = (tablet.get("provenience") or "").split("(mod.")[0].strip()
+    if raw_prov and raw_prov.lower() not in ("uncertain", "unknown"):
+        coords = api.get_site_coords()
+        for s in coords.get("sites", []):
+            if (s.get("ancient_name") or "").lower() == raw_prov.lower() and s.get(
+                "latitude"
+            ) is not None:
+                # Single fixed-size pin — count is meaningless for one tablet.
+                map_pin = build_single_pin(s)
+                break
+
     from app.main import templates
 
     return templates.TemplateResponse(
@@ -263,5 +303,8 @@ def tablet_detail(request: Request, p_number: str):
             "debug_json": debug_json,
             "debug_tablets_json": debug_tablets_json,
             "web_url": settings.web_url,
+            "map_pin": map_pin,
+            "map_view_w": MAP_VIEW_W,
+            "map_view_h": MAP_VIEW_H,
         },
     )

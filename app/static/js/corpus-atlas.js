@@ -15,6 +15,7 @@
   var REGIONS = [
     '[data-atlas-grid]',     // the result grid
     '[data-atlas-timeline]', // the timeline panel (selection state)
+    '[data-atlas-map]',      // the proportional-symbol map (#197)
     '[data-atlas-sites]',    // the find-spots list
     '[data-atlas-banner]',   // the linked-filter banner
     '[data-atlas-switch]',   // the view switcher (aria-pressed)
@@ -28,7 +29,7 @@
   function isAtlasLink(a) {
     if (!a) return false;
     return a.matches(
-      '[data-atlas-switch] a, [data-atlas-timeline] a, [data-atlas-sites] a, [data-atlas-banner] .clear'
+      '[data-atlas-switch] a, [data-atlas-timeline] a, [data-atlas-map] a, [data-atlas-sites] a, [data-atlas-banner] .clear'
     );
   }
 

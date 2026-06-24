@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "components/_macros.html" import pipeline, lang_badge, ocr_badge %}
+{% from "components/corpus_map.html" import corpus_map %}
 
 {% block title %}{{ tablet.p_number }} - Glintstone{% endblock %}
 
@@ -288,6 +289,21 @@
                     {% endfor %}
                 </ul>
             </details>
+            {% endif %}
+
+            {# ── Find-spot mini-map (#199): pin this tablet's excavation site ──
+                 Only when the site is geocoded; otherwise the Provenience field
+                 above already names it. The find-spot is where the tablet was
+                 excavated. #}
+            {% if map_pin %}
+            <div class="tablet-findspot">
+                <dt class="tablet-findspot__label">Find-spot</dt>
+                {{ corpus_map(
+                    [map_pin], map_view_w, map_view_h,
+                    compact=True,
+                    caption='Excavated at ' ~ map_pin.ancient_name ~ (' (' ~ map_pin.modern_name ~ ')' if map_pin.modern_name else '') ~ '.'
+                ) }}
+            </div>
             {% endif %}
     </div>
 </header>

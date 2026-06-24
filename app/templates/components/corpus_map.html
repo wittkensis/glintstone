@@ -1,0 +1,87 @@
+{# ── Corpus proportional-symbol map (#197–#199) ──────────────────────────────
+   A schematic Mesopotamia base (the two rivers, sketched — no heavy basemap
+   chartjunk) with one circle per geocoded find-spot, sized so circle AREA is
+   proportional to tablet count (Tufte/Victor, from the #313 critique). Pins are
+   real <a> links when `link=True` (Victor: the map IS the filter control); a
+   static dot otherwise (composition / tablet detail). Projection + sizing are
+   done server-side in app/corpus_map.py — this macro only draws.
+
+   Params:
+     pins         list[Pin]  projected, sized find-spots (corpus_map.build_pins)
+     view_w/h     viewBox dimensions (corpus_map.VIEW_W / VIEW_H)
+     uncertain    int        count of un-pinnable uncertain-provenance tablets
+     not_geocoded int|None   count of sites/tablets with no coords (coverage)
+     link_base    str|None   when set, each pin is <a href="{link_base}{name}…">
+     active       list[str]  ancient_names currently selected (highlight ring)
+     caption      str        the honest coverage line under the map
+     compact      bool       smaller labels / no legend (mini-map mode)            #}
+
+{% macro corpus_map(pins, view_w, view_h, uncertain=0, not_geocoded=None,
+                    link_base=None, link_suffix='', active=[], caption='',
+                    compact=False, region_label='Mesopotamia') %}
+<figure class="corpus-map{{ ' corpus-map--compact' if compact }}" data-corpus-map>
+  <svg class="corpus-map__svg" viewBox="0 0 {{ view_w|int }} {{ view_h|int }}"
+       role="img" preserveAspectRatio="xMidYMid meet"
+       aria-label="Map of find-spots across Mesopotamia, each circle sized by tablet count">
+    {# ── Schematic base: the two rivers + a region wash. Decorative — aria-hidden. #}
+    <g class="corpus-map__base" aria-hidden="true">
+      <rect x="0" y="0" width="{{ view_w|int }}" height="{{ view_h|int }}"
+            class="corpus-map__field" rx="14"/>
+      {# Euphrates (NW → SE) #}
+      <path class="corpus-map__river"
+            d="M312,264 L467,406 L634,496 L657,523 L723,594 L747,615 L812,648"/>
+      {# Tigris (NW → SE), converging toward the southern marshes #}
+      <path class="corpus-map__river"
+            d="M543,252 L589,301 L595,353 L656,479 L750,578 L817,619"/>
+      <text x="{{ (view_w/2)|int }}" y="{{ (view_h - 22)|int }}"
+            class="corpus-map__region" text-anchor="middle">{{ region_label }}</text>
+    </g>
+
+    {# ── Proportional symbols: painted largest-first (build_pins order) so small
+         pins stay on top and clickable. #}
+    <g class="corpus-map__pins">
+      {% for p in pins %}
+      {% set is_active = p.ancient_name in active %}
+      {% if link_base %}
+      <a href="{{ link_base }}{{ p.ancient_name|urlencode }}{{ link_suffix }}"
+         class="corpus-map__pin{{ ' is-active' if is_active }}"
+         data-site="{{ p.ancient_name }}"
+         aria-pressed="{{ 'true' if is_active else 'false' }}">
+        <title>{{ p.ancient_name }}{% if p.modern_name %} ({{ p.modern_name }}){% endif %} — {{ '{:,}'.format(p.tablet_count) }} tablets</title>
+        <circle cx="{{ p.x }}" cy="{{ p.y }}" r="{{ p.r }}" class="corpus-map__dot"/>
+        {% if not compact %}<circle cx="{{ p.x }}" cy="{{ p.y }}" r="2" class="corpus-map__core"/>{% endif %}
+      </a>
+      {% else %}
+      <g class="corpus-map__pin corpus-map__pin--static{{ ' is-active' if is_active }}"
+         data-site="{{ p.ancient_name }}">
+        <title>{{ p.ancient_name }}{% if p.modern_name %} ({{ p.modern_name }}){% endif %}{% if p.tablet_count %} — {{ '{:,}'.format(p.tablet_count) }} tablets{% endif %}</title>
+        <circle cx="{{ p.x }}" cy="{{ p.y }}" r="{{ p.r }}" class="corpus-map__dot"/>
+        <circle cx="{{ p.x }}" cy="{{ p.y }}" r="2" class="corpus-map__core"/>
+      </g>
+      {% endif %}
+      {% endfor %}
+    </g>
+
+    {# ── Site labels: only the largest few when not compact, so the map stays
+         legible (Tufte data-ink). The biggest pins are first in `pins`. #}
+    {% if not compact %}
+    <g class="corpus-map__labels" aria-hidden="true">
+      {% for p in pins[:5] %}
+      <text x="{{ p.x }}" y="{{ (p.y - p.r - 7)|round(1) }}"
+            text-anchor="middle" class="corpus-map__label">{{ p.ancient_name }}</text>
+      {% endfor %}
+    </g>
+    {% endif %}
+  </svg>
+
+  <figcaption class="corpus-map__cap">
+    {% if caption %}{{ caption }}{% endif %}
+    {% if uncertain %}
+      <span class="corpus-map__caveat">⚠ {{ '{:,}'.format(uncertain) }} tablets of uncertain provenance are not placed.</span>
+    {% endif %}
+    {% if not_geocoded %}
+      <span class="corpus-map__caveat">{{ '{:,}'.format(not_geocoded) }} from sites without coordinates are not pinned.</span>
+    {% endif %}
+  </figcaption>
+</figure>
+{% endmacro %}
