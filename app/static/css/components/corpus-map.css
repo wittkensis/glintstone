@@ -1,0 +1,118 @@
+/* ─── Corpus proportional-symbol map (#197–#199) ─────────────────────────────
+   Schematic Mesopotamia base + circles sized by tablet count (area ∝ count).
+   Shared by the /tablets atlas map view (#197), the composition find-spots map
+   (#198) and the tablet-detail mini-map (#199). Token-driven only — no raw hex.
+   The geographic projection + sizing happen server-side (app/corpus_map.py);
+   this stylesheet only paints. */
+
+.corpus-map {
+  margin: 0 0 var(--space-5);
+  background: var(--surface-raised);
+  border: var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+}
+
+.corpus-map__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* The schematic land field below; the svg itself is transparent. */
+}
+
+/* ── Schematic base ──────────────────────────────────────────────────────── */
+.corpus-map__field {
+  fill: var(--color-bg-inset);
+}
+.corpus-map__river {
+  fill: none;
+  stroke: var(--color-accent-teal);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.35;
+}
+.corpus-map__region {
+  fill: var(--color-text-subtle);
+  font-size: 22px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+/* ── Proportional symbols ────────────────────────────────────────────────── */
+.corpus-map__dot {
+  fill: var(--color-accent-25);
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+  transition: var(--transition-fast);
+}
+.corpus-map__core {
+  fill: var(--color-accent);
+  pointer-events: none;
+}
+.corpus-map__pin { cursor: pointer; }
+.corpus-map__pin:hover .corpus-map__dot,
+.corpus-map__pin:focus-visible .corpus-map__dot {
+  fill: var(--color-accent-50);
+  stroke: var(--color-accent-hover);
+}
+.corpus-map__pin:focus-visible { outline: none; }
+.corpus-map__pin:focus-visible .corpus-map__dot {
+  stroke-width: 3;
+}
+.corpus-map__pin.is-active .corpus-map__dot {
+  fill: var(--color-accent-50);
+  stroke: var(--color-accent-hover);
+  stroke-width: 3;
+}
+.corpus-map__pin--static { cursor: default; }
+
+/* ── Labels ──────────────────────────────────────────────────────────────── */
+.corpus-map__label {
+  fill: var(--color-text-muted);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: var(--color-bg-inset);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* ── Caption / coverage caveat ───────────────────────────────────────────── */
+.corpus-map__cap {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--border-subtle);
+  line-height: 1.5;
+}
+.corpus-map__caveat {
+  display: block;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xxs);
+}
+
+/* ── Compact / mini-map mode (#199 tablet detail) ────────────────────────── */
+.corpus-map--compact {
+  padding: var(--space-3) var(--space-3) var(--space-2);
+}
+.corpus-map--compact .corpus-map__region { font-size: 30px; }
+.corpus-map--compact .corpus-map__cap {
+  font-size: var(--text-xxs);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+/* Tablet-detail find-spot mini-map wrapper (#199) */
+.tablet-findspot { margin-top: var(--space-4); max-width: 360px; }
+.tablet-findspot__label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+}

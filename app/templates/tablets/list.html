@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "components/_macros.html" import tablet_card, stage_filter, filter_sidebar, pagination %}
+{% from "components/corpus_map.html" import corpus_map %}
 
 {% block title %}Tablets - Glintstone{% endblock %}
 
@@ -47,6 +48,10 @@
                    data-view="timeline"
                    aria-pressed="{{ 'true' if view == 'timeline' else 'false' }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="19" y2="18"/></svg>Timeline</a>
+                <a href="/tablets?{{ fq.s }}view=map"
+                   data-view="map"
+                   aria-pressed="{{ 'true' if view == 'map' else 'false' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-5.5-7-11a7 7 0 0114 0c0 5.5-7 11-7 11z"/></svg>Map</a>
             </nav>
         </div>
 
@@ -101,6 +106,30 @@
                     <span>3000</span><span>2500</span><span>2000</span><span>1500</span><span>1000</span><span>500</span><span>BCE</span>
                 </div>
             </div>
+        </div>
+        {% endif %}
+
+        {# ── MAP view (#197): proportional-symbol find-spot map ────────────── #}
+        {% if view == 'map' %}
+        {# link_base carries every active filter EXCEPT provenience (the map sets
+           it) + view=map, then the macro appends &provenience=<ancient_name>.
+           Same single-select linked filter as the find-spots list. #}
+        {% set mq = namespace(s='') %}
+        {% if search %}{% set mq.s = mq.s ~ 'search=' ~ (search|urlencode) ~ '&' %}{% endif %}
+        {% for p in period %}{% set mq.s = mq.s ~ 'period=' ~ (p|urlencode) ~ '&' %}{% endfor %}
+        {% for g in genre %}{% set mq.s = mq.s ~ 'genre=' ~ (g|urlencode) ~ '&' %}{% endfor %}
+        {% for l in language %}{% set mq.s = mq.s ~ 'language=' ~ (l|urlencode) ~ '&' %}{% endfor %}
+        {% if has_ocr %}{% set mq.s = mq.s ~ 'has_ocr=1&' %}{% endif %}
+        {% if pipeline %}{% set mq.s = mq.s ~ 'pipeline=' ~ (pipeline|urlencode) ~ '&' %}{% endif %}
+        <div class="atlas-map" data-atlas-map>
+            <h2>Find-spots across Mesopotamia</h2>
+            {{ corpus_map(
+                map_pins, map_view_w, map_view_h,
+                uncertain=map_uncertain,
+                link_base='/tablets?' ~ mq.s ~ 'view=map&provenience=',
+                active=provenience,
+                caption='Each circle is one excavated find-spot; its area is proportional to the number of tablets recovered there. Click a site to filter the corpus. ' ~ (map_pins|length) ~ ' sites geolocated.'
+            ) }}
         </div>
         {% endif %}
 

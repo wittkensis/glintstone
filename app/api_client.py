@@ -145,6 +145,25 @@ class GlintstoneAPI:
         except Exception:
             return []
 
+    def get_site_coords(self) -> dict:
+        """Geolocated find-spots for the map layer (#197–#199 / #319).
+
+        Returns ``{"sites": [{ancient_name, modern_name, latitude, longitude,
+        pleiades_id, region, tablet_count}, ...], "uncertain": {"tablet_count":
+        N}}`` — one entry per geocoded ancient site, ordered busiest-first, plus
+        the aggregate count of uncertain-provenance tablets that are never
+        pinned (#313). Degrades to an empty, well-formed envelope on any
+        failure so the map view falls back to its caption-only state rather
+        than 500-ing the page.
+        """
+        try:
+            result = self._t.get("/proveniences/coords")
+            if isinstance(result, dict) and "sites" in result:
+                return result
+        except Exception:
+            pass
+        return {"sites": [], "uncertain": {"tablet_count": 0}}
+
     def get_artifact_debug(self, p_number: str) -> dict:
         try:
             return self._t.get(f"/artifacts/{p_number}/debug")  # type: ignore[return-value]

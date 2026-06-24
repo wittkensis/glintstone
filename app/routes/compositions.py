@@ -3,6 +3,10 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
+from app.corpus_map import VIEW_H as MAP_VIEW_H
+from app.corpus_map import VIEW_W as MAP_VIEW_W
+from app.corpus_map import build_pins
+
 router = APIRouter(prefix="/compositions")
 
 
@@ -210,6 +214,46 @@ def composition_detail(
     # Count transparency: ORACC exemplar_count vs our linked count
     oracc_count = composite_meta.get("exemplar_count") if composite_meta else None
 
+    # Composition find-spots map (#198): where this text's witnesses were
+    # excavated. We count each exemplar's provenience, then intersect with the
+    # geocoded sites (GET /proveniences/coords) so the circle area reflects how
+    # many of THIS composition's tablets came from each site — the geographic
+    # companion to the transmission timeline. Witnesses whose provenience is
+    # uncertain or has no coordinates simply don't pin (reported in the caption).
+    map_pins: list = []
+    map_no_coords = 0
+    from collections import Counter
+
+    def _canon_prov(raw: str) -> str:
+        # Exemplar provenience is the display string ("Uruk (mod. Warka)"); the
+        # coords API keys on the canonical ancient_name ("Uruk"). Strip the
+        # "(mod. …)" suffix so the two line up.
+        return (raw.split("(mod.")[0] if raw else "").strip()
+
+    prov_counts: Counter = Counter(
+        _canon_prov(e.get("provenience"))
+        for e in all_exemplars
+        if e.get("provenience")
+        and _canon_prov(e.get("provenience")).lower()
+        not in ("uncertain", "unknown", "")
+    )
+    if prov_counts:
+        coords = api.get_site_coords()
+        by_name = {
+            (s.get("ancient_name") or "").lower(): s for s in coords.get("sites", [])
+        }
+        scoped_sites = []
+        placed_total = 0
+        for name, cnt in prov_counts.items():
+            site = by_name.get(name.lower())
+            if site and site.get("latitude") is not None:
+                scoped_sites.append({**site, "tablet_count": cnt})
+                placed_total += cnt
+        map_pins = build_pins(scoped_sites)
+        # Witnesses with a real site name that we still couldn't place on the map
+        # (no coordinates for that site) — surfaced honestly in the caption.
+        map_no_coords = sum(prov_counts.values()) - placed_total
+
     # Build exemplar list for the SVG timeline (all exemplars, with pipeline_status)
     # pipeline_status may be present as a field; default to None if absent
     timeline_exemplars = [
@@ -246,5 +290,9 @@ def composition_detail(
             "filter_period": filter_period,
             "filter_provenience": filter_provenience,
             "api_url": request.app.state.api.base_url,
+            "map_pins": map_pins,
+            "map_no_coords": map_no_coords,
+            "map_view_w": MAP_VIEW_W,
+            "map_view_h": MAP_VIEW_H,
         },
     )
