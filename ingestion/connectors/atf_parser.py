@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Iterable, Iterator
+from typing import Any, Iterable, Iterator
 
 from ingestion.base import LoadStats, RunContext, SourceConnector, SourceManifest
 
@@ -53,9 +53,12 @@ RE_COMPOSITE = re.compile(r"^>>(Q\d+)\s*(.*)$")
 RE_TRANSLATION = re.compile(r"^#tr\.(\w+):\s+(.+)$")
 
 
-def _parse_atf_file(atf_path: Path) -> Iterator[dict]:
-    tablet = None
-    current_surface_type = None
+def _parse_atf_file(atf_path: Path) -> Iterator[dict[str, Any]]:
+    # Heterogeneous accumulator: string fields plus a surfaces dict and three
+    # lists of positional tuples. Typed as dict[str, Any] so the per-key
+    # appends/indexing below type-check; the flush reads entries positionally.
+    tablet: dict[str, Any] | None = None
+    current_surface_type: str | None = None
     current_column = 0
     line_counter = 0
 

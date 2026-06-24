@@ -88,31 +88,7 @@
     <script src="/static/js/global-search.js?v={{ app_version }}" defer></script>
     <script src="/static/js/filters.js?v={{ app_version }}" defer></script>
     {% block scripts %}{% endblock %}
-    <script>
-    (function () {
-        fetch('/_me')
-            .then(function (r) { return r.status === 204 ? null : r.json(); })
-            .then(function (user) {
-                if (!user) return;
-                var el = document.getElementById('header-user');
-                var av = document.getElementById('header-avatar');
-                if (!el || !av) return;
-                var initial = ((user.display_name || user.email || '?')[0] || '?').toUpperCase();
-                if (user.avatar_url) {
-                    var img = document.createElement('img');
-                    img.src = user.avatar_url;
-                    img.alt = initial;
-                    img.className = 'header-avatar__img';
-                    av.appendChild(img);
-                } else {
-                    var span = document.createElement('span');
-                    span.textContent = initial;
-                    av.appendChild(span);
-                }
-                el.removeAttribute('hidden');
-            })
-            .catch(function () {});
-    })();
-    </script>
+    {# Header user chip — extracted from an inline IIFE to header-auth.js (F-5, #125). #}
+    <script src="/static/js/header-auth.js?v={{ app_version }}" defer></script>
 </body>
 </html>

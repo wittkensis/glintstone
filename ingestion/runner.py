@@ -143,6 +143,8 @@ def run_connector(
             _git_sha(),
         ),
     ).fetchone()
+    if row is None:
+        raise RuntimeError("INSERT INTO import_runs ... RETURNING id returned no row")
     run_id = row["id"] if isinstance(row, dict) else row[0]
     db.commit()
 
