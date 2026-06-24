@@ -31,6 +31,7 @@ from ingestion.base import (
     utc_now,
 )
 from ingestion.dead_letters import DeadLetterSink
+from ingestion.dlq_alerts import check_and_alert
 
 
 def _git_sha() -> Optional[str]:
@@ -185,6 +186,10 @@ def run_connector(
                 fetched_at=manifest.fetched_at,
                 stats=ctx.stats,
             )
+            # Post-run dead-letter open-count check (#175). A no_op run still
+            # records its baseline so a later real run can detect growth, and a
+            # cleared queue refreshes the status file. Never raises.
+            check_and_alert(ctx)
             summary["status"] = "no_op"
             return summary
 
@@ -212,6 +217,12 @@ def run_connector(
             skipped=ctx.stats.skipped,
             dead_lettered=ctx.stats.dead_lettered,
         )
+        # Post-run dead-letter open-count check (#175): alert loudly (stderr +
+        # import_run_events + status file) if this run grew the open DLQ beyond
+        # threshold. Closes the silent-growth gap. Never raises.
+        alert = check_and_alert(ctx)
+        summary["dlq_open_after"] = alert.open_now
+        summary["dlq_alerted"] = alert.alerted
         summary.update(
             {
                 "status": "succeeded",

@@ -61,6 +61,11 @@ source-data/import-tools/_progress/
 source-data/import-tools/citations/_cache/
 source-data/import-tools/citations/_progress/
 
+# Dead-letter open-count alert status files (#175) — runtime signal written by
+# ingestion.dlq_alerts; the directory is tracked (.gitkeep), the JSON snapshots
+# are per-run state and must not be committed.
+ops/snapshots/dlq-alerts/*.json
+
 # Debug output (committed-by-accident protection)
 debug-tablets.json
 *.debug.json
