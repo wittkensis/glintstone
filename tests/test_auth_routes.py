@@ -191,6 +191,103 @@ class TestSessionRepo:
         assert "role" in row
         assert "theme" in row
 
+    def test_resolve_session_returns_only_ids(self, test_user, session_repo, db_conn):
+        """#461: resolve_session returns just session_id + user_id (no user cols).
+
+        The middleware uses this to get the user_id, then reloads the full users
+        row via find_by_id — so the resolver intentionally carries no user
+        columns and can never drop one.
+        """
+        from datetime import datetime, timedelta, timezone
+        from api.services.auth_service import generate_session_token, hash_token
+
+        raw = generate_session_token()
+        token_hash = hash_token(raw)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=1)
+        session_repo.create_session(test_user["id"], token_hash, expires_at)
+        db_conn.commit()
+
+        sess = session_repo.resolve_session(token_hash)
+        assert sess is not None
+        assert str(sess["user_id"]) == str(test_user["id"])
+        assert "session_id" in sess
+
+    def test_resolve_session_expired_returns_none(
+        self, test_user, session_repo, db_conn
+    ):
+        from datetime import datetime, timedelta, timezone
+        from api.services.auth_service import generate_session_token, hash_token
+
+        raw = generate_session_token()
+        token_hash = hash_token(raw)
+        past = datetime.now(timezone.utc) - timedelta(days=1)
+        session_repo.create_session(test_user["id"], token_hash, past)
+        db_conn.commit()
+
+        assert session_repo.resolve_session(token_hash) is None
+
+    def test_session_path_carries_full_user_row(
+        self, test_user, user_repo, session_repo, db_conn
+    ):
+        """#461 regression: the session auth path must reflect the FULL users
+        row, so any *future* users column is present without editing a
+        hand-listed SELECT (the #450 class of bug, where avatar_url/role/theme
+        silently dropped from the join).
+
+        This reproduces exactly what the middleware does on the cookie/Bearer
+        path: resolve the session to a user_id, then reload the whole row via
+        find_by_id. We assert that EVERY column on the users table survives the
+        round-trip — including columns this test was never written to know
+        about — by diffing against the live table schema. Add a new users
+        column tomorrow and this test guarantees the session path carries it
+        with zero code changes to the auth path.
+        """
+        from datetime import datetime, timedelta, timezone
+        from api.services.auth_service import generate_session_token, hash_token
+        from api.middleware.auth import _load_session_user
+
+        raw = generate_session_token()
+        token_hash = hash_token(raw)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=1)
+        session_repo.create_session(test_user["id"], token_hash, expires_at)
+        db_conn.commit()
+
+        # What the middleware actually builds for request.state.user.
+        loaded = _load_session_user(db_conn, token_hash)
+        assert loaded is not None
+        assert str(loaded["id"]) == str(test_user["id"])
+        assert loaded["session_id"] is not None
+
+        # The columns that #450 added back by hand must still be present...
+        for col in (
+            "email",
+            "display_name",
+            "orcid_id",
+            "email_verified_at",
+            "avatar_url",
+            "role",
+            "theme",
+        ):
+            assert col in loaded, f"#450/#461 regression: '{col}' dropped"
+
+        # ...AND every other users column, discovered from the live schema, so a
+        # future column can never silently drop on the session path again.
+        with db_conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'users'
+                """
+            )
+            all_user_columns = {r["column_name"] for r in cur.fetchall()}
+        missing = all_user_columns - set(loaded.keys())
+        assert not missing, (
+            f"#461 regression: session path dropped users columns {missing}. "
+            "The session auth path must reload the full users row (find_by_id) "
+            "so new columns appear automatically."
+        )
+
 
 class TestApiKeyRepo:
     def test_create_and_find(self, test_user, api_key_repo, db_conn):

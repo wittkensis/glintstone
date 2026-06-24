@@ -36,7 +36,16 @@ class SessionRepository(BaseRepository):
         )
 
     def find_by_token_hash(self, token_hash: str) -> Optional[dict]:
-        """Return session joined with user, or None if not found / expired / revoked."""
+        """Return session joined with user, or None if not found / expired / revoked.
+
+        NOTE: this hand-lists the user columns and so silently drops any new
+        users column until someone adds it here (the #450 / #461 class of bug:
+        avatar_url/role/theme were all missing once). The auth middleware does
+        NOT rely on these user columns — it uses ``resolve_session`` below to get
+        the user_id, then reloads the full row via ``UserRepository.find_by_id``
+        so future columns are present automatically. This method is retained for
+        the repository-level tests and any caller that wants the joined shape.
+        """
         return self.fetch_one(
             """
             SELECT
@@ -53,6 +62,27 @@ class SessionRepository(BaseRepository):
                 u.theme
             FROM user_sessions s
             JOIN users u ON u.id = s.user_id
+            WHERE s.token_hash = %(token_hash)s
+              AND s.expires_at > now()
+            """,
+            {"token_hash": token_hash},
+        )
+
+    def resolve_session(self, token_hash: str) -> Optional[dict]:
+        """Resolve a session token to its session id + user id only.
+
+        Returns ``{"session_id": ..., "user_id": ...}`` for a live (unexpired)
+        session, or ``None``. Deliberately selects NO user columns — the caller
+        reloads the full users row via ``UserRepository.find_by_id`` so any
+        future users column is automatically reflected on the session auth path
+        without editing this query (the #461 fix; mirrors the API-key path).
+        """
+        return self.fetch_one(
+            """
+            SELECT
+                s.id      AS session_id,
+                s.user_id AS user_id
+            FROM user_sessions s
             WHERE s.token_hash = %(token_hash)s
               AND s.expires_at > now()
             """,

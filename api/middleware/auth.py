@@ -3,15 +3,46 @@
 Injects `request.state.user` (dict with user fields) or `None` for
 unauthenticated requests. Routes that require auth use the `require_user`
 dependency in `api/dependencies.py`.
+
+Both auth paths reload the FULL users row by id (the API-key path always did;
+the session path was hardened to match in #461) so that any new users column is
+automatically present on `request.state.user` without editing a hand-listed
+SELECT — the #450 class of bug, where avatar_url/role/theme silently dropped
+from the session join until someone remembered to add them.
 """
+
+from typing import Optional
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
 from api.repositories.api_key_repo import ApiKeyRepository
 from api.repositories.session_repo import SessionRepository
+from api.repositories.user_repo import UserRepository
 from api.services.auth_service import hash_token
-from core.database import get_connection
+from core.database import DictConnection, get_connection
+
+
+def _load_session_user(conn: DictConnection, token_hash: str) -> Optional[dict]:
+    """Resolve a session token to the full users row, or None.
+
+    Resolves the session → user_id (no user columns selected), touches the
+    session's last-seen, then reloads the WHOLE users row via find_by_id so
+    every present and future column is carried — mirroring the API-key path.
+    Returns a dict with an injected ``session_id`` key, or None if the session
+    is missing / expired / its user no longer exists.
+    """
+    session_repo = SessionRepository(conn)
+    sess = session_repo.resolve_session(token_hash)
+    if not sess:
+        return None
+    user = UserRepository(conn).find_by_id(sess["user_id"])
+    if not user:
+        return None
+    session_repo.touch(sess["session_id"])
+    user = dict(user)
+    user["session_id"] = sess["session_id"]
+    return user
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -30,8 +61,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     key_row = api_key_repo.find_by_hash(key_hash)
                     if key_row:
                         api_key_repo.touch(key_row["id"])
-                        from api.repositories.user_repo import UserRepository
-
                         user_repo = UserRepository(conn)
                         user = user_repo.find_by_id(key_row["user_id"])
                         if user:
@@ -46,12 +75,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
             token_hash = hash_token(raw)
             try:
                 with get_connection() as conn:
-                    session_repo = SessionRepository(conn)
-                    row = session_repo.find_by_token_hash(token_hash)
-                    if row:
-                        session_repo.touch(row["session_id"])
-                        request.state.user = dict(row)
-                        request.state.session_id = row["session_id"]
+                    user = _load_session_user(conn, token_hash)
+                    if user:
+                        request.state.user = user
+                        request.state.session_id = user["session_id"]
             except Exception:
                 pass
 
@@ -62,12 +89,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 token_hash = hash_token(cookie_token)
                 try:
                     with get_connection() as conn:
-                        session_repo = SessionRepository(conn)
-                        row = session_repo.find_by_token_hash(token_hash)
-                        if row:
-                            session_repo.touch(row["session_id"])
-                            request.state.user = dict(row)
-                            request.state.session_id = row["session_id"]
+                        user = _load_session_user(conn, token_hash)
+                        if user:
+                            request.state.user = user
+                            request.state.session_id = user["session_id"]
                 except Exception:
                     pass
 
