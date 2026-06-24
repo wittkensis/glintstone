@@ -21,7 +21,11 @@
 #   GLINTSTONE_VERIFY_TOKEN=<raw-token> ./ops/deploy/smoke-with-auth.sh \
 #       [BASE_URL] [AUTHED_PATH] [EXPECT_SUBSTRING]
 #
-#   BASE_URL          default https://glintstone.org
+#   BASE_URL          default https://app.glintstone.org
+#                     NOTE: must be the APP host, not the apex glintstone.org.
+#                     The apex serves the static marketing site (no app proxy),
+#                     so /_me there is a hard 404. The app backend (app.* → :8002)
+#                     is the only host that serves the authed /_me endpoint (#452).
 #   AUTHED_PATH       optional authed page to additionally fetch (e.g. /account)
 #   EXPECT_SUBSTRING  optional string that must appear in AUTHED_PATH's HTML
 #                     (default: header-user — the logged-in chip id)
@@ -32,7 +36,7 @@
 
 set -euo pipefail
 
-BASE_URL="${1:-https://glintstone.org}"
+BASE_URL="${1:-https://app.glintstone.org}"
 AUTHED_PATH="${2:-}"
 EXPECT_SUBSTRING="${3:-header-user}"
 
