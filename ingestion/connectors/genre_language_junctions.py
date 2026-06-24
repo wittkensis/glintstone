@@ -59,7 +59,7 @@ _TABLE_KEYS = {
 def _decompose_genre(raw_genre: str, genre_ids: dict[str, int]) -> list[tuple]:
     """Return list of (p_number placeholder, genre_id, confidence, is_primary)."""
     parts = [p.strip() for p in raw_genre.split(";") if p.strip()]
-    results = []
+    results: list[tuple] = []
     seen: set[str] = set()
     for i, part in enumerate(parts):
         uncertain = part.rstrip().endswith("?")
@@ -88,7 +88,7 @@ def _decompose_language(raw_lang: str, lang_ids: dict[str, int]) -> list[tuple]:
         "Elamite Egyptian", "Elamite; Egyptian"
     )
     parts = [p.strip().rstrip(",") for p in normalized.split(";") if p.strip()]
-    results = []
+    results: list[tuple] = []
     seen: set[str] = set()
     for part in parts:
         uncertain = part.rstrip().endswith("?")

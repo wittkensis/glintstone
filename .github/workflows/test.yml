@@ -53,9 +53,17 @@ jobs:
 
       - name: Type-check (mypy)
         # Blocking: the codebase is now clean under mypy across these packages
-        # (audit finding 3a). New type errors fail CI.
+        # (audit finding 3a). New type errors fail CI. ingestion/ was brought
+        # under coverage in #137 (the recurring "pre-existing mypy errors in
+        # ingestion/" noise is now fixed at the source).
         run: |
-          mypy api/ app/ core/ mcp/ --ignore-missing-imports
+          mypy api/ app/ core/ mcp/ ingestion/ --ignore-missing-imports
+
+      - name: JS unit tests (timeline era-suffix formatters, #386)
+        # No npm install — Node's built-in test runner + node:assert. Guards the
+        # dual-era BCE/CE formatters (#332) against silent regression.
+        run: |
+          node --test 'tests/js/*.test.mjs'
 
       - name: Run pytest
         # Integration tests (those depending on `has_database_url`) are skipped

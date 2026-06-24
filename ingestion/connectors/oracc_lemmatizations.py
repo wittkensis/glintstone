@@ -254,7 +254,7 @@ def _walk_cdl(nodes, state: dict, out_lemmas: list) -> None:
 
 def _find_corpus_dirs(project: str) -> list[Path]:
     base = _project_base(project)
-    dirs = []
+    dirs: list[Path] = []
     if not base.exists():
         return dirs
     for root, _, filenames in os.walk(base):
@@ -332,7 +332,7 @@ def _build_caches(db, project: str) -> tuple[dict, dict]:
     corpus_dirs = _find_corpus_dirs(project)
     if not corpus_dirs:
         return {}, {}
-    p_numbers = set()
+    p_numbers: set[str] = set()
     for cdir in corpus_dirs:
         p_numbers.update(f.stem for f in cdir.glob("P*.json"))
     if not p_numbers:

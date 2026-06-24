@@ -270,7 +270,7 @@ class OraccCreditsConnector(SourceConnector):
         for r in rows:
             nn = str(_val(r, "normalized_name", 0))
             if counts[nn] == 1:
-                index[nn] = int(_val(r, "id", 1))  # type: ignore[arg-type]
+                index[nn] = int(_val(r, "id", 1))  # type: ignore[call-overload]
         return index
 
     def _attribute(self, ctx: RunContext) -> None:
