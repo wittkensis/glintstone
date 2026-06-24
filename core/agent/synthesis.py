@@ -30,6 +30,7 @@ from core.agent.citation_parser import (
 )
 from core.agent.fact_assembly import (
     ArtifactFactBundle,
+    CompositeFactBundle,
     Fact,
     LineFactBundle,
     TokenFactBundle,
@@ -183,6 +184,33 @@ def synthesize_artifact_summary(
         best_guess_allowed=bundle.best_guess_allowed,
         prompt_version=prompt_version,
         run_v2_checks=prompt_version.startswith("synthesis.v2"),
+    )
+
+
+def synthesize_composite_summary(
+    client: AnthropicClient,
+    bundle: CompositeFactBundle,
+    prompt_version: str = "composite-summary.v1",
+) -> SynthesisResult:
+    """Run the grounded synthesis loop for summarize_composite (#168).
+
+    Composition-level summary synthesized across a composition's witnesses
+    (transmission span, geographic spread, languages, translation coverage).
+    Pure aggregate description — no best-guess / hypothesis branch — so the
+    summary can make no claim not backed by a witness-aggregate fact.
+    """
+    system_prompt = _load_prompt(prompt_version)
+    user_message_base = (
+        _render_facts(bundle.facts)
+        + f"\n\nINTENT: summarize composition {bundle.q_number} across its witnesses"
+    )
+    return _run_loop(
+        client=client,
+        system_prompt=system_prompt,
+        user_message_base=user_message_base,
+        facts=bundle.facts,
+        best_guess_allowed=False,
+        prompt_version=prompt_version,
     )
 
 

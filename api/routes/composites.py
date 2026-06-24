@@ -64,10 +64,42 @@ def get_composite(q_number: str, conn=Depends(get_db)):
     # carries readable ATF, so the page renders its #189 empty state.
     atf_preview = repo.get_representative_atf_preview(q_number)
 
+    # Related compositions (#160): sibling texts that share a witness tablet.
+    # Empty list when this composition shares no exemplar with any other — the
+    # detail page omits the "Related compositions" widget in that case.
+    related = repo.get_related_composites(q_number)
+
     return {
         "composite": composite,
         "exemplars": exemplars,
         "atf_preview": atf_preview,
+        "related": related,
+    }
+
+
+@router.get("/{q_number}/related")
+def get_composite_related(
+    q_number: str,
+    limit: int = Query(8, ge=1, le=24, description="Max related compositions"),
+    conn=Depends(get_db),
+):
+    """Compositions related to this one by shared witnesses (#160).
+
+    The relation is structural: a tablet linked to both compositions via
+    ``artifact_composites``. Returns ``related: []`` for a composition with no
+    shared witness (the UI omits the widget); 404 only for an unknown Q-number.
+    See ``CompositeRepository.get_related_composites`` for the data-gate
+    rationale (explicit-relation and genre/period signals are unavailable).
+    """
+    repo = CompositeRepository(conn)
+
+    composite = repo.find_by_q_number(q_number)
+    if not composite:
+        raise HTTPException(status_code=404, detail=f"Composite {q_number} not found")
+
+    return {
+        "q_number": q_number,
+        "related": repo.get_related_composites(q_number, limit=limit),
     }
 
 

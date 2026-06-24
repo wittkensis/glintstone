@@ -25,11 +25,13 @@ from core.agent.citation_parser import SynthesisGroundingError
 from core.agent.fact_assembly import (
     ArtifactFactBundle,
     ArtifactFocus,
+    CompositeFactBundle,
     TokenFactBundle,
 )
 from core.agent.search_engine import SearchEngine
 from core.agent.synthesis import (
     synthesize_artifact_summary,
+    synthesize_composite_summary,
     synthesize_line_suggestion,
     synthesize_token_interpretation,
 )
@@ -540,6 +542,157 @@ def _summarize_follow_ups(p_number: str, bundle: ArtifactFactBundle) -> list[Fol
         )
     )
     return follow_ups
+
+
+# ── 2b. Summarize composite (#168) ────────────────────────────────────────────
+
+
+def _composite_fields_from_bundle(bundle: CompositeFactBundle) -> list[Field]:
+    """Render the composite aggregate facts as Card fields (degraded path too)."""
+    fields: list[Field] = []
+    for f in bundle.facts:
+        label, _, value = f.text.partition(":")
+        # Strip the trailing "(... source)" tag from the value for the field view.
+        clean = re.sub(r"\s*\([^()]*(?:catalog|status)\)\s*$", "", value).strip()
+        ref = SourceRef(
+            kind=f.citation.source_kind,
+            label=f.citation.publication_short
+            or f"{f.citation.source_kind}:{f.citation.source_id}",
+        )
+        fields.append(
+            Field(label=label.strip().title(), value=clean or None, sources=[ref])
+        )
+    return fields
+
+
+def _degraded_composite_summary(bundle: CompositeFactBundle) -> str:
+    items = [f.text for f in bundle.facts[:4]]
+    return "Summary unavailable; key facts: " + "; ".join(items) + "."
+
+
+def do_summarize_composite(
+    conn: psycopg.Connection[DictRow],
+    q_number: str,
+    interaction_id_int: int | None,
+    interaction_id_str: str,
+) -> ToolResponse[CardPayload]:
+    """Composite-level grounded summary synthesized across witnesses (#168).
+
+    Mirrors do_summarize_artifact: lazy-load a persisted output, else assemble
+    witness-aggregate facts, synthesize a grounded paragraph, persist, and
+    return a CardPayload the trust UI renders (AI badge + citations). No
+    best-guess branch — composite summaries are pure aggregate description, so
+    no ungrounded claim can appear.
+    """
+    prompt_version = "composite-summary.v1"
+
+    persisted = agent_outputs.find_fresh(
+        conn,
+        output_type="composite_summary",
+        target_type="composite",
+        target_id=q_number,
+        focus=None,
+        prompt_version=prompt_version,
+    )
+
+    bundle = fact_assembly.assemble_composite_facts(conn, q_number)
+    if bundle is None:
+        return ToolResponse[CardPayload](
+            summary=f"No composition found for {q_number} (or it has no linked witnesses).",
+            data=CardPayload(title=q_number, fields=[]),
+            sources=[SourceRef.computed(method="lookup", label="not found")],
+            interaction_id=interaction_id_str,
+            render_hint="card",
+        )
+
+    title = bundle.designation or q_number
+    fields = _composite_fields_from_bundle(bundle)
+
+    if persisted:
+        card = CardPayload(
+            title=title,
+            subtitle=q_number,
+            fields=fields,
+            badges=[],
+            synthesis=persisted.output_text,
+            synthesis_citations=persisted.citations,
+            best_guess=None,
+            model=persisted.model,
+            language_supported=True,
+        )
+        return ToolResponse[CardPayload](
+            summary=_plain_summary_from_synthesis(persisted.output_text) or title,
+            data=card,
+            sources=_source_refs_from_citations(persisted.citations),
+            interaction_id=interaction_id_str,
+            render_hint="card",
+        )
+
+    anthropic = _get_anthropic()
+    synthesis_text: str | None = None
+    synthesis_citations: list[Citation] = []
+    source_run_ids: list[int] = []
+
+    try:
+        result = synthesize_composite_summary(
+            anthropic, bundle, prompt_version=prompt_version
+        )
+        synthesis_text = result.text
+        synthesis_citations = result.citations
+        source_run_ids = _source_run_ids(synthesis_citations)
+    except SynthesisGroundingError as exc:
+        logger.warning(
+            "composite synthesis grounding failed for %s: %s",
+            q_number,
+            exc.last_complaint,
+        )
+
+    if synthesis_text:
+        try:
+            agent_outputs.insert(
+                conn,
+                interaction_id=interaction_id_int,
+                output_type="composite_summary",
+                target_type="composite",
+                target_id=q_number,
+                focus=None,
+                model=anthropic.model,
+                prompt_version=prompt_version,
+                output_text=synthesis_text,
+                citations=synthesis_citations,
+                source_run_ids=source_run_ids,
+                best_guess_flag=False,
+            )
+        except Exception as exc:
+            logger.warning("agent_outputs insert (composite) failed: %s", exc)
+
+    card = CardPayload(
+        title=title,
+        subtitle=q_number,
+        fields=fields,
+        badges=[],
+        synthesis=synthesis_text,
+        synthesis_citations=synthesis_citations,
+        best_guess=None,
+        model=anthropic.model if synthesis_text else "",
+        language_supported=True,
+    )
+    summary = _plain_summary_from_synthesis(
+        synthesis_text
+    ) or _degraded_composite_summary(bundle)
+    sources = _source_refs_from_citations(synthesis_citations)
+    if not synthesis_text:
+        sources.insert(
+            0, SourceRef.computed(method="degraded-no-synthesis", label="degraded path")
+        )
+
+    return ToolResponse[CardPayload](
+        summary=summary,
+        data=card,
+        sources=sources,
+        interaction_id=interaction_id_str,
+        render_hint="card",
+    )
 
 
 # ── 3. Interpret token ───────────────────────────────────────────────────────

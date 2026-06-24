@@ -237,6 +237,78 @@ class CompositeRepository(BaseRepository):
             "lines": lines,
         }
 
+    def get_related_composites(self, q_number: str, limit: int = 8) -> list[dict]:
+        """Compositions related to ``q_number`` by shared witnesses (#160).
+
+        DATA-GATE (live, 2026-06): the explicit-relation table
+        ``intertextuality_links`` is empty (0 rows), and ``composites.genre`` /
+        ``composites.period`` / ``composites.designation`` are 0% populated — so
+        genre/period adjacency and an explicit relations table are *not* usable
+        signals. The one real signal is the **shared exemplar**: two compositions
+        that draw on the same physical tablet (a witness linked to both via
+        ``artifact_composites``). 170 of 650 compositions have at least one such
+        sibling. This is a grounded, structural relation — not a guess.
+
+        For each related composition we return:
+          * ``shared_witnesses`` — how many tablets it shares with ``q_number``
+            (the relation strength; orders the list)
+          * ``shared_p`` — up to 3 sample shared P-numbers (so the scholar can
+            verify the link)
+          * ``exemplar_count`` — its ORACC-recorded exemplar total
+          * ``top_genre`` / ``top_period`` — the most common genre/period across
+            its *exemplar tablets* (derived, since the composite row itself
+            carries no genre/period). These give the otherwise-label-less
+            composition a human-readable descriptor.
+
+        Returns ``[]`` when the composition shares no witness with any other —
+        the caller then omits the widget. Never reads ``pipeline_completeness``.
+        """
+        return self.fetch_all(
+            """
+            WITH related AS (
+                SELECT ac2.q_number AS rel_q,
+                       count(DISTINCT ac1.p_number) AS shared_witnesses,
+                       (array_agg(DISTINCT ac1.p_number ORDER BY ac1.p_number))[1:3]
+                           AS shared_p
+                FROM artifact_composites ac1
+                JOIN artifact_composites ac2
+                    ON ac1.p_number = ac2.p_number
+                   AND ac1.q_number <> ac2.q_number
+                WHERE ac1.q_number = %(q_number)s
+                GROUP BY ac2.q_number
+            )
+            SELECT
+                r.rel_q AS q_number,
+                r.shared_witnesses,
+                r.shared_p,
+                c.designation,
+                c.exemplar_count,
+                (
+                    SELECT a.genre
+                    FROM artifact_composites x
+                    JOIN artifacts a ON a.p_number = x.p_number
+                    WHERE x.q_number = r.rel_q AND a.genre IS NOT NULL AND a.genre <> ''
+                    GROUP BY a.genre
+                    ORDER BY count(*) DESC
+                    LIMIT 1
+                ) AS top_genre,
+                (
+                    SELECT a.period
+                    FROM artifact_composites x
+                    JOIN artifacts a ON a.p_number = x.p_number
+                    WHERE x.q_number = r.rel_q AND a.period IS NOT NULL AND a.period <> ''
+                    GROUP BY a.period
+                    ORDER BY count(*) DESC
+                    LIMIT 1
+                ) AS top_period
+            FROM related r
+            JOIN composites c ON c.q_number = r.rel_q
+            ORDER BY r.shared_witnesses DESC, c.exemplar_count DESC, r.rel_q
+            LIMIT %(limit)s
+            """,
+            {"q_number": q_number, "limit": limit},
+        )
+
     def get_total_count(self) -> int:
         """
         Get total number of composites.

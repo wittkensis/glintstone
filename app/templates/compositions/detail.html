@@ -48,6 +48,102 @@
         </span>
     </div>
 
+    {# ── AI composition summary (#168) — multi-exemplar synthesis ─────────────
+       A grounded paragraph synthesized across this composition's witnesses
+       (transmission span, geographic reach, languages, translation coverage).
+       Same trust contract as the artifact summary: AI badge + inline [n] cite
+       markers + a "Grounded in" source list. Loads client-side from
+       /composites/{q}/summary. Carries the #169 correction widget. #}
+    <section class="composite-summary" id="composite-summary"
+             data-q-number="{{ composite.q_number }}"
+             data-api-url="{{ api_url }}"
+             {% if current_user and current_user.id %}data-scholar-id="{{ current_user.id }}"{% endif %}
+             aria-labelledby="composite-summary-heading">
+        <div class="composite-summary__bar">
+            <h2 id="composite-summary-heading" class="composite-summary__title">Overview</h2>
+            <span class="ai-tooltip-wrap">
+                <span class="ai-badge ai-badge--header" tabindex="0" aria-describedby="ai-tip-composite">
+                    <span class="ai-badge__dot"></span> AI
+                </span>
+                <span class="ai-tooltip" id="ai-tip-composite" role="tooltip">
+                    <strong>Machine-generated.</strong> This overview was written by an AI model,
+                    synthesizing only the cited witness-level facts below — it is
+                    <em>not</em> a scholar's edition. Verify before citing.
+                </span>
+            </span>
+        </div>
+
+        <div class="composite-summary__loading" id="composite-summary-loading" aria-busy="true" aria-label="Loading overview">
+            <div class="skeleton-wrap" aria-hidden="true">
+                <div class="skeleton-loader" style="height:13px;width:88%;margin-bottom:10px"></div>
+                <div class="skeleton-loader" style="height:13px;width:96%;margin-bottom:10px"></div>
+                <div class="skeleton-loader" style="height:13px;width:74%"></div>
+            </div>
+        </div>
+
+        <div class="composite-summary__content is-hidden" id="composite-summary-content">
+            <p class="composite-summary__text" id="composite-summary-text"></p>
+            <div class="ai-sources is-hidden" id="composite-summary-sources">
+                <p class="ai-sources__title">Grounded in</p>
+                <ul class="ai-sources__list" id="composite-summary-sources-list"></ul>
+            </div>
+            <div class="ai-meta" id="composite-summary-meta"></div>
+        </div>
+
+        <div class="composite-summary__error is-hidden" id="composite-summary-error">
+            <div class="data-empty">
+                <p class="data-empty__title">Overview unavailable</p>
+                <p class="data-empty__hint">The model could not ground an overview in citable
+                    witness facts for this composition, so none is shown. The witness data
+                    below remains on the record.</p>
+            </div>
+        </div>
+
+        {# #169 scholar correction widget — Level 2 feedback. Captures a free-text
+           correction on the AI overview and writes it to the corrections store
+           (interaction_feedback + a new annotation_run via POST /agentic/corrections).
+           Capture-only: corrections are recorded, never auto-applied. Shown only
+           to signed-in scholars, once an interaction_id is available. #}
+        {% if current_user %}
+        <div class="ai-correction is-hidden" id="composite-correction">
+            <button type="button" class="ai-correction__toggle" id="composite-correction-toggle"
+                    aria-expanded="false" aria-controls="composite-correction-form">
+                Suggest a correction
+            </button>
+            <form class="ai-correction__form is-hidden" id="composite-correction-form">
+                <p class="ai-correction__hint">
+                    Flag a claim in this AI overview that is wrong or misleading. Your
+                    correction is recorded for review — it is not applied automatically.
+                </p>
+                <label class="ai-correction__label" for="composite-correction-claim">
+                    Claim being corrected
+                </label>
+                <textarea class="ai-correction__input" id="composite-correction-claim"
+                          rows="2" placeholder="What the overview says…" required></textarea>
+                <label class="ai-correction__label" for="composite-correction-text">
+                    Correction
+                </label>
+                <textarea class="ai-correction__input" id="composite-correction-text"
+                          rows="2" placeholder="What is actually correct…" required></textarea>
+                <label class="ai-correction__label" for="composite-correction-evidence">
+                    Evidence <span class="ai-correction__optional">(optional)</span>
+                </label>
+                <textarea class="ai-correction__input" id="composite-correction-evidence"
+                          rows="2" placeholder="Citation or reasoning supporting the correction…"></textarea>
+                <div class="ai-correction__actions">
+                    <button type="submit" class="ai-correction__submit" id="composite-correction-submit">
+                        Submit correction
+                    </button>
+                    <button type="button" class="ai-correction__cancel" id="composite-correction-cancel">
+                        Cancel
+                    </button>
+                </div>
+                <p class="ai-correction__status is-hidden" id="composite-correction-status" role="status"></p>
+            </form>
+        </div>
+        {% endif %}
+    </section>
+
     {# ── SVG Transmission Timeline ───────────────────────────────────────────── #}
     {% if timeline_exemplars %}
     <section class="composition-timeline" aria-labelledby="timeline-heading">
@@ -282,6 +378,44 @@
         {% endif %}
     </section>
 
+    {# ── Related compositions (#160) ─────────────────────────────────────────
+       Sibling texts that share a witness tablet with this one. Structural, not
+       inferred: each shares ≥1 physical exemplar linked to both via
+       artifact_composites. Omitted entirely when there are no shared-witness
+       siblings (data-gate: explicit-relation + genre/period signals are
+       unavailable — see composite_repo.get_related_composites). #}
+    {% if related %}
+    <section class="composition-related" aria-labelledby="related-heading">
+        <div class="composition-related__header">
+            <h2 id="related-heading">Related compositions</h2>
+            <p class="composition-related__sub">
+                Other texts that share at least one witness tablet with this one.
+            </p>
+        </div>
+        <ul class="composition-related__list">
+            {% for r in related %}
+            <li class="composition-related__item">
+                <a class="composition-related__card" href="/compositions/{{ r.q_number }}">
+                    <span class="composition-related__q">{{ r.q_number }}</span>
+                    <span class="composition-related__name">
+                        {{ r.designation or r.top_genre or 'Unnamed composition' }}
+                    </span>
+                    <span class="composition-related__meta">
+                        {% if r.top_period %}<span class="badge badge--sm">{{ r.top_period }}</span>{% endif %}
+                        {% if r.top_genre and not r.designation %}<span class="badge badge--sm">{{ r.top_genre }}</span>{% endif %}
+                    </span>
+                    <span class="composition-related__shared"
+                          title="Tablets linked to both compositions{% if r.shared_p %}: {{ r.shared_p | join(', ') }}{% endif %}">
+                        {{ r.shared_witnesses }} shared witness{{ '' if r.shared_witnesses == 1 else 'es' }}
+                        {% if r.exemplar_count %}<span class="composition-related__exc"> · {{ "{:,}".format(r.exemplar_count) }} exemplars</span>{% endif %}
+                    </span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
 </main>
 
 {% if timeline_exemplars %}
@@ -351,4 +485,5 @@
 </script>
 {% endif %}
 <script src="/static/js/witness-switcher.js?v={{ app_version }}"></script>
+<script src="/static/js/composite-summary.js?v={{ app_version }}"></script>
 {% endblock %}

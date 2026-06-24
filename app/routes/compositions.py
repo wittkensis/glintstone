@@ -106,17 +106,27 @@ def composition_detail(
     if not composite:
         return RedirectResponse(url="/compositions", status_code=302)
 
+    # Auth-aware: the #169 scholar-correction widget is shown only to signed-in
+    # scholars (it writes a correction attributed to them). get_me degrades to
+    # None for anonymous visitors.
+    current_user = None
+    token = request.cookies.get("session_token")
+    if token:
+        current_user = api.get_me(token) or None
+
     # get_composite returns {"composite": {...}, "exemplars": [...]}
     # Handle both flat and nested response shapes gracefully
     if isinstance(composite, dict) and "composite" in composite:
         composite_meta = composite.get("composite") or {}
         all_exemplars = composite.get("exemplars", [])
         atf_preview = composite.get("atf_preview")
+        related = composite.get("related") or []
     else:
         composite_meta = composite if isinstance(composite, dict) else {}
         exemplars_data = api.get_composite_exemplars(q_number)
         all_exemplars = exemplars_data.get("exemplars", [])
         atf_preview = None
+        related = []
 
     linked_count = len(all_exemplars)
 
@@ -278,6 +288,8 @@ def composition_detail(
             "composite": composite_meta,
             "exemplars": filtered,
             "atf_preview": atf_preview,
+            "related": related,
+            "current_user": current_user,
             "witnesses": witnesses,
             "extent_max": extent_max,
             "rep_p": rep_p,
