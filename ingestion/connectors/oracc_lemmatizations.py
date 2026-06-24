@@ -268,20 +268,35 @@ def _resolve_line_ids(line_cache: dict, p_number: str, line_number) -> dict | No
     """Look up the per-surface line_id map for (p_number, line_number).
 
     Exact match first. If that misses and the ORACC line_number is a bare
-    integer (e.g. "2"), retry against the CDLI prime-notation variant ("2'").
-    ORACC numbers broken/continuation lines with bare ints while the CDLI ATF
-    that populated text_lines uses a trailing prime for the same lines, so an
-    exact lookup spuriously dead-letters. The fallback is scoped narrowly: only
-    when the source value is a plain integer with no existing suffix, and only
-    by appending a single prime — it will not coerce "2'"->"2''" or touch
-    composite / surface-prefixed numbers, so it cannot manufacture a false
-    match that an exact integer lookup wouldn't already have made.
+    integer (e.g. "2"), retry against the prime-notation variant ("2'") — but
+    ONLY accept ORACC-source lines from that primed slot (#448).
+
+    Why the oracc-only restriction (the #448 collision guard):
+    ORACC numbers broken/continuation lines with bare ints (`1`, `5`) while the
+    CDLI ATF that also populated text_lines uses a trailing prime for the same
+    physical lines (`1'`, `5'`). An ORACC lemma's `position` indexes the ORACC
+    tokenisation, so it is only ever valid to attach it to an ORACC-source line.
+    The original #237 fallback returned the whole primed slot, which — once
+    oracc-atf (#273) made the two sources coexist — could land an ORACC lemma on
+    a CDLI primed line whose tokenisation differs (different words, different
+    columns/section). That is exactly the wrong-token attachment #446 found
+    (126/129 mis-targeted positions). Filtering the primed slot to oracc-source
+    entries means the fallback can still rescue a genuinely prime-mismatched
+    ORACC line, but can NEVER manufacture a cross-source false match onto a CDLI
+    line. When the correct ORACC line already exists unprimed, the exact match
+    above (with #254 oracc-preference) handles it and the fallback never fires.
     """
     hit = line_cache.get((p_number, line_number))
     if hit is not None:
         return hit
     if isinstance(line_number, str) and line_number.isdigit():
-        return line_cache.get((p_number, line_number + "'"))
+        primed = line_cache.get((p_number, line_number + "'"))
+        if not primed:
+            return None
+        oracc_only = {
+            surf: val for surf, val in primed.items() if val[1] == "oracc"
+        }
+        return oracc_only or None
     return None
 
 

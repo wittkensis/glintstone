@@ -20,31 +20,101 @@ from ingestion import dlq_replay
 
 
 def test_exact_match_wins():
-    cache = {("P1", "2"): {"obverse": 10}}
-    assert _resolve_line_ids(cache, "P1", "2") == {"obverse": 10}
+    # cache values are (line_id, source) tuples (#254). Exact match returns the
+    # whole surface map untouched.
+    cache = {("P1", "2"): {"obverse": (10, "oracc")}}
+    assert _resolve_line_ids(cache, "P1", "2") == {"obverse": (10, "oracc")}
 
 
-def test_prime_fallback_resolves_bare_integer():
-    # text_lines only has the prime variant "2'"; ORACC seeks "2".
-    cache = {("P1", "2'"): {"obverse": 11}}
-    assert _resolve_line_ids(cache, "P1", "2") == {"obverse": 11}
+def test_prime_fallback_resolves_bare_integer_to_oracc_line():
+    # text_lines only has the prime variant "2'" and it is an ORACC-source line;
+    # ORACC seeks "2". The fallback rescues it (#237) because the primed line is
+    # itself oracc — a same-source match, so the lemma's position is valid.
+    cache = {("P1", "2'"): {"obverse": (11, "oracc")}}
+    assert _resolve_line_ids(cache, "P1", "2") == {"obverse": (11, "oracc")}
 
 
 def test_prime_fallback_only_for_bare_integers():
-    cache = {("P1", "2''"): {"obverse": 12}}
+    cache = {("P1", "2''"): {"obverse": (12, "oracc")}}
     # "2'" is not a bare integer, so we must NOT try "2''".
     assert _resolve_line_ids(cache, "P1", "2'") is None
 
 
 def test_prime_fallback_does_not_invent_false_match():
     # No prime variant present -> stays unmatched, never a wrong line.
-    cache = {("P1", "3'"): {"obverse": 13}}
+    cache = {("P1", "3'"): {"obverse": (13, "oracc")}}
     assert _resolve_line_ids(cache, "P1", "2") is None
 
 
 def test_non_numeric_line_number_no_fallback():
-    cache = {("P1", "o 2'"): {"obverse": 14}}
+    cache = {("P1", "o 2'"): {"obverse": (14, "oracc")}}
     assert _resolve_line_ids(cache, "P1", "o 2") is None
+
+
+# --- #448: prime-fallback must NOT cross-match an ORACC lemma onto a CDLI line
+#
+# Root cause #446 found: ORACC ingests partially-preserved lines UNPRIMED
+# (`1`, `5`); the CDLI ATF that also populated text_lines stores them PRIMED
+# (`1'`, `5'`). The original #237 fallback returned the whole primed slot, so
+# once oracc-atf (#273) made both sources coexist an ORACC lemma (unprimed `1`)
+# could fall through to a CDLI primed line `1'` whose tokenisation differs —
+# landing the lemma on the wrong token (126/129 of the mis-targeted positions).
+# The fix scopes the prime fallback to ORACC-source primed lines only.
+
+
+def test_448_prime_fallback_refuses_cdli_only_primed_line():
+    # The ONLY primed variant present is a CDLI line. An ORACC lemma for line "1"
+    # must NOT attach to the CDLI "1'" line (different tokenisation/section).
+    # Pre-fix this returned {"reverse": (3310406, "cdli")} -> the #446 corruption.
+    cache = {("P229758", "1'"): {"reverse": (3310406, "cdli")}}
+    assert _resolve_line_ids(cache, "P229758", "1") is None
+
+
+def test_448_prime_fallback_resolves_when_oracc_primed_line_exists():
+    # A genuinely prime-mismatched ORACC line (the case #237 was meant to fix):
+    # the primed slot holds an oracc-source line. The lemma's position indexes
+    # ORACC tokenisation, so this same-source match is valid -> rescue it.
+    cache = {("P1", "5'"): {"obverse": (2200, "oracc")}}
+    assert _resolve_line_ids(cache, "P1", "5") == {"obverse": (2200, "oracc")}
+
+
+def test_448_prime_fallback_filters_mixed_slot_to_oracc_only():
+    # The primed slot holds BOTH a CDLI column line and the ORACC line for the
+    # same physical line. The fallback must keep ONLY the oracc entry, so the
+    # lemma can never resolve onto the CDLI tokenisation.
+    cache = {
+        ("P1", "5'"): {
+            "obverse": (1500, "cdli"),
+            "reverse": (2500, "oracc"),
+        }
+    }
+    resolved = _resolve_line_ids(cache, "P1", "5")
+    assert resolved == {"reverse": (2500, "oracc")}
+    # and selecting from it can only yield the oracc line_id, never the cdli one
+    assert _select_line_id(resolved, "reverse") == 2500
+
+
+def test_448_exact_unprimed_oracc_line_never_triggers_fallback():
+    # When oracc-atf has created the correct UNPRIMED oracc line, the exact match
+    # wins and the (CDLI) primed line is never consulted. This is the common case
+    # proven on prod for all 12 triage artifacts (1202 lemmas, 0 cdli landings).
+    cache = {
+        ("P229758", "1"): {"obverse": (5276577, "oracc")},
+        ("P229758", "1'"): {"reverse": (3310406, "cdli")},
+    }
+    resolved = _resolve_line_ids(cache, "P229758", "1")
+    assert resolved == {"obverse": (5276577, "oracc")}
+    assert _select_line_id(resolved, "obverse") == 5276577
+
+
+def test_448_genuinely_different_lines_not_cross_matched():
+    # A lemma for line "7" must not borrow line "2"'s slot or any other line —
+    # only its own number (exact or prime-of-7). No "7"/"7'" present -> unmatched.
+    cache = {
+        ("P1", "2"): {"obverse": (10, "oracc")},
+        ("P1", "2'"): {"obverse": (11, "oracc")},
+    }
+    assert _resolve_line_ids(cache, "P1", "7") is None
 
 
 def test_select_line_id_prefers_surface():
