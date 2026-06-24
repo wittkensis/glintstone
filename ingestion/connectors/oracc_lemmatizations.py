@@ -293,9 +293,7 @@ def _resolve_line_ids(line_cache: dict, p_number: str, line_number) -> dict | No
         primed = line_cache.get((p_number, line_number + "'"))
         if not primed:
             return None
-        oracc_only = {
-            surf: val for surf, val in primed.items() if val[1] == "oracc"
-        }
+        oracc_only = {surf: val for surf, val in primed.items() if val[1] == "oracc"}
         return oracc_only or None
     return None
 
