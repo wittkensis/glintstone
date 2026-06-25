@@ -61,12 +61,12 @@ CREATE TABLE IF NOT EXISTS lexical_signs (
 );
 
 -- Performance indexes
-CREATE INDEX idx_lexical_signs_name ON lexical_signs(sign_name);
-CREATE INDEX idx_lexical_signs_unicode ON lexical_signs(unicode_char);
-CREATE INDEX idx_lexical_signs_values ON lexical_signs USING GIN(values);
-CREATE INDEX idx_lexical_signs_language ON lexical_signs USING GIN(language_codes);
-CREATE INDEX idx_lexical_signs_period ON lexical_signs USING GIN(periods);
-CREATE INDEX idx_lexical_signs_source ON lexical_signs(source);
+CREATE INDEX IF NOT EXISTS idx_lexical_signs_name ON lexical_signs(sign_name);
+CREATE INDEX IF NOT EXISTS idx_lexical_signs_unicode ON lexical_signs(unicode_char);
+CREATE INDEX IF NOT EXISTS idx_lexical_signs_values ON lexical_signs USING GIN(values);
+CREATE INDEX IF NOT EXISTS idx_lexical_signs_language ON lexical_signs USING GIN(language_codes);
+CREATE INDEX IF NOT EXISTS idx_lexical_signs_period ON lexical_signs USING GIN(periods);
+CREATE INDEX IF NOT EXISTS idx_lexical_signs_source ON lexical_signs(source);
 
 COMMENT ON TABLE lexical_signs IS 'Cuneiform signs with readings, values, and graphemic metadata';
 COMMENT ON COLUMN lexical_signs.values IS 'All sign values/readings (logographic + syllabic mixed). Reading type determined at association level.';
@@ -122,17 +122,17 @@ CREATE TABLE IF NOT EXISTS lexical_lemmas (
 );
 
 -- Performance indexes
-CREATE INDEX idx_lexical_lemmas_cf ON lexical_lemmas(citation_form);
-CREATE INDEX idx_lexical_lemmas_gw ON lexical_lemmas(guide_word);
-CREATE INDEX idx_lexical_lemmas_lang ON lexical_lemmas(language_code);
-CREATE INDEX idx_lexical_lemmas_pos ON lexical_lemmas(pos);
-CREATE INDEX idx_lexical_lemmas_dialect ON lexical_lemmas(dialect);
-CREATE INDEX idx_lexical_lemmas_period ON lexical_lemmas(period);
-CREATE INDEX idx_lexical_lemmas_source ON lexical_lemmas(source);
-CREATE INDEX idx_lexical_lemmas_attestation ON lexical_lemmas(attestation_count DESC);
+CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_cf ON lexical_lemmas(citation_form);
+CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_gw ON lexical_lemmas(guide_word);
+CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_lang ON lexical_lemmas(language_code);
+CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_pos ON lexical_lemmas(pos);
+CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_dialect ON lexical_lemmas(dialect);
+CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_period ON lexical_lemmas(period);
+CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_source ON lexical_lemmas(source);
+CREATE INDEX IF NOT EXISTS idx_lexical_lemmas_attestation ON lexical_lemmas(attestation_count DESC);
 
 -- Composite unique constraint: allow same cf[gw]pos from different sources
-CREATE UNIQUE INDEX idx_lexical_lemmas_composite ON lexical_lemmas(cf_gw_pos, source);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_lexical_lemmas_composite ON lexical_lemmas(cf_gw_pos, source);
 
 COMMENT ON TABLE lexical_lemmas IS 'Citation forms across languages with morphological and contextual metadata';
 COMMENT ON COLUMN lexical_lemmas.cf_gw_pos IS 'Composite key: citation_form[guide_word]POS for deduplication';
@@ -181,9 +181,9 @@ CREATE TABLE IF NOT EXISTS lexical_senses (
 );
 
 -- Performance indexes
-CREATE INDEX idx_lexical_senses_lemma ON lexical_senses(lemma_id);
-CREATE INDEX idx_lexical_senses_domain ON lexical_senses(semantic_domain);
-CREATE INDEX idx_lexical_senses_source ON lexical_senses(source);
+CREATE INDEX IF NOT EXISTS idx_lexical_senses_lemma ON lexical_senses(lemma_id);
+CREATE INDEX IF NOT EXISTS idx_lexical_senses_domain ON lexical_senses(semantic_domain);
+CREATE INDEX IF NOT EXISTS idx_lexical_senses_source ON lexical_senses(source);
 
 COMMENT ON TABLE lexical_senses IS 'Semantic glosses and contextual usage for lemmas';
 COMMENT ON COLUMN lexical_senses.definition_parts IS 'Array of definition components for modular editing';
@@ -226,10 +226,10 @@ CREATE TABLE IF NOT EXISTS lexical_sign_lemma_associations (
 );
 
 -- Performance indexes
-CREATE INDEX idx_lexical_sign_lemma_sign ON lexical_sign_lemma_associations(sign_id);
-CREATE INDEX idx_lexical_sign_lemma_lemma ON lexical_sign_lemma_associations(lemma_id);
-CREATE INDEX idx_lexical_sign_lemma_type ON lexical_sign_lemma_associations(reading_type);
-CREATE INDEX idx_lexical_sign_lemma_freq ON lexical_sign_lemma_associations(frequency DESC);
+CREATE INDEX IF NOT EXISTS idx_lexical_sign_lemma_sign ON lexical_sign_lemma_associations(sign_id);
+CREATE INDEX IF NOT EXISTS idx_lexical_sign_lemma_lemma ON lexical_sign_lemma_associations(lemma_id);
+CREATE INDEX IF NOT EXISTS idx_lexical_sign_lemma_type ON lexical_sign_lemma_associations(reading_type);
+CREATE INDEX IF NOT EXISTS idx_lexical_sign_lemma_freq ON lexical_sign_lemma_associations(frequency DESC);
 
 COMMENT ON TABLE lexical_sign_lemma_associations IS 'M:N relationship connecting signs to lemmas with reading type';
 COMMENT ON COLUMN lexical_sign_lemma_associations.reading_type IS 'Classification: logographic (word), syllabic (sound), determinative (classifier)';
@@ -265,10 +265,10 @@ CREATE TABLE IF NOT EXISTS lexical_tablet_occurrences (
 );
 
 -- Performance indexes
-CREATE INDEX idx_tablet_occ_sign ON lexical_tablet_occurrences(sign_id);
-CREATE INDEX idx_tablet_occ_lemma ON lexical_tablet_occurrences(lemma_id);
-CREATE INDEX idx_tablet_occ_sense ON lexical_tablet_occurrences(sense_id);
-CREATE INDEX idx_tablet_occ_p_number ON lexical_tablet_occurrences(p_number);
+CREATE INDEX IF NOT EXISTS idx_tablet_occ_sign ON lexical_tablet_occurrences(sign_id);
+CREATE INDEX IF NOT EXISTS idx_tablet_occ_lemma ON lexical_tablet_occurrences(lemma_id);
+CREATE INDEX IF NOT EXISTS idx_tablet_occ_sense ON lexical_tablet_occurrences(sense_id);
+CREATE INDEX IF NOT EXISTS idx_tablet_occ_p_number ON lexical_tablet_occurrences(p_number);
 
 COMMENT ON TABLE lexical_tablet_occurrences IS 'Pre-computed tablet associations for performance (updated nightly)';
 COMMENT ON COLUMN lexical_tablet_occurrences.computed_at IS 'Timestamp of last computation';

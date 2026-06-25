@@ -477,6 +477,36 @@ echo "Previous release: $PREV_RELEASE"
 echo "Swapping current → $RELEASE_TAG..."
 ssh_run "ln -sfn $RELEASE_DIR $CURRENT_LINK.new && mv -Tf $CURRENT_LINK.new $CURRENT_LINK"
 
+# --- Sync supervisor program configs (#472) ---
+# The api/web worker config (worker count, DB_POOL_MAX, env) used to live ONLY
+# in provision.sh + manual VPS edits, so the repo and the live /etc/supervisor.d/
+# could drift (e.g. the #444 2-worker bump). Make the repo authoritative: copy
+# every ops/deploy/supervisor/*.ini into /etc/supervisor.d/ and `supervisorctl
+# update` so changed units are re-read (and restarted) from version control.
+#
+# The .ini files were rsynced into the release as part of ops/ above. We `sudo
+# cp` each (the deploy user can't write /etc/supervisor.d/ directly; the narrow
+# `cp * /etc/supervisor.d/*` + `supervisorctl update` sudoers grants are in
+# provision.sh). `supervisorctl update` only re-reads/restarts units whose
+# config actually changed — unchanged units (and running staging/crawler) are
+# untouched. We copy only on a code-bearing deploy (any target), and only for
+# production (staging units are managed by provision-staging.sh).
+if [ "$APP_ENV" != "staging" ] && ( $deploy_api || $deploy_app || $deploy_mcp || $deploy_www ); then
+    echo "Syncing supervisor program configs → /etc/supervisor.d/ ..."
+    # Copy each .ini with its own `sudo cp` (the sudoers rule is
+    # `cp * /etc/supervisor.d/*`; the loop runs remotely so the glob expands on
+    # the VPS, where the release tree lives). Skipping the README.md keeps a
+    # non-program file out of /etc/supervisor.d/.
+    ssh_run "for f in $RELEASE_DIR/ops/deploy/supervisor/*.ini; do \
+        sudo cp \"\$f\" /etc/supervisor.d/\$(basename \"\$f\"); done"
+    # update re-reads changed configs and (re)starts any added/changed program.
+    # It does NOT touch unchanged programs, so the live 2-worker api/web (#444)
+    # only restart if THIS repo's ini differs — and the repo ini is pinned to
+    # --workers 2 / DB_POOL_MAX=10, so the worker count is preserved by design.
+    ssh_run "sudo supervisorctl update" || echo "::warning::supervisorctl update returned non-zero — check supervisor on the VPS."
+    echo "  supervisor configs synced + reloaded"
+fi
+
 # --- Restart services + install nginx configs ---
 if [ "$APP_ENV" = "staging" ]; then
     API_SVC="glintstone-staging-api"
@@ -605,6 +635,33 @@ if $smoke_failed; then
         echo "::warning::No previous release recorded; cannot auto-roll-back"
     fi
     exit 1
+fi
+
+# --- Postgres connection-count alert (#472) ---
+# Peak app DB connections = (api workers + web workers) pools × DB_POOL_MAX.
+# Today that's 4 × 10 = 40, under the ~97 usable (max_connections 100 − 3
+# superuser_reserved). A future worker/pool bump multiplies this fast, and the
+# failure mode (pool exhaustion → 500s under load) only shows up in production.
+# Surface it on EVERY deploy: read the live connection count and warn if it has
+# climbed past ~70/97, so the next bump is caught here instead of in an outage.
+# Non-fatal — the deploy already succeeded; this is an early-warning signal.
+if [ "$APP_ENV" = "production" ]; then
+    CONN_WARN_THRESHOLD="${CONN_WARN_THRESHOLD:-70}"
+    CONN_USABLE="${CONN_USABLE:-97}"
+    echo "Checking Postgres connection count (warn ≥ ${CONN_WARN_THRESHOLD}/${CONN_USABLE})..."
+    CONN_COUNT="$(ssh_run "set -a && . $SHARED_DIR/.env && set +a && \
+        psql \"\${DATABASE_URL_MIGRATIONS:-\$DATABASE_URL}\" -tAc \
+        'SELECT count(*) FROM pg_stat_activity'" 2>/dev/null | tr -dc '0-9')" || CONN_COUNT=""
+    if [ -n "$CONN_COUNT" ]; then
+        echo "  Postgres connections in use: ${CONN_COUNT}/${CONN_USABLE}"
+        if [ "$CONN_COUNT" -ge "$CONN_WARN_THRESHOLD" ]; then
+            echo "::warning::Postgres connection count ${CONN_COUNT} ≥ ${CONN_WARN_THRESHOLD} (of ${CONN_USABLE} usable)."
+            echo "::warning::Approaching exhaustion. Re-check the worker × DB_POOL_MAX math in"
+            echo "::warning::ops/deploy/supervisor/glintstone-api.ini before bumping workers/pools."
+        fi
+    else
+        echo "::warning::Could not read Postgres connection count (psql/DATABASE_URL) — alert skipped."
+    fi
 fi
 
 # --- Trim old releases ---

@@ -81,9 +81,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import re
 import sys
-import unicodedata
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -95,7 +93,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from core.config import get_settings  # noqa: E402
-from core.credits_parser import normalize_name, parse_credits  # noqa: E402
+from core.credits_parser import (  # noqa: E402
+    full_name_consistent,
+    normalize_name,
+    parse_credits,
+    parse_person_tokens,
+)
 
 
 def _conninfo() -> str:
@@ -182,102 +185,10 @@ def _initial_consistent(credit_inits: str, scholar_inits: str) -> bool:
 
 # --- PASS 1: prose full-name disambiguation ------------------------------
 #
-# These helpers re-read the FULL prose form a credit carries (every given
-# initial AND every full given word, in order) rather than the lossy
-# ``surname_<first-initial>`` form ``normalize_name`` produces. They are pure
-# functions (no DB) so they are unit-tested directly in
-# tests/test_recover_prose_fullname.py.
-
-_NAME_SUFFIXES = {"jr", "sr", "ii", "iii", "iv"}
-
-
-def parse_person_tokens(raw: str) -> tuple[str, list[tuple[str, str]]] | None:
-    """Parse a personal name into ``(surname, given_tokens)`` keeping detail.
-
-    ``given_tokens`` is an ordered list of ``(kind, value)`` where ``kind`` is
-    ``"init"`` (a single-initial token like "J." or "J") or ``"word"`` (a full
-    given name like "Tyler"). A compound initial token like "J.N." is expanded
-    into two ``("init", "j")`` and ``("init", "n")`` entries, mirroring how a
-    scholar stored as ``postgate_jn`` carries two initials.
-
-    Returns ``None`` when the input does not look like a two-token person name
-    (no surname + at least one given token) — the caller treats that as no
-    match. Folding/cleaning mirrors ``credits_parser.normalize_name`` so the two
-    stay consistent (ASCII-fold, drop date and honorific-suffix tokens).
-    """
-    name = raw.strip()
-    if not name:
-        return None
-    # "Surname, Given" -> "Given Surname" (same convention as normalize_name).
-    if "," in name:
-        surname_part, _, given_part = name.partition(",")
-        name = f"{given_part.strip()} {surname_part.strip()}".strip()
-    name = unicodedata.normalize("NFKD", name)
-    name = "".join(c for c in name if not unicodedata.combining(c))
-    name = name.replace("‐", "-").replace("‑", "-")  # fancy hyphens
-
-    tokens = [t for t in re.split(r"\s+", name) if t]
-    cleaned: list[str] = []
-    for tok in tokens:
-        bare = re.sub(r"[^\w\-']", "", tok).lower()
-        if not bare:
-            continue
-        if re.fullmatch(r"\d{3,4}(-\d{0,4})?", bare):  # date/lifespan token
-            continue
-        if bare in _NAME_SUFFIXES:
-            continue
-        cleaned.append(tok)
-    if len(cleaned) < 2:
-        return None
-
-    surname = re.sub(r"[^\w\-]", "", cleaned[-1].lower(), flags=re.UNICODE).strip("_")
-    if not surname or surname == "-":
-        return None
-
-    given: list[tuple[str, str]] = []
-    for g in cleaned[:-1]:
-        letters = re.findall(r"[A-Za-z]", g)
-        if not letters:
-            continue
-        # "J.N." -> two initials; a bare "J" / "J." -> one initial; "Tyler" -> word.
-        if "." in g and len(letters) > 1:
-            for c in letters:
-                given.append(("init", c.lower()))
-        elif len(g.rstrip(".")) == 1:
-            given.append(("init", letters[0].lower()))
-        else:
-            given.append(("word", "".join(c.lower() for c in letters)))
-    if not given:
-        return None
-    return surname, given
-
-
-def full_name_consistent(
-    credit_given: list[tuple[str, str]],
-    scholar_given: list[tuple[str, str]],
-) -> bool:
-    """True if a credit's given tokens uniquely fit a scholar's, position by pos.
-
-    Conservative, never a fuzzy match:
-      - The credit must not carry MORE given tokens than the scholar (a credit
-        with extra information we cannot confirm is refused).
-      - At each position the first letters must match.
-      - Two full words must be equal ("Tyler" only fits "Tyler", not "Tobias").
-      - A credit *word* against a scholar *initial* is refused: the credit claims
-        more than the scholar record proves, so we cannot confirm identity.
-      - A credit *initial* against a scholar *word* is fine (the initial is a
-        prefix of the word) — that is exactly the "J.N." -> "John Nicholas" case.
-    """
-    if not credit_given or len(credit_given) > len(scholar_given):
-        return False
-    for (c_kind, c_val), (s_kind, s_val) in zip(credit_given, scholar_given):
-        if not c_val or not s_val or c_val[0] != s_val[0]:
-            return False
-        if c_kind == "word" and s_kind == "word" and c_val != s_val:
-            return False
-        if c_kind == "word" and s_kind == "init":
-            return False
-    return True
+# The pure functions (``parse_person_tokens`` / ``full_name_consistent``) now
+# live in ``core.credits_parser`` so the LIVE write-time path (the ORACC credits
+# connector, #473) and this one-time recovery script share one implementation.
+# This helper is the only DB-bound piece and stays here.
 
 
 def _scholars_full_by_surname(

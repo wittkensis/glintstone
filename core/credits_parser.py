@@ -29,6 +29,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
+from typing import Sequence
 
 # Roles in the junction's CHECK constraint (migration 050). Order here is the
 # precedence used when the same name appears under two phrasings in one credit.
@@ -305,3 +306,144 @@ def parse_credits(text: str) -> list[CreditMatch]:
                 seen.add(key)
                 out.append(CreditMatch(name=name, role=role))
     return out
+
+
+# --- prose full-name disambiguation (#262 / #473) -------------------------
+#
+# ``normalize_name`` reduces a name to ``surname_<first-initial-only>``, which
+# throws away a *second* given initial: "J.N. Postgate" -> ``postgate_j`` (one
+# ``j``), colliding with both ``postgate_jn`` and ``postgate_jp``, so the
+# conservative globally-unique match in the caller correctly REFUSES it. Worse,
+# "Tyler Yoder" -> ``yoder_t`` matches no scholar at all (stored ``yoder_tr``).
+#
+# These helpers re-read the FULL prose form a credit carries (every given
+# initial AND every full given word, in order) and attribute ONLY when that
+# fuller form is consistent with EXACTLY ONE scholar globally. A bare ambiguous
+# initial ("J. Postgate" alone) still has 2 candidates and is still refused.
+# This is the #262 recovery logic, lifted into the shared module so the LIVE
+# write-time path (the ORACC credits connector) and the one-time recovery script
+# share one implementation (accuracy over coverage — CLAUDE.md, unchanged).
+#
+# Pure functions, no DB: the caller supplies the per-surname scholar index.
+
+# A given-name token: ("init", "j") for "J."/"J", ("word", "tyler") for "Tyler".
+GivenToken = tuple[str, str]
+
+_PROSE_NAME_SUFFIXES = {"jr", "sr", "ii", "iii", "iv"}
+
+
+def parse_person_tokens(raw: str) -> tuple[str, list[GivenToken]] | None:
+    """Parse a personal name into ``(surname, given_tokens)`` keeping detail.
+
+    ``given_tokens`` is an ordered list of ``(kind, value)`` where ``kind`` is
+    ``"init"`` (a single-initial token like "J." or "J") or ``"word"`` (a full
+    given name like "Tyler"). A compound initial token like "J.N." is expanded
+    into two ``("init", "j")`` and ``("init", "n")`` entries, mirroring how a
+    scholar stored as ``postgate_jn`` carries two initials.
+
+    Returns ``None`` when the input does not look like a two-token person name
+    (no surname + at least one given token). Folding/cleaning mirrors
+    ``normalize_name`` so the two stay consistent (ASCII-fold, drop date and
+    honorific-suffix tokens).
+    """
+    name = raw.strip()
+    if not name:
+        return None
+    # "Surname, Given" -> "Given Surname" (same convention as normalize_name).
+    if "," in name:
+        surname_part, _, given_part = name.partition(",")
+        name = f"{given_part.strip()} {surname_part.strip()}".strip()
+    name = unicodedata.normalize("NFKD", name)
+    name = "".join(c for c in name if not unicodedata.combining(c))
+    name = name.replace("‐", "-").replace("‑", "-")  # fancy hyphens
+
+    tokens = [t for t in re.split(r"\s+", name) if t]
+    cleaned: list[str] = []
+    for tok in tokens:
+        bare = re.sub(r"[^\w\-']", "", tok).lower()
+        if not bare:
+            continue
+        if re.fullmatch(r"\d{3,4}(-\d{0,4})?", bare):  # date/lifespan token
+            continue
+        if bare in _PROSE_NAME_SUFFIXES:
+            continue
+        cleaned.append(tok)
+    if len(cleaned) < 2:
+        return None
+
+    surname = re.sub(r"[^\w\-]", "", cleaned[-1].lower(), flags=re.UNICODE).strip("_")
+    if not surname or surname == "-":
+        return None
+
+    given: list[GivenToken] = []
+    for g in cleaned[:-1]:
+        letters = re.findall(r"[A-Za-z]", g)
+        if not letters:
+            continue
+        # "J.N." -> two initials; a bare "J" / "J." -> one initial; "Tyler" -> word.
+        if "." in g and len(letters) > 1:
+            for c in letters:
+                given.append(("init", c.lower()))
+        elif len(g.rstrip(".")) == 1:
+            given.append(("init", letters[0].lower()))
+        else:
+            given.append(("word", "".join(c.lower() for c in letters)))
+    if not given:
+        return None
+    return surname, given
+
+
+def full_name_consistent(
+    credit_given: Sequence[GivenToken],
+    scholar_given: Sequence[GivenToken],
+) -> bool:
+    """True if a credit's given tokens uniquely fit a scholar's, position by pos.
+
+    Conservative, never a fuzzy match:
+      - The credit must not carry MORE given tokens than the scholar (a credit
+        with extra information we cannot confirm is refused).
+      - At each position the first letters must match.
+      - Two full words must be equal ("Tyler" only fits "Tyler", not "Tobias").
+      - A credit *word* against a scholar *initial* is refused: the credit claims
+        more than the scholar record proves, so we cannot confirm identity.
+      - A credit *initial* against a scholar *word* is fine (the initial is a
+        prefix of the word) — that is exactly the "J.N." -> "John Nicholas" case.
+    """
+    if not credit_given or len(credit_given) > len(scholar_given):
+        return False
+    for (c_kind, c_val), (s_kind, s_val) in zip(credit_given, scholar_given):
+        if not c_val or not s_val or c_val[0] != s_val[0]:
+            return False
+        if c_kind == "word" and s_kind == "word" and c_val != s_val:
+            return False
+        if c_kind == "word" and s_kind == "init":
+            return False
+    return True
+
+
+def resolve_prose_fullname(
+    raw_name: str,
+    scholars_full_by_surname: dict[str, list[tuple[int, list[GivenToken]]]],
+) -> int | None:
+    """Resolve a credit name to ONE scholar id via its full prose form, or None.
+
+    ``scholars_full_by_surname`` maps surname -> list of
+    ``(scholar_id, parsed-given-tokens)`` (built once by the caller from
+    ``scholars.name`` via :func:`parse_person_tokens`). Attribution happens ONLY
+    when exactly one scholar of that surname is :func:`full_name_consistent` with
+    the credit's fuller given form — i.e. globally unique. Zero or >=2 candidates
+    return None (refuse to guess). This is the #262 prose pass, now reusable at
+    write time (#473).
+    """
+    parsed = parse_person_tokens(raw_name)
+    if parsed is None:
+        return None
+    surname, credit_given = parsed
+    candidates = sorted(
+        {
+            sid
+            for (sid, sch_given) in scholars_full_by_surname.get(surname, [])
+            if full_name_consistent(credit_given, sch_given)
+        }
+    )
+    return candidates[0] if len(candidates) == 1 else None
