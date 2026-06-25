@@ -177,6 +177,48 @@ def get_lemma_norms(lemma_id: int, conn=Depends(get_db)):
     return {"lemma_id": lemma_id, "norms": norms}
 
 
+@router.get("/lemmas/{lemma_id}/compositions")
+def get_lemma_compositions(
+    lemma_id: int,
+    limit: int = Query(default=20, ge=1, le=100),
+    conn=Depends(get_db),
+):
+    """Compositions that contain this lemma (#529).
+
+    Joins lemmatizations → tokens → text_lines → artifact_composites → composites
+    to find compositions whose witness tablets carry this lemma. Returns the top N
+    by attestation line count, so the most-represented compositions surface first.
+    """
+    repo = LexicalRepository(conn)
+    lemma = repo.get_lemma_detail(lemma_id)
+    if not lemma:
+        raise HTTPException(status_code=404, detail="Lemma not found")
+    citation_form = lemma.get("citation_form") or lemma.get("lemma", {}).get("citation_form")
+    if not citation_form:
+        return {"lemma_id": lemma_id, "items": []}
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT c.q_number, c.designation, c.language, c.period, c.genre,
+                   COUNT(DISTINCT t.line_id) AS line_count
+            FROM lemmatizations l
+            JOIN tokens t ON t.id = l.token_id
+            JOIN text_lines tl ON tl.id = t.line_id
+            JOIN artifact_composites ac ON ac.p_number = tl.p_number
+            JOIN composites c ON c.q_number = ac.q_number
+            WHERE l.citation_form = %s
+            GROUP BY c.q_number, c.designation, c.language, c.period, c.genre
+            ORDER BY line_count DESC
+            LIMIT %s
+            """,
+            (citation_form, limit),
+        )
+        rows = cur.fetchall()
+
+    return {"lemma_id": lemma_id, "items": [dict(r) for r in rows]}
+
+
 @router.get("/glosses/{guide_word}")
 def get_gloss_detail(
     guide_word: str,

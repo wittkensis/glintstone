@@ -1174,3 +1174,45 @@
     color: var(--color-text-muted);
 }
 
+
+/* Lemma → compositions cross-reference (#529) */
+.lemma-compositions-list { list-style: none; margin: 0; padding: 0; }
+.lemma-composition-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: var(--border-subtle);
+}
+.lemma-composition-row__link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    text-decoration: none;
+    color: inherit;
+    min-width: 0;
+    flex: 1;
+}
+.lemma-composition-row__link:hover .lemma-composition-row__name { color: var(--color-accent); }
+.lemma-composition-row__qnum {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+}
+.lemma-composition-row__name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.lemma-composition-row__tags { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+.lemma-composition-row__count {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}

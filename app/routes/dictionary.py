@@ -205,6 +205,14 @@ def lemma_detail(request: Request, lemma_id: int, page: int = Query(1, ge=1)):
     except Exception:
         attestation_periods = None
 
+    # Compositions using this lemma (#529) — top compositions by attestation
+    # line count. Non-fatal: degrades to empty list if unavailable.
+    try:
+        compositions_data = api.get(f"/dictionary/lemmas/{lemma_id}/compositions")
+        lemma_compositions = (compositions_data or {}).get("items", [])
+    except Exception:
+        lemma_compositions = []
+
     from app.main import templates
 
     return templates.TemplateResponse(
@@ -218,6 +226,7 @@ def lemma_detail(request: Request, lemma_id: int, page: int = Query(1, ge=1)):
             "attestations": attestations or {},
             "attestation_periods": attestation_periods or {},
             "api_url": request.app.state.api.base_url,
+            "lemma_compositions": lemma_compositions,
         },
     )
 

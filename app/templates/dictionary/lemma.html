@@ -279,6 +279,37 @@
         </aside>
 
     </div>{# /.lemma-detail__columns #}
+
+    {# Compositions using this lemma (#529) #}
+    {% if lemma_compositions %}
+    <section class="dict-detail__section" aria-labelledby="compositions-heading" style="margin-top: var(--space-10);">
+        <h2 id="compositions-heading" style="font-size: var(--text-lg); margin-bottom: var(--space-4);">
+            Compositions using this word
+            <span class="dict-detail__sub">{{ lemma_compositions | length }}{% if lemma_compositions | length == 20 %}+{% endif %}</span>
+        </h2>
+        <ul class="lemma-compositions-list">
+            {% for comp in lemma_compositions %}
+            <li class="lemma-composition-row">
+                <a class="lemma-composition-row__link" href="/compositions/{{ comp.q_number }}">
+                    <span class="lemma-composition-row__qnum">{{ comp.q_number }}</span>
+                    <span class="lemma-composition-row__name">{{ comp.designation or comp.q_number }}</span>
+                    {% set cfacets = [] %}
+                    {% if comp.language %}{% set _ = cfacets.append(comp.language) %}{% endif %}
+                    {% if comp.period %}{% set _ = cfacets.append(comp.period) %}{% endif %}
+                    {% if comp.genre %}{% set _ = cfacets.append(comp.genre) %}{% endif %}
+                    {% if cfacets %}
+                    <span class="lemma-composition-row__tags">
+                        {% for f in cfacets %}<span class="contrib-row__facet">{{ f }}</span>{% endfor %}
+                    </span>
+                    {% endif %}
+                </a>
+                <span class="lemma-composition-row__count">{{ comp.line_count }} line{{ '' if comp.line_count == 1 else 's' }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
 </main>
 {% endblock %}
 
