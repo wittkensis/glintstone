@@ -370,15 +370,28 @@ class TestSavedItemsRepo:
 
 @pytest.fixture
 def test_invite_code(db_conn):
-    """Insert a fresh unused invite code; rolled back after each test."""
+    """Insert a fresh unused invite code, then remove it after the test.
+
+    The row is COMMITTED (some tests in TestInviteCodes commit their own
+    mutations and need to read this code back across that commit), so the
+    db_conn fixture's rollback can't undo it. Pre-delete the fixed code before
+    inserting and delete it again on teardown so the fixture is self-cleaning
+    and idempotent across the whole session — otherwise the second test reusing
+    this fixture hits `invite_codes_code_key` (surfaced once the DB-backed suite
+    actually runs in CI, #470).
+    """
     with db_conn.cursor() as cur:
+        cur.execute("DELETE FROM invite_codes WHERE code = %s", ("TEST-UNIT-CODE",))
         cur.execute(
             "INSERT INTO invite_codes (code, label) VALUES (%s, %s) RETURNING *",
             ("TEST-UNIT-CODE", "pytest fixture"),
         )
         row = cur.fetchone()
     db_conn.commit()
-    return row
+    yield row
+    with db_conn.cursor() as cur:
+        cur.execute("DELETE FROM invite_codes WHERE code = %s", ("TEST-UNIT-CODE",))
+    db_conn.commit()
 
 
 class TestInviteCodes:
@@ -390,7 +403,10 @@ class TestInviteCodes:
     """
 
     def test_insert_and_find_code(self, db_conn):
+        # Committed below, so pre-delete + delete after to stay idempotent across
+        # re-runs against the same DB (the db_conn rollback can't undo a commit).
         with db_conn.cursor() as cur:
+            cur.execute("DELETE FROM invite_codes WHERE code = %s", ("ABCD-EFGH-IJKL",))
             cur.execute(
                 "INSERT INTO invite_codes (code, label) VALUES (%s, %s) RETURNING *",
                 ("ABCD-EFGH-IJKL", "test batch"),
@@ -404,11 +420,18 @@ class TestInviteCodes:
         assert row["used_at"] is None
         assert row["used_by_email"] is None
 
+        with db_conn.cursor() as cur:
+            cur.execute("DELETE FROM invite_codes WHERE code = %s", ("ABCD-EFGH-IJKL",))
+        db_conn.commit()
+
     def test_code_uniqueness_constraint(self, db_conn):
         """Duplicate invite codes must be rejected by the DB."""
         import psycopg
 
+        # Committed below; pre-delete + delete after so a re-run doesn't trip on
+        # its own leftover row before reaching the duplicate-insert assertion.
         with db_conn.cursor() as cur:
+            cur.execute("DELETE FROM invite_codes WHERE code = %s", ("DUPL-ICAT-CODE",))
             cur.execute(
                 "INSERT INTO invite_codes (code) VALUES (%s)",
                 ("DUPL-ICAT-CODE",),
@@ -422,6 +445,11 @@ class TestInviteCodes:
                     ("DUPL-ICAT-CODE",),
                 )
             db_conn.commit()
+        db_conn.rollback()  # clear the aborted-transaction state from the violation
+
+        with db_conn.cursor() as cur:
+            cur.execute("DELETE FROM invite_codes WHERE code = %s", ("DUPL-ICAT-CODE",))
+        db_conn.commit()
 
     def test_mark_code_used(self, test_invite_code, db_conn):
         """Marking a code used records email and timestamp."""
