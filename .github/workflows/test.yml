@@ -19,7 +19,11 @@ jobs:
     # changes shipped with zero DB-level pipeline coverage.
     services:
       postgres:
-        image: postgres:17
+        # pgvector/pgvector:pg17 == postgres:17 + the pgvector extension
+        # preinstalled. Migration 025 does `CREATE EXTENSION vector`, which the
+        # stock postgres:17 image cannot satisfy (`extension "vector" is not
+        # available`). pg_trgm (also used) ships in stock contrib.
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
