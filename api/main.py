@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.middleware.auth import AuthMiddleware
 from api.routes import (
+    admin,
     agent,
     artifacts,
     auth,
@@ -134,3 +135,4 @@ app.include_router(agent.composites_agent_router)
 app.include_router(agent.corrections_router)
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(admin.router)
