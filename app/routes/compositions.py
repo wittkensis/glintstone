@@ -304,6 +304,17 @@ def composition_detail(
         if (e.get("p_number") or e.get("id"))
     ]
 
+    # Witness collation (#527) — only for composites with 2–6 readable witnesses.
+    # Non-fatal: degrades to None so the section is simply omitted.
+    collation = None
+    if len(witnesses) >= 2:
+        try:
+            coll_data = api.get(f"/composites/{q_number}/collation")
+            if isinstance(coll_data, dict) and coll_data.get("available"):
+                collation = coll_data
+        except Exception:
+            pass
+
     from app.main import templates
 
     return templates.TemplateResponse(
@@ -335,5 +346,6 @@ def composition_detail(
             "map_no_coords": map_no_coords,
             "map_view_w": MAP_VIEW_W,
             "map_view_h": MAP_VIEW_H,
+            "collation": collation,
         },
     )

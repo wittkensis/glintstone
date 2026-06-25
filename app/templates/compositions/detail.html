@@ -399,6 +399,58 @@
         {% endif %}
     </section>
 
+    {# ── Witness Collation (#527) ──────────────────────────────────────────
+         Line-aligned view showing each witness's ATF for each canonical line.
+         Only shown when 2–6 witnesses have readable ATF. #}
+    {% if collation and collation.witnesses %}
+    <section class="composition-collation" aria-labelledby="collation-heading">
+        <div class="composition-collation__head">
+            <h2 id="collation-heading" class="composition-collation__title">Witness collation</h2>
+            <span class="composition-collation__sub">{{ collation.witness_count }} witnesses · {{ collation.line_count }} lines</span>
+        </div>
+        <p class="composition-collation__hint">
+            Parallel ATF readings from all linked witnesses, aligned by line number.
+            Differences reveal scribal variants and transmission history.
+        </p>
+        <div class="composition-collation__scroll">
+        <table class="collation-table">
+            <thead>
+                <tr>
+                    <th class="collation-table__line-head">Line</th>
+                    {% for p in collation.witnesses %}
+                    <th class="collation-table__witness-head">
+                        <a href="/tablets/{{ p }}" class="collation-table__witness-link">
+                            <span class="collation-table__pnum">{{ p }}</span>
+                            {% if collation.witness_meta and p in collation.witness_meta %}
+                            <span class="collation-table__desig">{{ collation.witness_meta[p][:30] }}{% if collation.witness_meta[p] | length > 30 %}…{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in collation.rows %}
+                <tr class="collation-row">
+                    <td class="collation-row__label">
+                        {% if row.surface != 'obverse' %}<span class="collation-row__surf">{{ row.surface[:3] }}.</span>{% endif %}
+                        {{ row.line_number }}
+                    </td>
+                    {% for p in collation.witnesses %}
+                    {% set atf = row.cells.get(p) %}
+                    <td class="collation-row__cell {% if not atf %}collation-row__cell--absent{% endif %}"
+                        lang="akk" dir="ltr">
+                        {% if atf %}{{ atf }}{% else %}<span class="collation-row__gap">—</span>{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </section>
+    {% endif %}
+
     {# ── Related compositions (#160) ─────────────────────────────────────────
        Sibling texts that share a witness tablet with this one. Structural, not
        inferred: each shares ≥1 physical exemplar linked to both via

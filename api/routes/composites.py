@@ -147,6 +147,122 @@ def get_composite_exemplars(q_number: str, conn=Depends(get_db)):
     return {"q_number": q_number, "exemplars": exemplars, "count": len(exemplars)}
 
 
+@router.get("/{q_number}/collation")
+def get_composite_collation(
+    q_number: str,
+    max_witnesses: int = Query(default=6, ge=2, le=12),
+    conn=Depends(get_db),
+):
+    """Line-aligned witness collation for a composition (#527).
+
+    Aligns all witness tablets by (surface_type, line_number) — the same label
+    used in ATF notation. Each row is one canonical line; each column is one
+    witness. Only returned when 2–max_witnesses witnesses have at least one ATF
+    line (otherwise the collation table is either trivial or too wide to render).
+
+    Response shape::
+
+        {
+          "q_number": "Q001001",
+          "witnesses": ["P226189", "P226190", ...],   # ordered by attestation count
+          "rows": [
+            {
+              "surface": "obverse",
+              "line_number": "1",
+              "cells": {"P226189": "szu-suen", "P226190": "szu-suen", ...}
+            },
+            ...
+          ],
+          "witness_count": 4,
+          "line_count": 10
+        }
+
+    Returns {"available": false} when fewer than 2 witnesses have ATF, so the
+    caller can degrade gracefully without an error.
+    """
+    repo = CompositeRepository(conn)
+    composite = repo.find_by_q_number(q_number)
+    if not composite:
+        raise HTTPException(status_code=404, detail=f"Composite {q_number} not found")
+
+    with conn.cursor() as cur:
+        # Witnesses with at least one ATF line, ordered by how many lines they
+        # have (fullest witness first — typically the most complete exemplar).
+        cur.execute(
+            """
+            SELECT ac.p_number,
+                   COUNT(tl.id) AS line_count,
+                   a.designation
+            FROM artifact_composites ac
+            JOIN artifacts a ON a.p_number = ac.p_number
+            JOIN text_lines tl ON tl.p_number = ac.p_number
+            WHERE ac.q_number = %s
+              AND tl.is_ruling = 0
+              AND tl.is_blank = 0
+              AND tl.raw_atf IS NOT NULL
+              AND tl.raw_atf != ''
+            GROUP BY ac.p_number, a.designation
+            ORDER BY line_count DESC
+            LIMIT %s
+            """,
+            (q_number, max_witnesses),
+        )
+        witness_rows = cur.fetchall()
+
+    if len(witness_rows) < 2:
+        return {"q_number": q_number, "available": False}
+
+    witnesses = [r["p_number"] for r in witness_rows]
+    witness_meta = {r["p_number"]: r["designation"] for r in witness_rows}
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT tl.p_number,
+                   COALESCE(s.surface_type, 'tablet') AS surface,
+                   tl.line_number,
+                   tl.raw_atf
+            FROM text_lines tl
+            LEFT JOIN surfaces s ON s.id = tl.surface_id
+            WHERE tl.p_number = ANY(%s)
+              AND tl.is_ruling = 0
+              AND tl.is_blank = 0
+              AND tl.raw_atf IS NOT NULL
+              AND tl.raw_atf != ''
+            ORDER BY tl.p_number,
+                     CASE s.surface_type
+                         WHEN 'obverse' THEN 1 WHEN 'reverse' THEN 2
+                         WHEN 'left_edge' THEN 3 WHEN 'right_edge' THEN 4
+                         ELSE 5 END,
+                     tl.line_number::int
+            """,
+            (witnesses,),
+        )
+        line_rows = cur.fetchall()
+
+    # Build collation grid: key = (surface, line_number) → {p_number: atf}
+    from collections import OrderedDict
+
+    grid: dict = OrderedDict()
+    for lr in line_rows:
+        key = (lr["surface"], lr["line_number"])
+        if key not in grid:
+            grid[key] = {"surface": lr["surface"], "line_number": lr["line_number"], "cells": {}}
+        grid[key]["cells"][lr["p_number"]] = lr["raw_atf"]
+
+    rows = list(grid.values())
+
+    return {
+        "q_number": q_number,
+        "available": True,
+        "witnesses": witnesses,
+        "witness_meta": witness_meta,
+        "rows": rows,
+        "witness_count": len(witnesses),
+        "line_count": len(rows),
+    }
+
+
 @router.get("/{q_number}/witnesses/{p_number}/atf-preview")
 def get_composite_witness_atf_preview(
     q_number: str,
