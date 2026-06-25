@@ -298,19 +298,38 @@ def _resolve_line_ids(line_cache: dict, p_number: str, line_number) -> dict | No
     return None
 
 
-def _select_line_id(line_ids: dict | None, surface) -> int | None:
-    """Pick a single line_id from the per-surface map, preferring the lemma's
-    surface, then falling back to any surface present for that line.
+def _select_line_id(
+    line_ids: dict | None,
+    surface,
+    token_cache: dict | None = None,
+    position: int | None = None,
+) -> int | None:
+    """Pick a single line_id from the per-surface map.
+
+    Priority:
+    1. Exact surface match — the lemma's declared surface.
+    2. Token-aware fallback — when no exact match, prefer whichever surface has
+       a token at `position` in `token_cache` (#521). This handles the case where
+       the lemma's `surface` field is None/missing and multiple surfaces exist,
+       at least one of which is the ORACC-sourced line with real token content.
+    3. Insertion-order last resort — original behaviour, kept for safety.
 
     Values in the map are (line_id, source) tuples (see _stash_line, #254);
     this returns just the line_id.
     """
     if not line_ids:
         return None
-    chosen = (line_ids.get(surface) if surface else None) or next(
-        iter(line_ids.values()), None
-    )
-    return chosen[0] if chosen is not None else None
+    # 1. Exact surface match
+    if surface and surface in line_ids:
+        return line_ids[surface][0]
+    # 2. Token-aware fallback: prefer the surface that has a token at `position`
+    if token_cache is not None and position is not None:
+        for _surf, (lid, _src) in line_ids.items():
+            if token_cache.get((lid, position)) is not None:
+                return lid
+    # 3. Insertion-order last resort
+    first = next(iter(line_ids.values()), None)
+    return first[0] if first is not None else None
 
 
 def _stash_line(
@@ -470,7 +489,12 @@ class OraccLemmatizationsConnector(SourceConnector):
                         line_ids = _resolve_line_ids(
                             line_cache, p_number, lemma["line_number"]
                         )
-                        line_id = _select_line_id(line_ids, lemma.get("surface"))
+                        line_id = _select_line_id(
+                            line_ids,
+                            lemma.get("surface"),
+                            token_cache,
+                            lemma.get("position"),
+                        )
                         if not line_id:
                             proj_no_line += 1
                             dl_buffer.append(
@@ -615,7 +639,12 @@ class OraccLemmatizationsConnector(SourceConnector):
         if p_number is None or line_number is None or position is None:
             return False
         line_ids = _resolve_line_ids(line_cache, p_number, line_number)
-        line_id = _select_line_id(line_ids, payload.get("surface"))
+        line_id = _select_line_id(
+            line_ids,
+            payload.get("surface"),
+            token_cache,
+            position,
+        )
         if not line_id:
             return False
         token_id = token_cache.get((line_id, position))
