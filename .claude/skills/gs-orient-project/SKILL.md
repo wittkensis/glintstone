@@ -10,7 +10,7 @@ metadata:
   audience: [claude, engineers]
   owners: [eric]
   related_issues: ["#60"]
-  related_skills: [gs-expert-integrations, gs-expert-data-model, gs-expert-ui, gs-expert-deployment, gs-expert-assyriology, gs-scout-integrations, gs-curator-artifacts, gs-curator-docs, gs-audit-hardening]
+  related_skills: [gs-expert-integrations, gs-expert-data-model, gs-expert-ui, gs-expert-deployment, gs-expert-assyriology, gs-scout-integrations, gs-curator-artifacts, gs-curator-docs, gs-audit-hardening, gs-swarm, gs-canary]
   supersedes: null
   superseded_by: null
   triggers: [glintstone, cuneiform, tablet, p-number, P-number, ATF, scholar, "what is", "where is", "where does", "how does", project overview]
@@ -94,6 +94,8 @@ Coverage gap: ~2% of artifacts lemmatized, ~35% have ATF, ~12% have translations
 | commit, push, ship, PR, release | **gs-curator-docs** |
 | audit, harden, "security review", "deployment review", "performance audit", "run the audit" | **gs-audit-hardening** |
 | "frontend audit", "design audit", "css audit", "design system", "frontend entropy", "clean up the css" | **gs-audit-frontend** |
+| "swarm", "build feature", "parallel build", "fan out", "run a swarm", multi-part build/audit | **gs-swarm** |
+| "canary", "blast radius", "which tier", "api or app", "this smells systemic", triage a bug | **gs-canary** |
 
 ## Non-negotiables
 

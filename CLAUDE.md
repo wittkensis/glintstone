@@ -34,6 +34,8 @@ Open `gs-orient-project/SKILL.md` for the routing map. That skill auto-loads at 
 | `gs-curator-docs` | Before any `git commit` or `git push` (freshness check) |
 | `gs-audit-hardening` | Hardening pass, audit, "review the deployment", "run the audit" |
 | `gs-audit-frontend` | Frontend/design audit, "design system", "css audit", "clean up the frontend", "frontend entropy" |
+| `gs-swarm` | Parallel multi-part build/feature/audit — "swarm", "fan out", "build feature", "run audit" (Glintstone-tuned: two-tier decompose, serialized deploy) |
+| `gs-canary` | Blast-radius triage for a bug/change — "which tier", "api or app", "blast radius", "this smells systemic" (read-only recon) |
 | `giddyup` | Backlog triage — "what's next?", "what should I work on?", "prioritize", "sequence the backlog" |
 
 ## Tech stack (quick)
