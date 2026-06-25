@@ -69,6 +69,9 @@ fi
 cat > /etc/sudoers.d/glintstone << 'SUDOERS'
 deploy ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl restart glintstone-*
 deploy ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl status glintstone-*
+deploy ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl update
+deploy ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl status
+deploy ALL=(ALL) NOPASSWD: /bin/cp * /etc/supervisor.d/*
 deploy ALL=(ALL) NOPASSWD: /sbin/rc-service nginx reload
 deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx -t
 deploy ALL=(ALL) NOPASSWD: /usr/sbin/nginx -s reload

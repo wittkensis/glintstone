@@ -15,7 +15,13 @@ from typing import Iterable, Iterator
 
 from collections import Counter
 
-from core.credits_parser import normalize_name, parse_credits
+from core.credits_parser import (
+    GivenToken,
+    normalize_name,
+    parse_credits,
+    parse_person_tokens,
+    resolve_prose_fullname,
+)
 from ingestion.base import ConflictPolicy, LoadStats, RunContext, SourceConnector
 from ingestion.loader import upsert_batch
 
@@ -273,9 +279,44 @@ class OraccCreditsConnector(SourceConnector):
                 index[nn] = int(_val(r, "id", 1))  # type: ignore[call-overload]
         return index
 
+    def _scholar_full_index(
+        self, ctx: RunContext
+    ) -> dict[str, list[tuple[int, list[GivenToken]]]]:
+        """surname -> [(scholar_id, parsed given-tokens)] over ALL scholars.
+
+        Built from ``scholars.name`` (the display form, e.g. "Tyler R. Yoder",
+        "Postgate, John Nicholas") so the full given names/initials survive for
+        the prose full-name pass — ``normalized_name`` has lost the 2nd initial.
+        Feeds ``core.credits_parser.resolve_prose_fullname`` (#262 logic). (#473)
+        """
+        rows = ctx.db.execute(
+            "SELECT id, name FROM scholars WHERE name IS NOT NULL AND name <> ''"
+        ).fetchall()
+
+        def _v(r: object, key: str, idx: int) -> object:
+            return r[key] if isinstance(r, dict) else r[idx]  # type: ignore[index]
+
+        out: dict[str, list[tuple[int, list[GivenToken]]]] = {}
+        for r in rows:
+            parsed = parse_person_tokens(str(_v(r, "name", 1)))
+            if parsed is None:
+                continue
+            surname, given = parsed
+            out.setdefault(surname, []).append((int(_v(r, "id", 0)), given))  # type: ignore[call-overload]
+        return out
+
     def _attribute(self, ctx: RunContext) -> None:
-        """Parse credit prose -> conservative (scholar, role) links."""
+        """Parse credit prose -> conservative (scholar, role) links.
+
+        Two passes, both conservative (accuracy over coverage — CLAUDE.md):
+          1. globally-unique ``surname_initials`` match (#261), then
+          2. for names pass 1 refused, a prose full-name match that attributes
+             only on a globally-unique fuller form (#262 / #473) — this lands
+             J.N. Postgate / Tyler Yoder at WRITE time, not just in the one-time
+             backfill. Bare ambiguous initials ("J. Postgate") stay refused.
+        """
         index = self._scholar_index(ctx)
+        full_index = self._scholar_full_index(ctx)
         credits = ctx.db.execute(
             "SELECT id, p_number, oracc_project, credits_text FROM artifact_credits"
         ).fetchall()
@@ -284,6 +325,7 @@ class OraccCreditsConnector(SourceConnector):
             return r[key] if isinstance(r, dict) else r[idx]  # type: ignore[index]
 
         matched = 0
+        matched_prose = 0
         unmatched = 0
         for c in credits:
             text = str(_g(c, "credits_text", 3))
@@ -291,9 +333,14 @@ class OraccCreditsConnector(SourceConnector):
                 nn = normalize_name(m.name)
                 sid = index.get(nn) if nn else None
                 if sid is None:
-                    unmatched += 1
-                    continue
-                matched += 1
+                    # Pass 2: prose full-name disambiguation (globally unique).
+                    sid = resolve_prose_fullname(m.name, full_index)
+                    if sid is None:
+                        unmatched += 1
+                        continue
+                    matched_prose += 1
+                else:
+                    matched += 1
                 ctx.db.execute(
                     """
                     INSERT INTO artifact_contributors
@@ -313,7 +360,12 @@ class OraccCreditsConnector(SourceConnector):
                     ),
                 )
         ctx.db.commit()
-        ctx.info("oracc_credits.attributed", matched=matched, unmatched=unmatched)
+        ctx.info(
+            "oracc_credits.attributed",
+            matched=matched,
+            matched_prose=matched_prose,
+            unmatched=unmatched,
+        )
 
     def verify(self, ctx: RunContext) -> None:
         row = ctx.db.execute("SELECT COUNT(*) AS n FROM artifact_credits").fetchone()

@@ -11,7 +11,34 @@ on:
 jobs:
   pytest:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+
+    # Provision a Postgres so the DB-backed suite (tests/test_auth_routes.py and
+    # every test gated on the `has_database_url` fixture) actually RUNS in CI
+    # instead of silently skipping (#470). Without this, auth/session/repo
+    # changes shipped with zero DB-level pipeline coverage.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: glintstone_test
+        ports:
+          - 5432:5432
+        # Wait for the DB to accept connections before the job's steps run.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # The migration chain GRANTs to a `glintstone` role and the app connects
+      # as it; CI runs migrations + tests as the postgres superuser against the
+      # service above. DATABASE_URL flips the `has_database_url` fixture from
+      # "skip" to "run".
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/glintstone_test
 
     steps:
       - uses: actions/checkout@v4
@@ -65,11 +92,27 @@ jobs:
         run: |
           node --test 'tests/js/*.test.mjs'
 
-      - name: Run pytest
-        # Integration tests (those depending on `has_database_url`) are skipped
-        # in CI: production Postgres is now on the VPS and not reachable from
-        # GitHub Actions. Unit tests still run. To run integration tests in CI,
-        # provision a Postgres service in this job or expose the VPS DB via a
-        # tunnel.
+      - name: Provision DB role + apply migrations (#470)
+        # The migration chain GRANTs table/sequence privileges to a `glintstone`
+        # role (the app's connect role on prod). That role doesn't exist in a
+        # fresh CI Postgres, so every `GRANT ... TO glintstone` would error and
+        # abort provisioning. Create it first (NOLOGIN is fine — CI connects as
+        # the postgres superuser; the role only needs to exist to receive the
+        # grants). Then run the SAME migrate.py the deploy uses, so CI provisions
+        # the schema exactly as production does — and proves the chain is
+        # idempotent on a clean DB (the #470 `idx_lexical_signs_name already
+        # exists` failure is fixed by guarding migration 008's indexes).
+        env:
+          PGPASSWORD: postgres
         run: |
-          python -m pytest tests/ -v --tb=short
+          psql -h localhost -U postgres -d glintstone_test \
+            -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'glintstone') THEN CREATE ROLE glintstone; END IF; END \$\$;"
+          python data-model/migrate.py up
+
+      - name: Run pytest (DB-backed suite now RUNS, not skipped — #470)
+        # DATABASE_URL (job env) points at the migrated service Postgres, so the
+        # `has_database_url` fixture resolves and tests/test_auth_routes.py +
+        # every DB-backed integration test execute instead of skipping. `-rs`
+        # lists any remaining skips so a silent re-skip is visible in the log.
+        run: |
+          python -m pytest tests/ -v -rs --tb=short

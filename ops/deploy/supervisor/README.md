@@ -1,8 +1,8 @@
 ---
-question: "How do new supervisord program units get onto the VPS?"
+question: "How do supervisord program units get onto the VPS?"
 created: 2026-05-18
-modified: 2026-05-18
-context: "supervisord units for api/app are baked into provision.sh as one-time heredocs. New units added after the initial bring-up (e.g. the CDLI crawler) need a way to get to /etc/supervisor.d/ without re-running provision."
+modified: 2026-06-25
+context: "supervisord units for api/app were baked into provision.sh as one-time heredocs and manually edited on the VPS. As of #472 deploy.sh rsyncs THIS directory into /etc/supervisor.d/ on every production deploy + runs supervisorctl update, so the repo — not a manual VPS edit — is authoritative for worker counts/env. All units now live here as the source of truth."
 status: active
 audience: [engineers]
 owners: [eric]
@@ -14,33 +14,35 @@ superseded_by: null
 
 # Glintstone supervisord units
 
-Holds `.ini` files that supervisord reads from `/etc/supervisor.d/`. Each one
-defines a long-running program supervised with auto-restart.
+Holds the `.ini` files supervisord reads from `/etc/supervisor.d/`. Each defines
+a long-running program supervised with auto-restart. **This directory is the
+source of truth**: a production `deploy.sh` run copies every `*.ini` here into
+`/etc/supervisor.d/` and runs `supervisorctl update` (#472), so worker counts and
+env are owned by version control, not by manual edits on the VPS.
 
 | Unit | Process | Port | Notes |
 |---|---|---|---|
-| glintstone-api.ini | `uvicorn api.main:app --workers 2` | 8001 | in `provision.sh`; `DB_POOL_MAX=10` |
-| glintstone-web.ini | `uvicorn app.main:app --workers 2` | 8002 | in `provision.sh`; `DB_POOL_MAX=10` |
-| glintstone-staging-api.ini | `uvicorn api.main:app` | 8003 | in `provision-staging.sh` |
-| glintstone-staging-web.ini | `uvicorn app.main:app` | 8004 | in `provision-staging.sh` |
-| **glintstone-crawler.ini** | `python -m ops.scripts.cdli_image_crawler` | — | new (this dir) |
+| glintstone-api.ini | `uvicorn api.main:app --workers 2` | 8001 | `DB_POOL_MAX=10` (#444) |
+| glintstone-web.ini | `uvicorn app.main:app --workers 2` | 8002 | `DB_POOL_MAX=10` (#444) |
+| glintstone-mcp.ini | `python -m mcp.server_http` | 8005 | `autostart=false` (not built yet) |
+| glintstone-crawler.ini | `python -m ops.scripts.cdli_image_crawler` | — | CDLI image backfill |
+| glintstone-staging-api.ini | `uvicorn api.main:app` | 8003 | `autostart=false` |
+| glintstone-staging-web.ini | `uvicorn app.main:app` | 8004 | `autostart=false` |
 
-## Install a new unit on the VPS
+## Changing a unit (worker count, env, a new program)
+
+Edit the `.ini` here and deploy. `deploy.sh` syncs the file and runs
+`supervisorctl update`, which re-reads only changed configs and (re)starts the
+affected program — unchanged programs are untouched.
+
+`provision.sh` still writes the same units as one-time heredocs for a bare-box
+bring-up; **keep the two in sync** (the api/web env/worker lines especially). The
+deploy-time sync needs two narrow sudoers grants (`cp * /etc/supervisor.d/*` and
+`supervisorctl update`), installed by `provision.sh`.
+
+To install a unit out-of-band (before the next deploy):
 
 ```bash
-# From the project root
 scp ops/deploy/supervisor/<unit>.ini glintstone:/tmp/
 ssh glintstone-root "install -m 0644 /tmp/<unit>.ini /etc/supervisor.d/<unit>.ini && supervisorctl update"
 ```
-
-`supervisorctl update` reads new/changed `.ini` files and starts any
-program with `autostart=true` that isn't already running. Existing programs
-are unaffected unless their config changed.
-
-## Why this folder instead of editing provision.sh
-
-`provision.sh` runs once on bring-up. New units added later — like the
-crawler — need to ship via the repo (versioned, reviewable) without
-re-running the provisioner against a populated VPS. Eventually `deploy.sh`
-should sync this directory on every deploy; until then, install manually
-with the snippet above.
