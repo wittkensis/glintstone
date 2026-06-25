@@ -645,3 +645,40 @@ main.scholar-detail {
     font-size: var(--text-xs);
     color: var(--color-text-muted);
 }
+
+/* Co-publication network (#525) */
+.co-author-list { list-style: none; margin: 0; padding: 0; }
+.co-author-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: var(--border-subtle);
+}
+.co-author-row__link {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    text-decoration: none;
+    color: inherit;
+    min-width: 0;
+}
+.co-author-row__link:hover .co-author-row__name { color: var(--color-accent); }
+.co-author-row__name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.co-author-row__inst {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+}
+.co-author-row__count {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}

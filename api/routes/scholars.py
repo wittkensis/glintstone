@@ -773,3 +773,36 @@ def get_scholar_publications(
         "type_counts": type_counts,
         "type": type_filter,
     }
+
+
+@router.get("/{scholar_id}/co-authors")
+def get_scholar_co_authors(scholar_id: int, limit: int = Query(default=10, ge=1, le=50), conn=Depends(get_db)):
+    """Scholars who frequently co-publish with this scholar (#525).
+
+    Joins publication_authors twice to find scholars who share publications,
+    returns the top N by shared publication count descending.
+    Excludes the scholar themselves; 404 for unknown scholar_id.
+    """
+    with conn.cursor() as cur:
+        cur.execute("SELECT 1 FROM scholars WHERE id = %s", (scholar_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Scholar not found")
+
+        cur.execute(
+            """
+            SELECT s.id, s.name, s.institution,
+                   COUNT(DISTINCT pa1.publication_id) AS shared_count
+            FROM publication_authors pa1
+            JOIN publication_authors pa2
+                ON pa2.publication_id = pa1.publication_id
+               AND pa2.scholar_id != pa1.scholar_id
+            JOIN scholars s ON s.id = pa2.scholar_id
+            WHERE pa1.scholar_id = %s
+            GROUP BY s.id, s.name, s.institution
+            ORDER BY shared_count DESC, s.name
+            LIMIT %s
+            """,
+            (scholar_id, limit),
+        )
+        rows = cur.fetchall()
+    return {"items": [dict(r) for r in rows], "scholar_id": scholar_id}

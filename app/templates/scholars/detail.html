@@ -473,6 +473,27 @@
     {% endif %}
   </section>
 
+  {# Co-publication network (#525) — scholars who frequently publish with this person #}
+  {% if co_authors %}
+  <section class="scholar-section" id="co-authors">
+    <div class="scholar-section__head">
+      <h2 class="scholar-section__title">Scholars who work with {{ scholar.name.split()[0] }}</h2>
+      <span class="scholar-section__count">{{ co_authors | length }} frequent co-author{{ '' if co_authors | length == 1 else 's' }}</span>
+    </div>
+    <ul class="co-author-list">
+      {% for ca in co_authors %}
+      <li class="co-author-row">
+        <a class="co-author-row__link" href="/scholars/{{ ca.id }}">
+          <span class="co-author-row__name">{{ ca.name }}</span>
+          {% if ca.institution %}<span class="co-author-row__inst">{{ ca.institution }}</span>{% endif %}
+        </a>
+        <span class="co-author-row__count">{{ ca.shared_count }} shared publication{{ '' if ca.shared_count == 1 else 's' }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
 </main>
 {% endblock %}
 

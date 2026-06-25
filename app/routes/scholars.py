@@ -82,6 +82,10 @@ def scholar_detail(
     # widget's empty state rather than blanking the page.
     activity = api.get_scholar_activity(scholar_id)
 
+    # Co-publication network (#525) — top scholars this person shares publications
+    # with. Non-fatal: degrades to [] so the section renders the empty state.
+    co_authors = api.get_scholar_co_authors(scholar_id, limit=10)
+
     from app.main import templates
 
     return templates.TemplateResponse(
@@ -103,5 +107,6 @@ def scholar_detail(
             "contrib_page": contributions.page,
             "contrib_total_pages": contributions.total_pages,
             "pub_active_type_for_contrib": type.strip(),
+            "co_authors": co_authors,
         },
     )
