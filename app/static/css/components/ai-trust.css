@@ -1,7 +1,7 @@
 /* =========================================================================
    AI Trust Signals — badge tooltip, inline citation markers, "Grounded in"
    attribution list, confidence pills, hedged text, missing-layer caveats,
-   meta footer.  Render-proven in PERSONAL/design/specs/ai-trust-signals/.
+   meta footer.  Render-proven in plan/design/ai-trust-signals/.
 
    Token-driven only — zero raw hex. Reuses existing primitives:
    --ai-badge-*, --confidence-*, --source-badge-*, --color-*, --space-*,

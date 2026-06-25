@@ -1,7 +1,7 @@
 /* ─── Corpus Atlas (Wave 1, #320) ────────────────────────────────────────────
    View-switcher (Grid / Timeline) + brushable timeline + find-spots-by-yield
    over the all-artifacts page. Ported from the render-proven prototype at
-   PERSONAL/design/specs/all-artifacts/. Token-driven only — no raw hex.
+   plan/design/all-artifacts/. Token-driven only — no raw hex.
    Map view is Wave 2 (gated on #319), intentionally absent here. */
 
 /* View switcher — segmented control (reuses btn-group visual language) */
