@@ -54,7 +54,7 @@ Every row in every table carries `annotation_run_id` linking it to its origin (s
 | `tokens` | 3,957,240 | Individual word-tokens |
 | `token_readings` | varies | Per-grapheme readings (Phase A) |
 | `translations` | 43,777 | English/German/Arabic/Persian glosses |
-| `lemmatizations` | 65,906 | ORACC token→lemma links |
+| `lemmatizations` | ~7,965,355 | ORACC token→lemma links |
 | `signs` / `sign_values` | 3,367 / 10,312 | Legacy OGSL |
 | `lexical_signs` | 2,093 | Unified ePSD2 sign inventory |
 | `lexical_lemmas` | 61,435 | ePSD2 + 8 ORACC projects |
