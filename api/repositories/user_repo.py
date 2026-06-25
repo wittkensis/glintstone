@@ -74,6 +74,19 @@ class UserRepository(BaseRepository):
                 {"url": avatar_url, "id": user_id},
             )
 
+    def set_password_hash(self, user_id: str, password_hash: str) -> None:
+        """Store (or replace) the PBKDF2 password hash for a user.
+
+        Additive auth: this lets a user who normally signs in via magic-link
+        or ORCID ALSO set a password. It never touches the magic-link/ORCID
+        auth-method rows, so those login paths keep working unchanged.
+        """
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET password_hash = %(hash)s WHERE id = %(id)s",
+                {"hash": password_hash, "id": user_id},
+            )
+
     def update_theme(self, user_id: str, theme: str) -> None:
         with self.conn.cursor() as cur:
             cur.execute(

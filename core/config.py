@@ -114,7 +114,11 @@ class Settings(BaseSettings):
 
     # Session
     session_secret_key: str = "dev-insecure-key"
-    session_lifetime_days: int = 30
+    # Sessions last 60 days so users (esp. returning scholars) stay logged in
+    # across visits without re-authenticating constantly. This single value
+    # drives BOTH the DB session row expiry (_create_session_response) and the
+    # session_token cookie max-age (_set_session_cookie), keeping them consistent.
+    session_lifetime_days: int = 60
 
     deploy_host: Optional[str] = None
     deploy_user: str = "deploy"
