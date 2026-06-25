@@ -1,4 +1,35 @@
-"""Recover ambiguous-initial scholar credits via per-project rosters (#262).
+"""Recover ambiguous-initial scholar credits (#262).
+
+This script has TWO independent recovery passes, run in this order:
+
+PASS 1 — PROSE FULL-NAME (added 2026-06-25, for the orphaned-no-roster case)
+-----------------------------------------------------------------------------
+``core.credits_parser.normalize_name`` deliberately reduces a credit name to a
+``surname_<first-initial-only>`` form. That throws away a *second* initial: the
+prose "J.N. Postgate" normalizes to ``postgate_j`` (one ``j``), which collides
+with both ``postgate_jn`` (J. Nicholas Postgate, scholar 1048) and
+``postgate_jp`` (J. P. Postgate, scholar 56894) — so the #261 backfill correctly
+refused it. Likewise "Tyler Yoder" normalizes to ``yoder_t`` (one ``t``), which
+matches no scholar key at all (the scholar is stored as ``yoder_tr``).
+
+The fix does NOT relax accuracy. It re-reads the FULL prose name (keeping every
+given initial AND every full given word) and attributes ONLY when that fuller
+form is consistent with EXACTLY ONE scholar globally (same surname; each prose
+given token a prefix-/initial-compatible match for the scholar's given token in
+order; the prose must never carry MORE given tokens than the scholar). So:
+
+  "J.N. Postgate"      -> given (j, n)        -> postgate_jn ONLY  (not _jp) -> attribute
+  "Tyler Yoder"        -> given (word "tyler")-> yoder_tr ONLY              -> attribute
+  "J. Postgate"        -> given (j)           -> postgate_jn AND _jp (2)    -> REFUSE
+  "Nicholas Postgate"  -> given (word)        -> postgate_n ONLY            -> attribute
+
+This pass needs NO roster: the disambiguation comes entirely from the fuller
+prose form itself, matched against the global scholar list. A bare ambiguous
+initial with no fuller form nearby ("J. Postgate" alone) still has 2 candidates
+and is still refused. Accuracy over coverage (CLAUDE.md), unchanged.
+
+PASS 2 — PER-PROJECT ROSTER (original #262 path)
+------------------------------------------------
 
 The #261 backfill (scripts/backfill_artifact_contributors.py) attributes a parsed
 credit name ONLY when its ``surname_initials`` form is globally unique among
@@ -50,7 +81,9 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import re
 import sys
+import unicodedata
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -147,10 +180,133 @@ def _initial_consistent(credit_inits: str, scholar_inits: str) -> bool:
     return scholar_inits.startswith(credit_inits)
 
 
+# --- PASS 1: prose full-name disambiguation ------------------------------
+#
+# These helpers re-read the FULL prose form a credit carries (every given
+# initial AND every full given word, in order) rather than the lossy
+# ``surname_<first-initial>`` form ``normalize_name`` produces. They are pure
+# functions (no DB) so they are unit-tested directly in
+# tests/test_recover_prose_fullname.py.
+
+_NAME_SUFFIXES = {"jr", "sr", "ii", "iii", "iv"}
+
+
+def parse_person_tokens(raw: str) -> tuple[str, list[tuple[str, str]]] | None:
+    """Parse a personal name into ``(surname, given_tokens)`` keeping detail.
+
+    ``given_tokens`` is an ordered list of ``(kind, value)`` where ``kind`` is
+    ``"init"`` (a single-initial token like "J." or "J") or ``"word"`` (a full
+    given name like "Tyler"). A compound initial token like "J.N." is expanded
+    into two ``("init", "j")`` and ``("init", "n")`` entries, mirroring how a
+    scholar stored as ``postgate_jn`` carries two initials.
+
+    Returns ``None`` when the input does not look like a two-token person name
+    (no surname + at least one given token) — the caller treats that as no
+    match. Folding/cleaning mirrors ``credits_parser.normalize_name`` so the two
+    stay consistent (ASCII-fold, drop date and honorific-suffix tokens).
+    """
+    name = raw.strip()
+    if not name:
+        return None
+    # "Surname, Given" -> "Given Surname" (same convention as normalize_name).
+    if "," in name:
+        surname_part, _, given_part = name.partition(",")
+        name = f"{given_part.strip()} {surname_part.strip()}".strip()
+    name = unicodedata.normalize("NFKD", name)
+    name = "".join(c for c in name if not unicodedata.combining(c))
+    name = name.replace("‐", "-").replace("‑", "-")  # fancy hyphens
+
+    tokens = [t for t in re.split(r"\s+", name) if t]
+    cleaned: list[str] = []
+    for tok in tokens:
+        bare = re.sub(r"[^\w\-']", "", tok).lower()
+        if not bare:
+            continue
+        if re.fullmatch(r"\d{3,4}(-\d{0,4})?", bare):  # date/lifespan token
+            continue
+        if bare in _NAME_SUFFIXES:
+            continue
+        cleaned.append(tok)
+    if len(cleaned) < 2:
+        return None
+
+    surname = re.sub(r"[^\w\-]", "", cleaned[-1].lower(), flags=re.UNICODE).strip("_")
+    if not surname or surname == "-":
+        return None
+
+    given: list[tuple[str, str]] = []
+    for g in cleaned[:-1]:
+        letters = re.findall(r"[A-Za-z]", g)
+        if not letters:
+            continue
+        # "J.N." -> two initials; a bare "J" / "J." -> one initial; "Tyler" -> word.
+        if "." in g and len(letters) > 1:
+            for c in letters:
+                given.append(("init", c.lower()))
+        elif len(g.rstrip(".")) == 1:
+            given.append(("init", letters[0].lower()))
+        else:
+            given.append(("word", "".join(c.lower() for c in letters)))
+    if not given:
+        return None
+    return surname, given
+
+
+def full_name_consistent(
+    credit_given: list[tuple[str, str]],
+    scholar_given: list[tuple[str, str]],
+) -> bool:
+    """True if a credit's given tokens uniquely fit a scholar's, position by pos.
+
+    Conservative, never a fuzzy match:
+      - The credit must not carry MORE given tokens than the scholar (a credit
+        with extra information we cannot confirm is refused).
+      - At each position the first letters must match.
+      - Two full words must be equal ("Tyler" only fits "Tyler", not "Tobias").
+      - A credit *word* against a scholar *initial* is refused: the credit claims
+        more than the scholar record proves, so we cannot confirm identity.
+      - A credit *initial* against a scholar *word* is fine (the initial is a
+        prefix of the word) — that is exactly the "J.N." -> "John Nicholas" case.
+    """
+    if not credit_given or len(credit_given) > len(scholar_given):
+        return False
+    for (c_kind, c_val), (s_kind, s_val) in zip(credit_given, scholar_given):
+        if not c_val or not s_val or c_val[0] != s_val[0]:
+            return False
+        if c_kind == "word" and s_kind == "word" and c_val != s_val:
+            return False
+        if c_kind == "word" and s_kind == "init":
+            return False
+    return True
+
+
+def _scholars_full_by_surname(
+    conn: psycopg.Connection,
+) -> dict[str, list[tuple[int, list[tuple[str, str]]]]]:
+    """surname -> list of (scholar_id, parsed given-tokens) over ALL scholars.
+
+    Built from ``scholars.name`` (the human display form, e.g. "Tyler R. Yoder",
+    "Postgate, John Nicholas") so the full given names/initials are available for
+    the prose full-name match — ``normalized_name`` alone has lost them.
+    """
+    rows = conn.execute(
+        "SELECT id, name FROM scholars WHERE name IS NOT NULL AND name <> ''"
+    ).fetchall()
+    by_surname: dict[str, list[tuple[int, list[tuple[str, str]]]]] = defaultdict(list)
+    for r in rows:
+        parsed = parse_person_tokens(r["name"])
+        if parsed is None:
+            continue
+        surname, given = parsed
+        by_surname[surname].append((r["id"], given))
+    return by_surname
+
+
 def recover(project: str | None = None, dry_run: bool = False, sample: int = 40) -> int:
     with psycopg.connect(_conninfo(), row_factory=dict_row) as conn:
         unique = _unique_index(conn)
         by_surname = _scholars_by_surname(conn)
+        full_by_surname = _scholars_full_by_surname(conn)
         rosters = _project_rosters(conn)
         print(
             f"Scholars: {sum(len(v) for v in by_surname.values()):,} | "
@@ -167,11 +323,14 @@ def recover(project: str | None = None, dry_run: bool = False, sample: int = 40)
         print(f"Credit rows to scan: {len(credits):,}")
 
         recovered: list[tuple] = []  # rows to insert
-        recovered_by_form: Counter = Counter()
+        recovered_by_form: Counter = Counter()  # Pass 2 (roster)
+        prose_by_form: Counter = Counter()  # Pass 1 (prose full-name)
+        prose_evidence: dict[str, tuple[int, str]] = {}  # nn -> (scholar_id, raw)
         refused_no_roster: Counter = Counter()
         refused_multi: Counter = Counter()
         not_ambiguous_skipped = 0
         samples_shown = 0
+        prose_samples_shown = 0
 
         for c in credits:
             proj = c["oracc_project"]
@@ -188,6 +347,37 @@ def recover(project: str | None = None, dry_run: bool = False, sample: int = 40)
                     refused_no_roster[nn] += 1
                     continue
 
+                # --- PASS 1: prose full-name (no roster needed). Re-read the
+                # FULL prose form and attribute only on a GLOBALLY unique match.
+                parsed = parse_person_tokens(m.name)
+                if parsed is not None and parsed[0] == surname:
+                    _, credit_given = parsed
+                    prose_cands = sorted(
+                        {
+                            sid
+                            for (sid, sch_given) in full_by_surname.get(surname, [])
+                            if full_name_consistent(credit_given, sch_given)
+                        }
+                    )
+                    if len(prose_cands) == 1:
+                        sid = prose_cands[0]
+                        recovered.append(
+                            (c["p_number"], sid, m.role, proj, c["id"], m.name)
+                        )
+                        prose_by_form[nn] += 1
+                        prose_evidence[nn] = (sid, m.name.strip())
+                        if dry_run and prose_samples_shown < sample:
+                            print(
+                                f"  PROSE   {c['p_number']} {m.role:11s} "
+                                f"{m.name!r} -> {nn} (scholar {sid}, "
+                                f"globally-unique full-name, project {proj})"
+                            )
+                            prose_samples_shown += 1
+                        continue
+                    # 0 or >=2 global candidates -> not confidently recoverable
+                    # by prose alone; fall through to the roster pass below.
+
+                # --- PASS 2: per-project roster.
                 # Candidate people sharing this surname, narrowed to (a) this
                 # project's roster and (b) initial-consistency.
                 candidates = [
@@ -222,7 +412,15 @@ def recover(project: str | None = None, dry_run: bool = False, sample: int = 40)
             f"  already-attributable / non-person (skipped): {not_ambiguous_skipped:,}"
         )
         print(
-            f"  RECOVERED (unique project-roster match)     : "
+            f"  RECOVERED via PROSE full-name (global-unique): "
+            f"{sum(prose_by_form.values()):,} pairs "
+            f"({len(prose_by_form):,} distinct names)"
+        )
+        for nn, n in prose_by_form.most_common(15):
+            sid, raw = prose_evidence.get(nn, (0, "?"))
+            print(f"     +{n:4d}  {nn:14s} <- prose {raw!r} -> scholar {sid}")
+        print(
+            f"  RECOVERED via project ROSTER match          : "
             f"{sum(recovered_by_form.values()):,} pairs "
             f"({len(recovered_by_form):,} distinct names)"
         )
