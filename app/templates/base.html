@@ -81,6 +81,11 @@
         </div>
     </header>
 
+    {# Post-login scholar-claim prompt (#17) — injected client-side by
+       scholar-claim-prompt.js when the orcid-match probe hits or the user has no
+       claim yet. Dismissed per-scholar via localStorage so it never nags. #}
+    <div class="container" id="scholar-claim-prompt-mount" hidden></div>
+
     {% block content %}{% endblock %}
 
     <script src="/static/js/app.js?v={{ app_version }}"></script>
@@ -90,5 +95,9 @@
     {% block scripts %}{% endblock %}
     {# Header user chip — extracted from an inline IIFE to header-auth.js (F-5, #125). #}
     <script src="/static/js/header-auth.js?v={{ app_version }}" defer></script>
+    {# Post-login scholar-claim prompt (#17). Self-gates: only logged-in users,
+       only the home/scholars/account areas, dismissed per-scholar. #}
+    <link rel="stylesheet" href="/static/css/pages/scholar-claim.css?v={{ app_version }}">
+    <script src="/static/js/scholar-claim-prompt.js?v={{ app_version }}" defer></script>
 </body>
 </html>

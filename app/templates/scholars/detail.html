@@ -6,6 +6,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="/static/css/pages/scholars.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/pages/scholar-claim.css?v={{ app_version }}">
 {% endblock %}
 
 {#
@@ -131,13 +132,18 @@
       <div class="page-header-title">
         <div class="scholar-id__namerow">
           <h1>{{ scholar.name }}</h1>
-          {% if scholar.author_type %}
+          {% if scholar.claim and scholar.claim.verified %}
+          <span class="scholar-id__claim-badge" title="This profile is maintained by the scholar, identity verified.">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            Claimed · verified
+          </span>
+          {% elif scholar.author_type %}
           <span class="scholar-id__type">{{ scholar.author_type }}</span>
           {% endif %}
         </div>
         <div class="scholar-id__meta">
           {% if scholar.institution %}
-          <span><strong>{{ scholar.institution }}</strong></span>
+          <span><strong>{{ scholar.institution }}</strong>{% if scholar.institution_overridden %} <span class="scholar-edited">· edited by this scholar</span>{% endif %}</span>
           {% endif %}
           {% if scholar.active_since %}
           <span>Active since <strong>{{ scholar.active_since }}</strong></span>
@@ -221,6 +227,27 @@
     </div>
     {% endif %}
   </header>
+
+  {# Verified-claim bio block (#17) — rendered only for an approved claim with a
+     bio override. Pending/unclaimed scholars show nothing here (spec decision #4). #}
+  {% if scholar.claim and scholar.claim.verified and (scholar.bio or scholar.homepage_url) %}
+  <div class="scholar-bio">
+    <div class="scholar-bio__avatar" aria-hidden="true">
+      {% if scholar.avatar_url %}
+      <img src="{{ scholar.avatar_url }}" alt="">
+      {% else %}{{ (scholar.name or '?')[0] | upper }}{% endif %}
+    </div>
+    <div class="scholar-bio__body">
+      <p class="scholar-bio__heading">Biography</p>
+      {% if scholar.bio %}
+      <p class="scholar-bio__text">{{ scholar.bio }}</p>
+      {% endif %}
+      {% if scholar.homepage_url %}
+      <p class="scholar-bio__links"><a href="{{ scholar.homepage_url }}" target="_blank" rel="noopener">{{ scholar.homepage_url | replace('https://', '') | replace('http://', '') }}</a></p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 
   {# Publications & works ledger (#206) — most-cited-first, the richer surface,
      rendered before contributions per the spec default. #}

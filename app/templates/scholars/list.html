@@ -4,6 +4,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="/static/css/pages/scholars.css?v={{ app_version }}">
+{% if claim_mode %}<link rel="stylesheet" href="/static/css/pages/scholar-claim.css?v={{ app_version }}">{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -12,7 +13,7 @@
    ranked list renders server-side on load; the facet rail (#194) and live
    search enhance it client-side. JS-off, the page is still a meaningful,
    ranked directory of contributors. #}
-<main class="scholars-page" data-api-url="{{ api_url }}">
+<main class="scholars-page" data-api-url="{{ api_url }}" data-claim-mode="{{ '1' if claim_mode else '0' }}">
     <div class="scholars-layout">
 
         {# ── Discovery rail (left) — facet counts (#194) ──────────────── #}
@@ -116,6 +117,12 @@
                                 {% if c == 1 %}1 artifact{% else %}{{ '{:,}'.format(c) }} artifacts{% endif %}
                             </span>
                         </a>
+                        {% if claim_mode %}
+                        <button type="button" class="btn btn--sm btn--ghost scholars-row__claim"
+                                data-claim-id="{{ scholar.id }}"
+                                data-claim-name="{{ scholar.name }}"
+                                data-claim-institution="{{ scholar.institution or '' }}">This is me</button>
+                        {% endif %}
                     </li>
                     {% endfor %}
                 </ul>
@@ -132,7 +139,87 @@
             </div>
         </div>
     </div>
+
+    {% if claim_mode %}
+    {# Claim confirm sheet (#17) — revealed when "This is me" is clicked. #}
+    <div class="claim-confirm" id="claim-confirm" hidden style="margin-top:var(--space-6)">
+        <p class="claim-confirm__head">Claim this scholar record</p>
+        <div class="claim-confirm__recap">
+            <div>
+                <div class="claim-confirm__recap-name" id="claim-confirm-name"></div>
+                <div class="claim-confirm__recap-meta" id="claim-confirm-meta"></div>
+            </div>
+        </div>
+        <p class="claim-confirm__hint">No ORCID on this record, so an editor will review your claim. Briefly, how can we verify this is you?</p>
+        <div class="form-group">
+            <label class="form-label" for="claim-note">Verification note (optional)</label>
+            <textarea class="form-input" id="claim-note" rows="3" placeholder="e.g. my homepage, a recent paper, or my institutional page"></textarea>
+        </div>
+        <div class="claim-confirm__actions">
+            <button type="button" class="btn btn--sm btn--primary" id="claim-submit">Submit claim</button>
+            <button type="button" class="btn btn--sm btn--ghost" id="claim-cancel">Cancel</button>
+        </div>
+        <p class="bio-editor__status" id="claim-confirm-status" role="status" aria-live="polite"></p>
+    </div>
+    {% endif %}
 </main>
+
+{% if claim_mode %}
+<script>
+// Manual claim flow (#17) — "This is me" reveals the confirm sheet; submit POSTs
+// the same-origin proxy. ORCID-bearing records auto-approve server-side; the
+// rest go pending to the admin queue.
+(function () {
+    'use strict';
+    const sheet = document.getElementById('claim-confirm');
+    const nameEl = document.getElementById('claim-confirm-name');
+    const metaEl = document.getElementById('claim-confirm-meta');
+    const noteEl = document.getElementById('claim-note');
+    const statusEl = document.getElementById('claim-confirm-status');
+    let activeId = null;
+
+    document.querySelector('.scholars-page').addEventListener('click', (e) => {
+        const btn = e.target.closest('.scholars-row__claim');
+        if (!btn) return;
+        activeId = btn.dataset.claimId;
+        nameEl.textContent = btn.dataset.claimName || '';
+        metaEl.textContent = btn.dataset.claimInstitution || '';
+        statusEl.textContent = '';
+        statusEl.classList.remove('is-error');
+        sheet.hidden = false;
+        sheet.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    document.getElementById('claim-cancel').addEventListener('click', () => {
+        sheet.hidden = true; activeId = null;
+    });
+
+    document.getElementById('claim-submit').addEventListener('click', async () => {
+        if (!activeId) return;
+        statusEl.classList.remove('is-error');
+        statusEl.textContent = 'Submitting…';
+        try {
+            const res = await fetch('/_me/scholar-claims', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scholar_id: Number(activeId), claim_note: noteEl.value || null }),
+            });
+            if (res.ok) {
+                window.location.href = '/account#scholar-identity';
+            } else {
+                let detail = 'This record is already claimed.';
+                try { detail = (await res.json()).detail || detail; } catch {}
+                statusEl.textContent = detail;
+                statusEl.classList.add('is-error');
+            }
+        } catch {
+            statusEl.textContent = 'Could not submit — please try again.';
+            statusEl.classList.add('is-error');
+        }
+    });
+})();
+</script>
+{% endif %}
 
 <script>
 (function () {
@@ -140,6 +227,7 @@
 
     const page = document.querySelector('.scholars-page');
     const API_BASE = (page.dataset.apiUrl || '').replace(/\/$/, '');
+    const CLAIM_MODE = page.dataset.claimMode === '1';
 
     const input = document.getElementById('scholars-search');
     const list = document.getElementById('scholars-list');
@@ -187,12 +275,18 @@
         const institutionHtml = scholar.institution
             ? '<span class="scholars-row__institution">' + escapeHtml(scholar.institution) + '</span>'
             : '';
+        const claimBtn = CLAIM_MODE
+            ? '<button type="button" class="btn btn--sm btn--ghost scholars-row__claim"' +
+              ' data-claim-id="' + scholar.id + '"' +
+              ' data-claim-name="' + escapeHtml(scholar.name) + '"' +
+              ' data-claim-institution="' + escapeHtml(scholar.institution || '') + '">This is me</button>'
+            : '';
         li.innerHTML =
             '<a class="scholars-row__link" href="/scholars/' + scholar.id + '">' +
                 '<span class="scholars-row__name">' + escapeHtml(scholar.name) + '</span>' +
                 institutionHtml +
                 '<span class="scholars-row__count">' + countText + '</span>' +
-            '</a>';
+            '</a>' + claimBtn;
         return li;
     }
 

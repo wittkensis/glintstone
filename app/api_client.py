@@ -254,6 +254,33 @@ class GlintstoneAPI:
         except Exception:
             return {}
 
+    # ── Scholar identity / claims (#17) ──────────────────────────────────────
+
+    def get_orcid_match(self, token: str) -> dict:
+        """The post-login auto-match probe. {"match": {...}|None}. Degrades to
+        no-match on any error so a probe failure simply shows no prompt."""
+        try:
+            result = self._t.get("/auth/orcid-match", token=token)
+            return result if isinstance(result, dict) else {"match": None}
+        except Exception:
+            return {"match": None}
+
+    def get_my_scholar_claims(self, token: str) -> list:
+        """The signed-in user's claims (for /account + prompt dismissal)."""
+        try:
+            result = self._t.get("/auth/scholar-claims/me", token=token)
+            return result.get("items", []) if isinstance(result, dict) else []
+        except Exception:
+            return []
+
+    def list_admin_scholar_claims(self, status: str, token: str) -> dict:
+        """The admin review queue feed. Raises on error (admin routes propagate
+        so the page can surface a real failure rather than a silent empty queue)."""
+        result = self._t.get(
+            "/admin/scholar-claims", params={"status": status}, token=token
+        )
+        return result if isinstance(result, dict) else {"items": [], "counts": {}}
+
     def get_scholar_activity(self, scholar_id: int) -> dict:
         """Compact activity profile for a scholar (#157) — period histogram +
         role breakdown. Degrades to an explicit-empty envelope on any failure so

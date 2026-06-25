@@ -355,6 +355,180 @@ def email_register(body: EmailRegisterRequest, request: Request, conn=Depends(ge
     return _create_session_response(user, conn, request, settings)
 
 
+# ── Scholar identity — claims (#17) ───────────────────────────────────────────
+
+
+class ScholarClaimRequest(BaseModel):
+    scholar_id: int
+    claim_note: str | None = None
+
+
+@router.get("/orcid-match")
+def orcid_match(user: dict = Depends(require_user), conn=Depends(get_db)):
+    """The auto-match probe the post-login prompt calls.
+
+    Returns the UNCLAIMED scholar record whose ``orcid`` equals the logged-in
+    user's ``orcid_id``, or ``null``. The join is ``users.orcid_id =
+    scholars.orcid``; both columns are unique. Cheap; drives the "We found your
+    record" banner. We exclude scholars that already carry an approved claim so
+    the banner never offers a record the user can't actually take.
+    """
+    orcid = user.get("orcid_id")
+    if not orcid:
+        return {"match": None}
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT s.id, s.name, s.institution,
+                   (SELECT COUNT(*) FROM publication_authors pa
+                     WHERE pa.scholar_id = s.id) AS publication_count
+            FROM scholars s
+            WHERE s.orcid = %s
+              AND NOT EXISTS (
+                  SELECT 1 FROM scholar_claims c
+                  WHERE c.scholar_id = s.id AND c.status = 'approved'
+              )
+            LIMIT 1
+            """,
+            (orcid,),
+        )
+        row = cur.fetchone()
+    return {"match": dict(row) if row else None}
+
+
+@router.post("/scholar-claims", status_code=201)
+def create_scholar_claim(
+    body: ScholarClaimRequest,
+    user: dict = Depends(require_user),
+    conn=Depends(get_db),
+):
+    """File a claim on a scholar record.
+
+    If the user's ``orcid_id`` matches ``scholars.orcid`` → the claim is created
+    ``approved`` / ``orcid_match`` instantly (ORCID is a verified global identity;
+    no admin step adds safety). Otherwise it is ``pending`` / ``manual_review``
+    and goes to the admin queue. Rejects with 409 if the scholar already has an
+    approved claim (one person per scholar) or if this user already has a pending
+    claim on the same record.
+    """
+    with conn.cursor() as cur:
+        cur.execute("SELECT id, orcid FROM scholars WHERE id = %s", (body.scholar_id,))
+        scholar = cur.fetchone()
+        if not scholar:
+            raise HTTPException(status_code=404, detail="Scholar not found")
+
+        # Already claimed by someone (approved) → 409, offer the dispute path.
+        cur.execute(
+            "SELECT 1 FROM scholar_claims "
+            "WHERE scholar_id = %s AND status = 'approved'",
+            (body.scholar_id,),
+        )
+        if cur.fetchone():
+            raise HTTPException(
+                status_code=409, detail="This scholar record has already been claimed."
+            )
+
+        # This user already has a pending claim on this scholar → 409 (no spam).
+        cur.execute(
+            "SELECT 1 FROM scholar_claims "
+            "WHERE scholar_id = %s AND user_id = %s AND status = 'pending'",
+            (body.scholar_id, user["id"]),
+        )
+        if cur.fetchone():
+            raise HTTPException(
+                status_code=409,
+                detail="You already have a pending claim on this record.",
+            )
+
+        # ORCID auto-match: the user authenticated against this ORCID at login.
+        user_orcid = user.get("orcid_id")
+        is_orcid_match = bool(
+            user_orcid and scholar["orcid"] and scholar["orcid"] == user_orcid
+        )
+        if is_orcid_match:
+            cur.execute(
+                """
+                INSERT INTO scholar_claims
+                    (user_id, scholar_id, status, verification_method,
+                     claim_note, verified_at)
+                VALUES (%s, %s, 'approved', 'orcid_match', %s, now())
+                RETURNING *
+                """,
+                (user["id"], body.scholar_id, body.claim_note),
+            )
+            claim = cur.fetchone()
+            # Create the empty overlay shell so the bio editor is immediately
+            # available. ON CONFLICT (not try/except) per the psycopg rollback trap.
+            cur.execute(
+                """
+                INSERT INTO scholar_overrides (scholar_id, edited_by_user_id)
+                VALUES (%s, %s)
+                ON CONFLICT (scholar_id) DO NOTHING
+                """,
+                (body.scholar_id, user["id"]),
+            )
+        else:
+            cur.execute(
+                """
+                INSERT INTO scholar_claims
+                    (user_id, scholar_id, status, verification_method, claim_note)
+                VALUES (%s, %s, 'pending', 'manual_review', %s)
+                RETURNING *
+                """,
+                (user["id"], body.scholar_id, body.claim_note),
+            )
+            claim = cur.fetchone()
+    conn.commit()
+    return dict(claim)
+
+
+@router.get("/scholar-claims/me")
+def my_scholar_claims(user: dict = Depends(require_user), conn=Depends(get_db)):
+    """The signed-in user's claims, newest first, with the scholar's name.
+
+    Drives the /account "Scholar identity" status surface and the post-login
+    prompt's dismissal logic.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT c.id, c.scholar_id, c.status, c.verification_method,
+                   c.claim_note, c.claimed_at, c.verified_at, c.review_note,
+                   s.name AS scholar_name, s.institution AS scholar_institution
+            FROM scholar_claims c
+            JOIN scholars s ON s.id = c.scholar_id
+            WHERE c.user_id = %s
+            ORDER BY c.claimed_at DESC
+            """,
+            (user["id"],),
+        )
+        rows = cur.fetchall()
+    return {"items": [dict(r) for r in rows]}
+
+
+@router.post("/scholar-claims/{claim_id}/withdraw", status_code=204)
+def withdraw_scholar_claim(
+    claim_id: str, user: dict = Depends(require_user), conn=Depends(get_db)
+):
+    """Withdraw a pending claim. Sets status='rejected' with a withdrawn note
+    rather than hard-deleting, keeping a clean audit row (spec open-question #1
+    default). Only the owner can withdraw, and only while pending.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE scholar_claims
+               SET status = 'rejected', review_note = 'Withdrawn by user'
+             WHERE id = %s AND user_id = %s AND status = 'pending'
+            """,
+            (claim_id, user["id"]),
+        )
+        updated = cur.rowcount
+    conn.commit()
+    if not updated:
+        raise HTTPException(status_code=404, detail="No pending claim to withdraw")
+
+
 # ── Internal helper ───────────────────────────────────────────────────────────
 
 

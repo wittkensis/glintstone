@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Scholar claims · Glintstone{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/pages/scholar-claim.css?v={{ app_version }}">
+{% endblock %}
+
+{% block content %}
+<main class="container">
+  <div class="page-header">
+    <div class="page-header-main">
+      <div class="page-header-title"><h1>Scholar claims</h1></div>
+    </div>
+  </div>
+
+  {% set pending_n = counts.get('pending', 0) %}
+  <p class="queue-stat"><strong>{{ pending_n }}</strong> claim{{ '' if pending_n == 1 else 's' }} awaiting review</p>
+
+  <div class="queue-pills">
+    <a class="queue-pill" href="/admin/scholar-claims?status=pending" {% if status == 'pending' %}data-state="active"{% endif %}>Pending ({{ counts.get('pending', 0) }})</a>
+    <a class="queue-pill" href="/admin/scholar-claims?status=approved" {% if status == 'approved' %}data-state="active"{% endif %}>Approved</a>
+    <a class="queue-pill" href="/admin/scholar-claims?status=rejected" {% if status == 'rejected' %}data-state="active"{% endif %}>Rejected</a>
+  </div>
+
+  {% if not claims %}
+  <p class="text-muted">
+    {% if status == 'pending' %}No claims awaiting review.{% else %}No {{ status }} claims.{% endif %}
+  </p>
+  {% else %}
+  <div class="queue-list">
+    {% for c in claims %}
+    <div class="queue-row" data-claim-id="{{ c.id }}">
+      <div>
+        <div class="queue-row__label">Claimant</div>
+        <div class="queue-row__val">{{ c.user_display_name or c.user_email }}</div>
+        <div class="queue-row__sub">{{ c.user_email }} · {% if c.user_orcid %}{{ c.user_orcid }}{% else %}no ORCID{% endif %}</div>
+      </div>
+      <div>
+        <div class="queue-row__label">Claiming</div>
+        <div class="queue-row__val">{{ c.scholar_name }}</div>
+        <div class="queue-row__sub">
+          {% if c.scholar_institution %}{{ c.scholar_institution }} · {% endif %}{{ c.scholar_publication_count or 0 }} pubs · submitted {{ c.claimed_at | string | truncate(10, true, '') }}
+        </div>
+      </div>
+      {% if status == 'pending' %}
+      <div class="queue-row__actions">
+        <button class="btn btn--sm btn--primary" data-approve="{{ c.id }}">Approve</button>
+        <button class="btn btn--sm btn--ghost" data-reject-start="{{ c.id }}">Reject</button>
+      </div>
+      {% else %}
+      <div class="queue-row__actions">
+        <span class="badge {% if status == 'approved' %}badge--green{% else %}badge--muted{% endif %}">{{ status | capitalize }}</span>
+        {% if c.verified_by_name %}<span class="queue-row__sub">by {{ c.verified_by_name }}</span>{% endif %}
+      </div>
+      {% endif %}
+
+      {% if c.claim_note %}
+      <div class="queue-row__note">“{{ c.claim_note }}”</div>
+      {% endif %}
+      {% if c.review_note and status == 'rejected' %}
+      <div class="queue-row__note">Reason: {{ c.review_note }}</div>
+      {% endif %}
+
+      {% if status == 'pending' %}
+      <div class="queue-row__reject-reason form-group" id="reject-{{ c.id }}" hidden>
+        <label class="form-label" for="rr-{{ c.id }}">Reason for rejection (shown to the claimant) — required</label>
+        <input class="form-input" id="rr-{{ c.id }}" type="text">
+        <div style="margin-top:var(--space-2)">
+          <button class="btn btn--sm btn--secondary" data-reject-confirm="{{ c.id }}">Confirm rejection</button>
+        </div>
+        <p class="bio-editor__status is-error" id="reject-status-{{ c.id }}" role="status" aria-live="polite"></p>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Admin review queue (#17). Approve is one click; Reject is two-step (reveal a
+// required reason field, then confirm) so a reject never reaches the claimant
+// with no explanation. POSTs the same-origin proxy → API admin verify route.
+(function () {
+    'use strict';
+
+    function verify(claimId, action, reviewNote, statusEl) {
+        return fetch('/_me/admin/scholar-claims/' + claimId + '/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action, review_note: reviewNote || null }),
+        }).then(function (res) {
+            if (res.ok) {
+                var row = document.querySelector('.queue-row[data-claim-id="' + claimId + '"]');
+                if (row) row.remove();
+                return true;
+            }
+            return res.json().then(function (j) {
+                if (statusEl) statusEl.textContent = (j && j.detail) || 'Could not record the decision.';
+                return false;
+            }).catch(function () {
+                if (statusEl) statusEl.textContent = 'Could not record the decision.';
+                return false;
+            });
+        });
+    }
+
+    document.querySelectorAll('[data-approve]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            btn.disabled = true;
+            verify(btn.dataset.approve, 'approve', null, null).then(function (ok) {
+                if (!ok) btn.disabled = false;
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-reject-start]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.dataset.rejectStart;
+            var panel = document.getElementById('reject-' + id);
+            if (panel) { panel.hidden = false; document.getElementById('rr-' + id).focus(); }
+        });
+    });
+
+    document.querySelectorAll('[data-reject-confirm]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.dataset.rejectConfirm;
+            var reason = document.getElementById('rr-' + id).value.trim();
+            var statusEl = document.getElementById('reject-status-' + id);
+            statusEl.textContent = '';
+            if (!reason) { statusEl.textContent = 'A reason is required.'; return; }
+            btn.disabled = true;
+            verify(id, 'reject', reason, statusEl).then(function (ok) {
+                if (!ok) btn.disabled = false;
+            });
+        });
+    });
+})();
+</script>
+{% endblock %}

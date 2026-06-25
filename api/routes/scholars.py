@@ -6,11 +6,15 @@ this module exists so the web layer can render a Browse-Scholars listing
 without making search a precondition for navigation.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel
 
+from api.dependencies import require_user
 from core.database import get_db
 
 router = APIRouter(prefix="/scholars", tags=["scholars"])
+
+BIO_MAX_LEN = 1500
 
 
 def _scholar_filters(
@@ -224,19 +228,178 @@ def get_scholar_facets(
 
 @router.get("/{scholar_id}")
 def get_scholar(scholar_id: int, conn=Depends(get_db)):
+    """Public scholar read model (#17 extends it with the claim overlay).
+
+    When a verified claim + bio override exist, the overlay wins per field via
+    COALESCE(override, ingested) — so the claimant's edits show without ever
+    mutating the ORACC-ingested ``scholars`` row. The ``claim`` block tells the
+    page whether to render the "Claimed · verified" badge, the bio, and the
+    "edited by this scholar" markers. A bio/avatar surfaces ONLY when an APPROVED
+    claim exists; a pending claim shows nothing public (spec decision #4).
+    ``bio_overridden`` etc. let the template mark exactly which fields the
+    scholar edited.
+    """
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, name, normalized_name, orcid, institution,
-                   expertise_periods, expertise_languages, active_since, author_type
-            FROM scholars
-            WHERE id = %s
+            SELECT s.id, s.name, s.normalized_name, s.orcid, s.active_since,
+                   s.author_type,
+                   COALESCE(o.institution, s.institution)               AS institution,
+                   COALESCE(o.expertise_periods, s.expertise_periods)   AS expertise_periods,
+                   COALESCE(o.expertise_languages, s.expertise_languages) AS expertise_languages,
+                   s.institution         AS ingested_institution,
+                   s.expertise_periods   AS ingested_expertise_periods,
+                   s.expertise_languages AS ingested_expertise_languages,
+                   o.bio                 AS bio,
+                   o.homepage_url        AS homepage_url,
+                   (o.institution IS NOT NULL)         AS institution_overridden,
+                   (o.expertise_periods IS NOT NULL)   AS expertise_periods_overridden,
+                   (o.expertise_languages IS NOT NULL) AS expertise_languages_overridden,
+                   c.id          AS claim_id,
+                   c.status      AS claim_status,
+                   c.verified_at AS claim_verified_at,
+                   c.verification_method AS claim_method,
+                   u.display_name AS claimant_display_name,
+                   u.avatar_url   AS claimant_avatar_url
+            FROM scholars s
+            LEFT JOIN scholar_claims c
+                   ON c.scholar_id = s.id AND c.status = 'approved'
+            LEFT JOIN scholar_overrides o ON o.scholar_id = s.id
+            LEFT JOIN users u ON u.id = c.user_id
+            WHERE s.id = %s
             """,
             (scholar_id,),
         )
         row = cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Scholar not found")
+
+    r = dict(row)
+    verified = r.get("claim_status") == "approved"
+    # Public surfaces (bio/avatar/badge) appear ONLY for a verified claim.
+    claim = {
+        "claimed": verified,
+        "verified": verified,
+        "verified_at": r.pop("claim_verified_at", None) if verified else None,
+        "method": r.pop("claim_method", None) if verified else None,
+        "claimant_display_name": r.get("claimant_display_name") if verified else None,
+    }
+    bio = r.get("bio") if verified else None
+    homepage_url = r.get("homepage_url") if verified else None
+    avatar_url = r.get("claimant_avatar_url") if verified else None
+
+    return {
+        "id": r["id"],
+        "name": r["name"],
+        "normalized_name": r["normalized_name"],
+        "orcid": r["orcid"],
+        "active_since": r["active_since"],
+        "author_type": r["author_type"],
+        "institution": r["institution"],
+        "expertise_periods": r["expertise_periods"],
+        "expertise_languages": r["expertise_languages"],
+        # Per-field override flags (only meaningful when verified) so the page can
+        # mark "· edited by this scholar" exactly where the scholar changed a value.
+        "institution_overridden": bool(r["institution_overridden"]) and verified,
+        "expertise_periods_overridden": bool(r["expertise_periods_overridden"])
+        and verified,
+        "expertise_languages_overridden": bool(r["expertise_languages_overridden"])
+        and verified,
+        "bio": bio,
+        "homepage_url": homepage_url,
+        "avatar_url": avatar_url,
+        "claim": claim,
+    }
+
+
+class BioUpdateRequest(BaseModel):
+    bio: str | None = None
+    institution: str | None = None
+    homepage_url: str | None = None
+    expertise_periods: str | None = None
+    expertise_languages: str | None = None
+
+
+def _norm(value: str | None) -> str | None:
+    """Empty/whitespace-only string → NULL so the field reverts to the ingested
+    value via COALESCE rather than overriding it with a blank."""
+    if value is None:
+        return None
+    v = value.strip()
+    return v or None
+
+
+@router.put("/{scholar_id}/bio")
+def update_scholar_bio(
+    scholar_id: int,
+    body: BioUpdateRequest,
+    request: Request,
+    user: dict = Depends(require_user),
+    conn=Depends(get_db),
+):
+    """Upsert the bio overlay for a scholar the caller has an APPROVED claim on.
+
+    The load-bearing authorization check: the caller must hold the approved
+    claim for this scholar_id, else 403 — a user cannot edit a profile they
+    haven't claimed. Validates bio length and homepage URL shape. Blank fields
+    clear the override (revert to the ingested value). Writes to
+    ``scholar_overrides`` only; ``scholars`` is never mutated.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT 1 FROM scholar_claims "
+            "WHERE scholar_id = %s AND user_id = %s AND status = 'approved'",
+            (scholar_id, user["id"]),
+        )
+        if not cur.fetchone():
+            raise HTTPException(
+                status_code=403,
+                detail="You can only edit a scholar profile you have claimed.",
+            )
+
+        bio = _norm(body.bio)
+        if bio and len(bio) > BIO_MAX_LEN:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Biography must be {BIO_MAX_LEN} characters or fewer.",
+            )
+        homepage = _norm(body.homepage_url)
+        if homepage and not (
+            homepage.startswith("http://") or homepage.startswith("https://")
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Homepage must start with http:// or https://",
+            )
+
+        cur.execute(
+            """
+            INSERT INTO scholar_overrides
+                (scholar_id, edited_by_user_id, bio, institution, homepage_url,
+                 expertise_periods, expertise_languages, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+            ON CONFLICT (scholar_id) DO UPDATE SET
+                edited_by_user_id   = EXCLUDED.edited_by_user_id,
+                bio                 = EXCLUDED.bio,
+                institution         = EXCLUDED.institution,
+                homepage_url        = EXCLUDED.homepage_url,
+                expertise_periods   = EXCLUDED.expertise_periods,
+                expertise_languages = EXCLUDED.expertise_languages,
+                updated_at          = now()
+            RETURNING *
+            """,
+            (
+                scholar_id,
+                user["id"],
+                bio,
+                _norm(body.institution),
+                homepage,
+                _norm(body.expertise_periods),
+                _norm(body.expertise_languages),
+            ),
+        )
+        row = cur.fetchone()
+    conn.commit()
     return dict(row)
 
 

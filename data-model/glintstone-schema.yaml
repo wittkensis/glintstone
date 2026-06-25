@@ -742,6 +742,54 @@ tables:
       expertise_languages: { type: TEXT, nullable: true, description: "JSON array of language codes (sux, akk, etc.)" }
       active_since: { type: TEXT, nullable: true, description: "Year of first publication" }
 
+  scholar_claims:
+    # ORIGIN: Migration 060 (#17 Scholar Identity keystone). Created when a logged-in
+    #         user claims a scholars row as their own identity.
+    # CONNECTS: user_id → users.id (uuid), scholar_id → scholars.id (integer). Bridges the
+    #           PK-type mismatch between live users and ORACC-ingested scholars.
+    # TRADE-OFF: A partial unique index enforces ONE approved claim per scholar (a scholar is
+    #            one person); a separate partial unique index blocks duplicate PENDING claims by
+    #            the same user. ORCID match auto-approves; manual claims go to admin review.
+    description: >
+      NEW TABLE (migration 060). Links a logged-in user to a scholar record they
+      claim as their identity. ORCID match → approved instantly; otherwise pending
+      until an admin reviews. The trust primitive #262 attribution depends on.
+    columns:
+      id: { type: uuid, pk: true, description: "gen_random_uuid()" }
+      user_id: { type: uuid, not_null: true, description: "FK users.id ON DELETE CASCADE" }
+      scholar_id: { type: INTEGER, not_null: true, description: "FK scholars.id ON DELETE CASCADE" }
+      status: { type: TEXT, not_null: true, values: [pending, approved, rejected] }
+      verification_method: { type: TEXT, not_null: true, values: [orcid_match, manual_review] }
+      claim_note: { type: TEXT, nullable: true, description: "User's evidence message for manual review" }
+      claimed_at: { type: TIMESTAMPTZ, not_null: true, description: "default now()" }
+      verified_at: { type: TIMESTAMPTZ, nullable: true, description: "Set on approve / on insert for orcid_match" }
+      verified_by: { type: uuid, nullable: true, description: "FK users.id; NULL = system (orcid_match)" }
+      review_note: { type: TEXT, nullable: true, description: "Admin's reason on reject, shown to the user" }
+    indexes:
+      - "uq_scholar_claims_approved_scholar UNIQUE (scholar_id) WHERE status='approved'"
+      - "uq_scholar_claims_pending_pair UNIQUE (user_id, scholar_id) WHERE status='pending'"
+
+  scholar_overrides:
+    # ORIGIN: Migration 060 (#17). A re-ingestion-safe overlay for scholar-edited profile
+    #         fields. Sparse: one row per claimed scholar.
+    # CONNECTS: scholar_id PK → scholars.id; edited_by_user_id → users.id.
+    # TRADE-OFF: A SEPARATE overlay table (not columns on scholars) so the ORACC ingestion
+    #            pipeline can never clobber user edits. The read model COALESCE(override, ingested)
+    #            per field — overlay wins when present. Reversible: delete the row → pristine data.
+    description: >
+      NEW TABLE (migration 060). The bio/profile overlay a verified claimant edits.
+      Never mutates the ORACC-ingested scholars row. GET /scholars/{id} LEFT JOINs
+      this and COALESCEs per field.
+    columns:
+      scholar_id: { type: INTEGER, pk: true, description: "FK scholars.id ON DELETE CASCADE" }
+      edited_by_user_id: { type: uuid, not_null: true, description: "FK users.id (the verified claimant)" }
+      bio: { type: TEXT, nullable: true, description: "Short scholarly biography (~1500 char, enforced in API)" }
+      institution: { type: TEXT, nullable: true, description: "Overrides scholars.institution" }
+      homepage_url: { type: TEXT, nullable: true }
+      expertise_periods: { type: TEXT, nullable: true, description: "Overrides scholars.expertise_periods" }
+      expertise_languages: { type: TEXT, nullable: true, description: "Overrides scholars.expertise_languages" }
+      updated_at: { type: TIMESTAMPTZ, not_null: true, description: "default now()" }
+
   annotation_runs:
     # ORIGIN: Created by every import step and every annotation action. Retroactive records
     #         created for all v1 data (13 records for existing CDLI/ORACC/CompVis imports).

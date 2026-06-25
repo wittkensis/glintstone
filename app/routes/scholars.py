@@ -6,7 +6,7 @@ router = APIRouter(prefix="/scholars")
 
 
 @router.get("")
-def scholar_list(request: Request):
+def scholar_list(request: Request, claim: int = 0):
     # The all-scholars index (#183). Previously this page was empty until the
     # reader typed a search — a thin, search-first directory. It is now a real
     # *browse* surface: the most productive contributors are rendered on load
@@ -33,6 +33,7 @@ def scholar_list(request: Request):
             "initial_scholars": initial.items,
             "facets": facets,
             "api_url": request.app.state.api.base_url,
+            "claim_mode": bool(claim),
         },
     )
 

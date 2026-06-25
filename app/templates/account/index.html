@@ -4,6 +4,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="/static/css/pages/account.css?v={{ app_version }}">
+<link rel="stylesheet" href="/static/css/pages/scholar-claim.css?v={{ app_version }}">
 {% endblock %}
 
 {% block content %}
@@ -130,6 +131,67 @@
                 <span id="password-status" class="account-password-status" role="status" aria-live="polite"></span>
             </div>
         </form>
+    </section>
+
+    {# Scholar identity (#17) — claim status + bio editor #}
+    {% set approved_claim = (scholar_claims | selectattr('status', 'equalto', 'approved') | first) %}
+    {% set pending_claim  = (scholar_claims | selectattr('status', 'equalto', 'pending')  | first) %}
+    {% set rejected_claim = (scholar_claims | selectattr('status', 'equalto', 'rejected') | rejectattr('review_note', 'equalto', 'Withdrawn by user') | first) %}
+    <section class="account-section" id="scholar-identity">
+        <h2 class="account-section-title">Scholar identity</h2>
+
+        {% if approved_claim %}
+        <div class="claim-status">
+            <span class="badge badge--green">Verified</span>
+            <a href="/scholars/{{ approved_claim.scholar_id }}" class="claim-status__name">{{ approved_claim.scholar_name }}</a>
+            <span class="claim-status__date">
+                {% if approved_claim.verification_method == 'orcid_match' %}Claimed via ORCID{% else %}Claimed{% endif %}
+                {% if approved_claim.verified_at %} · {{ approved_claim.verified_at | string | truncate(10, true, '') }}{% endif %}
+            </span>
+        </div>
+        <form class="bio-editor" id="bio-editor" data-scholar-id="{{ approved_claim.scholar_id }}">
+            <div class="form-group">
+                <label class="form-label" for="bio">Biography</label>
+                <textarea class="form-input" id="bio" name="bio" rows="4" maxlength="1500" placeholder="A short scholarly biography…">{{ approved_claim.bio or '' }}</textarea>
+                <div class="bio-editor__charcount" id="bio-charcount">0 / 1500</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="inst">Institution</label>
+                <input class="form-input" id="inst" name="institution" value="{{ approved_claim.institution or '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="home">Homepage</label>
+                <input class="form-input" id="home" name="homepage_url" value="{{ approved_claim.homepage_url or '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="exp">Expertise — periods</label>
+                <input class="form-input" id="exp" name="expertise_periods" value="{{ approved_claim.expertise_periods or '' }}">
+            </div>
+            <div class="bio-editor__actions">
+                <button type="submit" class="btn btn--sm btn--primary">Save profile</button>
+                <span class="bio-editor__status" id="bio-status" role="status" aria-live="polite"></span>
+            </div>
+        </form>
+        {% elif pending_claim %}
+        <div class="claim-status">
+            <span class="badge badge--muted">Under review</span>
+            <span class="claim-status__name">{{ pending_claim.scholar_name }}</span>
+            <span class="claim-status__date">Submitted {{ pending_claim.claimed_at | string | truncate(10, true, '') }}</span>
+            <button class="btn btn--ghost btn--sm" style="margin-left:auto" data-withdraw-claim="{{ pending_claim.id }}">Withdraw</button>
+        </div>
+        {% elif rejected_claim %}
+        <div class="claim-status">
+            <span class="badge badge--muted" style="color:var(--color-danger)">Not approved</span>
+            <span class="claim-status__name">{{ rejected_claim.scholar_name }}</span>
+            <a href="/scholars?claim=1" class="btn btn--ghost btn--sm" style="margin-left:auto">Try again</a>
+            {% if rejected_claim.review_note %}
+            <p class="claim-status__reason">Reason: {{ rejected_claim.review_note }}</p>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="account-section-description">You haven't claimed a scholar record.</p>
+        <a href="/scholars?claim=1" class="btn btn--sm btn--secondary">Find my record</a>
+        {% endif %}
     </section>
 
     {# Collections quick link #}
@@ -269,6 +331,60 @@ document.getElementById('password-form').addEventListener('submit', async (e) =>
         status.textContent = 'Could not save password. Please try again.';
         status.classList.add('is-error');
     }
+});
+
+// Scholar identity — bio editor (#17). Same save grammar as the password form:
+// inline save, live char count, aria-live status line. PUTs the same-origin proxy.
+const bioEditor = document.getElementById('bio-editor');
+if (bioEditor) {
+    const bioField = document.getElementById('bio');
+    const charCount = document.getElementById('bio-charcount');
+    const bioStatus = document.getElementById('bio-status');
+    const updateCount = () => { charCount.textContent = `${bioField.value.length} / 1500`; };
+    updateCount();
+    bioField.addEventListener('input', updateCount);
+
+    bioEditor.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const scholarId = bioEditor.dataset.scholarId;
+        bioStatus.classList.remove('is-error');
+        bioStatus.textContent = 'Saving…';
+        const payload = {
+            bio: bioField.value,
+            institution: document.getElementById('inst').value,
+            homepage_url: document.getElementById('home').value,
+            expertise_periods: document.getElementById('exp').value,
+        };
+        try {
+            const res = await fetch(`/_me/scholars/${scholarId}/bio`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (res.ok) {
+                bioStatus.textContent = 'Saved.';
+            } else {
+                let detail = "Couldn't save — system issue, not your edit.";
+                try { detail = (await res.json()).detail || detail; } catch {}
+                bioStatus.textContent = detail;
+                bioStatus.classList.add('is-error');
+            }
+        } catch {
+            bioStatus.textContent = "Couldn't save — system issue, not your edit.";
+            bioStatus.classList.add('is-error');
+        }
+    });
+}
+
+// Withdraw a pending claim
+document.querySelectorAll('[data-withdraw-claim]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const claimId = btn.dataset.withdrawClaim;
+        try {
+            const res = await fetch(`/_me/scholar-claims/${claimId}/withdraw`, { method: 'POST' });
+            if (res.ok) location.reload();
+        } catch {}
+    });
 });
 
 // Remove bookmark

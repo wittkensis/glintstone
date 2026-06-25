@@ -26,6 +26,40 @@ def _require_admin(request: Request):
     return None
 
 
+@router.get("/scholar-claims")
+def scholar_claims_queue(request: Request, status: str = "pending"):
+    """Admin review queue for scholar claims (#17). Admin-gated; the data comes
+    from the API's admin router over HTTP (two-tier — this page never touches the
+    DB). Filter pills switch the status feed."""
+    guard = _require_admin(request)
+    if guard is not None:
+        return guard
+
+    if status not in ("pending", "approved", "rejected"):
+        status = "pending"
+    token = request.cookies.get("session_token")
+    try:
+        data = request.app.state.api.list_admin_scholar_claims(status, token)
+    except Exception:
+        data = {
+            "items": [],
+            "counts": {"pending": 0, "approved": 0, "rejected": 0},
+            "status": status,
+        }
+
+    from app.main import templates
+
+    return templates.TemplateResponse(
+        request,
+        "admin/scholar_claims.html",
+        {
+            "claims": data.get("items", []),
+            "counts": data.get("counts", {}),
+            "status": status,
+        },
+    )
+
+
 @router.get("/ingestion")
 def ingestion_dashboard(request: Request):
     """Connector overview: last run, status, open dead-letter count."""
