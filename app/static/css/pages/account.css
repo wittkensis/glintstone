@@ -277,6 +277,32 @@
     background: linear-gradient(135deg, #111418 50%, #c9920a 50%);
 }
 
+/* Password */
+.account-password-form {
+    max-width: 28rem;
+}
+
+.account-password-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.account-password-status {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.account-password-status.is-error {
+    color: var(--color-error);
+}
+
+.account-password-status.is-success {
+    color: var(--color-success);
+}
+
 /* Misc */
 .text-muted {
     color: var(--color-text-muted);

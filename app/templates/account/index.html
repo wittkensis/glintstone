@@ -112,6 +112,26 @@
         </div>
     </section>
 
+    {# Password #}
+    <section class="account-section">
+        <h2 class="account-section-title">Password</h2>
+        <p class="account-section-description">Set a password so you can sign in with your email and password, in addition to the email magic link. Setting a password does not disable magic-link sign-in.</p>
+        <form id="password-form" class="account-password-form" autocomplete="off">
+            <div class="form-group">
+                <label class="form-label" for="new-password">New password</label>
+                <input type="password" id="new-password" name="password" class="form-input" minlength="8" autocomplete="new-password" placeholder="At least 8 characters" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="confirm-password">Confirm password</label>
+                <input type="password" id="confirm-password" name="confirm" class="form-input" minlength="8" autocomplete="new-password" placeholder="Re-enter password" required>
+            </div>
+            <div class="account-password-actions">
+                <button type="submit" class="btn btn--sm btn--primary">Save password</button>
+                <span id="password-status" class="account-password-status" role="status" aria-live="polite"></span>
+            </div>
+        </form>
+    </section>
+
     {# Collections quick link #}
     <section class="account-section">
         <h2 class="account-section-title">My Collections</h2>
@@ -205,6 +225,49 @@ document.getElementById('avatar-file').addEventListener('change', async (e) => {
         if (hav) hav.innerHTML = `<img src="${data.avatar_url}" alt="" class="header-avatar__img">`;
     } catch {
         alert('Upload failed. Please try again.');
+    }
+});
+
+// Set / change password — posts to the same-origin proxy (/_me/password)
+// which forwards the session cookie to the API as a Bearer token.
+document.getElementById('password-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pw = document.getElementById('new-password').value;
+    const confirm = document.getElementById('confirm-password').value;
+    const status = document.getElementById('password-status');
+    status.classList.remove('is-error', 'is-success');
+
+    if (pw.length < 8) {
+        status.textContent = 'Password must be at least 8 characters.';
+        status.classList.add('is-error');
+        return;
+    }
+    if (pw !== confirm) {
+        status.textContent = 'Passwords do not match.';
+        status.classList.add('is-error');
+        return;
+    }
+
+    status.textContent = 'Saving…';
+    try {
+        const res = await fetch('/_me/password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pw }),
+        });
+        if (res.ok) {
+            status.textContent = 'Password saved. You can now sign in with email and password.';
+            status.classList.add('is-success');
+            e.target.reset();
+        } else {
+            let detail = 'Could not save password.';
+            try { detail = (await res.json()).detail || detail; } catch {}
+            status.textContent = detail;
+            status.classList.add('is-error');
+        }
+    } catch {
+        status.textContent = 'Could not save password. Please try again.';
+        status.classList.add('is-error');
     }
 });
 

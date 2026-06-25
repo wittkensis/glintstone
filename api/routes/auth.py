@@ -39,6 +39,10 @@ class GenerateApiKeyRequest(BaseModel):
     tier: str = "free"
 
 
+class SetPasswordRequest(BaseModel):
+    password: str
+
+
 # ── ORCID OAuth ───────────────────────────────────────────────────────────────
 
 
@@ -189,6 +193,30 @@ def me(user: dict = Depends(require_user)):
         "role": user.get("role", "standard"),
         "theme": user.get("theme", "default"),
     }
+
+
+@router.post("/password")
+def set_password(
+    body: SetPasswordRequest,
+    user: dict = Depends(require_user),
+    conn=Depends(get_db),
+):
+    """Set or change the password for the currently logged-in user.
+
+    Additive auth (issue #451): the user is already authenticated via their
+    session (magic-link / ORCID / existing password). This stores a PBKDF2
+    hash so they can ALSO sign in with email + password going forward. It does
+    not touch magic-link or ORCID, which keep working exactly as before.
+    """
+    password = body.password.strip()
+    if len(password) < 8:
+        raise HTTPException(
+            status_code=400, detail="Password must be at least 8 characters"
+        )
+    password_hash = auth_service.hash_password(password)
+    UserRepository(conn).set_password_hash(user["id"], password_hash)
+    conn.commit()
+    return {"status": "ok"}
 
 
 @router.post("/avatar")

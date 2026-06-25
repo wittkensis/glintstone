@@ -65,6 +65,42 @@ def avatar_proxy(file: UploadFile, request: Request):
         return Response(status_code=500)
 
 
+class _PasswordBody(BaseModel):
+    password: str
+
+
+@router.post("/_me/password", status_code=204)
+def set_password_proxy(body: _PasswordBody, request: Request):
+    """Same-origin proxy so account-page JS can set a password (issue #451).
+
+    The session_token cookie is scoped to the app host, so the browser cannot
+    call the API directly; this forwards it server-side as a Bearer header.
+    """
+    token = request.cookies.get("session_token")
+    if not token:
+        return Response(status_code=401)
+    from app.api_client import AuthRequiredError
+
+    try:
+        request.app.state.api.post(
+            "/auth/password",
+            json={"password": body.password},
+            token=token,
+        )
+    except AuthRequiredError:
+        return Response(status_code=401)
+    except httpx.HTTPStatusError as exc:
+        # Surface the API's validation message (e.g. "Password must be at
+        # least 8 characters") to the browser.
+        detail = "Could not set password."
+        try:
+            detail = exc.response.json().get("detail", detail)
+        except Exception:
+            pass
+        return JSONResponse({"detail": detail}, status_code=exc.response.status_code)
+    return Response(status_code=204)
+
+
 _VALID_THEMES = {"default", "lapis-clay", "scholars-studio", "instrument-panel"}
 
 

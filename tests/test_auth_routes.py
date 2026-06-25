@@ -577,3 +577,81 @@ class TestGenerateInviteScript:
                 assert ambiguous not in code, (
                     f"Ambiguous char '{ambiguous}' found in {code}"
                 )
+
+
+# ── Issue #451: additive password auth + longer session ──────────────────────
+
+
+class TestIssue451PasswordAndSession:
+    """Issue #451: a user can ADD a password without breaking magic-link.
+
+    These tests assert the behaviour the new code guarantees:
+      - set_password_hash stores a verifiable PBKDF2 hash on the user row
+      - email + password verifies after the user sets one
+      - a wrong password is rejected
+      - the magic-link path still mints a session with no password set
+      - the session lifetime default is the new, longer value (60 days)
+    """
+
+    def test_set_password_hash_then_verify(self, user_repo, db_conn):
+        """A magic-link user can set a password and it verifies."""
+        from api.services.auth_service import hash_password, verify_password
+
+        user = user_repo.create_user(email="set-pw-451@glintstone.example")
+        user_repo.link_auth_method(user["id"], "magic_link", user["email"])
+        db_conn.commit()
+
+        user_repo.set_password_hash(user["id"], hash_password("barley-and-emmer-7"))
+        db_conn.commit()
+
+        row = user_repo.find_by_email("set-pw-451@glintstone.example")
+        assert row["password_hash"]
+        assert verify_password("barley-and-emmer-7", row["password_hash"]) is True
+
+    def test_wrong_password_rejected(self, user_repo, db_conn):
+        from api.services.auth_service import hash_password, verify_password
+
+        user = user_repo.create_user(email="wrong-pw-451@glintstone.example")
+        user_repo.set_password_hash(user["id"], hash_password("correct-horse"))
+        db_conn.commit()
+
+        row = user_repo.find_by_email("wrong-pw-451@glintstone.example")
+        assert verify_password("not-the-password", row["password_hash"]) is False
+
+    def test_magic_link_user_has_no_password_by_default(self, user_repo, db_conn):
+        """A user who only ever used magic-link has no password_hash — the
+        password is purely additive, never required."""
+        user = user_repo.create_user(email="ml-only-451@glintstone.example")
+        user_repo.link_auth_method(user["id"], "magic_link", user["email"])
+        db_conn.commit()
+        row = user_repo.find_by_email("ml-only-451@glintstone.example")
+        assert row["password_hash"] is None
+
+    def test_magic_link_still_mints_session(self, user_repo, session_repo, db_conn):
+        """The magic-link login path (create user → mint session) is unchanged
+        and works for a user with no password set."""
+        from datetime import datetime, timedelta, timezone
+
+        from api.services.auth_service import generate_session_token, hash_token
+
+        user = user_repo.create_user(email="ml-session-451@glintstone.example")
+        user_repo.link_auth_method(user["id"], "magic_link", user["email"])
+        db_conn.commit()
+
+        raw = generate_session_token()
+        token_hash = hash_token(raw)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=60)
+        session_repo.create_session(user["id"], token_hash, expires_at)
+        db_conn.commit()
+
+        found = session_repo.find_by_token_hash(token_hash)
+        assert found is not None
+        assert found["email"] == "ml-session-451@glintstone.example"
+
+    def test_session_lifetime_is_longer(self):
+        """Session lifetime default was bumped to 60 days (issue #451 part 2).
+        This value drives BOTH the DB expiry and the cookie max-age."""
+        from core.config import Settings
+
+        assert Settings().session_lifetime_days == 60
+        assert Settings().session_lifetime_days >= 30
