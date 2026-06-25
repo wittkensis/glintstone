@@ -682,3 +682,19 @@ main.scholar-detail {
     white-space: nowrap;
     flex-shrink: 0;
 }
+
+/* Coverage badges on contribution rows (#526) */
+.contrib-coverage-badge {
+    font-size: var(--text-xs);
+    padding: 1px 5px;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-raised);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-subtle);
+    white-space: nowrap;
+}
+.contrib-coverage-badge--lemma {
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    color: var(--color-accent);
+    border-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
+}

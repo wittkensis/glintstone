@@ -581,6 +581,7 @@ def get_scholar_contributions(
         # role (lemmatizer > editor > adapter > director > creator > contributor)
         # so the method chip is deterministic. The aggregation also de-dupes a
         # scholar credited on the same artifact under multiple oracc_projects.
+        # pipeline_completeness join adds ATF/lemmatization coverage (#526).
         cur.execute(
             """
             SELECT a.p_number, a.designation, a.object_type,
@@ -595,12 +596,18 @@ def get_scholar_contributions(
                             ELSE 6
                         END))[1]               AS method,
                    MIN(ac.oracc_project)       AS source_type,
-                   MAX(ac.created_at)          AS created_at
+                   MAX(ac.created_at)          AS created_at,
+                   pc.has_atf,
+                   pc.has_tokens,
+                   pc.has_lemmatization,
+                   ROUND((pc.lemma_ratio * 100)::numeric, 0)::int AS lemma_pct
             FROM artifact_contributors ac
             JOIN artifacts a ON a.p_number = ac.p_number
+            LEFT JOIN pipeline_completeness pc ON pc.p_number = a.p_number
             WHERE ac.scholar_id = %s
             GROUP BY a.p_number, a.designation, a.object_type,
-                     a.period_normalized, a.genre, a.language_normalized
+                     a.period_normalized, a.genre, a.language_normalized,
+                     pc.has_atf, pc.has_tokens, pc.has_lemmatization, pc.lemma_ratio
             ORDER BY a.p_number
             LIMIT %s OFFSET %s
             """,

@@ -438,8 +438,9 @@
             {% endif %}
           </span>
           <span class="contrib-row__provenance">
-            {# Date: created_at as YYYY-MM-DD, or — if null. created_at is an ISO
-               timestamp string from the API; the first 10 chars are the date. #}
+            {# Coverage badges (#526): ATF · tokens · lemma% #}
+            {% if c.has_atf %}<span class="contrib-coverage-badge">ATF</span>{% endif %}
+            {% if c.has_lemmatization and c.lemma_pct is not none %}<span class="contrib-coverage-badge contrib-coverage-badge--lemma">{{ c.lemma_pct }}% lemmatized</span>{% endif %}
             <span class="contrib-row__date">{{ (c.created_at | string)[:10] if c.created_at else '—' }}</span>
             {{ method_chip(c.method, c.source_type) }}
           </span>
