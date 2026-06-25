@@ -19,8 +19,8 @@ defines a long-running program supervised with auto-restart.
 
 | Unit | Process | Port | Notes |
 |---|---|---|---|
-| glintstone-api.ini | `uvicorn api.main:app` | 8001 | in `provision.sh` |
-| glintstone-web.ini | `uvicorn app.main:app` | 8002 | in `provision.sh` |
+| glintstone-api.ini | `uvicorn api.main:app --workers 2` | 8001 | in `provision.sh`; `DB_POOL_MAX=10` |
+| glintstone-web.ini | `uvicorn app.main:app --workers 2` | 8002 | in `provision.sh`; `DB_POOL_MAX=10` |
 | glintstone-staging-api.ini | `uvicorn api.main:app` | 8003 | in `provision-staging.sh` |
 | glintstone-staging-web.ini | `uvicorn app.main:app` | 8004 | in `provision-staging.sh` |
 | **glintstone-crawler.ini** | `python -m ops.scripts.cdli_image_crawler` | — | new (this dir) |

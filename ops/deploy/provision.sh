@@ -88,28 +88,45 @@ chown "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR"
 su - "$DEPLOY_USER" -c "python3 -m venv $APP_DIR/venv"
 
 # --- Supervisor config for uvicorn processes ---
+#
+# Worker / connection-pool sizing (production, Postgres max_connections=100):
+#   - api and web each run uvicorn with --workers 2 → 4 worker processes total.
+#   - Each worker opens ONE psycopg pool at startup (core.database.init_pool),
+#     so peak DB connections from the app = 4 pools × DB_POOL_MAX.
+#   - DB_POOL_MAX=10 → 4 × 10 = 40 peak, well under the ~97 usable connections
+#     (100 − 3 superuser_reserved). Leaves ~57 headroom for migrations, the
+#     daily pg_backup, the crawler, and ad-hoc psql. Do NOT raise DB_POOL_MAX
+#     without re-checking this math — bumping workers already multiplies the
+#     total because each worker holds its own pool.
+#   - The in-process read-through TTL caches (_ARTIFACT_COUNT_CACHE, _FILTER_CACHE,
+#     _COORDS_CACHE, _QUERY_VEC_CACHE) become per-worker. That is fine: they are
+#     keyed, time-expired, read-through caches with no cross-request invalidation,
+#     so per-worker just means each worker warms its own copy once (slightly more
+#     memory, one cold read per worker) — no staleness or coherence bug.
 mkdir -p /etc/supervisor.d
 
 cat > /etc/supervisor.d/glintstone-api.ini << 'SUPERVISOR'
 [program:glintstone-api]
-command=/var/www/glintstone/current/venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001
+command=/var/www/glintstone/current/venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001 --workers 2
 directory=/var/www/glintstone/current
 user=deploy
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/glintstone-api.err.log
 stdout_logfile=/var/log/glintstone-api.out.log
+environment=DB_POOL_MAX="10"
 SUPERVISOR
 
 cat > /etc/supervisor.d/glintstone-web.ini << 'SUPERVISOR'
 [program:glintstone-web]
-command=/var/www/glintstone/current/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8002
+command=/var/www/glintstone/current/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8002 --workers 2
 directory=/var/www/glintstone/current
 user=deploy
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/glintstone-web.err.log
 stdout_logfile=/var/log/glintstone-web.out.log
+environment=DB_POOL_MAX="10"
 SUPERVISOR
 
 # mcp.server_http is not implemented yet (mcp/transport/ is empty). Keep the
