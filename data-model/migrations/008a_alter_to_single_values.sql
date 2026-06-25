@@ -20,8 +20,21 @@ BEGIN;
 -- Add new values column to lexical_signs
 ALTER TABLE lexical_signs ADD COLUMN IF NOT EXISTS values TEXT[];
 
--- Copy data from logographic_values (they were duplicates anyway)
-UPDATE lexical_signs SET values = logographic_values WHERE values IS NULL;
+-- Copy data from logographic_values (they were duplicates anyway).
+-- Guarded so this migration is idempotent on a clean DB whose baseline (the 000
+-- pg_dump) already reflects this migration's RESULT — there the old column is
+-- gone, the data copy is a no-op, and an unguarded reference would error
+-- (`column "logographic_values" does not exist`). Only run the copy when the
+-- pre-008a column actually still exists.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'lexical_signs' AND column_name = 'logographic_values'
+    ) THEN
+        UPDATE lexical_signs SET values = logographic_values WHERE values IS NULL;
+    END IF;
+END $$;
 
 -- Drop old indexes
 DROP INDEX IF EXISTS idx_lexical_signs_values_log;
