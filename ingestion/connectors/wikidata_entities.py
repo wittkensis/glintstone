@@ -246,8 +246,8 @@ def _label_agrees(expected: str, live: Optional[str]) -> bool:
     if not live:
         return False
     e = _norm(expected)
-    l = _norm(live)
-    return e == l or e in l or l in e
+    live_norm = _norm(live)
+    return e == live_norm or e in live_norm or live_norm in e
 
 
 # ── HTTP fetch (curl, throttled) ──────────────────────────────────────────────
