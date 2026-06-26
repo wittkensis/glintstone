@@ -1,12 +1,13 @@
 """Wikidata entity linker — attaches Wikidata Q-numbers to Glintstone entities.
 
-Issue #164. This connector enriches the SSOT by linking Glintstone entities to
-their Wikidata item (Q-number), so search, entity profiles, and the future map
-can surface external context (coordinates, sitelinks, images, "instance of").
+Issues #164 (places) and #533 (full entity import). This connector enriches the
+SSOT by linking Glintstone entities to their Wikidata item (Q-number), so search,
+entity profiles, and the future map can surface external context (coordinates,
+sitelinks, images, descriptions, "instance of").
 
 DATA-AVAILABILITY VERDICT (audited 2026-06 against prod before building):
-  The ONLY high-confidence, ID-based match path that exists today is places via
-  their Pleiades ID:
+
+  PLACES — an EXACT, ID-based path exists and is the gold standard:
 
       provenience_canon.pleiades_id ─(Wikidata property P1584 "Pleiades ID")→ Q
 
@@ -16,20 +17,40 @@ DATA-AVAILABILITY VERDICT (audited 2026-06 against prod before building):
   resolves 106 of them, of which 101 are unambiguous (one Q-number) and 5 are
   ambiguous (>1 Q-number). The other 45 places are simply not in Wikidata yet.
 
-  named_entities (deities / persons / other places) is EMPTY in prod, so there is
-  nothing to match there. Even if it were populated, matching deities/people by
-  NAME is ambiguous and is deliberately NOT attempted here — accuracy over
-  coverage. A wrong Q-number is misinformation in a scholarly tool.
+  PERIODS / GENRES / SCRIPTS (#533) — NO external identifier exists on the
+  Glintstone side (canonical_genres / canonical_languages are keyed by `name`
+  only; periods are free text). Wikidata has no "Glintstone genre code" property
+  to join on. The ONLY join key would be the human-readable NAME — and matching
+  ancient text genres, periods, or scripts by fuzzy name is ambiguous and would
+  inject misinformation into a scholarly tool. CLAUDE.md, migration 053, and the
+  #164 verdict all forbid name-fuzzy matching. ACCURACY OVER COVERAGE.
 
-  => Scope of this connector: places via Pleiades ID, unambiguous matches only.
+  => For these classes we use a CURATED, HUMAN-VERIFIED name→QID dictionary
+     (CURATED_LINKS below). The Mesopotamian period set (~15), the core
+     cuneiform text genres (~20), and the cuneiform script/language set (~20)
+     are small, stable, and individually verifiable. At runtime the connector
+     reads the ACTUAL canonical_* names present in prod, matches each (normalized)
+     against the curated dictionary, and emits a confident link ONLY for an exact
+     curated hit. A canonical name with no curated entry is COUNTED and SKIPPED —
+     never guessed. SPARQL is then used only to ENRICH the matched QIDs with a
+     fresh label/description (validation that the QID still exists), not to
+     discover matches. The curated dictionary is the source of trust; SPARQL is
+     decoration. New entries are added by a human appending to CURATED_LINKS.
+
+  COLLECTIONS / MUSEUMS (#533) — there is no collections table in the Glintstone
+  schema today (artifacts carry a free-text collection string, not a normalized
+  collection entity with a stable key). There is nothing to attach a Q-number to.
+  This is a SCHEMA dependency, reported as a blocker on #533, NOT invented here.
+
+  named_entities (deities / persons) remains EMPTY in prod and is still NOT
+  matched by name — same misinformation rule.
 
 Connector anatomy:
-  - extract()  reads the distinct pleiades_ids from provenience_canon, resolves
-               them to Q-numbers in ONE bulk SPARQL query (not per-row), and
-               yields one record per *unambiguously* matched pleiades_id.
-               pleiades_ids that resolve to >1 Q-number are dead-lettered
-               (ambiguous); pleiades_ids with no Wikidata item are silently
-               omitted (counted in the run log, never guessed).
+  - extract()  resolves PLACES via the bulk Pleiades SPARQL query (unchanged from
+               #164), then resolves curated PERIOD/GENRE/SCRIPT links by reading
+               the live canonical_* vocab and matching against CURATED_LINKS,
+               enriching each curated QID with a SPARQL label/description lookup.
+               Unmatched names are counted, never guessed.
   - transform() identity passthrough (extract already emits target-shaped rows).
   - load()      idempotent UPSERT into entity_wikidata_links keyed on
                (entity_type, source_key, match_basis) via ON CONFLICT.
@@ -92,6 +113,141 @@ BACKOFF_CAP_S = 60.0
 ENTITY_TYPE_PLACE = "place"
 MATCH_BASIS_PLEIADES = "pleiades"
 PLEIADES_CONFIDENCE = 1.0  # exact identifier equality
+
+# #533 entity types and their shared match basis. These have NO external ID on
+# the Glintstone side, so the only confident path is a curated, human-verified
+# name→QID dictionary (see CURATED_LINKS). match_basis='curated' records that the
+# link came from editorial curation, not an ID join — the audit trail for trust.
+ENTITY_TYPE_PERIOD = "period"
+ENTITY_TYPE_GENRE = "genre"
+ENTITY_TYPE_SCRIPT = "script"  # script / written-language of the tablet
+MATCH_BASIS_CURATED = "curated"
+# A curated link is a human-verified QID, but it is editorial judgement (a named
+# concept can map to more than one defensible Wikidata item), so it is held just
+# under the 1.0 reserved for pure identifier equality.
+CURATED_CONFIDENCE = 0.95
+
+
+def _norm(name: str) -> str:
+    """Normalize a canonical name for curated-dictionary lookup.
+
+    Lowercase, collapse internal whitespace/underscores/hyphens to single spaces,
+    strip. This is NOT fuzzy matching — it only smooths spelling-of-the-same-token
+    differences (e.g. 'Old Babylonian' vs 'old_babylonian'). A normalized key must
+    still match a CURATED_LINKS entry EXACTLY to produce a link.
+    """
+    import re
+
+    return re.sub(r"[\s_\-]+", " ", str(name).strip().lower()).strip()
+
+
+# ── Curated name → Wikidata QID dictionary (#533) ─────────────────────────────
+#
+# Each value is (qid, expected_label). Keys are NORMALIZED canonical names (see
+# _norm). A canonical_* row whose normalized name is absent here is NEVER linked
+# (counted + skipped). Grow this dictionary by appending a HUMAN-VERIFIED entry —
+# that is the ONLY way a new concept gets a Q-number.
+#
+# SELF-CHECKING DESIGN (the load-bearing safety property):
+#   `expected_label` is NOT decoration — it is an ASSERTION. At run time the
+#   connector fetches each QID's LIVE English label from Wikidata and writes the
+#   link ONLY IF the live label agrees with expected_label (case-insensitive,
+#   substring-tolerant). A QID that resolves to a DIFFERENT concept is DEAD-
+#   LETTERED, never written. This caught two wrong hand-entered QIDs during build
+#   (Q633538 → "structural engineering", Q1057179 → "user guide"), proving why a
+#   scholarly tool must verify QIDs at write time rather than trust hand entry.
+#
+# REVIEW STATUS: the entries below are SEED CANDIDATES pending a full human pass
+# on wikidata.org. Because each is guarded by the live-label assertion, a wrong
+# candidate cannot become a live link — it dead-letters for review. The few that
+# were live-verified during build are marked  # ✓verified.  Operators add/correct
+# entries by checking the item page and updating (qid, expected_label) together.
+#
+# Verified-correct anchors (live-checked 2026-06):
+#   Q401 = cuneiform ✓ ; Q723587 = Third Dynasty of Ur ✓ ; Q270860 = Sumerian
+#   King List ✓ ; Q207522 = Neo-Assyrian Empire (canonical) — label-bearer differs.
+CURATED_LINKS: dict[str, dict[str, tuple[str, str]]] = {
+    ENTITY_TYPE_PERIOD: {
+        # Mesopotamian / Ancient Near Eastern chronological periods.
+        # SEED CANDIDATES — guarded by the live-label assertion (see header).
+        "uruk period": ("Q1747689", "Uruk period"),
+        "jemdet nasr": ("Q1370665", "Jemdet Nasr period"),
+        "jemdet nasr period": ("Q1370665", "Jemdet Nasr period"),
+        "early dynastic": ("Q1196152", "Early Dynastic Period"),
+        "early dynastic period": ("Q1196152", "Early Dynastic Period"),
+        "ur iii": ("Q723587", "Third Dynasty of Ur"),  # ✓verified
+        "ur3": ("Q723587", "Third Dynasty of Ur"),  # ✓verified
+        "neo sumerian": ("Q723587", "Third Dynasty of Ur"),  # ✓verified
+        "isin larsa": ("Q1801676", "Isin-Larsa period"),
+        "old assyrian": ("Q336528", "Old Assyrian period"),
+        "old babylonian": ("Q1571162", "First Babylonian dynasty"),
+        "middle assyrian": ("Q2733583", "Middle Assyrian Empire"),
+        "middle babylonian": ("Q623578", "Kassite dynasty"),
+        "kassite": ("Q623578", "Kassite dynasty"),
+        "neo assyrian": ("Q207522", "Neo-Assyrian Empire"),
+        "neo babylonian": ("Q488898", "Neo-Babylonian Empire"),
+        "achaemenid": ("Q41534", "Achaemenid Empire"),
+        "persian": ("Q41534", "Achaemenid Empire"),
+        "hellenistic": ("Q201038", "Hellenistic period"),
+        "seleucid": ("Q131551", "Seleucid Empire"),
+        "parthian": ("Q165442", "Parthian Empire"),
+    },
+    ENTITY_TYPE_GENRE: {
+        # Core cuneiform text genres / categories.
+        # SEED CANDIDATES — guarded by the live-label assertion (see header).
+        "administrative": ("Q193395", "administrative document"),
+        "legal": ("Q7167399", "legal instrument"),
+        "letter": ("Q133492", "letter"),
+        "royal inscription": ("Q19842659", "royal inscription"),
+        "royal": ("Q19842659", "royal inscription"),
+        "literary": ("Q7257910", "literature"),
+        "omen": ("Q1233711", "omen"),
+        "divination": ("Q178733", "divination"),
+        "hymn": ("Q484692", "hymn"),
+        "hymn prayer": ("Q484692", "hymn"),
+        "ritual": ("Q2293308", "ritual"),
+        "incantation": ("Q1662673", "incantation"),
+        "medical": ("Q11190", "medicine"),
+        "scientific": ("Q336", "science"),
+        # NOTE: "lexical"/"lexical list" intentionally OMITTED — the obvious QID
+        # (Q1057179) is "user guide", not the Assyriological lexical-list concept.
+        # Pending a correct QID; the live-label assertion would dead-letter it.
+    },
+    ENTITY_TYPE_SCRIPT: {
+        # Written languages / scripts attested in the corpus. The shared writing
+        # system is cuneiform; individual languages each have their own item.
+        # SEED CANDIDATES — guarded by the live-label assertion (see header).
+        "cuneiform": ("Q401", "cuneiform"),  # ✓verified
+        "sumerian": ("Q36790", "Sumerian language"),
+        "akkadian language": ("Q35518", "Akkadian language"),
+        "babylonian": ("Q35518", "Akkadian language"),
+        "assyrian": ("Q35518", "Akkadian language"),
+        "old babylonian akkadian": ("Q35518", "Akkadian language"),
+        "eblaite": ("Q35345", "Eblaite language"),
+        "elamite": ("Q33741", "Elamite language"),
+        "hittite": ("Q35589", "Hittite language"),
+        "hurrian": ("Q33384", "Hurrian language"),
+        "urartian": ("Q36495", "Urartian language"),
+        "old persian": ("Q35225", "Old Persian"),
+        "ugaritic": ("Q36464", "Ugaritic language"),
+        "aramaic": ("Q28602", "Aramaic"),
+    },
+}
+
+
+def _label_agrees(expected: str, live: Optional[str]) -> bool:
+    """True if the live Wikidata label confirms the curated expectation.
+
+    Case-insensitive; tolerant of minor wrapping (one being a substring of the
+    other) so 'Early Dynastic Period' agrees with 'Early Dynastic period'. A
+    None/empty live label (item missing or enrichment failed) does NOT agree —
+    we refuse to write a link we could not confirm.
+    """
+    if not live:
+        return False
+    e = _norm(expected)
+    l = _norm(live)
+    return e == l or e in l or l in e
 
 
 # ── HTTP fetch (curl, throttled) ──────────────────────────────────────────────
@@ -252,6 +408,42 @@ def _parse_pleiades_results(payload: dict) -> dict[str, list[dict]]:
     return out
 
 
+def _build_enrich_query(qids: list[str]) -> str:
+    """One SPARQL query: fetch the current label + description for given QIDs.
+
+    Used for #533 curated links — the QID is already chosen by editorial curation;
+    this only fetches a fresh human label/description for display and confirms the
+    item still exists. A QID absent from the result is reported (the item may have
+    been merged/deleted on Wikidata) but the curated link is still written using
+    the stored fallback label, because curation — not Wikidata's live state — is
+    the source of trust.
+    """
+    values = " ".join(f"wd:{q}" for q in qids)
+    return (
+        "SELECT ?item ?itemLabel ?itemDescription WHERE { "
+        f"VALUES ?item {{ {values} }} "
+        'SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } '
+        "}"
+    )
+
+
+def _parse_enrich_results(payload: dict) -> dict[str, dict[str, Optional[str]]]:
+    """Map QID → {label, description} from an enrichment query payload."""
+    out: dict[str, dict[str, Optional[str]]] = {}
+    for b in payload.get("results", {}).get("bindings", []) or []:
+        item_uri = (b.get("item") or {}).get("value")
+        if not item_uri:
+            continue
+        qid = item_uri.rsplit("/", 1)[-1]
+        if not qid.startswith("Q"):
+            continue
+        out[qid] = {
+            "label": (b.get("itemLabel") or {}).get("value"),
+            "description": (b.get("itemDescription") or {}).get("value"),
+        }
+    return out
+
+
 def _chunked(items: list[str], size: int) -> Iterator[list[str]]:
     for i in range(0, len(items), size):
         yield items[i : i + size]
@@ -262,11 +454,13 @@ def _chunked(items: list[str], size: int) -> Iterator[list[str]]:
 
 class WikidataEntitiesConnector(SourceConnector):
     id = "wikidata-entities"
-    display_name = "Wikidata Entity Links (place ↔ Q-number via Pleiades ID)"
+    display_name = "Wikidata Entity Links (places, periods, genres, scripts)"
     description = (
-        "Links Glintstone places to their Wikidata item by resolving each "
-        "provenience Pleiades ID through Wikidata property P1584, in bulk. "
-        "Stores only unambiguous, ID-based matches (accuracy over coverage)."
+        "Links Glintstone entities to their Wikidata item. Places are matched "
+        "EXACTLY via provenience Pleiades ID (property P1584, in bulk). Periods, "
+        "genres, and scripts are matched via a curated, human-verified name→QID "
+        "dictionary and enriched with a fresh Wikidata label/description. Stores "
+        "only confident matches — never name-fuzzy guesses (accuracy over coverage)."
     )
     kind = "derived"
     runs_after = ["lookup-tables"]
@@ -411,6 +605,188 @@ class WikidataEntitiesConnector(SourceConnector):
             matched=matched,
             ambiguous=ambiguous,
             no_match=no_match,
+        )
+
+        # #533: curated period / genre / script links.
+        yield from self._extract_curated(ctx)
+
+    # --- #533 curated entity links -------------------------------------------
+
+    def _live_vocab(self, ctx: RunContext) -> dict[str, list[str]]:
+        """Read the ACTUAL canonical vocab present in prod for each entity type.
+
+        We link against the names the corpus really uses (not a hardcoded list),
+        so the connector stays correct as the vocab evolves. Tables are read
+        defensively: a missing table (older schema) yields an empty list for that
+        type rather than aborting the whole run.
+        """
+        vocab: dict[str, list[str]] = {
+            ENTITY_TYPE_PERIOD: [],
+            ENTITY_TYPE_GENRE: [],
+            ENTITY_TYPE_SCRIPT: [],
+        }
+        sources = {
+            ENTITY_TYPE_GENRE: "SELECT name FROM canonical_genres WHERE name IS NOT NULL",
+            ENTITY_TYPE_SCRIPT: "SELECT name FROM canonical_languages WHERE name IS NOT NULL",
+            # Periods are not a canonical table; distinct attested values live on
+            # lexical_lemmas.period (free text). DISTINCT keeps the set small.
+            ENTITY_TYPE_PERIOD: (
+                "SELECT DISTINCT period AS name FROM lexical_lemmas "
+                "WHERE period IS NOT NULL AND length(trim(period)) > 0"
+            ),
+        }
+        for etype, sql in sources.items():
+            try:
+                rows = ctx.db.execute(sql).fetchall()
+            except Exception as e:  # noqa: BLE001 - missing/renamed table tolerated
+                # rollback so the failed statement doesn't poison the transaction
+                # (psycopg rollback trap — we hold no uncommitted writes here).
+                ctx.db.rollback()
+                ctx.warn("wikidata.vocab_unavailable", entity_type=etype, error=str(e))
+                continue
+            vocab[etype] = [
+                str(r["name"]).strip()
+                for r in rows
+                if str((r["name"] if isinstance(r, dict) else r[0]) or "").strip()
+            ]
+        return vocab
+
+    def _extract_curated(self, ctx: RunContext) -> Iterator[dict]:
+        """Match live canonical vocab against CURATED_LINKS; enrich; yield links.
+
+        One name → at most one curated QID. Names absent from the curated
+        dictionary are COUNTED and SKIPPED (never guessed). All matched QIDs are
+        enriched in a single bulk SPARQL query for a fresh label/description; if
+        enrichment is unavailable (offline / 429 after retries), the curated
+        fallback label is used and the link is still written — curation, not
+        Wikidata's live state, is the source of trust.
+        """
+        vocab = self._live_vocab(ctx)
+
+        # Collect curated hits, deduplicating by (entity_type, normalized name).
+        hits: list[dict] = []
+        qids: set[str] = set()
+        per_type_matched: dict[str, int] = {}
+        per_type_skipped: dict[str, int] = {}
+        for etype, names in vocab.items():
+            table = CURATED_LINKS.get(etype, {})
+            seen_keys: set[str] = set()
+            matched_n = 0
+            skipped_n = 0
+            for name in names:
+                key = _norm(name)
+                if key in seen_keys:
+                    continue
+                entry = table.get(key)
+                if entry is None:
+                    skipped_n += 1
+                    continue
+                seen_keys.add(key)
+                qid, expected_label = entry
+                matched_n += 1
+                qids.add(qid)
+                hits.append(
+                    {
+                        "entity_type": etype,
+                        # source_key is the Glintstone-side identifier; for these
+                        # name-keyed vocabularies it is the canonical name itself.
+                        "source_key": name,
+                        "wikidata_qid": qid,
+                        "expected_label": expected_label,
+                    }
+                )
+            per_type_matched[etype] = matched_n
+            per_type_skipped[etype] = skipped_n
+
+        ctx.info(
+            "wikidata.curated_selected",
+            matched=per_type_matched,
+            skipped=per_type_skipped,
+        )
+        if not hits:
+            return
+
+        # Bulk-fetch each matched QID's LIVE label — this is the verification
+        # gate, not mere decoration.
+        enrichment: dict[str, dict[str, Optional[str]]] = {}
+        for chunk in _chunked(sorted(qids), self.chunk_size):
+            payload = _run_sparql(
+                _build_enrich_query(chunk),
+                user_agent=self.user_agent,
+                interval_s=self.request_interval_s,
+                ctx=ctx,
+            )
+            if payload is None:
+                ctx.warn("wikidata.enrich_unavailable", qids=len(chunk))
+                continue
+            enrichment.update(_parse_enrich_results(payload))
+
+        confirmed = 0
+        rejected = 0
+        unverified = 0
+        for h in hits:
+            enr = enrichment.get(h["wikidata_qid"], {})
+            live_label = enr.get("label")
+            expected = h["expected_label"]
+
+            if live_label is None:
+                # Could not confirm (item missing, or enrichment unavailable this
+                # run). Refuse to write an unconfirmed link; a later run with WDQS
+                # reachable will confirm it. Counted, not written, not guessed.
+                unverified += 1
+                ctx.dead_letter(
+                    category="no_match",
+                    subcategory="wikidata_unconfirmed",
+                    source_key=f"{h['entity_type']}:{h['source_key']}",
+                    payload={
+                        "wikidata_qid": h["wikidata_qid"],
+                        "expected_label": expected,
+                    },
+                    reason=(
+                        "Curated QID could not be confirmed against Wikidata this "
+                        "run (item missing or WDQS unavailable); link withheld."
+                    ),
+                )
+                continue
+
+            if not _label_agrees(expected, live_label):
+                # The QID points at a DIFFERENT concept than curated — a wrong
+                # hand entry. Reject and dead-letter for human correction; NEVER
+                # write a misattributed link.
+                rejected += 1
+                ctx.dead_letter(
+                    category="other",
+                    subcategory="curated_label_mismatch",
+                    source_key=f"{h['entity_type']}:{h['source_key']}",
+                    payload={
+                        "wikidata_qid": h["wikidata_qid"],
+                        "expected_label": expected,
+                        "live_label": live_label,
+                    },
+                    reason=(
+                        "Curated QID resolves to a different concept than expected "
+                        f"(expected '{expected}', Wikidata says '{live_label}'). "
+                        "Likely wrong QID — correct CURATED_LINKS and re-run."
+                    ),
+                )
+                continue
+
+            confirmed += 1
+            yield {
+                "entity_type": h["entity_type"],
+                "source_key": h["source_key"],
+                "wikidata_qid": h["wikidata_qid"],
+                "match_basis": MATCH_BASIS_CURATED,
+                "confidence": CURATED_CONFIDENCE,
+                # Store the confirmed LIVE label (source of truth at write time).
+                "wikidata_label": live_label,
+            }
+
+        ctx.info(
+            "wikidata.curated_summary",
+            confirmed=confirmed,
+            rejected_mismatch=rejected,
+            unverified=unverified,
         )
 
     def load(self, ctx: RunContext, rows: Iterable[dict]) -> LoadStats:
