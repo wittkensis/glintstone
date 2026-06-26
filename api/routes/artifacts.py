@@ -376,6 +376,18 @@ def get_sign_annotations(p_number: str, conn=Depends(get_db)):
     return repo.get_sign_annotations(p_number)
 
 
+@router.get("/{p_number}/sign-recognitions")
+def get_sign_recognitions(p_number: str, conn=Depends(get_db)):
+    """ML sign-reading predictions for a tablet (Akkademia, backlog #535).
+
+    Returns the latest sign-recognition run's predictions in sign order, each
+    with a derived confidence and the run's source attribution. Empty list when
+    none exist.
+    """
+    repo = ArtifactRepository(conn)
+    return repo.get_sign_recognitions(p_number)
+
+
 @router.get("/{p_number}/research")
 def get_artifact_research(p_number: str, conn=Depends(get_db)):
     """Return publications, scholars, and storage info for the Research tab."""

@@ -20,3 +20,11 @@ mcp>=1.27
 # Docs build (ops/build_docs.py — runs on the CI runner during deploy)
 markdown>=3.5
 PyYAML>=6.0
+
+# Akkademia sign-recognition model (ingestion/connectors/akkademia_signs.py, #535).
+# OPTIONAL + NOT INSTALLED in the default runtime: the `akkadian` package pins
+# Python 3.7.x + torch + allennlp 0.8.5 and will NOT install under Python 3.13.
+# The connector imports it lazily and no-ops with a clear log line when absent,
+# so the rest of ingestion is unaffected. Install in a dedicated 3.7 venv to run:
+#   pip install torch torchvision && pip install akkadian
+# akkadian==1.0.12   # gaigutherz/Akkademia — enable only in a Python 3.7 env

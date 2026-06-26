@@ -1236,6 +1236,56 @@ class ArtifactRepository(BaseRepository):
         )
         return {"annotations": rows, "count": len(rows)}
 
+    def get_sign_recognitions(self, p_number: str) -> dict:
+        """ML sign-reading predictions for a tablet (Akkademia, backlog #535).
+
+        Returns the predictions from the LATEST sign-recognition run for this
+        artifact, in sign order, each carrying its derived confidence and the
+        run's source attribution (annotation_runs). Earlier runs are not merged
+        in -- competing runs are preserved in the table, but the detail page
+        shows the most recent reading. Empty list when none exist, so the UI
+        section simply doesn't render.
+        """
+        latest = self.fetch_one(
+            """
+            SELECT annotation_run_id
+            FROM sign_recognitions
+            WHERE p_number = %(p_number)s
+            ORDER BY annotation_run_id DESC
+            LIMIT 1
+            """,
+            {"p_number": p_number},
+        )
+        if not latest:
+            return {"p_number": p_number, "count": 0, "signs": [], "source": None}
+
+        run_id = latest["annotation_run_id"]
+        rows = self.fetch_all(
+            """
+            SELECT sr.sign_index, sr.sign_label, sr.confidence,
+                   sr.alternatives, sr.source_glyph, sr.image_source_url
+            FROM sign_recognitions sr
+            WHERE sr.p_number = %(p_number)s
+              AND sr.annotation_run_id = %(run_id)s
+            ORDER BY sr.sign_index
+            """,
+            {"p_number": p_number, "run_id": run_id},
+        )
+        source = self.fetch_one(
+            """
+            SELECT source_name, source_type, model_version, created_at
+            FROM annotation_runs
+            WHERE id = %(run_id)s
+            """,
+            {"run_id": run_id},
+        )
+        return {
+            "p_number": p_number,
+            "count": len(rows),
+            "signs": rows,
+            "source": source,
+        }
+
     # ── Research data (publications, scholars, storage) ────
 
     def get_research(self, p_number: str) -> dict:

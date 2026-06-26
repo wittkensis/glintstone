@@ -43,6 +43,14 @@ ANNOTATION_RUNS = [
         "eBL sign annotation training data",
         "Electronic Babylonian Library annotation corpus. CC BY 4.0.",
     ),
+    (
+        "akkademia-signs",
+        "model",
+        "ML_model",
+        "Tablets with detected cuneiform signs (CompVis layer + future images)",
+        "Akkademia BiLSTM sign-reading predictions (pip `akkadian` v1.0.12, "
+        "gaigutherz/Akkademia). Gutherz et al. 2020, PLOS ONE. MIT.",
+    ),
     # ── ORACC top-level projects (original) ──────────────────────────────────
     (
         "oracc/blms",

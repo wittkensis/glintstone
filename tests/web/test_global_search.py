@@ -123,6 +123,9 @@ class _FakeAPI:
     def get_coverage_gaps(self, params):
         return {}
 
+    def get_sign_recognitions(self, p_number):
+        return []
+
 
 @pytest.fixture
 def client(monkeypatch):

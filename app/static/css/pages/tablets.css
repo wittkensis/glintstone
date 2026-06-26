@@ -1911,3 +1911,66 @@ body.page-tablet-detail > .page-header {
     font-variant-numeric: tabular-nums;
 }
 .covers-note { font-size: var(--text-xs); color: var(--color-text-subtle); margin-left: var(--space-2); }
+
+/* ── Recognized Signs (#535) ─────────────────────────────────────────────
+   ML sign-reading predictions (Akkademia) on the tablet detail page. Mirrors
+   the .publications-section collapsible pattern; token-driven only, no raw hex.
+   Machine-generated readings are visually de-emphasised vs scholarly data. */
+.sign-recognitions {
+    margin-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-3);
+}
+
+.sign-recognitions__header {
+    cursor: pointer;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.sign-recognitions__count {
+    color: var(--color-text-muted);
+    font-weight: var(--font-weight-normal);
+}
+
+.sign-recognitions__note {
+    margin: var(--space-2) 0 var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+    font-style: italic;
+}
+
+.sign-recognitions__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.sign-recognitions__item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+}
+
+.sign-recognitions__label {
+    color: var(--color-text);
+    font-family: var(--font-mono, monospace);
+}
+
+.sign-recognitions__confidence {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}

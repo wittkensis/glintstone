@@ -288,6 +288,11 @@ def tablet_detail(request: Request, p_number: str):
     # Passed as a data attribute so sidebar.js can fetch without constructing the URL in JS.
     summarize_url = f"{request.app.state.api.base_url}/artifacts/{p_number}/summary"
 
+    # Recognized Signs (#535): ML sign-reading predictions (Akkademia). Degrades
+    # to an empty result; the detail template only renders the section when there
+    # are signs, so a tablet without predictions shows nothing extra.
+    sign_recognitions = api.get_sign_recognitions(p_number)
+
     # Find-spot mini-map (#199): pin this single tablet's excavation site, if it
     # has coordinates. The find-spot is where the tablet was *excavated*
     # (gs-expert-assyriology) — the provenience string ("Umma (mod. …)") is
@@ -317,6 +322,7 @@ def tablet_detail(request: Request, p_number: str):
             "back_url": back_url,
             "api_url": request.app.state.api.base_url,
             "summarize_url": summarize_url,
+            "sign_recognitions": sign_recognitions,
             "current_user": current_user,
             "saved_item_id": saved_item_id,
             "debug_json": debug_json,
