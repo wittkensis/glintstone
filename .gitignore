@@ -150,3 +150,6 @@ planning/
 # Private planning (migrated from PERSONAL/ #440) — gitignored
 /plan/
 /PERSONAL
+
+# Generated integrity-audit report artifacts (#490)
+ops/reports/integrity-*.json
