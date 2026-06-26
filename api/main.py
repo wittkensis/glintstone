@@ -23,6 +23,7 @@ from api.routes import (
     scholars,
     search,
     stats,
+    translation,
     users,
 )
 from core.config import get_settings
@@ -130,6 +131,7 @@ app.include_router(periods.router)
 app.include_router(proveniences.router)
 app.include_router(scholars.router)
 app.include_router(search.router)
+app.include_router(translation.router)
 app.include_router(agent.router)
 app.include_router(agent.composites_agent_router)
 app.include_router(agent.corrections_router)
