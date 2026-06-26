@@ -1,0 +1,64 @@
+{# Scholar Correction panel (#532) — Level 2 corrections.
+
+   A verified scholar (one holding an approved scholar_claims row) can file a
+   correction against a model-generated `summary` or `interpretation`. The panel
+   is hidden by default and revealed/enabled by correction.js based on the
+   signed-in user's claim status (fetched from /_me/scholar-claims):
+     · no approved claim  → panel stays hidden
+     · pending claim      → panel visible but disabled, status line explains
+     · approved claim     → panel enabled
+
+   Params:
+     target_type  'summary' | 'interpretation'
+     target_id    fixed target key for `summary` (the p_number). For
+                  `interpretation` it is filled at click-time by token-popover.js,
+                  so callers may omit it.
+     panel_id     optional DOM id suffix so two panels coexist on one page.
+#}
+{% set _pid = panel_id | default(target_type) %}
+<section class="correction-panel is-hidden"
+         id="correction-panel-{{ _pid }}"
+         data-correction-panel
+         data-target-type="{{ target_type }}"
+         data-target-id="{{ target_id | default('', true) }}"
+         hidden>
+  <div class="correction-panel__head">
+    <h3 class="correction-panel__title">Suggest a correction</h3>
+    <p class="correction-panel__sub">Verified scholars can flag an error in this
+      {{ 'summary' if target_type == 'summary' else 'interpretation' }} for review.</p>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label" for="correction-text-{{ _pid }}">Your correction</label>
+    <textarea class="form-input correction-panel__text"
+              id="correction-text-{{ _pid }}"
+              data-correction-text
+              rows="3" maxlength="500"
+              placeholder="Describe what is wrong and what it should say…"></textarea>
+    <p class="correction-panel__count"><span data-correction-count>0</span> / 500</p>
+  </div>
+
+  <div class="correction-panel__row">
+    <div class="form-group">
+      <label class="form-label" for="correction-reason-{{ _pid }}">Reason</label>
+      <select class="form-input correction-panel__reason"
+              id="correction-reason-{{ _pid }}" data-correction-reason>
+        <option value="wrong_lemma">Wrong lemma</option>
+        <option value="wrong_translation">Wrong translation</option>
+        <option value="missing_context">Missing context</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="correction-citation-{{ _pid }}">Citation <span class="correction-panel__optional">(optional)</span></label>
+      <input class="form-input correction-panel__citation"
+             id="correction-citation-{{ _pid }}" data-correction-citation
+             type="text" placeholder="Supporting reference">
+    </div>
+  </div>
+
+  <div class="correction-panel__actions">
+    <button class="btn btn--sm btn--primary" type="button" data-correction-submit>Submit correction</button>
+    <p class="correction-panel__status" data-correction-status role="status" aria-live="polite"></p>
+  </div>
+</section>

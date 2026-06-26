@@ -246,6 +246,73 @@ def verify_claim_proxy(claim_id: str, body: _VerifyBody, request: Request):
     return JSONResponse(result)
 
 
+# ── Scholar corrections proxies (#532) ───────────────────────────────────────
+
+
+class _CorrectionBody(BaseModel):
+    target_type: str
+    target_id: str
+    correction_text: str
+    reason: str
+    citation: str | None = None
+    annotation_run_id: int | None = None
+
+
+@router.post("/_me/scholar-corrections", status_code=201)
+def submit_correction_proxy(body: _CorrectionBody, request: Request):
+    token = request.cookies.get("session_token")
+    if not token:
+        return Response(status_code=401)
+    from app.api_client import AuthRequiredError
+
+    try:
+        result = request.app.state.api.submit_scholar_correction(
+            body.model_dump(), token
+        )
+    except AuthRequiredError:
+        return Response(status_code=401)
+    except httpx.HTTPStatusError as exc:
+        detail = "Could not file the correction."
+        try:
+            detail = exc.response.json().get("detail", detail)
+        except Exception:
+            pass
+        return JSONResponse({"detail": detail}, status_code=exc.response.status_code)
+    return JSONResponse(result, status_code=201)
+
+
+class _ReviewCorrectionBody(BaseModel):
+    action: str
+    review_note: str | None = None
+
+
+@router.post("/_me/admin/scholar-corrections/{correction_id}/review")
+def review_correction_proxy(
+    correction_id: str, body: _ReviewCorrectionBody, request: Request
+):
+    token = request.cookies.get("session_token")
+    if not token:
+        return Response(status_code=401)
+    from app.api_client import AuthRequiredError
+
+    try:
+        result = request.app.state.api.review_scholar_correction(
+            correction_id,
+            {"action": body.action, "review_note": body.review_note},
+            token,
+        )
+    except AuthRequiredError:
+        return Response(status_code=401)
+    except httpx.HTTPStatusError as exc:
+        detail = "Could not record the decision."
+        try:
+            detail = exc.response.json().get("detail", detail)
+        except Exception:
+            pass
+        return JSONResponse({"detail": detail}, status_code=exc.response.status_code)
+    return JSONResponse(result)
+
+
 @router.get("/_me/orcid-match")
 def orcid_match_proxy(request: Request):
     """Drives the post-login claim prompt. Returns the matched unclaimed scholar

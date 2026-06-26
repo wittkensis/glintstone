@@ -304,6 +304,38 @@
             </details>
             {% endif %}
 
+            {# ── Recognized Signs (#535) ───────────────────────────
+                 ML sign-reading predictions from the Akkademia model. Only
+                 rendered when the latest sign-recognition run produced signs;
+                 each chip shows the predicted reading and its confidence. #}
+            {% set _sr = sign_recognitions or {} %}
+            {% if _sr.signs %}
+            <details class="sign-recognitions tablet-meta__sign-recognitions">
+                <summary class="sign-recognitions__header">
+                    Recognized Signs
+                    <span class="sign-recognitions__count">({{ _sr.signs | length }})</span>
+                    {% if _sr.source and _sr.source.source_name %}
+                    <span class="source-badge">{{ _sr.source.source_name }}</span>
+                    {% endif %}
+                </summary>
+                <p class="sign-recognitions__note">
+                    Automated sign-reading predictions. Machine-generated — not a
+                    verified scholarly reading.
+                </p>
+                <ul class="sign-recognitions__list">
+                    {% for sign in _sr.signs %}
+                    <li class="sign-recognitions__item">
+                        <span class="sign-recognitions__label">{{ sign.sign_label }}</span>
+                        {% if sign.confidence is not none %}
+                        <span class="sign-recognitions__confidence"
+                              title="Model confidence">{{ '%.0f' | format(sign.confidence * 100) }}%</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </details>
+            {% endif %}
+
             {# ── Find-spot mini-map (#199): pin this tablet's excavation site ──
                  Only when the site is geocoded; otherwise the Provenience field
                  above already names it. The find-spot is where the tablet was
@@ -445,6 +477,16 @@
                             </div>
                         </div>
                     </div>
+                    {# Level 2 scholar corrections (#532) — summary target keyed by p_number.
+                       Hidden by default; correction-panel.js reveals it for verified scholars. #}
+                    {% with target_type='summary', target_id=tablet.p_number, panel_id='summary' %}
+                      {% include "components/_correction_panel.html" %}
+                    {% endwith %}
+                    {# Interpretation correction (#532) — target_id (token id) is stamped at
+                       click-time by token-popover.js. #}
+                    {% with target_type='interpretation', target_id='', panel_id='interpretation' %}
+                      {% include "components/_correction_panel.html" %}
+                    {% endwith %}
                 </div>
                 </div>
             </div>
@@ -629,6 +671,7 @@
 <script src="/static/js/tablet-detail.js"></script>
 <script src="/static/js/artifact-summary.js"></script>
 <script src="/static/js/line-suggestions.js"></script>
+<script src="/static/js/correction-panel.js?v={{ app_version }}"></script>
 {% if debug_tablets_json %}
 <script>
 (function() {

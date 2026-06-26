@@ -196,6 +196,17 @@ class TokenPopover {
         const body = popover.querySelector('.token-popover__body');
         if (!body) return;
 
+        // Level 2 corrections (#532): stamp the clicked token id onto the
+        // interpretation correction panel so a verified scholar can correct THIS
+        // token's interpretation. The panel is gated/revealed by
+        // correction-panel.js; here we only point it at the right target.
+        const correctionPanel = document.querySelector(
+            '[data-correction-panel][data-target-type="interpretation"]'
+        );
+        if (correctionPanel && tokenId) {
+            correctionPanel.setAttribute('data-target-id', String(tokenId));
+        }
+
         // Loading section — appended so the lexical panel stays visible.
         const panel = document.createElement('div');
         panel.className = 'token-popover__ai-panel';

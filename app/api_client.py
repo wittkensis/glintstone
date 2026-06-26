@@ -124,6 +124,20 @@ class GlintstoneAPI:
         except Exception:
             return {}
 
+    def get_sign_recognitions(self, p_number: str) -> dict:
+        """ML sign-reading predictions for a tablet (Akkademia, #535).
+
+        Degrades to an empty result on any failure so the detail page renders
+        without the Recognized Signs section rather than 500-ing.
+        """
+        try:
+            result = self._t.get(f"/artifacts/{p_number}/sign-recognitions")
+            if isinstance(result, dict):
+                return result
+        except Exception:
+            pass
+        return {"p_number": p_number, "count": 0, "signs": [], "source": None}
+
     def get_artifacts_timeline(self, params: dict) -> list:
         """Per-period counts over the current filter (Corpus-Atlas timeline).
 
@@ -280,6 +294,31 @@ class GlintstoneAPI:
             "/admin/scholar-claims", params={"status": status}, token=token
         )
         return result if isinstance(result, dict) else {"items": [], "counts": {}}
+
+    # ── Scholar corrections (#532) ────────────────────────────────────────────
+
+    def submit_scholar_correction(self, body: dict, token: str) -> dict:
+        """File a Level 2 correction against a summary/interpretation. Raises on
+        error (the proxy catches httpx.HTTPStatusError to surface the API's
+        validation message to the browser, e.g. the 403 for an unverified user)."""
+        return self._t.post("/scholars/corrections", json=body, token=token)
+
+    def list_admin_scholar_corrections(self, status: str, token: str) -> dict:
+        """The admin corrections-review queue feed. Raises on error (admin routes
+        propagate so the page surfaces a real failure, not a silent empty queue)."""
+        result = self._t.get(
+            "/admin/scholar-corrections", params={"status": status}, token=token
+        )
+        return result if isinstance(result, dict) else {"items": [], "counts": {}}
+
+    def review_scholar_correction(
+        self, correction_id: str, body: dict, token: str
+    ) -> dict:
+        """Accept/reject a correction. Raises on error (the proxy maps the API's
+        status + detail back to the browser, e.g. 409 already-reviewed)."""
+        return self._t.post(
+            f"/admin/scholar-corrections/{correction_id}/review", json=body, token=token
+        )
 
     def get_scholar_activity(self, scholar_id: int) -> dict:
         """Compact activity profile for a scholar (#157) — period histogram +

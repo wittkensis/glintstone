@@ -161,3 +161,111 @@ def verify_scholar_claim(
         )
     conn.commit()
     return {"status": "approved"}
+
+
+# ── Scholar corrections review queue (#532) ──────────────────────────────────
+
+
+class ReviewCorrectionRequest(BaseModel):
+    action: str  # 'accept' | 'reject'
+    review_note: str | None = None
+
+
+@router.get("/scholar-corrections")
+def list_scholar_corrections(
+    status: str = "pending",
+    admin: dict = Depends(require_admin),
+    conn=Depends(get_db),
+):
+    """The Level 2 corrections review queue (#532). Default ``status=pending``,
+    oldest first (the longest-waiting correction is reviewed first). Other
+    statuses show the audit trail. Each row joins the scholar (name/institution)
+    and the reviewing admin so the reviewer has full context in one screen.
+    """
+    if status not in ("pending", "reviewed", "accepted", "rejected"):
+        raise HTTPException(status_code=400, detail="Invalid status filter")
+
+    order = (
+        "c.created_at ASC" if status == "pending" else "c.reviewed_at DESC NULLS LAST"
+    )
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""
+            SELECT c.id, c.scholar_id, c.target_type, c.target_id,
+                   c.correction_text, c.reason, c.citation, c.status,
+                   c.annotation_run_id, c.review_note, c.created_at, c.reviewed_at,
+                   s.name AS scholar_name, s.institution AS scholar_institution,
+                   v.display_name AS reviewed_by_name
+            FROM scholar_corrections c
+            JOIN scholars s ON s.id = c.scholar_id
+            LEFT JOIN users v ON v.id = c.reviewed_by
+            WHERE c.status = %s
+            ORDER BY {order}
+            """,
+            (status,),
+        )
+        rows = cur.fetchall()
+
+        # Counts for the filter pills (always all four, regardless of filter).
+        cur.execute(
+            "SELECT status, COUNT(*) AS n FROM scholar_corrections GROUP BY status"
+        )
+        counts = {r["status"]: int(r["n"]) for r in cur.fetchall()}
+
+    return {
+        "items": [dict(r) for r in rows],
+        "counts": {
+            "pending": counts.get("pending", 0),
+            "reviewed": counts.get("reviewed", 0),
+            "accepted": counts.get("accepted", 0),
+            "rejected": counts.get("rejected", 0),
+        },
+        "status": status,
+    }
+
+
+@router.post("/scholar-corrections/{correction_id}/review")
+def review_scholar_correction(
+    correction_id: str,
+    body: ReviewCorrectionRequest,
+    admin: dict = Depends(require_admin),
+    conn=Depends(get_db),
+):
+    """Accept or reject a pending correction (#532).
+
+    Stamps status='accepted'|'rejected', reviewed_at=now(), reviewed_by=admin,
+    plus the optional review_note. A correction that has already been reviewed
+    raises 409 rather than silently re-stamping (the audit trail is immutable
+    once acted on).
+    """
+    action = body.action.strip().lower()
+    if action not in ("accept", "reject"):
+        raise HTTPException(status_code=400, detail="action must be accept or reject")
+
+    new_status = "accepted" if action == "accept" else "rejected"
+    note = (body.review_note or "").strip() or None
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, status FROM scholar_corrections WHERE id = %s",
+            (correction_id,),
+        )
+        correction = cur.fetchone()
+        if not correction:
+            raise HTTPException(status_code=404, detail="Correction not found")
+        if correction["status"] != "pending":
+            raise HTTPException(
+                status_code=409, detail="This correction has already been reviewed."
+            )
+
+        cur.execute(
+            """
+            UPDATE scholar_corrections
+               SET status = %s, review_note = %s,
+                   reviewed_at = now(), reviewed_by = %s, updated_at = now()
+             WHERE id = %s
+            """,
+            (new_status, note, admin["id"], correction_id),
+        )
+    conn.commit()
+    return {"status": new_status}

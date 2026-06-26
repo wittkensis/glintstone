@@ -782,6 +782,104 @@ def get_scholar_publications(
     }
 
 
+CORRECTION_MAX_LEN = 500
+_VALID_TARGET_TYPES = ("summary", "interpretation")
+_VALID_REASONS = ("wrong_lemma", "wrong_translation", "missing_context", "other")
+
+
+class CorrectionRequest(BaseModel):
+    target_type: str  # 'summary' | 'interpretation'
+    target_id: str  # p_number (summary) | token id (interpretation)
+    correction_text: str
+    reason: str  # wrong_lemma | wrong_translation | missing_context | other
+    citation: str | None = None
+    annotation_run_id: int | None = None
+
+
+@router.post("/corrections", status_code=201)
+def submit_correction(
+    body: CorrectionRequest,
+    user: dict = Depends(require_user),
+    conn=Depends(get_db),
+):
+    """File a Level 2 scholar correction against a summary or interpretation (#532).
+
+    The load-bearing authorization check: the caller must hold at least one
+    APPROVED scholar_claims row, else 403 — only verified scholars may correct
+    the corpus's machine output. We attribute the correction to the scholar_id
+    of that approved claim (attribution is structural; never an anonymous edit).
+
+    Validation: target_type and reason are closed enums; correction_text is
+    required and capped at 500 chars (the DB enforces the same cap, but we 400
+    here so the user sees a clean message instead of a constraint error).
+
+    The INSERT uses no try/except UniqueViolation (rollback trap) — there is no
+    uniqueness constraint to violate; a scholar may file multiple corrections.
+    Status starts 'pending'; an admin reviews it later.
+    """
+    target_type = body.target_type.strip().lower()
+    if target_type not in _VALID_TARGET_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="target_type must be 'summary' or 'interpretation'.",
+        )
+    reason = body.reason.strip().lower()
+    if reason not in _VALID_REASONS:
+        raise HTTPException(status_code=400, detail="Invalid reason.")
+    text = (body.correction_text or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="A correction is required.")
+    if len(text) > CORRECTION_MAX_LEN:
+        raise HTTPException(
+            status_code=400,
+            detail=f"A correction must be {CORRECTION_MAX_LEN} characters or fewer.",
+        )
+    target_id = (body.target_id or "").strip()
+    if not target_id:
+        raise HTTPException(status_code=400, detail="A target is required.")
+    citation = (body.citation or "").strip() or None
+
+    with conn.cursor() as cur:
+        # Gate: caller must hold an approved claim. We take the scholar_id of that
+        # claim as the correction's author (a user may have several approved
+        # claims for ORACC-duplicate records; the most recent wins — any is a
+        # valid verified identity for this user).
+        cur.execute(
+            "SELECT scholar_id FROM scholar_claims "
+            "WHERE user_id = %s AND status = 'approved' "
+            "ORDER BY verified_at DESC NULLS LAST LIMIT 1",
+            (user["id"],),
+        )
+        claim = cur.fetchone()
+        if not claim:
+            raise HTTPException(
+                status_code=403,
+                detail="Only verified scholars can file corrections.",
+            )
+
+        cur.execute(
+            """
+            INSERT INTO scholar_corrections
+                (scholar_id, target_type, target_id, correction_text, reason,
+                 citation, status, annotation_run_id)
+            VALUES (%s, %s, %s, %s, %s, %s, 'pending', %s)
+            RETURNING id, status, created_at
+            """,
+            (
+                claim["scholar_id"],
+                target_type,
+                target_id,
+                text,
+                reason,
+                citation,
+                body.annotation_run_id,
+            ),
+        )
+        row = cur.fetchone()
+    conn.commit()
+    return dict(row)
+
+
 @router.get("/{scholar_id}/co-authors")
 def get_scholar_co_authors(scholar_id: int, limit: int = Query(default=10, ge=1, le=50), conn=Depends(get_db)):
     """Scholars who frequently co-publish with this scholar (#525).
