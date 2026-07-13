@@ -8,8 +8,14 @@ admin pages proxy to these over HTTP (two-tier rule). Every route requires the
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+import logging
+
 from api.dependencies import require_admin
+from api.services import email_service
+from core.config import get_settings
 from core.database import get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -99,7 +105,14 @@ def verify_scholar_claim(
 
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, scholar_id, user_id, status FROM scholar_claims WHERE id = %s",
+            """
+            SELECT c.id, c.scholar_id, c.user_id, c.status,
+                   u.email AS user_email, s.name AS scholar_name
+              FROM scholar_claims c
+              JOIN users    u ON u.id = c.user_id
+              JOIN scholars s ON s.id = c.scholar_id
+             WHERE c.id = %s
+            """,
             (claim_id,),
         )
         claim = cur.fetchone()
@@ -127,6 +140,12 @@ def verify_scholar_claim(
                 (note, admin["id"], claim_id),
             )
             conn.commit()
+            try:
+                email_service.send_claim_rejected(
+                    claim["user_email"], claim["scholar_name"], note, get_settings()
+                )
+            except Exception as exc:
+                logger.error("Claim reject notification email failed: %s", exc)
             return {"status": "rejected"}
 
         # Approve — guard against an existing approved claim for this scholar so
@@ -160,4 +179,10 @@ def verify_scholar_claim(
             (claim["scholar_id"], claim["user_id"]),
         )
     conn.commit()
+    try:
+        email_service.send_claim_approved(
+            claim["user_email"], claim["scholar_name"], get_settings()
+        )
+    except Exception as exc:
+        logger.error("Claim approve notification email failed: %s", exc)
     return {"status": "approved"}
