@@ -29,7 +29,7 @@ def _add_description(composite: dict) -> dict:
     return composite
 
 
-@router.get("/")
+@router.api_route("/", methods=["GET", "HEAD"])
 def homepage(request: Request):
     api = request.app.state.api
 

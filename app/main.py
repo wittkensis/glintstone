@@ -127,13 +127,13 @@ async def add_release_header(request: Request, call_next):
     return response
 
 
-@app.get("/healthz", include_in_schema=False)
+@app.api_route("/healthz", methods=["GET", "HEAD"], include_in_schema=False)
 def healthz():
     """Lightweight liveness probe — process is up, no DB hit."""
     return JSONResponse({"status": "ok", "release": APP_VERSION})
 
 
-@app.get("/version", include_in_schema=False)
+@app.api_route("/version", methods=["GET", "HEAD"], include_in_schema=False)
 def version():
     return JSONResponse(version_payload())
 

@@ -11,7 +11,7 @@ from core.database import get_connection
 router = APIRouter()
 
 
-@router.get("/health")
+@router.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
     settings = get_settings()
     db_ok = False
