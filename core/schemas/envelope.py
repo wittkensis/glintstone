@@ -54,6 +54,15 @@ class GroupedTablePayload(BaseModel):
     """For semantic_search and other multi-entity-type results."""
 
     groups: list[Group] = PField(default_factory=list)
+    # #1101: True when one leg of hybrid retrieval failed (usually the lexical
+    # leg timing out on a multi-word query). The results shown are real but
+    # partial — the frontend surfaces a "some results may be missing" warning
+    # rather than presenting an incomplete set as complete.
+    degraded: bool = False
+    degraded_reason: str | None = PField(
+        default=None,
+        description="Machine-readable cause, e.g. 'lexical_timeout' | 'lexical_error'",
+    )
 
 
 class TablePayload(BaseModel):

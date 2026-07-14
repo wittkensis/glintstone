@@ -259,6 +259,11 @@ def do_search(
         if populated
         else f"No results found for '{params.q}'."
     )
+    # #1101: if a retrieval leg fell through (usually the lexical leg timing
+    # out), tell the reader the result set is partial so a truncated answer is
+    # never mistaken for a complete one.
+    if results.degraded:
+        summary += " (Partial results — keyword matching timed out.)"
 
     sources: list[SourceRef] = [
         SourceRef.computed(
@@ -278,7 +283,11 @@ def do_search(
 
     return ToolResponse[GroupedTablePayload](
         summary=summary,
-        data=GroupedTablePayload(groups=groups),
+        data=GroupedTablePayload(
+            groups=groups,
+            degraded=results.degraded,
+            degraded_reason=results.degraded_reason,
+        ),
         sources=sources,
         required_attributions=None,
         follow_ups=follow_ups,

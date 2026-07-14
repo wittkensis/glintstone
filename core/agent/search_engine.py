@@ -84,6 +84,22 @@ class SearchResults:
     groups: dict[str, list[SearchHit]]
     totals: dict[str, int]
     cursor_data: dict | None = None
+    # #1101: when a leg of hybrid retrieval fails (most commonly the lexical
+    # leg timing out on a multi-word query), the search still returns whatever
+    # other legs produced — but it flags itself degraded so the surface can warn
+    # the user that results are partial instead of silently dropping matches.
+    degraded: bool = False
+    degraded_reason: str | None = None
+
+
+# Per-leg lexical statement timeout (#1101). The lexical leg runs pg_trgm
+# similarity + tsvector ranking over the whole search_entities corpus; a
+# multi-word query ("Ur III") widens the trigram candidate set enough that the
+# leg can exceed the pool's ambient statement_timeout. We give the lexical
+# transaction its own explicit, bounded budget via SET LOCAL so it neither
+# runs unbounded nor inherits a too-short ambient limit — and if it still
+# exceeds this budget, the caller degrades gracefully rather than 500ing.
+_LEXICAL_STATEMENT_TIMEOUT = "5s"
 
 
 # ── In-process query embedding cache ─────────────────────────────────────────
@@ -196,6 +212,8 @@ class SearchEngine:
         # Each parallel worker acquires its own connection from the pool.
         lexical_hits: list[SearchHit] = []
         semantic_hits: list[SearchHit] = []
+        degraded = False
+        degraded_reason: str | None = None
 
         do_semantic = params.mode in ("semantic", "hybrid") and bool(self._voyage)
 
@@ -238,11 +256,30 @@ class SearchEngine:
                     try:
                         lexical_hits = lex_future.result(timeout=8.0)
                     except Exception as exc:
+                        # #1101: a lexical-leg failure (most often a timeout on a
+                        # multi-word query) is no longer silent. We keep the
+                        # semantic results but mark the whole response degraded so
+                        # the surface can warn the user that lexical matches are
+                        # missing, instead of showing partial results as if
+                        # complete.
+                        degraded = True
+                        degraded_reason = (
+                            "lexical_timeout"
+                            if isinstance(
+                                exc,
+                                (
+                                    concurrent.futures.TimeoutError,
+                                    psycopg.errors.QueryCanceled,
+                                ),
+                            )
+                            else "lexical_error"
+                        )
                         logger.warning(
-                            "lexical search failed: %r (mode=%s q=%r)",
+                            "lexical search failed: %r (mode=%s q=%r degraded_reason=%s)",
                             exc,
                             params.mode,
                             params.q[:80],
+                            degraded_reason,
                         )
                     try:
                         semantic_hits = sem_future.result(timeout=15.0)
@@ -307,7 +344,7 @@ class SearchEngine:
         t_total_ms = int((time.monotonic() - t_start) * 1000)
         logger.info(
             "search mode=%s total_ms=%d retrieval_ms=%d count_ms=%d hydrate_ms=%d "
-            "lexical_hits=%d semantic_hits=%d q=%r",
+            "lexical_hits=%d semantic_hits=%d degraded=%s degraded_reason=%s q=%r",
             params.mode,
             t_total_ms,
             t_retrieval_ms,
@@ -315,10 +352,18 @@ class SearchEngine:
             t_hydrate_ms,
             len(lexical_hits),
             len(semantic_hits),
+            degraded,
+            degraded_reason,
             params.q[:60],
         )
 
-        return SearchResults(groups=groups, totals=totals, cursor_data=None)
+        return SearchResults(
+            groups=groups,
+            totals=totals,
+            cursor_data=None,
+            degraded=degraded,
+            degraded_reason=degraded_reason,
+        )
 
     def _hydrate_tablet_extras(
         self,
@@ -476,6 +521,16 @@ class SearchEngine:
         if not q.strip():
             return []
         with conn.cursor() as cur:
+            # #1101: bound the lexical leg to its own explicit budget. SET LOCAL
+            # scopes this to the current transaction (and this pooled connection)
+            # so it can't leak to unrelated queries. If the pg_trgm + tsvector
+            # scan exceeds it (multi-word queries widen the trigram candidate
+            # set), Postgres cancels the statement and raises QueryCanceled,
+            # which the hybrid caller catches and reports as a degraded result
+            # rather than a 500.
+            cur.execute(
+                "SET LOCAL statement_timeout = %s", [_LEXICAL_STATEMENT_TIMEOUT]
+            )
             cur.execute(
                 """
                 SELECT
@@ -680,18 +735,32 @@ class SearchEngine:
     ) -> dict[str, int]:
         if not q.strip():
             return {t: 0 for t in types}
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT entity_type, COUNT(*) AS n
-                FROM search_entities
-                WHERE entity_type = ANY(%s)
-                  AND (search_blob %% %s OR tsv @@ plainto_tsquery('simple', %s))
-                GROUP BY entity_type
-                """,
-                (list(types), q, q),
-            )
-            return {r["entity_type"]: int(r["n"]) for r in cur.fetchall()}
+        try:
+            with conn.cursor() as cur:
+                # #1101: the count query shares the expensive pg_trgm/tsvector
+                # predicate with the lexical leg, so bound it the same way. If it
+                # times out we return no accurate counts (callers fall back to the
+                # in-memory hit counts via max()) instead of failing the request.
+                cur.execute(
+                    "SET LOCAL statement_timeout = %s", [_LEXICAL_STATEMENT_TIMEOUT]
+                )
+                cur.execute(
+                    """
+                    SELECT entity_type, COUNT(*) AS n
+                    FROM search_entities
+                    WHERE entity_type = ANY(%s)
+                      AND (search_blob %% %s OR tsv @@ plainto_tsquery('simple', %s))
+                    GROUP BY entity_type
+                    """,
+                    (list(types), q, q),
+                )
+                return {r["entity_type"]: int(r["n"]) for r in cur.fetchall()}
+        except psycopg.errors.QueryCanceled as exc:
+            # Roll back the aborted transaction so the shared request connection
+            # stays usable for the subsequent hydrate query.
+            conn.rollback()
+            logger.warning("count_per_type timed out; totals degraded: %r", exc)
+            return {t: 0 for t in types}
 
 
 # ── Cursor encoding ───────────────────────────────────────────────────────────

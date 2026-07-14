@@ -189,6 +189,95 @@ def test_hybrid_semantic_exception_logs_warning_and_continues(caplog):
     assert result is not None
 
 
+# ── #1101 graceful lexical timeout ────────────────────────────────────────────
+
+
+def test_hybrid_lexical_timeout_marks_result_degraded(caplog):
+    """If the lexical leg times out in hybrid mode, semantic results still
+    return but the SearchResults is flagged degraded with a machine-readable
+    reason (#1101) — no silent partial results."""
+    import concurrent.futures
+
+    from core.schemas.search import SearchParams
+
+    fake_voyage = MagicMock()
+    engine = SearchEngine(voyage=fake_voyage)
+    conn = _fake_conn()
+
+    semantic = [_hit("tablets", "P111111", score=0.9)]
+
+    def _boom(*_a, **_k):
+        raise concurrent.futures.TimeoutError()
+
+    with (
+        patch.object(engine, "_lexical_search_parallel", side_effect=_boom),
+        patch.object(engine, "_semantic_search_parallel", return_value=semantic),
+        patch.object(engine, "_count_per_type", return_value={}),
+        patch.object(engine, "_hydrate_tablet_extras", return_value=None),
+    ):
+        with caplog.at_level(logging.WARNING, logger="core.agent.search_engine"):
+            params = SearchParams(q="Ur III", mode="hybrid", limit=5)
+            result = engine.search(conn, params)
+
+    assert result.degraded is True
+    assert result.degraded_reason == "lexical_timeout"
+    # Semantic hits are preserved despite the lexical failure.
+    assert any(h.entity_id == "P111111" for h in result.groups.get("tablets", []))
+    assert any("lexical search failed" in r.message for r in caplog.records)
+
+
+def test_hybrid_lexical_error_marks_degraded_with_error_reason():
+    """A non-timeout lexical failure degrades with reason 'lexical_error'."""
+    from core.schemas.search import SearchParams
+
+    fake_voyage = MagicMock()
+    engine = SearchEngine(voyage=fake_voyage)
+    conn = _fake_conn()
+
+    with (
+        patch.object(
+            engine, "_lexical_search_parallel", side_effect=RuntimeError("boom")
+        ),
+        patch.object(engine, "_semantic_search_parallel", return_value=[]),
+        patch.object(engine, "_count_per_type", return_value={}),
+        patch.object(engine, "_hydrate_tablet_extras", return_value=None),
+    ):
+        params = SearchParams(q="Ur III", mode="hybrid", limit=5)
+        result = engine.search(conn, params)
+
+    assert result.degraded is True
+    assert result.degraded_reason == "lexical_error"
+
+
+def test_hybrid_success_is_not_degraded():
+    """A clean hybrid run leaves degraded False / reason None (#1101 regression)."""
+    from core.schemas.search import SearchParams
+
+    fake_voyage = MagicMock()
+    engine = SearchEngine(voyage=fake_voyage)
+    conn = _fake_conn()
+
+    with (
+        patch.object(
+            engine,
+            "_lexical_search_parallel",
+            return_value=[_hit("tablets", "P222222")],
+        ),
+        patch.object(
+            engine,
+            "_semantic_search_parallel",
+            return_value=[_hit("tablets", "P222222")],
+        ),
+        patch.object(engine, "_count_per_type", return_value={}),
+        patch.object(engine, "_hydrate_tablet_extras", return_value=None),
+    ):
+        params = SearchParams(q="Ur III", mode="hybrid", limit=5)
+        result = engine.search(conn, params)
+
+    assert result.degraded is False
+    assert result.degraded_reason is None
+
+
 # ── Edge-case input handling ──────────────────────────────────────────────────
 
 
