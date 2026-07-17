@@ -43,6 +43,12 @@
 
 <div class="search-drawer__body" data-q="{{ q }}" data-scope="{{ scope }}">
 
+  {% if degraded %}
+  <div class="search-degraded-banner" role="alert">
+    ⚠ Search results may be incomplete — lexical index timed out.
+  </div>
+  {% endif %}
+
   {% if not has_any %}
     <div class="search-section">
       <div class="search-section__header">

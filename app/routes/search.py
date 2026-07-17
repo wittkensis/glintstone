@@ -75,6 +75,8 @@ def suggest(
     )
 
     groups = (envelope.get("data") or {}).get("groups") or []
+    degraded: bool = bool(envelope.get("degraded"))
+    degraded_reason: str | None = envelope.get("degraded_reason") or None
 
     # Surface group-display config (label + entity URL builder) in the partial
     # context so the template stays free of per-type if-ladders.
@@ -89,6 +91,8 @@ def suggest(
             "scope_label": SCOPE_TO_LABEL.get(scope, "All"),
             "q": q,
             "api_url": request.app.state.api.base_url,
+            "degraded": degraded,
+            "degraded_reason": degraded_reason,
         },
     )
     for k, v in NO_STORE_HEADERS.items():
