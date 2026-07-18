@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from api.dependencies import require_user
+from api.repositories.publication_repo import PublicationRepository, PUBLICATION_TYPES
 from core.database import get_db
 
 router = APIRouter(prefix="/scholars", tags=["scholars"])
@@ -660,106 +661,24 @@ def get_scholar_publications(
 
     # Whitelist the type filter against the enum so a bad value is ignored
     # rather than silently returning nothing (and never reaches SQL untrusted).
-    valid_types = {
-        "monograph",
-        "edited_volume",
-        "journal_article",
-        "series_volume",
-        "digital_edition",
-        "museum_catalog",
-        "dissertation",
-        "conference_paper",
-        "hand_copy_publication",
-        "chapter",
-        "proceedings",
-        "thesis",
-        "report",
-        "unpublished",
-        "other",
-    }
-    type_filter = type.strip().lower() if type.strip().lower() in valid_types else ""
+    # PUBLICATION_TYPES mirrors the publications.publication_type CHECK constraint.
+    normalized = type.strip().lower()
+    type_filter = normalized if normalized in PUBLICATION_TYPES else ""
 
-    with conn.cursor() as cur:
-        # Confirm the scholar exists so a bad id is a 404, not a silent empty.
-        cur.execute("SELECT 1 FROM scholars WHERE id = %s", (scholar_id,))
-        if not cur.fetchone():
-            raise HTTPException(status_code=404, detail="Scholar not found")
+    repo = PublicationRepository(conn)
 
-        # Stat strip — five pre-computed aggregates over the whole body of work.
-        cur.execute(
-            """
-            SELECT count(*)                              AS works,
-                   coalesce(sum(p.cited_by_count), 0)    AS total_cites,
-                   max(p.cited_by_count)                 AS top_cites,
-                   min(p.year)                           AS first_year,
-                   max(p.year)                           AS last_year,
-                   count(DISTINCT p.publication_type)    AS type_count
-            FROM publication_authors pa
-            JOIN publications p ON p.id = pa.publication_id
-            WHERE pa.scholar_id = %s
-            """,
-            (scholar_id,),
-        )
-        s = cur.fetchone()
-        summary = {
-            "works": int(s["works"]),
-            "total_cites": int(s["total_cites"]),
-            "top_cites": s["top_cites"],
-            "first_year": s["first_year"],
-            "last_year": s["last_year"],
-            "type_count": int(s["type_count"]),
-        }
+    # Confirm the scholar exists so a bad id is a 404, not a silent empty list.
+    if not repo.scholar_exists(scholar_id):
+        raise HTTPException(status_code=404, detail="Scholar not found")
 
-        # Tablets edited — distinct artifacts edited via this scholar's pubs.
-        cur.execute(
-            """
-            SELECT count(DISTINCT ae.p_number) AS tablets_edited
-            FROM artifact_editions ae
-            JOIN publication_authors pa ON pa.publication_id = ae.publication_id
-            WHERE pa.scholar_id = %s
-            """,
-            (scholar_id,),
-        )
-        summary["tablets_edited"] = int(cur.fetchone()["tablets_edited"])
-
-        # Type breakdown — real per-type counts for the filter pills.
-        cur.execute(
-            """
-            SELECT p.publication_type AS type, count(*) AS n
-            FROM publication_authors pa
-            JOIN publications p ON p.id = pa.publication_id
-            WHERE pa.scholar_id = %s
-            GROUP BY p.publication_type
-            ORDER BY n DESC
-            """,
-            (scholar_id,),
-        )
-        type_counts = [
-            {"type": r["type"], "count": int(r["n"])} for r in cur.fetchall()
-        ]
-
-        # Paginated row list (optionally narrowed to one type).
-        type_clause = "AND p.publication_type = %s" if type_filter else ""
-        list_params: list = [scholar_id]
-        if type_filter:
-            list_params.append(type_filter)
-        list_params.extend([per_page, offset])
-
-        cur.execute(
-            f"""
-            SELECT p.id, p.title, p.short_title, p.publication_type, p.year,
-                   p.publisher, p.doi, p.url, p.cited_by_count,
-                   pa.role, pa.position
-            FROM publication_authors pa
-            JOIN publications p ON p.id = pa.publication_id
-            WHERE pa.scholar_id = %s
-              {type_clause}
-            ORDER BY p.cited_by_count DESC NULLS LAST, p.year DESC NULLS LAST
-            LIMIT %s OFFSET %s
-            """,
-            tuple(list_params),
-        )
-        rows = cur.fetchall()
+    # Whole-corpus aggregates + per-type breakdown (both ignore the active
+    # filter so the stat strip and pills keep their real counts), then the
+    # optionally-filtered page of rows.
+    summary = repo.works_summary(scholar_id)
+    type_counts = repo.type_breakdown(scholar_id)
+    items = repo.list_works(
+        scholar_id, limit=per_page, offset=offset, type_filter=type_filter
+    )
 
     # `total` reflects the active filter so pagination is correct; the summary
     # and type breakdown stay whole-corpus (the pills keep their real counts).
@@ -768,7 +687,6 @@ def get_scholar_publications(
     else:
         total = summary["works"]
 
-    items = [dict(r) for r in rows]
     total_pages = (total + per_page - 1) // per_page if total else 0
     return {
         "items": items,
@@ -783,7 +701,9 @@ def get_scholar_publications(
 
 
 @router.get("/{scholar_id}/co-authors")
-def get_scholar_co_authors(scholar_id: int, limit: int = Query(default=10, ge=1, le=50), conn=Depends(get_db)):
+def get_scholar_co_authors(
+    scholar_id: int, limit: int = Query(default=10, ge=1, le=50), conn=Depends(get_db)
+):
     """Scholars who frequently co-publish with this scholar (#525).
 
     Joins publication_authors twice to find scholars who share publications,
