@@ -83,8 +83,8 @@ jobs:
           # single timed-out scan was failing the whole deploy — 2026-06-21
           # incident #266/#7). Two layers of defence:
           #
-          #   1. Retry the keyscan up to 5× with linear backoff. A transient
-          #      timeout no longer kills the deploy.
+          #   1. Retry the keyscan up to 5× with exponential backoff (5/10/20/
+          #      40s). A transient timeout no longer kills the deploy.
           #   2. If all retries still fail, DON'T abort: deploy.sh connects with
           #      `StrictHostKeyChecking=accept-new`, which adds the host key on
           #      first contact anyway. A failed keyscan only means we couldn't
@@ -92,14 +92,21 @@ jobs:
           #      The real reachability check is the deploy SSH itself, which now
           #      fails fast (ConnectTimeout/BatchMode) with a clear error.
           keyscan_ok=false
-          for attempt in 1 2 3 4 5; do
+          KEYSCAN_ATTEMPTS="${KEYSCAN_ATTEMPTS:-5}"
+          keyscan_backoff=5
+          for attempt in $(seq 1 "$KEYSCAN_ATTEMPTS"); do
             if ssh-keyscan -T 10 -t rsa,ecdsa,ed25519 -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/tmp/keyscan.err; then
               echo "ssh-keyscan succeeded on attempt $attempt"
               keyscan_ok=true
               break
             fi
-            echo "::warning::ssh-keyscan attempt $attempt/5 failed against $SSH_HOST; retrying in $((attempt * 5))s"
-            sleep $((attempt * 5))
+            if [ "$attempt" -ge "$KEYSCAN_ATTEMPTS" ]; then
+              break
+            fi
+            echo "::warning::ssh-keyscan attempt $attempt/$KEYSCAN_ATTEMPTS failed against $SSH_HOST; retrying in ${keyscan_backoff}s"
+            cat /tmp/keyscan.err || true
+            sleep "$keyscan_backoff"
+            keyscan_backoff=$((keyscan_backoff * 2))   # exponential backoff: 5s, 10s, 20s, 40s
           done
           if [ "$keyscan_ok" != true ]; then
             echo "::warning::ssh-keyscan never succeeded after 5 attempts (last error below)."
@@ -149,31 +156,58 @@ jobs:
           PROBE_TIMEOUT="${DEPLOY_PROBE_TIMEOUT:-15}"
           BACKOFF="${DEPLOY_CONNECT_BACKOFF:-15}"
 
+          # WHY AN SSH PROBE, NOT A BARE TCP PROBE (#804 sharpening):
+          # The earlier gate opened a raw /dev/tcp socket to :22 and treated
+          # that as "reachable". But the failure we actually see (~8×) is the
+          # runner→VPS *SSH* connect timing out — the TCP SYN/ACK can land while
+          # the SSH transport handshake (KEX + auth) still stalls and ssh exits
+          # 255 BEFORE deploy.sh's first `ssh_run` gets a fair shot. A bare TCP
+          # probe passes in that window, so the old gate could fall straight
+          # into deploy.sh on a connection that then dies — leaning entirely on
+          # deploy.sh's per-leg retry, which is exactly the layer the ticket
+          # says doesn't cover the *initial* connect. So the gate now performs a
+          # real, cheap SSH session (`true`) with the deploy key and the same
+          # ConnectTimeout/BatchMode ssh already uses in deploy.sh. Only a
+          # genuinely usable SSH connection — TCP + KEX + key auth — lets us
+          # past the gate. Any 255 (connect OR auth flake) is retried here at
+          # the WORKFLOW step level with exponential backoff.
           probe_vps() {
-            # Returns 0 if a TCP connection to VPS:22 opens within PROBE_TIMEOUT.
-            # /dev/tcp is bash-native; no nc dependency on the runner.
-            timeout "$PROBE_TIMEOUT" bash -c \
-              "exec 3<>/dev/tcp/${DEPLOY_HOST}/22" 2>/dev/null
+            # Returns 0 only if a full SSH session establishes AND authenticates
+            # within PROBE_TIMEOUT. `true` is a no-op remote command, so this
+            # never mutates the VPS — it is a pure reachability check.
+            timeout "$PROBE_TIMEOUT" \
+              ssh -o StrictHostKeyChecking=accept-new \
+                  -o UserKnownHostsFile=~/.ssh/known_hosts \
+                  -o BatchMode=yes \
+                  -o ConnectTimeout="$PROBE_TIMEOUT" \
+                  -i "$HOME/.ssh/deploy_key" \
+                  "${DEPLOY_USER}@${DEPLOY_HOST}" true 2>/tmp/ssh_probe.err
           }
 
           attempt=1
           while :; do
             if probe_vps; then
-              echo "::notice::VPS reachable on :22 (attempt $attempt/$ATTEMPTS) — running deploy.sh"
-              # Probe OK: run the deploy and propagate its true exit code.
-              # No retry past this point — deploy.sh owns the result.
+              echo "::notice::VPS SSH reachable (attempt $attempt/$ATTEMPTS) — running deploy.sh"
+              # SSH probe OK: the connection that was flaking is now proven
+              # good. Run the deploy and propagate its true exit code. No retry
+              # past this point — deploy.sh owns the result, so a migration or
+              # command failure inside it is NEVER blindly re-run.
               bash ops/deploy/deploy.sh
               exit $?
             fi
 
-            # Probe failed = transient connect timeout. Retry the PROBE only.
+            # SSH probe failed = transient connect/auth timeout (exit 255 class).
+            # Retry the PROBE only; deploy.sh has not run.
             if [ "$attempt" -ge "$ATTEMPTS" ]; then
-              echo "::error::VPS unreachable on :22 after $ATTEMPTS connect attempts."
-              echo "::error::This is a transient runner→VPS network timeout, not a"
-              echo "::error::VPS-side block (no firewall/fail2ban present). Re-run the job."
+              echo "::error::VPS SSH unreachable after $ATTEMPTS connect attempts."
+              echo "::error::This is a transient runner→VPS SSH-connect timeout, not a"
+              echo "::error::VPS-side block (no firewall/fail2ban present). Last error:"
+              cat /tmp/ssh_probe.err || true
+              echo "::error::Re-run the job."
               exit 1
             fi
-            echo "::warning::VPS connect probe failed (attempt $attempt/$ATTEMPTS) — retrying in ${BACKOFF}s..."
+            echo "::warning::VPS SSH connect probe failed (attempt $attempt/$ATTEMPTS) — retrying in ${BACKOFF}s..."
+            cat /tmp/ssh_probe.err || true
             sleep "$BACKOFF"
             attempt=$((attempt + 1))
             BACKOFF=$((BACKOFF * 2))   # exponential backoff: 15s, 30s, 60s, ...
