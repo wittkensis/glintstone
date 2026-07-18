@@ -1,8 +1,8 @@
 ---
 question: "What git hooks does Glintstone run, what do they check, and how do I enable them?"
 created: 2026-05-11
-modified: 2026-06-21
-context: "Documents the pre-commit-framework hooks (commit/push/merge) that gate code quality, docs, and schema integrity."
+modified: 2026-07-17
+context: "Documents the pre-commit-framework hooks (commit/push/merge) that gate code quality, docs, and schema integrity. 2026-07-17 (#872): removed a dead 'Next Steps' link to a transient .claude/plans/ file."
 status: active
 audience: [engineers]
 owners: [eric]
@@ -252,7 +252,3 @@ pre-commit install-hooks
 ## Migration from Git LFS Hooks
 
 The pre-commit framework runs in "migration mode" to preserve existing Git LFS hooks. Both sets of hooks run together - this is intentional and correct.
-
-## Next Steps
-
-See [Phase 2 plan](/.claude/plans/hidden-marinating-zephyr.md) for Claude Code hooks implementation.

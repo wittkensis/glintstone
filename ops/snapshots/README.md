@@ -1,13 +1,13 @@
 ---
-question: "TODO: one sentence — what question does README.md answer?"
+question: "How do I archive large raw source files out of git and track where they live?"
 created: 2026-05-11
 modified: 2026-05-11
-context: "TODO: why was this file created?"
-status: draft
-audience: [engineers]
+context: "Raw source files are too large for git. This directory holds the scripts that archive them and record their location in the source_snapshots table (migration 021)."
+status: active
+audience: [engineers, ops]
 owners: [eric]
 related_issues: []
-related_skills: []
+related_skills: [gs-expert-deployment]
 supersedes: null
 superseded_by: null
 ---

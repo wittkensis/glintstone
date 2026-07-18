@@ -1,9 +1,9 @@
 ---
-question: "TODO: one sentence — what question does MODAL_TROUBLESHOOTING.md answer?"
+question: "What are the common failures when deploying the sign-detection service on Modal, and how do I fix them?"
 created: 2026-05-11
 modified: 2026-05-11
-context: "TODO: why was this file created?"
-status: draft
+context: "Companion troubleshooting guide to MODAL_DEPLOYMENT.md — captures the install/setup and runtime issues hit while getting the Modal sign-detection deployment working."
+status: active
 audience: [engineers]
 owners: [eric]
 related_issues: []

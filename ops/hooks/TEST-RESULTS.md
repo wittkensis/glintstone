@@ -1,9 +1,9 @@
 ---
-question: "TODO: one sentence — what question does TEST-RESULTS.md answer?"
+question: "What did the git-hooks implementation (Phases 1 & 2) verify when it was tested on 2026-02-21?"
 created: 2026-05-11
 modified: 2026-05-11
-context: "TODO: why was this file created?"
-status: draft
+context: "Point-in-time test log from the 2026-02-21 git-hooks implementation session (Phases 1 & 2). Archived: it is a historical record of that verification run, not a live runbook — see ops/hooks/README.md for the current hook behaviour."
+status: archived
 audience: [engineers]
 owners: [eric]
 related_issues: []

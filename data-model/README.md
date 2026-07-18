@@ -1,8 +1,8 @@
 ---
 question: "What's the canonical data-model directory layout, and where does each schema artifact live?"
 created: 2026-02-22
-modified: 2026-05-11
-context: "Flattened during the 2026-05-11 overhaul: the v2/ subdir was collapsed into data-model/, the v2-naming was dropped, and the narrative .md documentation moved into docs/data-model/. This directory now holds only schema definitions, mappings, and the migration runner."
+modified: 2026-07-17
+context: "Flattened during the 2026-05-11 overhaul: the v2/ subdir was collapsed into data-model/, the v2-naming was dropped, and the narrative .md documentation moved out. As of 2026-07-17 (#872) the narrative docs live on the GitHub Wiki (they briefly lived in docs/data-model/ but that folder was removed on 2026-05-11), and the migrations path was corrected to data-model/migrations/. This directory holds schema definitions, mappings, and the migration runner."
 status: active
 audience: [engineers, claude]
 owners: [eric]
@@ -14,7 +14,7 @@ superseded_by: null
 
 # data-model/
 
-Schema is owned by [`glintstone-schema.yaml`](glintstone-schema.yaml). Migrations live in [`../source-data/migrations/`](../source-data/migrations/) and are tracked by `_migrations` in Postgres.
+Schema is owned by [`glintstone-schema.yaml`](glintstone-schema.yaml). Migrations live in [`migrations/`](migrations/) (`NNN_description.sql`) and are tracked by `_migrations` in Postgres.
 
 ## Files in this directory
 
@@ -27,20 +27,22 @@ Schema is owned by [`glintstone-schema.yaml`](glintstone-schema.yaml). Migration
 | [`source-schemas/`](source-schemas/) | Reference schemas for external data (CDLI, ORACC, OGSL, eBL, ePSD2) |
 | [`migrate.py`](migrate.py) | SQL migration runner |
 
-## Narrative documentation (lives in `docs/data-model/`)
+## Narrative documentation (GitHub Wiki)
 
-| Doc | What it covers |
+The long-form data-model narrative moved to the [GitHub Wiki](https://github.com/wittkensis/glintstone/wiki) on 2026-05-11. See the wiki's Data Model section for:
+
+| Topic | What it covers |
 |---|---|
-| [docs/data-model/data-sources.md](../docs/data-model/data-sources.md) | Per-source licenses, access methods, field mappings |
-| [docs/data-model/data-quality.md](../docs/data-model/data-quality.md) | Trust architecture, competing interpretations, evidence chains |
-| [docs/data-model/ml-integration.md](../docs/data-model/ml-integration.md) | BabyLemmatizer, DETR, Akkademia model integration |
-| [docs/data-model/data-issues.md](../docs/data-model/data-issues.md) | Known data-quality issues from pressure testing |
-| [docs/data-model/citation-pipeline-summary.md](../docs/data-model/citation-pipeline-summary.md) | Citation pipeline approach |
-| [docs/data-model/import-pipeline-guide.md](../docs/data-model/import-pipeline-guide.md) | ETL pipeline overview |
+| Data sources | Per-source licenses, access methods, field mappings |
+| Data quality | Trust architecture, competing interpretations, evidence chains |
+| ML integration | BabyLemmatizer, DETR, Akkademia model integration |
+| Data issues | Known data-quality issues from pressure testing |
+| Citation pipeline | Citation pipeline approach |
+| Import-pipeline guide | ETL pipeline overview |
 
 ## Migrations
 
-Migrations live in [`../source-data/migrations/`](../source-data/migrations/) as `NNN_description.sql`.
+Migrations live in [`migrations/`](migrations/) as `NNN_description.sql`.
 
 ```bash
 python data-model/migrate.py status

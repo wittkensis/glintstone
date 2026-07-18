@@ -1,9 +1,9 @@
 ---
-question: "TODO: one sentence — what question does MODAL_DEPLOYMENT.md answer?"
+question: "How do I deploy and manage the cuneiform sign-detection service on Modal?"
 created: 2026-05-11
 modified: 2026-05-11
-context: "TODO: why was this file created?"
-status: draft
+context: "Quick-reference runbook for deploying the ML sign-detection service to Modal (GPU serverless) — initial one-time setup plus day-to-day deploy/manage commands."
+status: active
 audience: [engineers]
 owners: [eric]
 related_issues: []

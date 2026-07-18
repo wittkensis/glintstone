@@ -1,9 +1,9 @@
 ---
-question: "TODO: one sentence — what question does SETUP.md answer?"
+question: "How do I obtain the eBL OCR DETR sign-detection checkpoint and wire it into the ML service?"
 created: 2026-05-11
 modified: 2026-05-11
-context: "TODO: why was this file created?"
-status: draft
+context: "Setup notes for the eBL OCR Deformable DETR checkpoint (detr-173-classes) — the model file is too large for git, so this documents how to obtain and place it."
+status: active
 audience: [engineers]
 owners: [eric]
 related_issues: []

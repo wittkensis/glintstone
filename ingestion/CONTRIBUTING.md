@@ -1,10 +1,15 @@
 ---
-title: "Ingestion — connector contract"
-description: "How to add a new data source to Glintstone's v2 ingestion framework: SourceConnector lifecycle, RunContext API, LoadStats semantics, and dead-letter patterns."
-last_updated: "2026-05-18"
-freshness: "60d"
-owner_skill: "gs-expert-integrations"
-audience: "Engineers adding or porting a connector. The canonical narrative also lives on the GitHub Wiki."
+question: "How do I add a new data source to Glintstone's ingestion framework?"
+created: 2026-05-18
+modified: 2026-05-18
+context: "The connector contract for the ingestion framework — SourceConnector lifecycle, RunContext API, LoadStats semantics, and dead-letter patterns. The canonical narrative also lives on the GitHub Wiki (Engineer Onboarding)."
+status: active
+audience: [engineers, claude]
+owners: [eric]
+related_issues: ["#63"]
+related_skills: [gs-expert-integrations]
+supersedes: null
+superseded_by: null
 ---
 
 # Adding a connector
