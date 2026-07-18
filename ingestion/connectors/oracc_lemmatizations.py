@@ -264,12 +264,36 @@ def _find_corpus_dirs(project: str) -> list[Path]:
     return sorted(dirs)
 
 
+def _oracc_only(surf_map: dict | None) -> dict | None:
+    """Keep only ORACC-source entries from a per-surface slot (the #448 guard).
+
+    Returns the filtered map, or None if nothing oracc-source remains. See
+    _resolve_line_ids for why the prime fallback may only ever land on an
+    oracc-source line.
+    """
+    if not surf_map:
+        return None
+    oracc_only = {surf: val for surf, val in surf_map.items() if val[1] == "oracc"}
+    return oracc_only or None
+
+
 def _resolve_line_ids(line_cache: dict, p_number: str, line_number) -> dict | None:
     """Look up the per-surface line_id map for (p_number, line_number).
 
-    Exact match first. If that misses and the ORACC line_number is a bare
-    integer (e.g. "2"), retry against the prime-notation variant ("2'") — but
-    ONLY accept ORACC-source lines from that primed slot (#448).
+    Exact match first. If that misses, retry across the prime-notation boundary
+    in BOTH directions (#638) — but ONLY accept ORACC-source lines from the
+    fallback slot (#448):
+
+      * bare integer "2"  -> try the primed variant "2'"   (the #237 case)
+      * primed integer "2'" -> try the bare variant "2"    (the #638 reverse)
+
+    Why both directions are needed:
+    ORACC and CDLI disagree on whether a broken/continuation line carries a
+    trailing prime, and either source can be the one that populated the matching
+    text_line. A lemma parsed from ORACC CDL may arrive with a bare number while
+    the surviving text_line is primed, OR arrive primed while the text_line is
+    bare — the mismatch cuts both ways, so a one-directional fallback leaves the
+    reverse half dead-lettered.
 
     Why the oracc-only restriction (the #448 collision guard):
     ORACC numbers broken/continuation lines with bare ints (`1`, `5`) while the
@@ -280,21 +304,28 @@ def _resolve_line_ids(line_cache: dict, p_number: str, line_number) -> dict | No
     oracc-atf (#273) made the two sources coexist — could land an ORACC lemma on
     a CDLI primed line whose tokenisation differs (different words, different
     columns/section). That is exactly the wrong-token attachment #446 found
-    (126/129 mis-targeted positions). Filtering the primed slot to oracc-source
+    (126/129 mis-targeted positions). Filtering the fallback slot to oracc-source
     entries means the fallback can still rescue a genuinely prime-mismatched
     ORACC line, but can NEVER manufacture a cross-source false match onto a CDLI
-    line. When the correct ORACC line already exists unprimed, the exact match
-    above (with #254 oracc-preference) handles it and the fallback never fires.
+    line. When the correct ORACC line already exists at the as-is line_number,
+    the exact match above (with #254 oracc-preference) handles it and the
+    fallback never fires.
+
+    Only the single trailing prime is toggled — we never strip a double prime
+    ("2''") or touch non-numeric labels ("o 2"), so the fallback can rescue the
+    2 <-> 2' mismatch without ever over-matching neighbouring lines.
     """
     hit = line_cache.get((p_number, line_number))
     if hit is not None:
         return hit
-    if isinstance(line_number, str) and line_number.isdigit():
-        primed = line_cache.get((p_number, line_number + "'"))
-        if not primed:
-            return None
-        oracc_only = {surf: val for surf, val in primed.items() if val[1] == "oracc"}
-        return oracc_only or None
+    if not isinstance(line_number, str):
+        return None
+    # Direction 1 (#237): bare integer -> primed variant.
+    if line_number.isdigit():
+        return _oracc_only(line_cache.get((p_number, line_number + "'")))
+    # Direction 2 (#638): primed integer ("2'") -> bare variant ("2").
+    if line_number.endswith("'") and line_number[:-1].isdigit():
+        return _oracc_only(line_cache.get((p_number, line_number[:-1])))
     return None
 
 
