@@ -1,9 +1,9 @@
 ---
-question: "TODO: one sentence — what question does SETUP.md answer?"
+question: "How do I obtain and set up the ML model repositories Glintstone depends on?"
 created: 2026-05-11
 modified: 2026-05-11
-context: "TODO: why was this file created?"
-status: draft
+context: "Setup guide for the external model repositories (akkademia and others) that must be cloned or downloaded separately because they are too large for git."
+status: active
 audience: [engineers]
 owners: [eric]
 related_issues: []

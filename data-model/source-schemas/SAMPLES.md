@@ -1,3 +1,17 @@
+---
+question: "What do the most-complete records from each source database look like, field by field?"
+created: 2026-05-11
+modified: 2026-05-11
+context: "Reference samples pulled during ingestion design so engineers can see real field coverage, data quality, and integration points for each upstream source (CDLI, ORACC, OGSL, eBL, ePSD2) without querying the source APIs."
+status: active
+audience: [engineers, claude]
+owners: [eric]
+related_issues: []
+related_skills: [gs-expert-integrations, gs-expert-data-model]
+supersedes: null
+superseded_by: null
+---
+
 # Source Data Samples
 
 Most complete records from each source database. Use these to understand field coverage, data quality, and integration points.

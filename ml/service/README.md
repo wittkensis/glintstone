@@ -1,9 +1,9 @@
 ---
-question: "TODO: one sentence — what question does README.md answer?"
+question: "How do I run Glintstone's local ML sign-detection service?"
 created: 2026-05-11
 modified: 2026-05-11
-context: "TODO: why was this file created?"
-status: draft
+context: "Documents the local FastAPI service that runs the eBL OCR (Deformable DETR) model on tablet images, including its mock-data mode for development without the model checkpoint."
+status: active
 audience: [engineers]
 owners: [eric]
 related_issues: []

@@ -53,9 +53,10 @@ README.md                       Public-facing project intro
 CLAUDE.md                       This file
 data-model/                     Schema YAMLs + migrate.py + migrations/ (NNN_*.sql)
 ingestion/                      ETL framework
+ml/                             ML sign-detection service + model setup
 ops/                            Deployment, local dev, hooks
 .claude/skills/                 Project-local knowledge skills (gs-*, giddyup)
-docs/                           Persona HTML pages + interactive prototypes (no markdown — see wiki)
+DOCS.md                         Documentation index (start here to find any doc)
 ```
 
 Long-form narrative documentation (onboarding, data-model docs, API/MCP reference, research, opportunities, project) lives in the [GitHub Wiki](https://github.com/wittkensis/glintstone/wiki). Time-bound exploration lives on the [Ideas wiki page](https://github.com/wittkensis/glintstone/wiki/Ideas).

@@ -1,8 +1,15 @@
 ---
-title: Agentic System — Implementation Learnings
-description: Challenges and discoveries during the agentic summarization + translation suggestion build
+question: "What non-obvious findings, dead ends, and decisions came out of building the agentic summarization + translation-suggestion system?"
+created: 2026-05-26
+modified: 2026-05-26
+context: "Running record kept while building Phase 1 (artifact summaries) and Phase 2 (line translation suggestions) — captures schema gaps, competing genre tables, and the deploy double-compression bug so they aren't rediscovered."
 status: active
-updated: 2026-05-26
+audience: [engineers, claude]
+owners: [eric]
+related_issues: []
+related_skills: [gs-expert-data-model, gs-expert-agentic]
+supersedes: null
+superseded_by: null
 ---
 
 # Agentic System — Implementation Learnings

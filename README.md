@@ -52,8 +52,11 @@ The core infrastructure is language-agnostic. Trust tracking, provenance chains,
 
 ## Documentation
 
+**Start at [DOCS.md](DOCS.md)** — the documentation index maps every in-tree doc (and the wiki) to the task it serves. Quick links:
+
 | Topic | Where |
 |-------|-------|
+| Documentation index (start here) | [DOCS.md](DOCS.md) |
 | Engineering rules & conventions | [CLAUDE.md](CLAUDE.md) |
 | Directory & data-model layout | [data-model/README.md](data-model/README.md) |
 | Full schema (70+ tables) | [glintstone-schema.yaml](data-model/glintstone-schema.yaml) · [source mappings](data-model/source-mapping.yaml) · [ETL spec](data-model/import-pipeline.yaml) |
