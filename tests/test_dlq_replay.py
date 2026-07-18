@@ -51,6 +51,74 @@ def test_non_numeric_line_number_no_fallback():
     assert _resolve_line_ids(cache, "P1", "o 2") is None
 
 
+# --- #638: reverse-direction prime fallback (primed ORACC line -> bare line) ---
+#
+# #237/#448 handled the bare-integer ORACC line ("2") -> primed text_line ("2'")
+# direction. The mismatch also occurs the other way: an ORACC lemma parsed with a
+# trailing prime ("2'") whose surviving text_line is stored bare ("2"). #638 makes
+# the fallback symmetric so "2" matches "2'" AND "2'" matches "2", while keeping
+# the #448 oracc-only guard and never toggling more than the single trailing prime.
+
+
+def test_638_reverse_prime_fallback_resolves_primed_to_bare_oracc_line():
+    # text_lines only has the bare "2" (oracc-source); the ORACC lemma seeks "2'".
+    cache = {("P1", "2"): {"obverse": (21, "oracc")}}
+    assert _resolve_line_ids(cache, "P1", "2'") == {"obverse": (21, "oracc")}
+
+
+def test_638_reverse_prime_fallback_refuses_cdli_only_bare_line():
+    # The only bare variant is a CDLI line -> must NOT cross-match (the #448 guard
+    # applies in this direction too: the ORACC lemma's position indexes ORACC
+    # tokenisation and can never validly land on a CDLI line).
+    cache = {("P1", "2"): {"obverse": (99, "cdli")}}
+    assert _resolve_line_ids(cache, "P1", "2'") is None
+
+
+def test_638_reverse_prime_fallback_filters_mixed_bare_slot_to_oracc():
+    cache = {
+        ("P1", "2"): {
+            "obverse": (10, "cdli"),
+            "reverse": (20, "oracc"),
+        }
+    }
+    resolved = _resolve_line_ids(cache, "P1", "2'")
+    assert resolved == {"reverse": (20, "oracc")}
+    assert _select_line_id(resolved, "reverse") == 20
+
+
+def test_638_reverse_fallback_only_strips_single_trailing_prime():
+    # "2''" (double prime) must NOT be reduced to "2'" or "2" — only ONE prime is
+    # toggled, so double-primed labels never over-match a neighbouring slot.
+    cache = {
+        ("P1", "2'"): {"obverse": (30, "oracc")},
+        ("P1", "2"): {"obverse": (31, "oracc")},
+    }
+    assert _resolve_line_ids(cache, "P1", "2''") is None
+
+
+def test_638_reverse_fallback_ignores_non_numeric_primed_label():
+    # A primed but non-numeric label ("o 2'") must not strip to "o 2".
+    cache = {("P1", "o 2"): {"obverse": (40, "oracc")}}
+    assert _resolve_line_ids(cache, "P1", "o 2'") is None
+
+
+def test_638_reverse_fallback_does_not_invent_false_match():
+    # No bare variant present for the sought primed line -> stays unmatched.
+    cache = {("P1", "3"): {"obverse": (50, "oracc")}}
+    assert _resolve_line_ids(cache, "P1", "2'") is None
+
+
+def test_638_exact_primed_match_never_triggers_reverse_fallback():
+    # When the primed oracc line exists exactly, the exact match wins and the
+    # bare slot is never consulted (no over-match onto a different line).
+    cache = {
+        ("P1", "2'"): {"obverse": (60, "oracc")},
+        ("P1", "2"): {"obverse": (61, "cdli")},
+    }
+    resolved = _resolve_line_ids(cache, "P1", "2'")
+    assert resolved == {"obverse": (60, "oracc")}
+
+
 # --- #448: prime-fallback must NOT cross-match an ORACC lemma onto a CDLI line
 #
 # Root cause #446 found: ORACC ingests partially-preserved lines UNPRIMED
