@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign in — Glintstone</title>
+    <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Cuneiform&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -242,6 +243,48 @@
             transform: none;
         }
 
+        /* Primary (accent) sign-in button — email + password path */
+        .btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.9375rem 1.25rem;
+            background: var(--color-accent);
+            color: #0a0a0a;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            letter-spacing: 0.005em;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            margin-bottom: 0.75rem;
+            transition: opacity 0.18s ease, transform 0.12s ease;
+        }
+
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+        /* Secondary link-style action for the magic-link fallback */
+        .btn-link {
+            display: block;
+            width: 100%;
+            padding: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--color-text-muted);
+            font-size: 0.8125rem;
+            font-family: inherit;
+            text-align: center;
+            cursor: pointer;
+            transition: color 0.15s ease;
+        }
+
+        .btn-link:hover { color: var(--color-accent); }
+        .btn-link:disabled { opacity: 0.5; cursor: not-allowed; }
+
         /* ── Confirmation ── */
         .gate-confirmation {
             padding: 1rem;
@@ -302,6 +345,8 @@
                 {% if err == 'orcid_failed' %}ORCID sign-in failed. Please try again or use email below.
                 {% elif err == 'invalid_link' %}This sign-in link has expired. Request a new one below.
                 {% elif err == 'no_code' %}ORCID did not return an authorization code.
+                {% elif err == 'invalid_credentials' %}Email or password is incorrect.
+                {% elif err == 'login_failed' %}Sign-in failed. Please try again.
                 {% else %}Something went wrong. Please try again.{% endif %}
             </div>
             {% endif %}
@@ -316,12 +361,25 @@
 
             <div class="gate-divider"><span>or</span></div>
 
-            <form id="magic-form">
+            <!-- Password sign-in (native POST to server /auth/login). Uses the
+                 password set at registration. BUG-5: previously there was no
+                 password field, so a registered password had no UI path. -->
+            <form id="password-form" method="post" action="/auth/login">
                 <label for="email" class="gate-label">Email address</label>
                 <input type="email" id="email" name="email" class="gate-input"
                        placeholder="you@institution.edu" required autocomplete="email">
-                <button type="submit" class="btn-magic" id="magic-btn">
-                    Send sign-in link
+
+                <label for="password" class="gate-label">Password</label>
+                <input type="password" id="password" name="password" class="gate-input"
+                       placeholder="Your password" autocomplete="current-password">
+
+                <button type="submit" class="btn-primary" id="password-btn">
+                    Sign in
+                </button>
+
+                <!-- Fallback: email a one-time sign-in link (magic link). -->
+                <button type="button" class="btn-link" id="magic-btn">
+                    Email me a sign-in link instead
                 </button>
             </form>
 
@@ -342,11 +400,21 @@
     </div>
 
     <script>
-    document.getElementById('magic-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('email').value.trim();
-        const btn   = document.getElementById('magic-btn');
-        const errEl = document.getElementById('gate-err');
+    // The password form (#password-form) submits natively to POST /auth/login —
+    // no JS interception — so the password set at registration works (BUG-5).
+    // The "Email me a sign-in link instead" button is the magic-link fallback:
+    // it reads the shared email field and requests a one-time link via the API.
+    document.getElementById('magic-btn').addEventListener('click', async () => {
+        const emailEl = document.getElementById('email');
+        const email   = emailEl.value.trim();
+        const btn     = document.getElementById('magic-btn');
+        const errEl   = document.getElementById('gate-err');
+
+        // Reuse native validation on the email field before firing.
+        if (!email || !emailEl.checkValidity()) {
+            emailEl.reportValidity();
+            return;
+        }
 
         btn.disabled    = true;
         btn.textContent = 'Sending…';
@@ -359,12 +427,12 @@
                 body:    JSON.stringify({ email }),
             });
             if (!res.ok) throw new Error();
-            document.getElementById('magic-form').hidden = true;
-            document.getElementById('gate-sent').hidden  = false;
+            document.getElementById('password-form').hidden = true;
+            document.getElementById('gate-sent').hidden      = false;
         } catch {
             errEl.hidden    = false;
             btn.disabled    = false;
-            btn.textContent = 'Send sign-in link';
+            btn.textContent = 'Email me a sign-in link instead';
         }
     });
     </script>

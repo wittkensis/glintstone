@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -73,7 +73,9 @@ class AuthGateMiddleware(BaseHTTPMiddleware):
     """
 
     _OPEN_PREFIXES = ("/auth/", "/static/")
-    _OPEN_EXACT = {"/healthz", "/version"}
+    # /favicon.ico is open so an unauthenticated browser's automatic favicon
+    # request isn't 302'd to /auth/login (BUG-6). The route below answers it 204.
+    _OPEN_EXACT = {"/healthz", "/version", "/favicon.ico"}
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
@@ -136,6 +138,18 @@ def healthz():
 @app.api_route("/version", methods=["GET", "HEAD"], include_in_schema=False)
 def version():
     return JSONResponse(version_payload())
+
+
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"], include_in_schema=False)
+def favicon_ico():
+    """Answer the browser's automatic /favicon.ico request without redirecting.
+
+    Pages declare an SVG favicon via <link rel="icon">, but browsers still probe
+    /favicon.ico. Without this route the AuthGateMiddleware 302'd that probe to
+    /auth/login for unauthenticated users (BUG-6). A 204 (no content) ends the
+    probe cleanly; the SVG link supplies the actual icon.
+    """
+    return Response(status_code=204)
 
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))

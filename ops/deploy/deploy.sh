@@ -277,9 +277,27 @@ rsync_to "$PROJECT_DIR/.claude/skills/gs-expert-agentic/prompts/" \
 # hang the whole deploy. The SSH keepalive above only catches a dead *connection*
 # — it can't tell a live-but-stuck remote command from a slow one, so the remote
 # `timeout` is the backstop for that case.
+# PYTHON VERSION PIN (QA 2026-07-17, BUG-4): the venv MUST be built with 3.13,
+# to match `.python-version` (3.13.5) and CLAUDE.md ("Python 3.13+"). A bare
+# `python3 -m venv` inherits whatever `python3` resolves to on the VPS, which had
+# silently drifted to 3.12.12 — so any 3.13-only syntax (typing.Self, except*,
+# newer generic aliases) would fail at import time in prod. We now prefer an
+# explicit `python3.13` interpreter and, right after, HARD-GATE on the resulting
+# interpreter being >= 3.13, so this drift can never ship silently: a too-old
+# Python aborts the deploy here (previous release stays live) instead of
+# surfacing as a runtime import error later.
 echo "[$(date -u +%H:%M:%S)] Installing dependencies into release venv (timeout 8m)..."
-ssh_run "timeout 480 sh -c 'cd $RELEASE_DIR && python3 -m venv venv && venv/bin/pip install --quiet --upgrade pip && venv/bin/pip install --quiet -r requirements.txt'" || {
+ssh_run "timeout 480 sh -c 'cd $RELEASE_DIR && { command -v python3.13 >/dev/null 2>&1 && PYBIN=python3.13 || PYBIN=python3; } && \"\$PYBIN\" -m venv venv && venv/bin/pip install --quiet --upgrade pip && venv/bin/pip install --quiet -r requirements.txt'" || {
     echo "::error::Dependency install failed or exceeded 8 min — aborting (previous release stays live)."
+    exit 1
+}
+
+# --- HARD Python-version gate (BUG-4) ---
+# Refuse to promote a release whose venv Python is older than 3.13. This is the
+# backstop that turns silent version drift into a loud, blocking failure.
+echo "[$(date -u +%H:%M:%S)] Verifying release venv Python is >= 3.13..."
+ssh_run "cd $RELEASE_DIR && venv/bin/python -c 'import sys; v=sys.version_info; print(\"venv python:\", \".\".join(map(str, v[:3]))); sys.exit(0 if v[:2] >= (3, 13) else 1)'" || {
+    echo "::error::Release venv Python is older than 3.13 (BUG-4) — aborting. Install python3.13 on the VPS, then re-run."
     exit 1
 }
 
