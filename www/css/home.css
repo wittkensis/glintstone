@@ -623,94 +623,6 @@ a {
   line-height: 1.72;
 }
 
-.capability-note {
-  display: inline-block;
-  margin-top: 14px;
-  font-size: 0.8125rem;
-  color: var(--text-subtle);
-  font-style: italic;
-}
-
-/* ============================================================
-   SECTION 5: EARLY ACCESS CTA
-   ============================================================ */
-.cta-section {
-  background: var(--bg-deepest);
-  text-align: center;
-}
-
-.cta-subhead {
-  font-size: 1rem;
-  color: var(--text-dim);
-  max-width: 500px;
-  margin: 0 auto 48px;
-  line-height: 1.75;
-}
-
-.access-form {
-  max-width: 460px;
-  margin: 0 auto;
-  text-align: left;
-}
-
-.form-field {
-  margin-bottom: 16px;
-}
-
-.form-field label {
-  display: block;
-  font-size: 0.8125rem;
-  color: var(--text-subtle);
-  margin-bottom: 6px;
-  letter-spacing: 0.03em;
-}
-
-.form-field input,
-.form-field textarea {
-  width: 100%;
-  padding: 12px 16px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 0.9375rem;
-  min-height: 44px;
-  transition: border-color var(--t-fast), box-shadow var(--t-fast);
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.form-field input:focus,
-.form-field textarea:focus {
-  outline: none;
-  border-color: var(--border-accent);
-  box-shadow: 0 0 0 3px var(--www-accent-muted);
-}
-
-.form-field input::placeholder,
-.form-field textarea::placeholder {
-  color: var(--text-subtle);
-}
-
-.form-field textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.form-submit {
-  width: 100%;
-  margin-top: 8px;
-  justify-content: center;
-}
-
-.form-note {
-  text-align: center;
-  margin-top: 16px;
-  font-size: 0.8125rem;
-  color: var(--text-subtle);
-}
-
 /* ============================================================
    FOOTER
    ============================================================ */
@@ -814,16 +726,10 @@ a {
   .capabilities-grid {
     grid-template-columns: 1fr;
   }
-
-  /* Prevent iOS input zoom on focus */
-  .form-field input,
-  .form-field textarea {
-    font-size: 1rem;
-  }
 }
 
 @media (max-width: 480px) {
-  /* Hide secondary nav CTA on tiny screens; hero CTA stays visible */
+  /* Hide the nav GitHub link on tiny screens; the hero GitHub CTA stays visible */
   .btn-nav-cta {
     display: none;
   }
