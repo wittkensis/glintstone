@@ -11,6 +11,7 @@ This is a **production academic application** for cuneiform / Assyriology schola
 - **psycopg rollback trap.** `conn.rollback()` undoes ALL uncommitted changes in the transaction. Use `ON CONFLICT` or `NOT EXISTS`, not try/except `UniqueViolation`.
 - **macOS SSL workaround.** Python `urllib`/`requests` can fail on some HTTPS endpoints. Shell out to `curl` via `subprocess.run(...)`.
 - **Deployment is routed through `gs-expert-deployment`.** Never push to `main` with red CI, never run destructive operations against the production VPS Postgres directly, never use `--no-verify`.
+- **Worktrees live in ONE canonical place: `~/Glintstone/.claude/worktrees/<task-id>-<slug>/`.** Never create loose `~/glintstone-wt-<n>` directories in the home root or anywhere outside the repo — those escape the auto-reaper (`~/.claude/hooks/cleanup-worktrees.sh`), don't show up in a normal tidy, and had to be cleaned by hand. This mirrors the Apps-Workspace convention (dispatch skill §4 "Worktree rules"); `.claude/worktrees/` is already gitignored. One branch per task, branched from `origin/main`. **Prune at merge time, in the same step as the merge:** `git worktree remove <path> --force` then `git branch -d <branch>` — never `rm -rf` a worktree git still knows about, and never force-remove one whose commits you haven't confirmed landed in `main` (check with `git cherry main <branch>` — empty output means merged).
 
 ## How to respond
 
