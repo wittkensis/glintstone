@@ -107,12 +107,20 @@ def _make_client(monkeypatch, *, results=None):
     monkeypatched per-test instead.
     """
     from core import database
+    from api import main as api_main
 
-    # Never let importing / lifespan touch a real pool.
+    # Never let importing / lifespan touch a real pool. api/main.py does
+    # `from core.database import init_pool, close_pool` (a copied name
+    # binding), so patching the `database` module's attributes alone doesn't
+    # affect api.main's own references — both must be patched, or the real
+    # lifespan silently runs init_pool()/close_pool() against no DATABASE_URL,
+    # which is order-dependent on whatever earlier test last touched the
+    # shared global pool.
     monkeypatch.setattr(database, "init_pool", lambda *a, **kw: None)
     monkeypatch.setattr(database, "close_pool", lambda *a, **kw: None)
+    monkeypatch.setattr(api_main, "init_pool", lambda *a, **kw: None)
+    monkeypatch.setattr(api_main, "close_pool", lambda *a, **kw: None)
 
-    from api import main as api_main
     from core.database import get_db
 
     fake_conn = _FakeConnection(results=results)

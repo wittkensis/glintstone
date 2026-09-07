@@ -5,17 +5,27 @@ skipped if one is not set. Unit-only tests run against an unset pool to verify
 error paths.
 """
 
-import importlib
-
 import pytest
 
 
 def _fresh_db_module():
-    """Reload core.database with current env state."""
-    from core import config, database
+    """core.database with settings re-read from the current env state.
 
-    importlib.reload(config)
-    importlib.reload(database)
+    Used to reload() both `core.config` and `core.database` here, but that
+    creates BRAND NEW function objects (get_db, get_connection, ...) in
+    sys.modules — any other module that already did `from core.database
+    import get_db` (e.g. api/routes/scholars.py, at import time) keeps its
+    OLD reference forever after. A FastAPI dependency_overrides keyed on a
+    freshly-reloaded get_db then never matches the route's actual (stale)
+    get_db, so the override silently fails to apply and every web test that
+    runs after this file hits the real, uninitialized pool — a real bug this
+    caused, not a hypothetical one (#1645). Clearing the settings cache and
+    closing the (real, persistent) pool object achieves the same "fresh env,
+    no live pool" state without ever creating a second copy of anything.
+    """
+    from core import database
+
+    database.get_settings.cache_clear()
     return database
 
 

@@ -79,6 +79,13 @@ def client(monkeypatch):
     monkeypatch.setattr(database, "close_pool", lambda *a, **kw: None)
 
     from app import main as app_main
+
+    # app/main.py does `from core.database import init_pool, close_pool` (a
+    # copied name binding) — patching the `database` module's attributes
+    # alone doesn't affect app_main's own references, so the real lifespan
+    # would otherwise call the real init_pool()/close_pool() regardless.
+    monkeypatch.setattr(app_main, "init_pool", lambda *a, **kw: None)
+    monkeypatch.setattr(app_main, "close_pool", lambda *a, **kw: None)
     from app.transports import HttpxTransport
 
     # Prevent HttpxTransport from opening a real HTTP connection during lifespan.
