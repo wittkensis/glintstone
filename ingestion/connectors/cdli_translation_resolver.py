@@ -17,7 +17,7 @@ This connector is idempotent: it re-skips rows whose line_id is already set.
 
 from __future__ import annotations
 
-from typing import Iterator
+from typing import Iterable, Iterator
 
 from ingestion.base import LoadStats, RunContext, SourceConnector
 from ingestion.dead_letters import DeadLetterCategory
@@ -151,7 +151,7 @@ class CDLITranslationResolver(SourceConnector):
         for tid, lid in zip(translation_ids, line_ids):
             yield {"translation_id": tid, "line_id": lid}
 
-    def load(self, ctx: RunContext, records: Iterator[dict]) -> LoadStats:
+    def load(self, ctx: RunContext, records: Iterable[dict]) -> LoadStats:
         stats = LoadStats()
         with ctx.db.cursor() as cur:
             for rec in records:
