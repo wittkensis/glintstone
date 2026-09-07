@@ -81,8 +81,9 @@ import re
 import subprocess
 import threading
 import time
+from collections.abc import Iterable, Iterator
 from html.parser import HTMLParser
-from typing import Any, Iterable, Iterator, Optional
+from typing import Any
 from urllib.parse import urljoin
 
 from core.credits_parser import normalize_name
@@ -173,7 +174,7 @@ def _backoff(attempt: int) -> None:
 
 def _fetch(
     url: str, *, user_agent: str, interval_s: float, ctx: RunContext
-) -> Optional[str]:
+) -> str | None:
     """GET one URL with throttling + bounded backoff. None on final failure."""
     for attempt in range(MAX_RETRIES + 1):
         _throttle(interval_s)
@@ -212,7 +213,7 @@ class _LinkScraper(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.hrefs: list[str] = []
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag == "a":
             href = dict(attrs).get("href")
             if href:
@@ -231,12 +232,12 @@ def _find_about_candidates(home_html: str, base_url: str) -> list[str]:
 
 ROSTER_HEADING_RE = re.compile(
     r"\b(team|board|editor|staff|personnel|contributors?|advisors?|collaborators?)\b",
-    re.I,
+    re.IGNORECASE,
 )
 EXCLUDE_HEADING_RE = re.compile(
     r"\b(sponsors?|objectives?|duration|scope|funding|acknowledg|dissemination|"
     r"citing|abbreviations|downloads?|privacy|cookies)\b",
-    re.I,
+    re.IGNORECASE,
 )
 _PARTICLES = {
     "von", "van", "de", "der", "den", "del", "della", "di", "da", "du",
@@ -247,7 +248,7 @@ _INSTITUTION_HINTS = re.compile(
     r"foundation|corpus|board|team|committee|initiative|department|"
     r"database|archive|library|consortium|network|association|society|"
     r"trust|volunteers|section|portal)\b",
-    re.I,
+    re.IGNORECASE,
 )
 _SENTENCE_STOPWORDS = {
     "the", "core", "comprises", "presently", "from", "to", "left", "right",
@@ -268,15 +269,15 @@ class _AboutPageParser(HTMLParser):
         self._pending_anchor = False
         self._in_heading = False
         self._heading_buf: list[str] = []
-        self._current_section: Optional[dict[str, Any]] = None
-        self._entry_tag: Optional[str] = None
+        self._current_section: dict[str, Any] | None = None
+        self._entry_tag: str | None = None
         self._entry_depth = 0
         self._entry_text: list[str] = []
-        self._entry_href: Optional[str] = None
+        self._entry_href: str | None = None
         self._entry_first_a_text: list[str] = []
         self._capturing_a_text = False
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attrs_d = dict(attrs)
         if tag == "a" and (attrs_d.get("id") or "").startswith("h_"):
             self._pending_anchor = True
@@ -302,7 +303,7 @@ class _AboutPageParser(HTMLParser):
             self._capturing_a_text = False
 
     def handle_startendtag(
-        self, tag: str, attrs: list[tuple[str, Optional[str]]]
+        self, tag: str, attrs: list[tuple[str, str | None]]
     ) -> None:
         self.handle_starttag(tag, attrs)
 
@@ -430,8 +431,8 @@ class OraccProjectTeamConnector(SourceConnector):
         *,
         request_interval_s: float = DEFAULT_REQUEST_INTERVAL_S,
         user_agent: str = DEFAULT_USER_AGENT,
-        projects: Optional[list[str]] = None,
-        limit: Optional[int] = None,
+        projects: list[str] | None = None,
+        limit: int | None = None,
     ) -> None:
         # `projects` restricts to an explicit slug allow-list (targeted
         # testing / resuming a partial run); `limit` caps how many top-level
@@ -560,7 +561,7 @@ class OraccProjectTeamConnector(SourceConnector):
         unique_index: dict[str, int],
         ambiguous: set[str],
         created_this_run: dict[str, int],
-    ) -> tuple[Optional[int], str]:
+    ) -> tuple[int | None, str]:
         """Returns (scholar_id, normalized_name). scholar_id is None only
         when the name could not be parsed or is ambiguous (caller dead-letters).
         """
