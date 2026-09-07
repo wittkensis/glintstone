@@ -251,9 +251,7 @@ def test_composite_detail_404(monkeypatch):
     """An unknown Q-number is a 404, not a 500 or a null composite."""
     from api.repositories.composite_repo import CompositeRepository
 
-    monkeypatch.setattr(
-        CompositeRepository, "find_by_q_number", lambda self, q: None
-    )
+    monkeypatch.setattr(CompositeRepository, "find_by_q_number", lambda self, q: None)
 
     client = _make_client(monkeypatch)
     r = client.get("/composites/Q999999")
@@ -291,12 +289,16 @@ def test_dictionary_browse_signs_level(monkeypatch):
     monkeypatch.setattr(
         LexicalRepository,
         "browse_signs",
-        lambda self, **kw: called.__setitem__("signs", called["signs"] + 1) or {"items": []},
+        lambda self, **kw: (
+            called.__setitem__("signs", called["signs"] + 1) or {"items": []}
+        ),
     )
     monkeypatch.setattr(
         LexicalRepository,
         "browse_lemmas",
-        lambda self, **kw: called.__setitem__("lemmas", called["lemmas"] + 1) or {"items": []},
+        lambda self, **kw: (
+            called.__setitem__("lemmas", called["lemmas"] + 1) or {"items": []}
+        ),
     )
 
     client = _make_client(monkeypatch)
@@ -314,7 +316,9 @@ def test_dictionary_unknown_level_falls_back_to_lemmas(monkeypatch):
     monkeypatch.setattr(
         LexicalRepository,
         "browse_lemmas",
-        lambda self, **kw: called.__setitem__("lemmas", called["lemmas"] + 1) or _LEMMA_PAGE,
+        lambda self, **kw: (
+            called.__setitem__("lemmas", called["lemmas"] + 1) or _LEMMA_PAGE
+        ),
     )
 
     client = _make_client(monkeypatch)

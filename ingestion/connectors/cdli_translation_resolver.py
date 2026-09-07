@@ -23,10 +23,23 @@ from ingestion.base import LoadStats, RunContext, SourceConnector
 from ingestion.dead_letters import DeadLetterCategory
 
 _SURFACE_RANK = {
-    "obverse": 1, "reverse": 2, "left_edge": 3, "right_edge": 4,
-    "top_edge": 5, "bottom_edge": 6, "seal": 7, "envelope": 8,
-    "tablet": 9, "object": 10, "prism": 11, "cylinder": 12,
-    "brick": 13, "cone": 14, "bulla": 15, "column": 16, "face": 17,
+    "obverse": 1,
+    "reverse": 2,
+    "left_edge": 3,
+    "right_edge": 4,
+    "top_edge": 5,
+    "bottom_edge": 6,
+    "seal": 7,
+    "envelope": 8,
+    "tablet": 9,
+    "object": 10,
+    "prism": 11,
+    "cylinder": 12,
+    "brick": 13,
+    "cone": 14,
+    "bulla": 15,
+    "column": 16,
+    "face": 17,
 }
 
 
@@ -94,8 +107,12 @@ class CDLITranslationResolver(SourceConnector):
                     category=DeadLetterCategory.NO_MATCH.value,
                     subcategory="positional_overflow",
                     source_key=f"{p_number}/{tid}",
-                    payload={"translation_id": tid, "p_number": p_number,
-                             "trans_count": trans_count, "line_count": line_count},
+                    payload={
+                        "translation_id": tid,
+                        "p_number": p_number,
+                        "trans_count": trans_count,
+                        "line_count": line_count,
+                    },
                     reason=f"{p_number}: {trans_count} translations but only {line_count} lines",
                 )
             return

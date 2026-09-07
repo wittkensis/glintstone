@@ -193,7 +193,9 @@ def get_lemma_compositions(
     lemma = repo.get_lemma_detail(lemma_id)
     if not lemma:
         raise HTTPException(status_code=404, detail="Lemma not found")
-    citation_form = lemma.get("citation_form") or lemma.get("lemma", {}).get("citation_form")
+    citation_form = lemma.get("citation_form") or lemma.get("lemma", {}).get(
+        "citation_form"
+    )
     if not citation_form:
         return {"lemma_id": lemma_id, "items": []}
 

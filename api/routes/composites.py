@@ -247,7 +247,11 @@ def get_composite_collation(
     for lr in line_rows:
         key = (lr["surface"], lr["line_number"])
         if key not in grid:
-            grid[key] = {"surface": lr["surface"], "line_number": lr["line_number"], "cells": {}}
+            grid[key] = {
+                "surface": lr["surface"],
+                "line_number": lr["line_number"],
+                "cells": {},
+            }
         grid[key]["cells"][lr["p_number"]] = lr["raw_atf"]
 
     rows = list(grid.values())

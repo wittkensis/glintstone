@@ -1,0 +1,5 @@
+# Ruff formats fenced Python code blocks inside Markdown by default, which has
+# mangled example/troubleshooting snippets in docs (e.g. turned a keyword arg
+# string into a tuple) rather than improving anything real. Excluded — this repo
+# only wants ruff formatting real .py source, not documentation prose.
+extend-exclude = ["*.md"]

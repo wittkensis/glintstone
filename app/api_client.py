@@ -296,7 +296,9 @@ class GlintstoneAPI:
     def get_scholar_co_authors(self, scholar_id: int, limit: int = 10) -> list:
         """Top co-publishing scholars for the co-publication network section (#525)."""
         try:
-            result = self._t.get(f"/scholars/{scholar_id}/co-authors", params={"limit": limit})
+            result = self._t.get(
+                f"/scholars/{scholar_id}/co-authors", params={"limit": limit}
+            )
             return result.get("items", []) if isinstance(result, dict) else []
         except Exception:
             return []

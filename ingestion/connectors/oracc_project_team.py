@@ -98,12 +98,54 @@ ORACC_ORIGIN = "https://oracc.museum.upenn.edu"
 # same page or 404. Kept as a plain list (not imported from oracc_credits.py)
 # so this connector has no import-time coupling to another connector's file.
 ORACC_TOP_PROJECTS = [
-    "adsd", "aemw", "akklove", "amgg", "ario", "armep", "asbp", "atae",
-    "babcity", "balt", "blms", "borsippa", "btmao", "btto", "cams", "ckst",
-    "cmawro", "ctij", "dcclt", "dccmt", "dsst", "ecut", "edlex", "eisl",
-    "epsd2", "etcsl", "etcsri", "glass", "hbtin", "iraq", "lacost", "nere",
-    "nimrud", "obel", "obmc", "obta", "oimea", "pnao", "riao", "ribo",
-    "rimanum", "rime", "rinap", "saao", "suhu", "tcma", "tsae", "urap",
+    "adsd",
+    "aemw",
+    "akklove",
+    "amgg",
+    "ario",
+    "armep",
+    "asbp",
+    "atae",
+    "babcity",
+    "balt",
+    "blms",
+    "borsippa",
+    "btmao",
+    "btto",
+    "cams",
+    "ckst",
+    "cmawro",
+    "ctij",
+    "dcclt",
+    "dccmt",
+    "dsst",
+    "ecut",
+    "edlex",
+    "eisl",
+    "epsd2",
+    "etcsl",
+    "etcsri",
+    "glass",
+    "hbtin",
+    "iraq",
+    "lacost",
+    "nere",
+    "nimrud",
+    "obel",
+    "obmc",
+    "obta",
+    "oimea",
+    "pnao",
+    "riao",
+    "ribo",
+    "rimanum",
+    "rime",
+    "rinap",
+    "saao",
+    "suhu",
+    "tcma",
+    "tsae",
+    "urap",
 ]
 
 DEFAULT_REQUEST_INTERVAL_S = 1.0
@@ -143,10 +185,16 @@ def _curl_get(url: str, *, user_agent: str, timeout_s: float) -> tuple[int, str]
     sep = "\x1e"
     write_out = f"{sep}__META__{sep}%{{http_code}}"
     cmd = [
-        "curl", "-s", "-S", "-L",
-        "-A", user_agent,
-        "--max-time", str(int(timeout_s)),
-        "-w", write_out,
+        "curl",
+        "-s",
+        "-S",
+        "-L",
+        "-A",
+        user_agent,
+        "--max-time",
+        str(int(timeout_s)),
+        "-w",
+        write_out,
         url,
     ]
     try:
@@ -164,7 +212,7 @@ def _curl_get(url: str, *, user_agent: str, timeout_s: float) -> tuple[int, str]
     if idx < 0:
         raise _FetchError("curl output missing metadata trailer")
     body = stdout[:idx].decode("utf-8", errors="replace")
-    status = int(stdout[idx + len(marker):].decode("utf-8", errors="replace") or "0")
+    status = int(stdout[idx + len(marker) :].decode("utf-8", errors="replace") or "0")
     return status, body
 
 
@@ -240,8 +288,26 @@ EXCLUDE_HEADING_RE = re.compile(
     re.IGNORECASE,
 )
 _PARTICLES = {
-    "von", "van", "de", "der", "den", "del", "della", "di", "da", "du",
-    "le", "la", "el", "al", "bin", "ibn", "ter", "ten", "abdul", "abdulillah",
+    "von",
+    "van",
+    "de",
+    "der",
+    "den",
+    "del",
+    "della",
+    "di",
+    "da",
+    "du",
+    "le",
+    "la",
+    "el",
+    "al",
+    "bin",
+    "ibn",
+    "ter",
+    "ten",
+    "abdul",
+    "abdulillah",
 }
 _INSTITUTION_HINTS = re.compile(
     r"\b(project|university|institute|museum|college|programme|program|"
@@ -251,8 +317,24 @@ _INSTITUTION_HINTS = re.compile(
     re.IGNORECASE,
 )
 _SENTENCE_STOPWORDS = {
-    "the", "core", "comprises", "presently", "from", "to", "left", "right",
-    "and", "based", "at", "is", "was", "are", "for", "with", "in", "of",
+    "the",
+    "core",
+    "comprises",
+    "presently",
+    "from",
+    "to",
+    "left",
+    "right",
+    "and",
+    "based",
+    "at",
+    "is",
+    "was",
+    "are",
+    "for",
+    "with",
+    "in",
+    "of",
 }
 
 
@@ -302,9 +384,7 @@ class _AboutPageParser(HTMLParser):
             self._entry_first_a_text = []
             self._capturing_a_text = False
 
-    def handle_startendtag(
-        self, tag: str, attrs: list[tuple[str, str | None]]
-    ) -> None:
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.handle_starttag(tag, attrs)
 
     def handle_endtag(self, tag: str) -> None:
@@ -443,8 +523,8 @@ class OraccProjectTeamConnector(SourceConnector):
         self.limit = limit
 
     def _project_slugs(self, ctx: RunContext) -> list[str]:
-        projects = self.projects if self.projects is not None else ctx.config.get(
-            "projects"
+        projects = (
+            self.projects if self.projects is not None else ctx.config.get("projects")
         )
         limit = self.limit if self.limit is not None else ctx.config.get("limit")
         slugs = list(projects) if projects else list(ORACC_TOP_PROJECTS)

@@ -60,7 +60,8 @@ def send_claim_rejected(
     )
     reason_html = (
         f"<p><strong>Reason given:</strong></p><blockquote>{note}</blockquote>"
-        if note else ""
+        if note
+        else ""
     )
     body_html = f"""
 <p>Hi {scholar_name},</p>
