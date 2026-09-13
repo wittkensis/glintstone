@@ -729,13 +729,24 @@ tables:
     # TRADE-OFF: Name dedup is hard (diacritics, particles, initials). Cascading match:
     #            ORCID exact > surname+initials normalized > full name fuzzy. ORCID is authoritative
     #            when available (~10-20% coverage via OpenAlex). See data-quality.md.
+    # TRADE-OFF: `name` is UNIQUE (migration 063, #1644). This table is a registry of author-name
+    #            STRINGS harvested from free-text CDLI/ORACC catalogue fields, and it has no other
+    #            usable identity key — institution is 0% populated and orcid ~0.5%, so a composite
+    #            like (name, orcid) would never conflict (NULLs are distinct in a unique index) and
+    #            would not constrain anything. The scholars connector already treats the name string
+    #            as identity (it collects into a Python set before loading); the constraint makes the
+    #            database enforce that, and backs the ON CONFLICT (name) the connector emits.
+    #            ACCEPTED LIMITATION: two genuinely different people who share a name cannot be
+    #            represented. That is already true in practice (nothing distinguishes them today).
+    #            Splitting them, once ORCID coverage allows, needs a real identity column — not a
+    #            wider unique key — plus scholar_claims / scholar_overrides.
     description: >
       NEW TABLE. Individual scholarly contributors to the corpus.
       Enables trust queries: who made this reading, what's their expertise,
       and how do we cite them?
     columns:
       id: { type: INTEGER, pk: true, autoincrement: true }
-      name: { type: TEXT, not_null: true }
+      name: { type: TEXT, not_null: true, unique: true, description: "Stored NFC-normalized; UNIQUE since migration 063 (backs ON CONFLICT (name) in the scholars connector)" }
       orcid: { type: TEXT, unique: true, nullable: true, description: "ORCID persistent identifier" }
       institution: { type: TEXT, nullable: true }
       expertise_periods: { type: TEXT, nullable: true, description: "JSON array of period specializations" }

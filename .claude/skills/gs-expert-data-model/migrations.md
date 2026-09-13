@@ -1,7 +1,7 @@
 ---
 question: "How do I write, apply, and verify a Postgres migration in Glintstone, and what's already been applied?"
 created: 2026-05-11
-modified: 2026-05-22
+modified: 2026-09-12
 context: "Created during the 2026-05-11 overhaul. The rolling 'applied migrations' table below is canonical — gs-curator-docs warns on push if source-data/migrations/ changed without this file updating."
 status: active
 audience: [claude, engineers]
@@ -150,8 +150,28 @@ GRANT USAGE, SELECT ON SEQUENCE my_table_id_seq TO glintstone;
 | 054 | `054_drop_lexical_tablet_occurrences.sql` | #279 RETIRES the stale `lexical_tablet_occurrences` precompute (frozen at 3,875 rows post Fix A/C, populated via the dead `norm_id` path). Its three code consumers (`lexical_repo.get_lemma_occurrence_stats`, `core.lexical.get_tablets_for_lemma`/`get_tablets_for_sign`) were moved to the live `(citation_form, guide_word)` join (the #176 pattern, backed by migration 052) and the orphaned populate job `core/jobs/lexical_occurrences.py` was deleted. Supersedes migration 015. |
 | 058 | `058_lemmatizations_token_id_index.sql` | Speed audit 2026-06-23 QW-1 — FK index `idx_lemmatizations_token_id ON lemmatizations(token_id)`. The single highest-leverage perf fix. `_hydrate_tablet_extras` (`pipeline_completeness._HAS_LEMMATIZATION`) did `LEFT JOIN lemmatizations lz ON lz.token_id = t.id` per result tablet, seq-scanning all 5.4M rows each loop. Prod EXPLAIN: 5,302 ms → 103 ms for 5 p_numbers; live semantic search ~5 s (loopback) / ~11 s (e2e) → ~0.2 s. Created live with `CREATE INDEX CONCURRENTLY`; migration is `IF NOT EXISTS` (no-op on prod, builds on fresh DBs). |
 | 059 | `059_translations_line_id_index.sql` | Speed audit 2026-06-23 QW-2 — FK index `idx_translations_line_id ON translations(line_id)`. Companion to 058. `_HAS_TRANSLATION` EXISTS subquery seq-scanned ~87.5k rows per p_number. Prod EXPLAIN: 90 ms → 11 ms for 5 p_numbers. Created live with `CREATE INDEX CONCURRENTLY`; migration is `IF NOT EXISTS`. |
+| 063 | `063_scholars_name_unique.sql` | #1644 — `scholars_name_key UNIQUE (name)`, the index `ingestion/connectors/scholars.py` needs for its `ON CONFLICT (name)` (`upsert_batch(unique_key=["name"])`). Without it that INSERT raises `there is no unique or exclusion constraint matching the ON CONFLICT specification` on the FIRST execution, not just on a collision — the connector's `load()` was dead code. NFC-normalizes `name` first (268 dev rows were stored decomposed, so the byte-comparing index would never have matched what the connector emits), then merges exact-duplicate names through `scholar_merge_log` (remapping all 29 FK references, never NULLing attribution). Idempotent, and aborts if >50 duplicate groups exist. |
 
 > Note: rows 055–057 predate this entry and were not backfilled into this table at the time; see `migrate.py status` for the authoritative applied list.
+
+## ⚠ Migration 024 is recorded as applied but did NOT take effect
+
+Found on 2026-09-12 while fixing #1644. `public._migrations` has `024 connector_unique_constraints (applied 2026-05-18)`, but **five of its six constraints are absent** from the database:
+
+| Constraint 024 was supposed to add | Actually present? | Connector that needs it |
+|---|---|---|
+| `annotation_runs_source_name_key` | ✅ yes | `annotation_runs` |
+| `scholars_name_key` | ❌ no — **fixed by 063** | `scholars` |
+| `lexical_norm_forms_norm_id_written_form_key` | ❌ no (old 3-col `..._source_key` still in place) | lexical loaders |
+| `sign_values_sign_id_value_key` | ❌ no | `ogsl_signs` |
+| `glossary_forms_entry_id_form_key` | ❌ no | `oracc_glossaries` |
+| `token_readings_token_id_key` | ❌ no | `token_readings` |
+
+Separately, `baby_lemmatizer` calls `upsert_batch(table="lemmatizations", unique_key=["token_id"])` and `lemmatizations` has no unique index on `token_id` either — that one was never in 024 at all.
+
+**Every one of those connectors raises on its first load call.** Do not assume a constraint exists because its migration is listed as applied — check `pg_index` / `pg_constraint` directly.
+
+Do NOT simply re-run 024: its hardcoded FK-remap list predates `artifact_contributors`, `project_contributors`, `scholar_claims`, `scholar_overrides` and `interaction_feedback`, so it now fails on a foreign-key violation. Migration 063 shows the pattern to follow instead (catalog guard + audited merge).
 
 **Always confirm `migrate.py status` matches this table.** If it doesn't, update one or the other.
 
